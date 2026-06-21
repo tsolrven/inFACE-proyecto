@@ -1,3 +1,45 @@
+# ============================================
+# ENTORNO Y CONFIGURACIÓN
+# ============================================
 .env
+.env.local
+.env.*.local
+.env.production
+.env.development
+
+# ============================================
+# DEPENDENCIAS
+# ============================================
 node_modules/
-/generated/prisma
+
+# ============================================
+# PRISMA - Archivos generados
+# ============================================
+generated/
+*.prisma
+!prisma/schema.prisma
+node_modules/.prisma/
+node_modules/@prisma/client/
+
+# ============================================
+# BUILD / COMPILACIÓN
+# ============================================
+dist/
+build/
+*.log
+
+# ============================================
+# EDITORES
+# ============================================
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# ============================================
+# ARCHIVOS TEMPORALES
+# ============================================
+*.tmp
+*.temp
+*.swp
+*.swo

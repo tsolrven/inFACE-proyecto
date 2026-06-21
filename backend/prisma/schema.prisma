@@ -27,6 +27,11 @@ model Usuario {
   votos            Voto[]
   reportes_creados Reporte[]  @relation("ReporteCreadoPor")
   reportes_revisados Reporte[] @relation("ReporteRevisadoPor")
+  usuario_etiquetas    UsuarioEtiqueta[]
+  proyectos_creados    Proyecto[]
+  postulaciones        PostulacionProyecto[]
+  integrantes_proyecto IntegranteProyecto[]
+  favoritos_proyecto   FavoritoProyecto[]
 
   @@map("usuarios")
 }
@@ -46,6 +51,56 @@ model Perfil {
   usuario Usuario @relation(fields: [usuario_id], references: [id])
 
   @@map("perfiles")
+}
+
+// ╰─────────────────────────────✧────────────────────────────────╮
+
+//───────────────────────────────────────────────────────────────────────────────
+// ETIQUETAS
+//───────────────────────────────────────────────────────────────────────────────
+
+model TipoEtiqueta {
+  id                 Int       @id @default(autoincrement())
+  nombre_tipo_etiqueta String  @db.VarChar(30)
+
+  etiquetas Etiqueta[]
+
+  @@map("tipos_etiqueta")
+}
+
+// ╰─────────────────────────────✧────────────────────────────────╮
+
+model Etiqueta {
+  id                    Int      @id @default(autoincrement())
+  tipo_etiqueta_id      Int
+  creada_por_usuario_id String?
+  nombre_etiqueta       String   @unique @db.VarChar(100)
+  nombre_normalizado    String   @db.VarChar(100)
+  descripcion           String?
+  aliases               String?
+  es_predeterminada     Boolean  @default(false)
+  estado                String   @default("pendiente") @db.VarChar(20)
+  fecha_creacion        DateTime @default(now())
+
+  tipo_etiqueta      TipoEtiqueta      @relation(fields: [tipo_etiqueta_id], references: [id])
+  usuario_etiquetas  UsuarioEtiqueta[]
+  proyecto_etiquetas ProyectoEtiqueta[]
+
+  @@map("etiquetas")
+}
+
+// ╰─────────────────────────────✧────────────────────────────────╮
+
+model UsuarioEtiqueta {
+  usuario_id  String
+  etiqueta_id Int
+  nivel       String? @db.VarChar(20)
+
+  usuario  Usuario  @relation(fields: [usuario_id], references: [id])
+  etiqueta Etiqueta @relation(fields: [etiqueta_id], references: [id])
+
+  @@id([usuario_id, etiqueta_id])
+  @@map("usuario_etiquetas")
 }
 
 // ╰─────────────────────────────✧────────────────────────────────╮
@@ -214,6 +269,89 @@ model ApunteHashtag {
 
   @@id([apunte_id, hashtag_id])
   @@map("apuntes_hashtags")
+}
+
+//───────────────────────────────────────────────────────────────────────────────
+// MÓDULO 4: MATCH DE PROYECTOS
+//───────────────────────────────────────────────────────────────────────────────
+
+model Proyecto {
+  id                  Int      @id @default(autoincrement())
+  creador_id          String
+  titulo_proyecto     String   @db.VarChar(200)
+  descripcion_proyecto String?
+  modalidad_proyecto  String   @db.VarChar(20)
+  maximo_integrantes  Int?
+  estado_proyecto     String   @default("abierto") @db.VarChar(20)
+  fecha_inicio        DateTime?
+  fecha_fin           DateTime?
+  fecha_creacion      DateTime @default(now())
+
+  creador              Usuario               @relation(fields: [creador_id], references: [id])
+  postulaciones        PostulacionProyecto[]
+  integrantes          IntegranteProyecto[]
+  favoritos            FavoritoProyecto[]
+  etiquetas            ProyectoEtiqueta[]
+
+  @@map("proyectos")
+}
+
+// ╰─────────────────────────────✧────────────────────────────────╮
+
+model PostulacionProyecto {
+  id                   Int      @id @default(autoincrement())
+  proyecto_id          Int
+  postulante_id        String
+  mensaje_postulacion  String?
+  estado_postulacion   String   @default("pendiente") @db.VarChar(20)
+  fecha_postulacion    DateTime @default(now())
+
+  proyecto   Proyecto @relation(fields: [proyecto_id], references: [id])
+  postulante Usuario  @relation(fields: [postulante_id], references: [id])
+
+  @@map("postulaciones_proyecto")
+}
+
+// ╰─────────────────────────────✧────────────────────────────────╮
+
+model IntegranteProyecto {
+  id               Int      @id @default(autoincrement())
+  proyecto_id      Int
+  usuario_id       String
+  rol_en_proyecto  String?  @db.VarChar(50)
+  fecha_union      DateTime @default(now())
+
+  proyecto Proyecto @relation(fields: [proyecto_id], references: [id])
+  usuario  Usuario  @relation(fields: [usuario_id], references: [id])
+
+  @@map("integrantes_proyecto")
+}
+
+// ╰─────────────────────────────✧────────────────────────────────╮
+
+model FavoritoProyecto {
+  usuario_id  String
+  proyecto_id Int
+  fecha_creacion DateTime @default(now())
+
+  usuario  Usuario  @relation(fields: [usuario_id], references: [id])
+  proyecto Proyecto @relation(fields: [proyecto_id], references: [id])
+
+  @@id([usuario_id, proyecto_id])
+  @@map("favoritos_proyecto")
+}
+
+// ╰─────────────────────────────✧────────────────────────────────╮
+
+model ProyectoEtiqueta {
+  proyecto_id Int
+  etiqueta_id Int
+
+  proyecto Proyecto @relation(fields: [proyecto_id], references: [id])
+  etiqueta Etiqueta @relation(fields: [etiqueta_id], references: [id])
+
+  @@id([proyecto_id, etiqueta_id])
+  @@map("proyecto_etiquetas")
 }
 
 //───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
