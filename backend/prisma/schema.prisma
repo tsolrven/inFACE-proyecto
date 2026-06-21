@@ -5,3 +5,237 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+//───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+// ENTIDADES BASE (compartidas por todos los módulos)
+//───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+model Usuario {
+  id            String   @id @default(uuid())
+  correo         String   @unique
+  contrasena     String
+  rol            String   @default("estudiante") 
+  esta_activo    Boolean  @default(true)
+  creado_en      DateTime @default(now())
+  actualizado_en DateTime @updatedAt
+
+  // RELACIONES
+  perfil           Perfil?
+  usuario_carrera  UsuarioCarrera[]
+  apuntes          Apunte[]
+  comentarios      Comentario[]
+  votos            Voto[]
+  reportes_creados Reporte[]  @relation("ReporteCreadoPor")
+  reportes_revisados Reporte[] @relation("ReporteRevisadoPor")
+
+  @@map("usuarios")
+}
+
+// ╰─────────────────────────────✧────────────────────────────────╮
+
+model Perfil {
+  id              String   @id @default(uuid())
+  usuario_id      String   @unique
+  nombre_usuario  String   @unique
+  nombre_completo String?
+  biografia       String?
+  campus          String?  @db.VarChar(12)
+  creado_en       DateTime @default(now())
+  actualizado_en  DateTime @updatedAt
+
+  usuario Usuario @relation(fields: [usuario_id], references: [id])
+
+  @@map("perfiles")
+}
+
+// ╰─────────────────────────────✧────────────────────────────────╮
+
+model Carrera {
+  id         String   @id @default(uuid())
+  nombre     String
+  codigo     String   @unique
+  descripcion String?
+
+  usuario_carrera UsuarioCarrera[]
+  ramo_carrera    RamoCarrera[]
+
+  @@map("carreras")
+}
+
+// ╰─────────────────────────────✧────────────────────────────────╮
+
+model Ramo {
+  id          String   @id @default(uuid())
+  nombre      String
+  codigo      String   @unique
+  semestre    Int?
+  descripcion String?
+
+  ramo_carrera RamoCarrera[]
+  apuntes      Apunte[]
+
+  @@map("ramos")
+}
+
+// ╰─────────────────────────────✧────────────────────────────────╮
+
+// debo ver si implementar esto 
+
+model Hashtag {
+  id        String   @id @default(uuid())
+  nombre    String   @unique
+  creado_en DateTime @default(now())
+
+  apuntes ApunteHashtag[]
+
+  @@map("hashtags")
+}
+
+// ╰─────────────────────────────✧────────────────────────────────╮
+
+model UsuarioCarrera {
+  usuario_id   String
+  carrera_id   String
+  anio_ingreso Int?
+
+  usuario Usuario @relation(fields: [usuario_id], references: [id])
+  carrera Carrera @relation(fields: [carrera_id], references: [id])
+
+  @@id([usuario_id, carrera_id])
+  @@map("usuarios_carreras")
+}
+
+// ╰─────────────────────────────✧────────────────────────────────╮
+
+model RamoCarrera {
+  ramo_id    String
+  carrera_id String
+
+  ramo    Ramo    @relation(fields: [ramo_id], references: [id])
+  carrera Carrera @relation(fields: [carrera_id], references: [id])
+
+  @@id([ramo_id, carrera_id])
+  @@map("ramos_carreras")
+}
+
+//──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+// TABLAS POLIMÓRFICAS UNIFICADAS (comentario, voto, archivo comparten estructura entre módulos)
+//──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+model Comentario {
+  id               String   @id @default(uuid())
+  autor_id         String
+  tipo_contenido   String   
+  contenido_id     String
+  padre_id         String?
+  nivel            Int      @default(0)
+  contenido        String
+  votos_neto       Int      @default(0)
+  es_respuesta_aceptada Boolean @default(false)
+  creado_en        DateTime @default(now())
+
+  autor Usuario        @relation(fields: [autor_id], references: [id])
+  padre Comentario?    @relation("ComentarioRespuesta", fields: [padre_id], references: [id])
+  respuestas Comentario[] @relation("ComentarioRespuesta")
+
+  @@index([tipo_contenido, contenido_id])
+  @@index([padre_id])
+  @@map("comentarios")
+}
+
+// ╰─────────────────────────────✧────────────────────────────────╮
+
+model Voto {
+  usuario_id     String
+  tipo_contenido String 
+  contenido_id   String
+  tipo           String // up, down
+  creado_en      DateTime @default(now())
+
+  usuario Usuario @relation(fields: [usuario_id], references: [id])
+
+  @@id([usuario_id, tipo_contenido, contenido_id])
+  @@index([tipo_contenido, contenido_id])
+  @@map("votos")
+}
+
+// ╰─────────────────────────────✧────────────────────────────────╮
+
+model Archivo {
+  id             String   @id @default(uuid())
+  tipo_contenido String  
+  contenido_id   String   
+  nombre_archivo String
+  ruta_url       String
+  tipo_mime      String?
+  tamanio        Int?
+
+  @@index([tipo_contenido, contenido_id])
+  @@map("archivos")
+}
+
+//───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+// MÓDULO 1: REPOSITORIO DE MATERIALES 
+//───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+model Apunte {
+  id                String   @id @default(uuid())
+  autor_id          String
+  ramo_id           String
+  titulo            String
+  descripcion       String?
+  tipo              String   @default("apunte") 
+  link_repositorio  String?   
+  codigo_snippet    String?   
+  votos_neto        Int      @default(0)
+  creado_en         DateTime @default(now())
+  actualizado_en    DateTime @updatedAt
+
+  // RELACIONES
+  autor    Usuario @relation(fields: [autor_id], references: [id])
+  ramo     Ramo    @relation(fields: [ramo_id], references: [id])
+  hashtags  ApunteHashtag[]
+
+  @@index([ramo_id])
+  @@index([tipo])
+  @@map("apuntes")
+}
+
+// ╰─────────────────────────────✧────────────────────────────────╮
+
+// Relación muchos a muchos (apunte <-> hashtag)
+
+model ApunteHashtag {
+  apunte_id  String
+  hashtag_id String
+
+  apunte   Apunte   @relation(fields: [apunte_id], references: [id])
+  hashtag  Hashtag  @relation(fields: [hashtag_id], references: [id])
+
+  @@id([apunte_id, hashtag_id])
+  @@map("apuntes_hashtags")
+}
+
+//───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+// MODERACIÓN 
+//───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+model Reporte {
+  id             String   @id @default(uuid())
+  reportado_por  String
+  tipo_contenido String  
+  contenido_id   String
+  motivo         String  
+  detalle        String?
+  estado         String   @default("pendiente") 
+  revisado_por   String?
+  revisado_en    DateTime?
+  creado_en      DateTime @default(now())
+
+  reportador Usuario  @relation("ReporteCreadoPor", fields: [reportado_por], references: [id])
+  revisor    Usuario? @relation("ReporteRevisadoPor", fields: [revisado_por], references: [id])
+
+  @@index([tipo_contenido, contenido_id])
+  @@index([estado])
+  @@map("reportes")
+}
