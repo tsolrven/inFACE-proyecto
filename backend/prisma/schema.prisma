@@ -79,8 +79,6 @@ model Ramo {
 
 // ╰─────────────────────────────✧────────────────────────────────╮
 
-// debo ver si implementar esto 
-
 model Hashtag {
   id        String   @id @default(uuid())
   nombre    String   @unique
@@ -119,7 +117,7 @@ model RamoCarrera {
 }
 
 //──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-// TABLAS POLIMÓRFICAS UNIFICADAS (comentario, voto, archivo comparten estructura entre módulos)
+// TABLAS POLIMÓRFICAS UNIFICADAS
 //──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 model Comentario {
@@ -134,8 +132,8 @@ model Comentario {
   es_respuesta_aceptada Boolean @default(false)
   creado_en        DateTime @default(now())
 
-  autor Usuario        @relation(fields: [autor_id], references: [id])
-  padre Comentario?    @relation("ComentarioRespuesta", fields: [padre_id], references: [id])
+  autor      Usuario      @relation(fields: [autor_id], references: [id])
+  padre      Comentario?  @relation("ComentarioRespuesta", fields: [padre_id], references: [id])
   respuestas Comentario[] @relation("ComentarioRespuesta")
 
   @@index([tipo_contenido, contenido_id])
@@ -149,7 +147,7 @@ model Voto {
   usuario_id     String
   tipo_contenido String 
   contenido_id   String
-  tipo           String // up, down
+  tipo           String
   creado_en      DateTime @default(now())
 
   usuario Usuario @relation(fields: [usuario_id], references: [id])
@@ -192,9 +190,9 @@ model Apunte {
   actualizado_en    DateTime @updatedAt
 
   // RELACIONES
-  autor    Usuario @relation(fields: [autor_id], references: [id])
-  ramo     Ramo    @relation(fields: [ramo_id], references: [id])
-  hashtags  ApunteHashtag[]
+  autor    Usuario       @relation(fields: [autor_id], references: [id])
+  ramo     Ramo          @relation(fields: [ramo_id], references: [id])
+  hashtags ApunteHashtag[]
 
   @@index([ramo_id])
   @@index([tipo])
@@ -203,14 +201,12 @@ model Apunte {
 
 // ╰─────────────────────────────✧────────────────────────────────╮
 
-// Relación muchos a muchos (apunte <-> hashtag)
-
 model ApunteHashtag {
   apunte_id  String
   hashtag_id String
 
-  apunte   Apunte   @relation(fields: [apunte_id], references: [id])
-  hashtag  Hashtag  @relation(fields: [hashtag_id], references: [id])
+  apunte  Apunte  @relation(fields: [apunte_id], references: [id], onDelete: Cascade)
+  hashtag Hashtag @relation(fields: [hashtag_id], references: [id])
 
   @@id([apunte_id, hashtag_id])
   @@map("apuntes_hashtags")
