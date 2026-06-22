@@ -320,6 +320,8 @@ model IntegranteProyecto {
   usuario_id       String
   rol_en_proyecto  String?  @db.VarChar(50)
   fecha_union      DateTime @default(now())
+  fue_expulsado    Boolean   @default(false)   
+  fecha_expulsion  DateTime?                   
 
   proyecto Proyecto @relation(fields: [proyecto_id], references: [id])
   usuario  Usuario  @relation(fields: [usuario_id], references: [id])
