@@ -1,0 +1,45 @@
+import { votar } from '../services/voto.service.js';
+import ApiResponse from '../utils/ApiResponse.js';
+import { BadRequestError } from '../errors/AppError.js';
+// ────────────────────────────────────────────────────────────────────────────────────────
+async function votarApunte(req, res, next) {
+  try {
+    const { tipo } = req.body;
+    if (!['up', 'down'].includes(tipo)) {
+      return next(
+        new BadRequestError('Tipo de voto inválido, debe ser "up" o "down"'),
+      );
+    }
+    const resultado = await votar({
+      usuario_id: req.usuario.id,
+      contenido_id: req.params.apunte_id,
+      tipo_contenido: 'apunte',
+      tipo,
+    });
+    return ApiResponse.success(res, resultado);
+  } catch (err) {
+    next(err);
+  }
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+async function votarComentario(req, res, next) {
+  try {
+    const { tipo } = req.body;
+    if (!['up', 'down'].includes(tipo)) {
+      return next(
+        new BadRequestError('Tipo de voto inválido, debe ser "up" o "down"'),
+      );
+    }
+    const resultado = await votar({
+      usuario_id: req.usuario.id,
+      contenido_id: req.params.comentario_id,
+      tipo_contenido: 'comentario',
+      tipo,
+    });
+    return ApiResponse.success(res, resultado);
+  } catch (err) {
+    next(err);
+  }
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+export { votarApunte, votarComentario };
