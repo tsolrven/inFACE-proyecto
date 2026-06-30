@@ -1,8 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './stores/authStore';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Home from './pages/Home';
+import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
+import Layout from './components/Layout';
+import { allProtectedRoutes } from './config/navConfig';
 
 function ProtectedRoute({ children }) {
   const usuario = useAuthStore((s) => s.usuario);
@@ -22,7 +23,7 @@ function GuestRoute({ children }) {
     children
   ) : (
     <Navigate
-      to='/home'
+      to='/'
       replace
     />
   );
@@ -31,15 +32,6 @@ function GuestRoute({ children }) {
 function AppRoutes() {
   return (
     <Routes>
-      <Route
-        path='/'
-        element={
-          <Navigate
-            to='/login'
-            replace
-          />
-        }
-      />
       <Route
         path='/login'
         element={
@@ -57,13 +49,29 @@ function AppRoutes() {
         }
       />
       <Route
-        path='/home'
         element={
           <ProtectedRoute>
-            <Home />
+            <Layout />
           </ProtectedRoute>
         }
-      />
+      >
+        {allProtectedRoutes.map(({ path, element }) =>
+          path === '/' ? (
+            <Route
+              key={path}
+              index
+              element={element}
+            />
+          ) : (
+            <Route
+              key={path}
+              path={path}
+              element={element}
+            />
+          ),
+        )}
+      </Route>
+
       <Route
         path='*'
         element={
