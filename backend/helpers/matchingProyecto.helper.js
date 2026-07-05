@@ -224,6 +224,7 @@ function formatearPostulacion(p) {
         id: p.id,
         proyecto_id: p.proyecto_id,
         titulo_proyecto: p.proyecto?.titulo_proyecto,
+        estado_proyecto: p.proyecto?.estado_proyecto,
         estado: p.estado_postulacion,
         mensaje: p.mensaje_postulacion,
         fecha_postulacion: p.fecha_postulacion,
@@ -231,6 +232,11 @@ function formatearPostulacion(p) {
             id: p.postulante.id,
             nombre_usuario: p.postulante.perfil?.nombre_usuario,
             nombre_completo: p.postulante.perfil?.nombre_completo,
+        } : undefined,
+        creador: p.proyecto?.creador ? {
+            id: p.proyecto.creador.id,
+            nombre_usuario: p.proyecto.creador.perfil?.nombre_usuario,
+            nombre_completo: p.proyecto.creador.perfil?.nombre_completo,
         } : undefined,
     };
 }
