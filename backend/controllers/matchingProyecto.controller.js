@@ -6,6 +6,7 @@ import {
         eliminarProyecto,
         postularProyecto,
         obtenerPostulacionesProyecto,
+        obtenerPostulacionesUsuario,
         responderPostulacion,
         eliminarPostulacion,
         eliminarPostulacionRechazada,
@@ -102,6 +103,15 @@ async function listarPostulacionesController(req, res) {
 
 // ╰─────────────────────────────✧────────────────────────────────╮
 
+async function listarPostulacionesUsuarioController(req, res) {
+        const postulaciones = await obtenerPostulacionesUsuario(req.usuario.id);
+        res.json({ ok: true, data: postulaciones });
+}
+
+// ╰─────────────────────────────✧────────────────────────────────╮
+
+// ╰─────────────────────────────✧────────────────────────────────╮
+
 async function responderPostulacionController(req, res) {
         const resultado = await responderPostulacion(
                 req.params.postulacion_id,
@@ -184,6 +194,7 @@ export const actualizar = manejarController(actualizarController);
 export const eliminar = manejarController(eliminarController);
 export const postular = manejarController(postularController);
 export const listarPostulaciones = manejarController(listarPostulacionesController);
+export const listarPostulacionesUsuario = manejarController(listarPostulacionesUsuarioController);
 export const responderPostulacionExport = manejarController(responderPostulacionController);
 export const eliminarPostulacionExport = manejarController(eliminarPostulacionController);
 export const eliminarPostulacionRechazadaExport = manejarController(eliminarPostulacionRechazadaController);

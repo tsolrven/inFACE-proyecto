@@ -52,12 +52,13 @@ async function crearProyecto({ creador_id, titulo_proyecto, descripcion_proyecto
 
 // ╰─────────────────────────────✧────────────────────────────────╮
 
-async function obtenerProyectos({ modalidad, estado, etiqueta_ids = [], pagina = 1, limite = 10 }) {
+async function obtenerProyectos({ modalidad, estado, etiqueta_ids = [], creador_id, pagina = 1, limite = 10 }) {
     const skip = (pagina - 1) * limite;
 
     const where = {
         ...(modalidad && { modalidad_proyecto: modalidad }),
         ...(estado && { estado_proyecto: estado }),
+        ...(creador_id && { creador_id }),
         ...(etiqueta_ids.length > 0 && {
             etiquetas: {
                 some: { etiqueta_id: { in: etiqueta_ids } },
@@ -236,6 +237,25 @@ async function obtenerPostulacionesProyecto(proyecto_id, usuario_id, rol) {
 
     return postulacionesConHistorial;
 }
+
+// ╰─────────────────────────────✧────────────────────────────────╮
+
+async function obtenerPostulacionesUsuario(usuario_id) {
+    //* todas las postulaciones que ha hecho el usuario, en cualquier proyecto
+    const postulaciones = await prisma.postulacionProyecto.findMany({
+        where: { postulante_id: usuario_id },
+        include: {
+            proyecto: {
+                include: { creador: { include: { perfil: true } } },
+            },
+        },
+        orderBy: { fecha_postulacion: 'desc' },
+    });
+
+    return postulaciones.map(formatearPostulacion);
+}
+
+// ╰─────────────────────────────✧────────────────────────────────╮
 
 // ╰─────────────────────────────✧────────────────────────────────╮
 
@@ -449,6 +469,7 @@ export {
     eliminarProyecto,
     postularProyecto,
     obtenerPostulacionesProyecto,
+    obtenerPostulacionesUsuario,
     responderPostulacion,
     eliminarPostulacion,
     eliminarPostulacionRechazada,

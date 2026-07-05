@@ -7,6 +7,7 @@ import {
     eliminar,
     postular,
     listarPostulaciones,
+    listarPostulacionesUsuario,
     responderPostulacionExport,
     eliminarPostulacionExport,
     eliminarPostulacionRechazadaExport,
@@ -41,6 +42,7 @@ router.delete('/:id', autenticar, verificarCreador, eliminar); // DEL  /api/proy
 
 router.post('/:id/postular', autenticar, postular); // POST /api/proyecto/:id/postular
 router.get('/:id/postulaciones', autenticar, listarPostulaciones); // GET  /api/proyecto/:id/postulaciones
+router.get('/:id/postulaciones/usuario', autenticar, listarPostulacionesUsuario); // GET  /api/proyecto/:id/postulaciones/usuario
 router.patch('/:id/postulaciones/:postulacion_id', autenticar, responderPostulacionExport); // PATCH /api/proyecto/:id/postulaciones/:postulacion_id
 router.delete('/:id/postulaciones/:postulacion_id', autenticar, eliminarPostulacionExport);                 // DELETE /api/proyecto/:id/postulaciones/:postulacion_id  (postulante retira la suya)
 router.delete('/:id/postulaciones/:postulacion_id/rechazada', autenticar, verificarCreador, eliminarPostulacionRechazadaExport); // DELETE /api/proyecto/:id/postulaciones/:postulacion_id/rechazada (creador limpia rechazadas)
