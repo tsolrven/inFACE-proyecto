@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
+import { listarCarreras } from '../../services/repositorioMateriales/ramo.service';
 
 function parseApiError(err) {
   if (err.details && Array.isArray(err.details)) {
@@ -21,10 +22,24 @@ export default function Register() {
     correo: '',
     contrasena: '',
     nombre_usuario: '',
+    carrera_id: '',
   });
   const [errors, setErrors] = useState({ fields: {}, general: null });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  const [carreras, setCarreras] = useState([]);
+  const [cargandoCarreras, setCargandoCarreras] = useState(true);
+  const [errorCarreras, setErrorCarreras] = useState(false);
+
+  // GET /repositorio/carreras es pública a propósito: acá todavía no
+  // existe cuenta ni token, así que no puede pedir un endpoint protegido.
+  useEffect(() => {
+    listarCarreras()
+      .then(setCarreras)
+      .catch(() => setErrorCarreras(true))
+      .finally(() => setCargandoCarreras(false));
+  }, []);
 
   function handleChange(e) {
     const { name, value } = e.target;
@@ -53,7 +68,7 @@ export default function Register() {
     }
   }
 
-  const fields = [
+  const camposAntesDeCarrera = [
     {
       id: 'correo',
       label: 'Correo institucional',
@@ -68,14 +83,15 @@ export default function Register() {
       autoComplete: 'username',
       placeholder: 'mi_usuario_123',
     },
-    {
-      id: 'contrasena',
-      label: 'Contraseña',
-      type: 'password',
-      autoComplete: 'new-password',
-      placeholder: '••••••••',
-    },
   ];
+
+  const campoContrasena = {
+    id: 'contrasena',
+    label: 'Contraseña',
+    type: 'password',
+    autoComplete: 'new-password',
+    placeholder: '••••••••',
+  };
 
   return (
     <div className='min-h-screen bg-neutral-950 flex items-center justify-center px-4'>
@@ -114,37 +130,121 @@ export default function Register() {
           noValidate
           className='space-y-4'
         >
-          {fields.map(({ id, label, type, autoComplete, placeholder }) => (
-            <div key={id}>
-              <label
-                htmlFor={id}
-                className='block text-xs font-medium text-neutral-400 mb-1.5'
-              >
-                {label}
-              </label>
-              <input
-                id={id}
-                name={id}
-                type={type}
-                autoComplete={autoComplete}
-                value={form[id]}
-                onChange={handleChange}
-                placeholder={placeholder}
-                className={`w-full rounded-lg border bg-neutral-900 px-4 py-2.5 text-sm text-white placeholder-neutral-600 outline-none transition
+          {camposAntesDeCarrera.map(
+            ({ id, label, type, autoComplete, placeholder }) => (
+              <div key={id}>
+                <label
+                  htmlFor={id}
+                  className='block text-xs font-medium text-neutral-400 mb-1.5'
+                >
+                  {label}
+                </label>
+                <input
+                  id={id}
+                  name={id}
+                  type={type}
+                  autoComplete={autoComplete}
+                  value={form[id]}
+                  onChange={handleChange}
+                  placeholder={placeholder}
+                  className={`w-full rounded-lg border bg-neutral-900 px-4 py-2.5 text-sm text-white placeholder-neutral-600 outline-none transition
                   focus:ring-2 focus:ring-indigo-500 focus:border-transparent
                   ${
                     errors.fields[id]
                       ? 'border-red-500/60'
                       : 'border-neutral-800 hover:border-neutral-600'
                   }`}
-              />
-              {errors.fields[id] && (
-                <p className='mt-1.5 text-xs text-red-400'>
-                  {errors.fields[id]}
-                </p>
-              )}
-            </div>
-          ))}
+                />
+                {errors.fields[id] && (
+                  <p className='mt-1.5 text-xs text-red-400'>
+                    {errors.fields[id]}
+                  </p>
+                )}
+              </div>
+            ),
+          )}
+
+          {/* Select de carrera — poblado desde GET /repositorio/carreras (pública) */}
+          <div>
+            <label
+              htmlFor='carrera_id'
+              className='block text-xs font-medium text-neutral-400 mb-1.5'
+            >
+              Carrera
+            </label>
+            <select
+              id='carrera_id'
+              name='carrera_id'
+              value={form.carrera_id}
+              onChange={handleChange}
+              disabled={cargandoCarreras || errorCarreras}
+              className={`w-full rounded-lg border bg-neutral-900 px-4 py-2.5 text-sm text-white outline-none transition
+                focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:opacity-50
+                ${
+                  errors.fields.carrera_id
+                    ? 'border-red-500/60'
+                    : 'border-neutral-800 hover:border-neutral-600'
+                }`}
+            >
+              <option
+                value=''
+                disabled
+              >
+                {cargandoCarreras
+                  ? 'Cargando carreras…'
+                  : 'Selecciona tu carrera'}
+              </option>
+              {carreras.map((carrera) => (
+                <option
+                  key={carrera.id}
+                  value={carrera.id}
+                >
+                  {carrera.nombre}
+                </option>
+              ))}
+            </select>
+            {errors.fields.carrera_id && (
+              <p className='mt-1.5 text-xs text-red-400'>
+                {errors.fields.carrera_id}
+              </p>
+            )}
+            {errorCarreras && (
+              <p className='mt-1.5 text-xs text-red-400'>
+                No se pudo cargar la lista de carreras. Recarga la página.
+              </p>
+            )}
+          </div>
+
+          {/* Campo contraseña */}
+          <div>
+            <label
+              htmlFor={campoContrasena.id}
+              className='block text-xs font-medium text-neutral-400 mb-1.5'
+            >
+              {campoContrasena.label}
+            </label>
+            <input
+              id={campoContrasena.id}
+              name={campoContrasena.id}
+              type={campoContrasena.type}
+              autoComplete={campoContrasena.autoComplete}
+              value={form[campoContrasena.id]}
+              onChange={handleChange}
+              placeholder={campoContrasena.placeholder}
+              className={`w-full rounded-lg border bg-neutral-900 px-4 py-2.5 text-sm text-white placeholder-neutral-600 outline-none transition
+                focus:ring-2 focus:ring-indigo-500 focus:border-transparent
+                ${
+                  errors.fields.contrasena
+                    ? 'border-red-500/60'
+                    : 'border-neutral-800 hover:border-neutral-600'
+                }`}
+            />
+            {errors.fields.contrasena && (
+              <p className='mt-1.5 text-xs text-red-400'>
+                {errors.fields.contrasena}
+              </p>
+            )}
+          </div>
 
           {/* Hint de contraseña */}
           <p className='text-xs text-neutral-600'>

@@ -23,6 +23,8 @@ import AcercaDeInFace from '../pages/recursos/AcercaDeInFace';
 import ReglasInFace from '../pages/legal/ReglasInFace';
 import PoliticasPrivacidad from '../pages/legal/PoliticasPrivacidad';
 import AcuerdosUsuario from '../pages/legal/AcuerdosUsuario';
+
+import MaterialDetailModal from '../components/repositorioMateriales/MaterialDetailModal';
 // ──────────────────────────────────────────────────────────────────────────
 export const topNavItems = [
   { path: '/', label: 'Inicio', icon: 'ti-home', element: <Inicio /> },
@@ -167,4 +169,14 @@ export const allProtectedRoutes = [
   ...topNavItems,
   ...navSections.flatMap((section) => section.items),
   ...footerLinks,
+];
+// ──────────────────────────────────────────────────────────────────────────
+// Rutas que se renderizan COMO MODAL (encima del feed), pero que también
+// funcionan como página normal si alguien entra directo al link.
+// Ver App.jsx: se dibujan en un <Routes> aparte cuando hay backgroundLocation.
+export const modalRoutes = [
+  {
+    path: '/repositorio-materiales/:id',
+    element: <MaterialDetailModal />,
+  },
 ];

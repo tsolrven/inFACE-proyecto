@@ -28,11 +28,16 @@ async function handleResponse(res) {
   return data;
 }
 // ─────────────────────────────────────────────────────────────────────────────
-export async function register({ correo, contrasena, nombre_usuario }) {
+export async function register({
+  correo,
+  contrasena,
+  nombre_usuario,
+  carrera_id,
+}) {
   const res = await fetch(`${API_URL}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ correo, contrasena, nombre_usuario }),
+    body: JSON.stringify({ correo, contrasena, nombre_usuario, carrera_id }),
     credentials: 'include',
   });
   return handleResponse(res);
@@ -43,11 +48,11 @@ export async function login({ correo, contrasena }) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ correo, contrasena }),
-    credentials: 'include', 
+    credentials: 'include',
   });
   const data = await handleResponse(res);
   setAccessToken(data.data.accessToken);
-  return data.data; 
+  return data.data;
 }
 
 export async function logout() {
@@ -57,7 +62,7 @@ export async function logout() {
   });
   clearAccessToken();
 }
-
+// ─────────────────────────────────────────────────────────────────────────────
 export async function refreshAccessToken() {
   const res = await fetch(`${API_URL}/auth/refresh`, {
     method: 'POST',
@@ -66,4 +71,14 @@ export async function refreshAccessToken() {
   const data = await handleResponse(res);
   setAccessToken(data.data.accessToken);
   return data.data.accessToken;
+}
+// ─────────────────────────────────────────────────────────────────────────────
+export async function obtenerPerfilActual() {
+  const res = await fetch(`${API_URL}/auth/me`, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${getAccessToken()}` },
+    credentials: 'include',
+  });
+  const data = await handleResponse(res);
+  return data.data;
 }
