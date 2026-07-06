@@ -52,6 +52,24 @@ async function listarController(req, res) {
 
 // ╰─────────────────────────────✧────────────────────────────────╮
 
+async function listarMisProyectosController(req, res) {
+        const resultado = await obtenerProyectos({
+                creador_id: req.usuario.id,
+                pagina: 1,
+                limite: 100,
+        });
+
+        res.json({
+                ok: true,
+                datos: resultado.datos,
+                total: resultado.total,
+                pagina: resultado.pagina,
+                total_paginas: resultado.total_paginas,
+        });
+}
+
+// ╰─────────────────────────────✧────────────────────────────────╮
+
 async function obtenerUnoController(req, res) {
         const proyecto = await obtenerProyectoPorId(req.params.id);
         res.json({ ok: true, data: proyecto });
@@ -189,6 +207,7 @@ async function listarFavoritosController(req, res) {
 
 export const crear = manejarController(crearController);
 export const listar = manejarController(listarController);
+export const listarMisProyectos = manejarController(listarMisProyectosController);
 export const obtenerUno = manejarController(obtenerUnoController);
 export const actualizar = manejarController(actualizarController);
 export const eliminar = manejarController(eliminarController);

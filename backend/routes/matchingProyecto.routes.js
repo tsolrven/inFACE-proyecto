@@ -6,6 +6,7 @@ import {
     actualizar,
     eliminar,
     postular,
+    listarMisProyectos,
     listarPostulaciones,
     listarPostulacionesUsuario,
     responderPostulacionExport,
@@ -27,6 +28,8 @@ const router = express.Router();
 //──────────────────────────────────────────────────────────────────────────────
 // *se deja listar favoritos al final para evitar confusiones con el endpoint de obtener un proyecto por id (GET /api/proyecto/:id)
 router.get('/favoritos', autenticar, listarFavoritos); // GET  /api/proyecto/favoritos
+router.get('/postulaciones/usuario', autenticar, listarPostulacionesUsuario);
+router.get('/mios', autenticar, listarMisProyectos);
 
 router.get('/', autenticar, listar); // GET  /api/proyecto
 router.post('/', autenticar, crear); // POST /api/proyecto
@@ -42,7 +45,6 @@ router.delete('/:id', autenticar, verificarCreador, eliminar); // DEL  /api/proy
 
 router.post('/:id/postular', autenticar, postular); // POST /api/proyecto/:id/postular
 router.get('/:id/postulaciones', autenticar, listarPostulaciones); // GET  /api/proyecto/:id/postulaciones
-router.get('/:id/postulaciones/usuario', autenticar, listarPostulacionesUsuario); // GET  /api/proyecto/:id/postulaciones/usuario
 router.patch('/:id/postulaciones/:postulacion_id', autenticar, responderPostulacionExport); // PATCH /api/proyecto/:id/postulaciones/:postulacion_id
 router.delete('/:id/postulaciones/:postulacion_id', autenticar, eliminarPostulacionExport);                 // DELETE /api/proyecto/:id/postulaciones/:postulacion_id  (postulante retira la suya)
 router.delete('/:id/postulaciones/:postulacion_id/rechazada', autenticar, verificarCreador, eliminarPostulacionRechazadaExport); // DELETE /api/proyecto/:id/postulaciones/:postulacion_id/rechazada (creador limpia rechazadas)
