@@ -4,7 +4,7 @@ import { autenticar } from '../middlewares/auth.middleware.js';
 
 const router = express.Router();
 
-router.get('/:apunte_id', listar);
+router.get('/:apunte_id', autenticar, listar);
 router.post('/:apunte_id', autenticar, crear);
 
 export default router;

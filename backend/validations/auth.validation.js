@@ -20,6 +20,10 @@ const ERROR_MESSAGES = {
     pattern: 'Solo letras, números y guiones bajos',
     required: 'El nombre de usuario es requerido',
   },
+  carrera: {
+    invalid: 'Selecciona una carrera válida',
+    required: 'Debes seleccionar tu carrera',
+  },
 };
 // ─────────────────────────────────────────────────────────────────────────────
 const DOMINIOS_PERMITIDOS = ['@alumnos.ubiobio.cl', '@ubiobio.cl'];
@@ -65,6 +69,10 @@ const registerSchema = z.object({
     .min(3, ERROR_MESSAGES.username.min)
     .max(30, ERROR_MESSAGES.username.max)
     .regex(/^[a-zA-Z0-9_]+$/, ERROR_MESSAGES.username.pattern),
+
+  carrera_id: z
+    .string({ required_error: ERROR_MESSAGES.carrera.required })
+    .uuid(ERROR_MESSAGES.carrera.invalid),
 });
 // ─────────────────────────────────────────────────────────────────────────────
 const loginSchema = z.object({

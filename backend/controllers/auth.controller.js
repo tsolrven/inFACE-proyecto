@@ -1,4 +1,9 @@
-import { registrar, iniciarSesion, refrescarToken } from '../services/auth.service.js';
+import {
+  registrar,
+  iniciarSesion,
+  refrescarToken,
+  obtenerUsuarioActual,
+} from '../services/auth.service.js';
 import ApiResponse from '../utils/ApiResponse.js';
 import logger from '../lib/logger.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
@@ -14,13 +19,15 @@ async function register(req, res, next) {
     const usuario = await registrar(req.body);
     return ApiResponse.created(res, usuario);
   } catch (err) {
-    next(err); 
+    next(err);
   }
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function login(req, res, next) {
   try {
-    const { accessToken, refreshToken, usuario } = await iniciarSesion(req.body);
+    const { accessToken, refreshToken, usuario } = await iniciarSesion(
+      req.body,
+    );
     res.cookie('refreshToken', refreshToken, REFRESH_COOKIE_OPTS);
     return ApiResponse.success(res, { accessToken, usuario });
   } catch (err) {
@@ -43,4 +50,16 @@ async function logout(req, res) {
   return ApiResponse.success(res, { mensaje: 'Sesión cerrada' });
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-export { register, login, refresh, logout };
+// GET /auth/me — protegido con `autenticar`, devuelve quién es el dueño
+// del access token actual. Lo usa el frontend para recuperar la sesión
+// tras un F5 (ver authStore.js → init()).
+async function me(req, res, next) {
+  try {
+    const usuario = await obtenerUsuarioActual(req.usuario.id);
+    return ApiResponse.success(res, usuario);
+  } catch (err) {
+    next(err);
+  }
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+export { register, login, refresh, logout, me };

@@ -10,8 +10,8 @@ import { autenticar } from '../middlewares/auth.middleware.js';
 
 const router = express.Router();
 
-router.get('/', listar);
-router.get('/:id', detalle);
+router.get('/', autenticar, listar);
+router.get('/:id', autenticar, detalle);
 router.post('/', autenticar, crear);
 router.patch('/:id', autenticar, actualizar);
 router.delete('/:id', autenticar, eliminar);

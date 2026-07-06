@@ -8,6 +8,7 @@ import {
   ForbiddenError,
 } from '../errors/AppError.js';
 import logger from '../lib/logger.js';
+import { MIME_MAP } from '../helpers/tipoArchivo.helper.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,44 +16,103 @@ const __dirname = path.dirname(__filename);
 async function listarApuntes({
   ramo_id,
   tipo,
+  tipo_archivo, 
   orden = 'recientes',
   pagina = 1,
   limite = 20,
+  usuario_id, 
 }) {
   const where = {};
   if (ramo_id) where.ramo_id = ramo_id;
   if (tipo) where.tipo = tipo;
 
+  if (tipo_archivo && MIME_MAP[tipo_archivo]) {
+    const archivosMatch = await prisma.archivo.findMany({
+      where: {
+        tipo_contenido: 'apunte',
+        OR: MIME_MAP[tipo_archivo].map((prefix) => ({
+          tipo_mime: { startsWith: prefix },
+        })),
+      },
+      select: { contenido_id: true },
+      distinct: ['contenido_id'],
+    });
+    const idsConEseTipo = archivosMatch.map((a) => a.contenido_id);
+    if (idsConEseTipo.length === 0) {
+      return { apuntes: [], total: 0, pagina, paginas: 0 };
+    }
+    where.id = { in: idsConEseTipo };
+  }
+
   const orderBy =
     orden === 'populares' ? { votos_neto: 'desc' } : { creado_en: 'desc' };
 
-  const [apuntes, total] = await Promise.all([
-    prisma.apunte.findMany({
-      where,
-      orderBy,
-      skip: (pagina - 1) * limite,
-      take: limite,
-      include: {
-        autor: { include: { perfil: { select: { nombre_usuario: true } } } },
-        ramo: {
-          select: { id: true, nombre: true, codigo: true, semestre: true },
-        },
-        hashtags: { include: { hashtag: { select: { nombre: true } } } },
-        _count: { select: { hashtags: true } },
+const [apuntes, total] = await Promise.all([
+  prisma.apunte.findMany({
+    where,
+    orderBy,
+    skip: (pagina - 1) * limite,
+    take: limite,
+    include: {
+      autor: { include: { perfil: { select: { nombre_usuario: true } } } },
+      ramo: {
+        select: { id: true, nombre: true, codigo: true, semestre: true },
       },
+      hashtags: { include: { hashtag: { select: { nombre: true } } } },
+    },
+  }),
+  prisma.apunte.count({ where }),
+]);
+
+  const ids = apuntes.map((a) => a.id);
+
+  const [conteoComentarios, archivos, misVotos] = await Promise.all([
+    prisma.comentario.groupBy({
+      by: ['contenido_id'],
+      where: { tipo_contenido: 'apunte', contenido_id: { in: ids } },
+      _count: { _all: true },
     }),
-    prisma.apunte.count({ where }),
+    prisma.archivo.findMany({
+      where: { tipo_contenido: 'apunte', contenido_id: { in: ids } },
+    }),
+    usuario_id
+      ? prisma.voto.findMany({
+          where: {
+            usuario_id,
+            tipo_contenido: 'apunte',
+            contenido_id: { in: ids },
+          },
+        })
+      : Promise.resolve([]),
   ]);
 
+  const mapComentarios = Object.fromEntries(
+    conteoComentarios.map((c) => [c.contenido_id, c._count._all]),
+  );
+  const mapArchivos = {};
+  for (const arch of archivos) {
+    if (!mapArchivos[arch.contenido_id]) mapArchivos[arch.contenido_id] = [];
+    mapArchivos[arch.contenido_id].push(arch);
+  }
+  const mapVotos = Object.fromEntries(
+    misVotos.map((v) => [v.contenido_id, v.tipo]),
+  );
+
   return {
-    apuntes: apuntes.map(formatearApunte),
+    apuntes: apuntes.map((a) =>
+      formatearApunte(a, {
+        comentarios: mapComentarios[a.id] || 0,
+        archivos: mapArchivos[a.id] || [],
+        mi_voto: mapVotos[a.id] || null,
+      }),
+    ),
     total,
     pagina,
     paginas: Math.ceil(total / limite),
   };
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-async function obtenerApunte(id) {
+async function obtenerApunte(id, usuario_id) {
   const apunte = await prisma.apunte.findUnique({
     where: { id },
     include: {
@@ -63,14 +123,33 @@ async function obtenerApunte(id) {
       hashtags: { include: { hashtag: { select: { nombre: true } } } },
     },
   });
-
   if (!apunte) throw new NotFoundError('Apunte');
 
-  const archivos = await prisma.archivo.findMany({
-    where: { tipo_contenido: 'apunte', contenido_id: id },
-  });
+  const [archivos, comentariosCount, miVoto] = await Promise.all([
+    prisma.archivo.findMany({
+      where: { tipo_contenido: 'apunte', contenido_id: id },
+    }),
+    prisma.comentario.count({
+      where: { tipo_contenido: 'apunte', contenido_id: id },
+    }),
+    usuario_id
+      ? prisma.voto.findUnique({
+          where: {
+            usuario_id_tipo_contenido_contenido_id: {
+              usuario_id,
+              tipo_contenido: 'apunte',
+              contenido_id: id,
+            },
+          },
+        })
+      : Promise.resolve(null),
+  ]);
 
-  return { ...formatearApunte(apunte), archivos };
+  return formatearApunte(apunte, {
+    comentarios: comentariosCount,
+    archivos,
+    mi_voto: miVoto?.tipo || null,
+  });
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function crearApunte({
@@ -246,13 +325,17 @@ async function resolverHashtags(hashtags) {
   );
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-function formatearApunte(apunte) {
+function formatearApunte(
+  apunte,
+  { comentarios = 0, archivos = [], mi_voto = null } = {},
+) {
   return {
     id: apunte.id,
     titulo: apunte.titulo,
     descripcion: apunte.descripcion,
     tipo: apunte.tipo,
     votos_neto: apunte.votos_neto,
+    mi_voto, // 'up' | 'down' | null
     link_repositorio: apunte.link_repositorio,
     codigo_snippet: apunte.codigo_snippet,
     creado_en: apunte.creado_en,
@@ -263,6 +346,9 @@ function formatearApunte(apunte) {
     },
     ramo: apunte.ramo,
     hashtags: apunte.hashtags.map((h) => h.hashtag.nombre),
+    archivos,
+    comentarios_count: comentarios,
+    descargas: null, // placeholder, lógica pendiente
   };
 }
 // ────────────────────────────────────────────────────────────────────────────────────────

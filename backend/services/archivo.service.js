@@ -2,15 +2,26 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { prisma } from '../config/configDb.js';
-import { NotFoundError } from '../errors/AppError.js';
+import { BadRequestError, NotFoundError } from '../errors/AppError.js';
 import logger from '../lib/logger.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 // ────────────────────────────────────────────────────────────────────────────────────────
+const MAX_ARCHIVOS_POR_APUNTE = 10;
+
 async function subirArchivo({ apunte_id, file }) {
   const apunte = await prisma.apunte.findUnique({ where: { id: apunte_id } });
   if (!apunte) throw new NotFoundError('Apunte');
+
+  const cantidadActual = await prisma.archivo.count({
+    where: { tipo_contenido: 'apunte', contenido_id: apunte_id },
+  });
+  if (cantidadActual >= MAX_ARCHIVOS_POR_APUNTE) {
+    throw new BadRequestError(
+      `No puedes subir más de ${MAX_ARCHIVOS_POR_APUNTE} archivos por apunte`,
+    );
+  }
 
   const archivo = await prisma.archivo.create({
     data: {
