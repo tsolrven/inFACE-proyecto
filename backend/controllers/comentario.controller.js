@@ -3,7 +3,6 @@ import {
   crearComentario,
 } from '../services/comentario.service.js';
 import ApiResponse from '../utils/ApiResponse.js';
-import { BadRequestError } from '../errors/appError.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function listar(req, res, next) {
   try {
@@ -17,9 +16,6 @@ async function listar(req, res, next) {
 async function crear(req, res, next) {
   try {
     const { contenido, padre_id } = req.body;
-    if (!contenido || contenido.trim() === '') {
-      return next(new BadRequestError('El contenido no puede estar vacío'));
-    }
     const comentario = await crearComentario({
       autor_id: req.usuario.id,
       apunte_id: req.params.apunte_id,
