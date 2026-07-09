@@ -65,6 +65,13 @@ const registerSchema = z.object({
     .min(3, ERROR_MESSAGES.username.min)
     .max(30, ERROR_MESSAGES.username.max)
     .regex(/^[a-zA-Z0-9_]+$/, ERROR_MESSAGES.username.pattern),
+
+  etiqueta_ids: z
+    .array(z.string().uuid('Etiqueta inválida'))
+    .max(15, 'Puedes seleccionar como máximo 15 intereses')
+    .optional()
+    .default([]),
+
 });
 // ─────────────────────────────────────────────────────────────────────────────
 const loginSchema = z.object({

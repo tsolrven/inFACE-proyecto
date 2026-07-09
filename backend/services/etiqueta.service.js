@@ -22,4 +22,23 @@ async function obtenerEtiquetas({ q } = {}) {
     }));
 }
 
-export { obtenerEtiquetas };
+// ╰─────────────────────────────✧────────────────────────────────╮
+
+/*
+ * Verifica que todas las etiquetas enviadas existan y estén aprobadas.
+ * Se usa antes de guardar intereses de usuario o etiquetas de proyecto.
+ */
+async function validarEtiquetasExisten(ids = []) {
+    if (!ids?.length) return;
+
+    const unicos = [...new Set(ids)];
+    const encontradas = await prisma.etiqueta.count({
+        where: { id: { in: unicos }, estado: 'aprobada' },
+    });
+
+    if (encontradas !== unicos.length) {
+        throw new BadRequestError('Una o más etiquetas seleccionadas no existen o no están aprobadas');
+    }
+}
+
+export { obtenerEtiquetas, validarEtiquetasExisten };

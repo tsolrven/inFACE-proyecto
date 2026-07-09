@@ -11,6 +11,8 @@ import {
   ForbiddenError,
   ValidationError,
 } from '../errors/AppError.js';
+import { validarEtiquetasExisten } from './etiqueta.service.js';
+
 // ────────────────────────────────────────────────────────────────────────────────────────
 function determinarRolPorCorreo(correo) {
   if (correo.endsWith('@alumnos.ubiobio.cl')) {
@@ -38,8 +40,10 @@ async function registrar({ correo, contrasena, nombre_usuario }) {
     throw new ConflictError('El nombre de usuario ya está en uso');
   }
 
+  await validarEtiquetasExisten(etiqueta_ids);
+
   const rol = determinarRolPorCorreo(correo);
-  
+
   const hash = await bcrypt.hash(contrasena, 10);
 
   const usuario = await prisma.usuario.create({
@@ -51,9 +55,15 @@ async function registrar({ correo, contrasena, nombre_usuario }) {
         create: {
           nombre_usuario,
         },
+        usuario_etiquetas: {
+          create: [...new Set(etiqueta_ids)].map((etiqueta_id) => ({ etiqueta_id })),
+        },
       },
     },
-    include: { perfil: true },
+    include: {
+      perfil: true,
+      usuario_etiquetas: { include: { etiqueta: true } },
+    },
   });
 
   return {
@@ -61,6 +71,10 @@ async function registrar({ correo, contrasena, nombre_usuario }) {
     correo: usuario.correo,
     rol: usuario.rol,
     nombre_usuario: usuario.perfil.nombre_usuario,
+    intereses: usuario.usuario_etiquetas.map((ue) => ({
+      id: ue.etiqueta.id,
+      nombre: ue.etiqueta.nombre_etiqueta,
+    })),
   };
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
