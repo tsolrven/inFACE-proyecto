@@ -11,7 +11,7 @@ import {
   ForbiddenError,
   ValidationError,
   NotFoundError,
-} from '../errors/AppError.js';
+} from '../errors/appError.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 function determinarRolPorCorreo(correo) {
   if (correo.endsWith('@alumnos.ubiobio.cl')) {

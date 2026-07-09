@@ -1,6 +1,6 @@
 //! middleware de validación de datos que usa zod para verificar que los datos enviados por el cliente cumplan con un esquema definido
 
-import { ValidationError } from '../errors/AppError.js';
+import { ValidationError } from '../errors/appError.js';
 
 const validate = (schema, source = 'body') => {
   return (req, res, next) => {

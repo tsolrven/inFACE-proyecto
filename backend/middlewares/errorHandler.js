@@ -6,7 +6,7 @@ import {
   ConflictError,
   NotFoundError,
   InternalError,
-} from '../errors/AppError.js';
+} from '../errors/appError.js';
 import ApiResponse from '../utils/ApiResponse.js';
 import logger from '../lib/logger.js';
 

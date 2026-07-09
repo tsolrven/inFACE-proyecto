@@ -1,5 +1,5 @@
 import { prisma } from '../config/configDb.js';
-import { BadRequestError, NotFoundError } from '../errors/AppError.js';
+import { BadRequestError, NotFoundError } from '../errors/appError.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function listarComentarios(apunte_id) {
   const comentarios = await prisma.comentario.findMany({

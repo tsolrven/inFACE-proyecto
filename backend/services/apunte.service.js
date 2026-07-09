@@ -6,7 +6,7 @@ import {
   BadRequestError,
   NotFoundError,
   ForbiddenError,
-} from '../errors/AppError.js';
+} from '../errors/appError.js';
 import logger from '../lib/logger.js';
 import { MIME_MAP } from '../helpers/tipoArchivo.helper.js';
 // ────────────────────────────────────────────────────────────────────────────────────────

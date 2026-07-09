@@ -3,7 +3,7 @@ import {
   crearComentario,
 } from '../services/comentario.service.js';
 import ApiResponse from '../utils/ApiResponse.js';
-import { BadRequestError } from '../errors/AppError.js';
+import { BadRequestError } from '../errors/appError.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function listar(req, res, next) {
   try {

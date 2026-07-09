@@ -1,6 +1,6 @@
 import { subirArchivo, eliminarArchivo } from '../services/archivo.service.js';
 import ApiResponse from '../utils/ApiResponse.js';
-import { BadRequestError } from '../errors/AppError.js';
+import { BadRequestError } from '../errors/appError.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function subir(req, res, next) {
   try {

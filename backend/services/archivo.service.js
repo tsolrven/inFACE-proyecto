@@ -2,7 +2,7 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { prisma } from '../config/configDb.js';
-import { BadRequestError, NotFoundError } from '../errors/AppError.js';
+import { BadRequestError, NotFoundError } from '../errors/appError.js';
 import logger from '../lib/logger.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 const __filename = fileURLToPath(import.meta.url);
