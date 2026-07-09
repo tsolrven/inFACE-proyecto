@@ -1,26 +1,37 @@
 import { prisma } from '../config/configDb.js';
-import { BadRequestError, NotFoundError } from '../errors/appError.js';
+import { BadRequestError, NotFoundError } from '../errors/AppError.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function listarComentarios(apunte_id) {
   const comentarios = await prisma.comentario.findMany({
-    where: {
-      tipo_contenido: 'apunte',
-      contenido_id: apunte_id,
-      padre_id: null,
-    },
+    where: { tipo_contenido: 'apunte', contenido_id: apunte_id },
     orderBy: { creado_en: 'asc' },
     include: {
       autor: { include: { perfil: { select: { nombre_usuario: true } } } },
-      respuestas: {
-        orderBy: { creado_en: 'asc' },
-        include: {
-          autor: { include: { perfil: { select: { nombre_usuario: true } } } },
-        },
-      },
     },
   });
 
-  return comentarios.map(formatearComentario);
+  return construirArbolComentarios(comentarios);
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+function construirArbolComentarios(comentarios) {
+  const nodosPorId = new Map();
+  const raices = [];
+
+  for (const c of comentarios) {
+    nodosPorId.set(c.id, { ...formatearComentario(c), respuestas: [] });
+  }
+
+  for (const c of comentarios) {
+    const nodo = nodosPorId.get(c.id);
+    const padre = c.padre_id ? nodosPorId.get(c.padre_id) : null;
+    if (padre) {
+      padre.respuestas.push(nodo);
+    } else {
+      raices.push(nodo);
+    }
+  }
+
+  return raices;
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function crearComentario({ autor_id, apunte_id, contenido, padre_id }) {
@@ -56,7 +67,6 @@ async function crearComentario({ autor_id, apunte_id, contenido, padre_id }) {
   return formatearComentario(comentario);
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-//* CON ESTA SOLO ME DA NIVEL 0 Y 1 DE COMENTARIOS
 function formatearComentario(comentario) {
   return {
     id: comentario.id,
@@ -68,9 +78,6 @@ function formatearComentario(comentario) {
       id: comentario.autor.id,
       nombre_usuario: comentario.autor.perfil?.nombre_usuario,
     },
-    respuestas: comentario.respuestas
-      ? comentario.respuestas.map(formatearComentario)
-      : [],
   };
 }
 // ────────────────────────────────────────────────────────────────────────────────────────

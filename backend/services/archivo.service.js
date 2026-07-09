@@ -2,17 +2,39 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { prisma } from '../config/configDb.js';
-import { BadRequestError, NotFoundError } from '../errors/appError.js';
+import {
+  BadRequestError,
+  NotFoundError,
+  ForbiddenError,
+} from '../errors/AppError.js';
 import logger from '../lib/logger.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 // ────────────────────────────────────────────────────────────────────────────────────────
 const MAX_ARCHIVOS_POR_APUNTE = 10;
+const ROLES_STAFF = ['admin', 'moderador'];
 
-async function subirArchivo({ apunte_id, file }) {
-  const apunte = await prisma.apunte.findUnique({ where: { id: apunte_id } });
-  if (!apunte) throw new NotFoundError('Apunte');
+async function verificarPropietarioContenido(tipo_contenido, contenido_id) {
+  if (tipo_contenido === 'apunte') {
+    const apunte = await prisma.apunte.findUnique({
+      where: { id: contenido_id },
+      select: { autor_id: true },
+    });
+    if (!apunte) throw new NotFoundError('Apunte');
+    return apunte.autor_id;
+  }
+  throw new BadRequestError(`Tipo de contenido "${tipo_contenido}" inválido`);
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+async function subirArchivo({ apunte_id, file, usuario_id, rol }) {
+  const autor_id = await verificarPropietarioContenido('apunte', apunte_id);
+
+  if (autor_id !== usuario_id && !ROLES_STAFF.includes(rol)) {
+    throw new ForbiddenError(
+      'No tienes permiso para subir archivos a este apunte',
+    );
+  }
 
   const cantidadActual = await prisma.archivo.count({
     where: { tipo_contenido: 'apunte', contenido_id: apunte_id },
@@ -44,9 +66,18 @@ async function subirArchivo({ apunte_id, file }) {
   return archivo;
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-async function eliminarArchivo(id) {
+async function eliminarArchivo(id, usuario_id, rol) {
   const archivo = await prisma.archivo.findUnique({ where: { id } });
   if (!archivo) throw new NotFoundError('Archivo');
+
+  const autor_id = await verificarPropietarioContenido(
+    archivo.tipo_contenido,
+    archivo.contenido_id,
+  );
+
+  if (autor_id !== usuario_id && !ROLES_STAFF.includes(rol)) {
+    throw new ForbiddenError('No tienes permiso para eliminar este archivo');
+  }
 
   const rutaFisica = path.join(__dirname, '..', archivo.ruta_url);
   if (fs.existsSync(rutaFisica)) {

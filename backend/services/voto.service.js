@@ -1,6 +1,30 @@
 import { prisma } from '../config/configDb.js';
+import { BadRequestError, NotFoundError } from '../errors/AppError.js';
+// ────────────────────────────────────────────────────────────────────────────────────────
+// evita votos "huérfanos": si contenido_id no corresponde a un apunte o
+// comentario real (UUID inventado, contenido ya borrado, etc.), cortamos
+// acá con un 404 en vez de dejar crear el Voto igual.
+async function verificarContenidoExiste(tipo_contenido, contenido_id) {
+  if (tipo_contenido === 'apunte') {
+    const existe = await prisma.apunte.findUnique({
+      where: { id: contenido_id },
+      select: { id: true },
+    });
+    if (!existe) throw new NotFoundError('Apunte');
+  } else if (tipo_contenido === 'comentario') {
+    const existe = await prisma.comentario.findUnique({
+      where: { id: contenido_id },
+      select: { id: true },
+    });
+    if (!existe) throw new NotFoundError('Comentario');
+  } else {
+    throw new BadRequestError(`Tipo de contenido "${tipo_contenido}" inválido`);
+  }
+}
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function votar({ usuario_id, contenido_id, tipo_contenido, tipo }) {
+  await verificarContenidoExiste(tipo_contenido, contenido_id);
+
   const votoExistente = await prisma.voto.findUnique({
     where: {
       usuario_id_tipo_contenido_contenido_id: {
@@ -13,7 +37,7 @@ async function votar({ usuario_id, contenido_id, tipo_contenido, tipo }) {
 
   if (votoExistente) {
     if (votoExistente.tipo === tipo) {
-      // Si vota igual, elimina el voto (toggle)
+      // si vota igual elimina el voto (toggle)
       await prisma.voto.delete({
         where: {
           usuario_id_tipo_contenido_contenido_id: {
@@ -26,7 +50,7 @@ async function votar({ usuario_id, contenido_id, tipo_contenido, tipo }) {
       await actualizarVotosNeto(contenido_id, tipo_contenido);
       return { mensaje: 'Voto eliminado' };
     } else {
-      // Si vota distinto, actualiza el voto
+      // si vota distinto actualiza el voto
       await prisma.voto.update({
         where: {
           usuario_id_tipo_contenido_contenido_id: {
