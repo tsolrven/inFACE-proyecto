@@ -1,5 +1,3 @@
-// backend/src/helpers/matching.helper.js
-
 import { ValidationError } from '../errors/appError.js';
 import logger from '../lib/logger.js';
 
@@ -171,10 +169,12 @@ function incluirProyectoCompleto() {
 /*
  * Formatea un proyecto para la respuesta de la API
  */
-function formatearProyecto(p) {
+function formatearProyecto(p, opciones = {}) {
     if (!p) return null;
 
-    return {
+    const etiquetasProyectoIds = p.etiquetas?.map((e) => e.etiqueta.id) || [];
+
+    const proyectoFormateado = {
         id: p.id,
         titulo: p.titulo_proyecto,
         descripcion: p.descripcion_proyecto,
@@ -201,13 +201,22 @@ function formatearProyecto(p) {
         total_postulaciones: p._count?.postulaciones || 0,
         total_integrantes: p._count?.integrantes || 0,
     };
+
+    if (opciones.etiquetasUsuarioIds) {
+        proyectoFormateado.porcentaje_match = calcularPorcentajeMatch(
+            etiquetasProyectoIds,
+            opciones.etiquetasUsuarioIds,
+        );
+    }
+
+    return proyectoFormateado;
 }
 
 /*
  * Formatea una lista de proyectos
  */
-function formatearProyectos(proyectos) {
-    return proyectos.map(formatearProyecto);
+function formatearProyectos(proyectos, opciones = {}) {
+    return proyectos.map((p) => formatearProyecto(p, opciones));
 }
 
 //──────────────────────────────────────────────────────────────────────────────
@@ -391,6 +400,18 @@ function manejarController(fn) {
             manejarErrorController(err, res);
         }
     };
+}
+
+//──────────────────────────────────────────────────────────────────────────────
+// 9. HELPERS DE MATCHING 
+//──────────────────────────────────────────────────────────────────────────────
+function calcularPorcentajeMatch(etiquetasProyectoIds = [], etiquetasUsuarioIds = []) {
+    if (!etiquetasProyectoIds.length || !etiquetasUsuarioIds.length) return 0;
+
+    const setUsuario = new Set(etiquetasUsuarioIds);
+    const coincidencias = etiquetasProyectoIds.filter((id) => setUsuario.has(id)).length;
+
+    return Math.round((coincidencias / etiquetasProyectoIds.length) * 100);
 }
 
 //──────────────────────────────────────────────────────────────────────────────

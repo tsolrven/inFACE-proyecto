@@ -459,6 +459,60 @@ async function obtenerFavoritos(usuario_id) {
     return favoritos.map(f => formatearProyecto(f.proyecto));
 }
 
+//──────────────────────────────────────────────────────────────────────────────
+// PORCETAJE DE MATCHING
+//──────────────────────────────────────────────────────────────────────────────
+async function obtenerProyectosRecomendados(usuario_id, { pagina = 1, limite = 20 } = {}) {
+    const intereses = await prisma.usuarioEtiqueta.findMany({
+        where: { usuario_id },
+        select: { etiqueta_id: true },
+    });
+    const etiquetasUsuarioIds = intereses.map((i) => i.etiqueta_id);
+
+    const [postulacionesActivas, integraciones] = await Promise.all([
+        prisma.postulacionProyecto.findMany({
+            where: { postulante_id: usuario_id, estado_postulacion: { in: ['pendiente', 'aceptada'] } },
+            select: { proyecto_id: true },
+        }),
+        prisma.integranteProyecto.findMany({
+            where: { usuario_id, fue_expulsado: false },
+            select: { proyecto_id: true },
+        }),
+    ]);
+
+    const idsExcluidos = [
+        ...postulacionesActivas.map((p) => p.proyecto_id),
+        ...integraciones.map((i) => i.proyecto_id),
+    ];
+
+    const proyectos = await prisma.proyecto.findMany({
+        where: {
+            estado_proyecto: 'abierto',
+            creador_id: { not: usuario_id },
+            ...(idsExcluidos.length > 0 && { id: { notIn: idsExcluidos } }),
+        },
+        include: incluirProyectoCompleto(),
+        orderBy: { fecha_creacion: 'desc' },
+    });
+
+    //* se calcula el % de coincidencia de cada proyecto y se ordena de mayor a menor
+    //* (el sort de JS es estable, así que ante empate se conserva el orden por más reciente)
+    const formateados = formatearProyectos(proyectos, { etiquetasUsuarioIds });
+    formateados.sort((a, b) => b.porcentaje_match - a.porcentaje_match);
+
+    const total = formateados.length;
+    const skip = (pagina - 1) * limite;
+    const datos = formateados.slice(skip, skip + limite);
+
+    return {
+        datos,
+        total,
+        pagina,
+        total_paginas: Math.ceil(total / limite) || 1,
+        tiene_intereses: etiquetasUsuarioIds.length > 0,
+    };
+}
+
 // ╰─────────────────────────────✧────────────────────────────────╮
 
 export {

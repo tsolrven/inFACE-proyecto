@@ -17,6 +17,7 @@ import {
     salirse,
     favorito,
     listarFavoritos,
+    listarRecomendados,
 } from '../controllers/matchingProyecto.controller.js';
 import { autenticar, autorizar } from '../middlewares/auth.middleware.js';
 import { verificarCreador } from '../middlewares/matchingProyecto.middleware.js';
@@ -30,6 +31,7 @@ const router = express.Router();
 router.get('/favoritos', autenticar, listarFavoritos); // GET  /api/proyecto/favoritos
 router.get('/postulaciones/usuario', autenticar, listarPostulacionesUsuario);
 router.get('/mios', autenticar, listarMisProyectos);
+router.get('/recomendados', autenticar, listarRecomendados); // GET  /api/proyecto/recomendados (matching por etiquetas)
 
 router.get('/', autenticar, listar); // GET  /api/proyecto
 router.post('/', autenticar, crear); // POST /api/proyecto

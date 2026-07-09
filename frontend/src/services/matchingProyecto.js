@@ -178,3 +178,22 @@ export async function listarFavoritos() {
     const data = await request('/proyecto/favoritos');
     return data.data || [];
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RECOMENDADOS (matching por etiquetas)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function listarProyectosRecomendados({ pagina, limite } = {}) {
+    const params = new URLSearchParams();
+    params.set('pagina', pagina || 1);
+    params.set('limite', limite || 20);
+
+    const data = await request(`/proyecto/recomendados?${params.toString()}`);
+    return {
+        datos: data.datos || [],
+        total: data.total || 0,
+        pagina: data.pagina || 1,
+        total_paginas: data.total_paginas || 1,
+        tieneIntereses: data.tiene_intereses ?? true,
+    };
+}

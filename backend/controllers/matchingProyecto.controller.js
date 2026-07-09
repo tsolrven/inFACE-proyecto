@@ -204,6 +204,26 @@ async function listarFavoritosController(req, res) {
         res.json({ ok: true, data: favoritos });
 }
 
+//──────────────────────────────────────────────────────────────────────────────
+// RECOMENDADOS
+//──────────────────────────────────────────────────────────────────────────────
+async function listarRecomendadosController(req, res) {
+        const { pagina, limite } = req.query;
+
+        const resultado = await obtenerProyectosRecomendados(req.usuario.id, {
+                pagina: Number(pagina) || 1,
+                limite: Number(limite) || 20,
+        });
+
+        res.json({
+                ok: true,
+                datos: resultado.datos,
+                total: resultado.total,
+                pagina: resultado.pagina,
+                total_paginas: resultado.total_paginas,
+                tiene_intereses: resultado.tiene_intereses,
+        });
+}
 
 export const crear = manejarController(crearController);
 export const listar = manejarController(listarController);
@@ -222,3 +242,4 @@ export const expulsar = manejarController(expulsarController);
 export const salirse = manejarController(salirseController);
 export const favorito = manejarController(favoritoController);
 export const listarFavoritos = manejarController(listarFavoritosController);
+export const listarRecomendados = manejarController(listarRecomendadosController);
