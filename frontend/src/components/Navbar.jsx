@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 
 function getInitials(nombreUsuario) {
@@ -13,6 +14,7 @@ function getInitials(nombreUsuario) {
 
 export default function Navbar() {
   const { usuario, logout } = useAuthStore();
+  const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -82,6 +84,10 @@ export default function Navbar() {
               <DropdownItem
                 icon='ti-user'
                 label='Ver perfil'
+                onClick={() => {
+                  setDropdownOpen(false);
+                  navigate('/perfil');
+                }}
               />
               <div className='mx-0 my-0.5 h-px bg-white/[0.07]' />
               <DropdownItem
@@ -109,10 +115,11 @@ export default function Navbar() {
   );
 }
 
-function DropdownItem({ icon, label }) {
+function DropdownItem({ icon, label, onClick }) {
   return (
     <button
       type='button'
+      onClick={onClick}
       className='group flex w-full items-center gap-2.5 px-[15px] py-[9px] text-left text-[13px] text-neutral-400 transition-colors hover:bg-white/[0.04] hover:text-neutral-100'
     >
       <i

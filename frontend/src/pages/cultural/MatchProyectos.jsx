@@ -27,8 +27,10 @@ import DetalleProyecto from './DetalleProyecto';
 import PostularModal from './PostularModal';
 import PostulacionesModal from './PostulacionesModal';
 import IntegrantesModal from './IntegrantesModal';
+import DescubrirTab from './DescubrirTab';
 
 const TABS = [
+  { id: 'descubrir', label: 'Descubrir', icon: 'ti-flame' },
   { id: 'explorar', label: 'Explorar', icon: 'ti-compass' },
   { id: 'mis', label: 'Mis proyectos', icon: 'ti-folder' },
   { id: 'postulaciones', label: 'Mis postulaciones', icon: 'ti-inbox' },
@@ -37,7 +39,8 @@ const TABS = [
 
 export default function MatchProyectos() {
   const usuario = useAuthStore((s) => s.usuario);
-  const [tab, setTab] = useState('explorar');
+  //const [tab, setTab] = useState('explorar');
+  const [tab, setTab] = useState('descubrir');
 
   // datos globales usados por varias pestañas
   const [favoritos, setFavoritos] = useState([]);
@@ -45,11 +48,11 @@ export default function MatchProyectos() {
   const [misPostulaciones, setMisPostulaciones] = useState([]);
   const [misPostulacionesLoaded, setMisPostulacionesLoaded] = useState(false);
 
-  const [modalCrear, setModalCrear] = useState(null); 
-  const [proyectoDetalle, setProyectoDetalle] = useState(null); 
-  const [modalPostular, setModalPostular] = useState(null); 
-  const [modalPostulaciones, setModalPostulaciones] = useState(null); 
-  const [modalIntegrantes, setModalIntegrantes] = useState(null); 
+  const [modalCrear, setModalCrear] = useState(null);
+  const [proyectoDetalle, setProyectoDetalle] = useState(null);
+  const [modalPostular, setModalPostular] = useState(null);
+  const [modalPostulaciones, setModalPostulaciones] = useState(null);
+  const [modalIntegrantes, setModalIntegrantes] = useState(null);
 
   const favoritosIds = useMemo(() => new Set(favoritos.map((p) => p.id)), [favoritos]);
 
@@ -168,6 +171,17 @@ export default function MatchProyectos() {
           />
         ) : (
           <>
+            {tab === 'descubrir' && (
+              <DescubrirTab
+                usuario={usuario}
+                favoritosIds={favoritosIds}
+                postuladosActivos={postuladosActivos}
+                onToggleFavorito={handleToggleFavorito}
+                onVerDetalle={handleVerDetalle}
+                onPostularClick={setModalPostular}
+                onIrExplorar={() => setTab('explorar')}
+              />
+            )}
             {tab === 'explorar' && (
               <ExplorarTab
                 usuario={usuario}

@@ -1,4 +1,5 @@
 import { prisma } from '../config/configDb.js';
+import { BadRequestError } from '../errors/appError.js';
 
 async function obtenerEtiquetas({ q } = {}) {
     const etiquetas = await prisma.etiqueta.findMany({

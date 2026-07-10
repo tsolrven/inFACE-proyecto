@@ -4,6 +4,7 @@ import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import Layout from './components/Layout';
 import { allProtectedRoutes } from './config/navConfig';
+import Perfil from './pages/Perfil';
 
 function ProtectedRoute({ children }) {
   const usuario = useAuthStore((s) => s.usuario);
@@ -70,6 +71,11 @@ function AppRoutes() {
             />
           ),
         )}
+
+        <Route
+          path='/perfil'
+          element={<Perfil />}
+        />
       </Route>
 
       <Route

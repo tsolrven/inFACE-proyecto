@@ -28,11 +28,11 @@ async function handleResponse(res) {
   return data;
 }
 // ─────────────────────────────────────────────────────────────────────────────
-export async function register({ correo, contrasena, nombre_usuario }) {
+export async function register({ correo, contrasena, nombre_usuario, etiqueta_ids = [] }) {
   const res = await fetch(`${API_URL}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ correo, contrasena, nombre_usuario }),
+    body: JSON.stringify({ correo, contrasena, nombre_usuario, etiqueta_ids }),
     credentials: 'include',
   });
   return handleResponse(res);

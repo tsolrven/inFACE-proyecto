@@ -532,4 +532,5 @@ export {
     salirseDeProyecto,
     toggleFavorito,
     obtenerFavoritos,
+    obtenerProyectosRecomendados,
 };

@@ -15,6 +15,7 @@ import {
         salirseDeProyecto,
         toggleFavorito,
         obtenerFavoritos,
+        obtenerProyectosRecomendados,
 } from '../services/matchingProyecto.service.js';
 import { manejarController } from '../helpers/matchingProyecto.helper.js';
 

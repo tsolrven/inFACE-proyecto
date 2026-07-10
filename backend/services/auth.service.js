@@ -25,7 +25,7 @@ function determinarRolPorCorreo(correo) {
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 //! función register momentanea hasta que sepamos bien como va a ser el registro
-async function registrar({ correo, contrasena, nombre_usuario }) {
+async function registrar({ correo, contrasena, nombre_usuario, etiqueta_ids = [] }) {
   const usuarioExiste = await prisma.usuario.findUnique({
     where: { correo },
   });
@@ -55,9 +55,11 @@ async function registrar({ correo, contrasena, nombre_usuario }) {
         create: {
           nombre_usuario,
         },
-        usuario_etiquetas: {
-          create: [...new Set(etiqueta_ids)].map((etiqueta_id) => ({ etiqueta_id })),
-        },
+      },
+      usuario_etiquetas: {
+        create: [...new Set(etiqueta_ids)].map((etiqueta_id) => ({
+          etiqueta_id,
+        })),
       },
     },
     include: {

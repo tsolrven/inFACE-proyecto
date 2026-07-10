@@ -9,13 +9,14 @@ const MAX_INTERESES = 15;
 // HELPERS
 //──────────────────────────────────────────────────────────────────────────────
 
-function formatearPerfil(usuario) {
+function formatearPerfil(usuario, stats = {}) {
     if (!usuario) return null;
 
     return {
         id: usuario.id,
         correo: usuario.correo,
         rol: usuario.rol,
+        creado_en: usuario.creado_en,
         nombre_usuario: usuario.perfil?.nombre_usuario ?? null,
         nombre_completo: usuario.perfil?.nombre_completo ?? null,
         biografia: usuario.perfil?.biografia ?? null,
@@ -25,6 +26,10 @@ function formatearPerfil(usuario) {
             nombre: ue.etiqueta.nombre_etiqueta,
             tipo: ue.etiqueta.tipo_etiqueta?.nombre_tipo_etiqueta ?? null,
         })),
+        stats: {
+            proyectos_creados: stats.proyectos_creados ?? 0,
+            postulaciones_enviadas: stats.postulaciones_enviadas ?? 0,
+        },
     };
 }
 
@@ -42,14 +47,18 @@ function incluirPerfilCompleto() {
 //──────────────────────────────────────────────────────────────────────────────
 
 async function obtenerPerfilPropio(usuario_id) {
-    const usuario = await prisma.usuario.findUnique({
-        where: { id: usuario_id },
-        include: incluirPerfilCompleto(),
-    });
+    const [usuario, proyectos_creados, postulaciones_enviadas] = await Promise.all([
+        prisma.usuario.findUnique({
+            where: { id: usuario_id },
+            include: incluirPerfilCompleto(),
+        }),
+        prisma.proyecto.count({ where: { creador_id: usuario_id } }),
+        prisma.postulacionProyecto.count({ where: { postulante_id: usuario_id } }),
+    ]);
 
     if (!usuario) throw new NotFoundError('Usuario');
 
-    return formatearPerfil(usuario);
+    return formatearPerfil(usuario, { proyectos_creados, postulaciones_enviadas });
 }
 
 // ╰─────────────────────────────✧────────────────────────────────╮
