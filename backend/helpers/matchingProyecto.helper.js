@@ -414,6 +414,35 @@ function calcularPorcentajeMatch(etiquetasProyectoIds = [], etiquetasUsuarioIds 
     return Math.round((coincidencias / etiquetasProyectoIds.length) * 100);
 }
 
+/*
+ * Calcula el % de coincidencia entre dos perfiles (unión de intereses, tipo Jaccard),
+ * para "personas con perfil similar". Simétrico: no importa a quién se compare primero.
+ */
+function calcularPorcentajeMatchPerfiles(etiquetasAIds = [], etiquetasBIds = []) {
+    if (!etiquetasAIds.length || !etiquetasBIds.length) return 0;
+
+    const setA = new Set(etiquetasAIds);
+    const setB = new Set(etiquetasBIds);
+    const interseccion = [...setA].filter((id) => setB.has(id)).length;
+    const union = new Set([...setA, ...setB]).size;
+
+    return union ? Math.round((interseccion / union) * 100) : 0;
+}
+
+/*
+ * Formatea un usuario recomendado por afinidad de intereses ("perfil similar")
+ */
+function formatearUsuarioSimilar(u, etiquetasCompartidas, porcentaje) {
+    return {
+        id: u.id,
+        nombre_usuario: u.perfil?.nombre_usuario,
+        nombre_completo: u.perfil?.nombre_completo,
+        campus: u.perfil?.campus,
+        porcentaje_match: porcentaje,
+        etiquetas_compartidas: etiquetasCompartidas,
+    };
+}
+
 //──────────────────────────────────────────────────────────────────────────────
 // EXPORTS
 //──────────────────────────────────────────────────────────────────────────────
@@ -452,4 +481,8 @@ export {
     // Controller helpers
     manejarErrorController,
     manejarController,
+
+    // Matching de perfiles
+    calcularPorcentajeMatchPerfiles,
+    formatearUsuarioSimilar,
 };

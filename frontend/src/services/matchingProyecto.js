@@ -180,6 +180,15 @@ export async function listarFavoritos() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// DESCARTES ("no me interesa" en Descubrir — no vuelve a aparecer)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function descartarProyecto(proyectoId) {
+    const data = await request(`/proyecto/${proyectoId}/descartar`, { method: 'POST' });
+    return data.mensaje;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // RECOMENDADOS (matching por etiquetas)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -196,4 +205,18 @@ export async function listarProyectosRecomendados({ pagina, limite } = {}) {
         total_paginas: data.total_paginas || 1,
         tieneIntereses: data.tiene_intereses ?? true,
     };
+}
+
+export async function listarHabilidadesEnDemanda({ limite } = {}) {
+    const params = new URLSearchParams();
+    if (limite) params.set('limite', limite);
+    const data = await request(`/proyecto/habilidades-demanda?${params.toString()}`);
+    return data.datos || [];
+}
+
+export async function listarUsuariosSimilares({ limite } = {}) {
+    const params = new URLSearchParams();
+    if (limite) params.set('limite', limite);
+    const data = await request(`/proyecto/usuarios-similares?${params.toString()}`);
+    return data.datos || [];
 }

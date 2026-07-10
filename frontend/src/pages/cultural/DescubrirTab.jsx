@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { listarProyectosRecomendados } from '../../services/matchingProyecto';
+import {
+    listarProyectosRecomendados,
+    descartarProyecto,
+    listarHabilidadesEnDemanda,
+    listarUsuariosSimilares,
+} from '../../services/matchingProyecto';
 import { obtenerMiPerfil } from '../../services/perfil';
 import { getInitials, avatarColor, EstadoChip, ModalidadChip } from '../../helpers/matchHelpers';
 
@@ -28,6 +33,12 @@ export default function DescubrirTab({
     const [interesesIds, setInteresesIds] = useState(new Set());
     const [salida, setSalida] = useState(null); // 'izquierda' | 'derecha' | null
 
+    // ── panel lateral (solo aporta valor en pantallas anchas, pero se carga siempre) ──
+    const [habilidades, setHabilidades] = useState([]);
+    const [personasSimilares, setPersonasSimilares] = useState([]);
+    const [cargandoPanel, setCargandoPanel] = useState(true);
+    const [errorPersonas, setErrorPersonas] = useState(null);
+
     const drag = useRef({ activo: false, startX: 0, startY: 0, x: 0, y: 0 });
     const [dragPos, setDragPos] = useState({ x: 0, y: 0 });
 
@@ -49,9 +60,38 @@ export default function DescubrirTab({
         }
     }, []);
 
+    const cargarPanel = useCallback(async () => {
+        setCargandoPanel(true);
+        setErrorPersonas(null);
+
+        const [habRes, personasRes] = await Promise.allSettled([
+            listarHabilidadesEnDemanda({ limite: 8 }),
+            listarUsuariosSimilares({ limite: 6 }),
+        ]);
+
+        if (habRes.status === 'fulfilled') {
+            setHabilidades(habRes.value);
+        } else {
+            console.error('Error cargando habilidades en demanda:', habRes.reason);
+            setHabilidades([]);
+        }
+
+        if (personasRes.status === 'fulfilled') {
+            setPersonasSimilares(personasRes.value);
+        } else {
+            console.error('Error cargando perfiles similares:', personasRes.reason);
+            setErrorPersonas(personasRes.reason?.message || 'No se pudo cargar');
+            setPersonasSimilares([]);
+        }
+
+        setCargandoPanel(false);
+    }, []);
+
+
     useEffect(() => {
         cargar();
-    }, [cargar]);
+        cargarPanel();
+    }, [cargar, cargarPanel]);
 
     const actual = cola[0];
     const siguientes = cola.slice(1, 3);
@@ -65,9 +105,16 @@ export default function DescubrirTab({
     function handleSwipe(direccion) {
         if (!actual || salida) return;
         setSalida(direccion);
-        // "me interesa" = guardarlo en favoritos (si no lo estaba ya) para revisarlo con calma
-        if (direccion === 'derecha' && !favoritosIds.has(actual.id)) {
-            onToggleFavorito(actual.id);
+        if (direccion === 'derecha') {
+            // "me interesa" = guardarlo en favoritos (si no lo estaba ya) para revisarlo con calma;
+            // el proyecto no vuelve a aparecer aquí porque el backend excluye los ya favoritos
+            if (!favoritosIds.has(actual.id)) onToggleFavorito(actual.id);
+        } else {
+            // "no me interesa" = se descarta de forma permanente, no vuelve a mostrarse en Descubrir
+            descartarProyecto(actual.id).catch((err) => {
+                // se saca de la cola igual (mejor UX), pero se deja rastro del error para poder depurarlo
+                console.error('Error al descartar proyecto:', actual.id, err);
+            });
         }
         setTimeout(quitarActual, 260);
     }
@@ -119,150 +166,275 @@ export default function DescubrirTab({
     }
 
     return (
-        <div className='mx-auto max-w-[420px]'>
-            {!tieneIntereses && (
-                <div className='mb-4 flex items-center gap-3 rounded-[10px] border border-amber-500/25 bg-amber-500/10 px-3.5 py-2.5 text-[12px] text-amber-300'>
-                    <i className='ti ti-sparkles text-[16px]' />
-                    <span className='flex-1'>
-                        Aún no configuras tus intereses, así que estas recomendaciones son generales.
-                    </span>
-                    <button
-                        onClick={() => navigate('/perfil')}
-                        className='flex-shrink-0 font-semibold underline underline-offset-2'
-                    >
-                        Configurar
-                    </button>
-                </div>
-            )}
-
-            {actual ? (
-                <>
-                    <div className='mb-3 flex items-center justify-between text-[11.5px] text-neutral-600'>
-                        <span>{cola.length} proyecto{cola.length === 1 ? '' : 's'} recomendado{cola.length === 1 ? '' : 's'}</span>
-                        <span className='inline-flex items-center gap-1'>
-                            <i className='ti ti-arrows-left-right text-[13px]' /> Desliza o usa los botones
+        <div className='mx-auto grid max-w-[940px] gap-8 lg:grid-cols-[420px_1fr] lg:items-start'>
+            <div className='mx-auto w-full max-w-[420px]'>
+                {!tieneIntereses && (
+                    <div className='mb-4 flex items-center gap-3 rounded-[10px] border border-amber-500/25 bg-amber-500/10 px-3.5 py-2.5 text-[12px] text-amber-300'>
+                        <i className='ti ti-sparkles text-[16px]' />
+                        <span className='flex-1'>
+                            Aún no configuras tus intereses, así que estas recomendaciones son generales.
                         </span>
-                    </div>
-
-                    {/* MAZO DE TARJETAS */}
-                    <div className='relative h-[520px] select-none'>
-                        {siguientes
-                            .slice()
-                            .reverse()
-                            .map((p, i) => {
-                                const profundidad = siguientes.length - i; // 2, 1
-                                return (
-                                    <div
-                                        key={p.id}
-                                        className='absolute inset-0 rounded-2xl border border-white/[0.06] bg-[#1E1E24]'
-                                        style={{
-                                            transform: `translateY(${profundidad * 10}px) scale(${1 - profundidad * 0.035})`,
-                                            opacity: 1 - profundidad * 0.28,
-                                        }}
-                                    />
-                                );
-                            })}
-
-                        <div
-                            onPointerDown={onPointerDown}
-                            onPointerMove={onPointerMove}
-                            onPointerUp={onPointerUp}
-                            onPointerCancel={onPointerUp}
-                            className='absolute inset-0 cursor-grab touch-none overflow-hidden rounded-2xl border border-white/[0.08] bg-[#1E1E24] shadow-[0_20px_50px_rgba(0,0,0,0.45)] active:cursor-grabbing'
-                            style={{
-                                transform: transformActual(),
-                                transition: drag.current.activo ? 'none' : 'transform .28s ease',
-                            }}
+                        <button
+                            onClick={() => navigate('/perfil')}
+                            className='flex-shrink-0 font-semibold underline underline-offset-2'
                         >
-                            <TarjetaProyecto
-                                proyecto={actual}
-                                interesesIds={interesesIds}
-                            />
+                            Configurar
+                        </button>
+                    </div>
+                )}
 
-                            {/* sellos ME INTERESA / PASAR */}
+                {actual ? (
+                    <>
+                        <div className='mb-3 flex items-center justify-between text-[11.5px] text-neutral-600'>
+                            <span>{cola.length} proyecto{cola.length === 1 ? '' : 's'} recomendado{cola.length === 1 ? '' : 's'}</span>
+                            <span className='inline-flex items-center gap-1'>
+                                <i className='ti ti-arrows-left-right text-[13px]' /> Desliza o usa los botones
+                            </span>
+                        </div>
+
+                        {/* MAZO DE TARJETAS */}
+                        <div className='relative h-[520px] select-none'>
+                            {siguientes
+                                .slice()
+                                .reverse()
+                                .map((p, i) => {
+                                    const profundidad = siguientes.length - i; // 2, 1
+                                    return (
+                                        <div
+                                            key={p.id}
+                                            className='absolute inset-0 rounded-2xl border border-white/[0.06] bg-[#1E1E24]'
+                                            style={{
+                                                transform: `translateY(${profundidad * 10}px) scale(${1 - profundidad * 0.035})`,
+                                                opacity: 1 - profundidad * 0.28,
+                                            }}
+                                        />
+                                    );
+                                })}
+
                             <div
-                                className='pointer-events-none absolute left-5 top-6 -rotate-[18deg] rounded-lg border-[3px] border-emerald-400 px-3 py-1 text-[18px] font-black tracking-wider text-emerald-400'
-                                style={{ opacity: likeOpacity }}
+                                onPointerDown={onPointerDown}
+                                onPointerMove={onPointerMove}
+                                onPointerUp={onPointerUp}
+                                onPointerCancel={onPointerUp}
+                                className='absolute inset-0 cursor-grab touch-none overflow-hidden rounded-2xl border border-white/[0.08] bg-[#1E1E24] shadow-[0_20px_50px_rgba(0,0,0,0.45)] active:cursor-grabbing'
+                                style={{
+                                    transform: transformActual(),
+                                    transition: drag.current.activo ? 'none' : 'transform .28s ease',
+                                }}
                             >
-                                ME INTERESA
-                            </div>
-                            <div
-                                className='pointer-events-none absolute right-5 top-6 rotate-[18deg] rounded-lg border-[3px] border-red-400 px-3 py-1 text-[18px] font-black tracking-wider text-red-400'
-                                style={{ opacity: nopeOpacity }}
-                            >
-                                PASAR
+                                <TarjetaProyecto
+                                    proyecto={actual}
+                                    interesesIds={interesesIds}
+                                />
+
+                                {/* sellos ME INTERESA / PASAR */}
+                                <div
+                                    className='pointer-events-none absolute left-5 top-6 -rotate-[18deg] rounded-lg border-[3px] border-emerald-400 px-3 py-1 text-[18px] font-black tracking-wider text-emerald-400'
+                                    style={{ opacity: likeOpacity }}
+                                >
+                                    ME INTERESA
+                                </div>
+                                <div
+                                    className='pointer-events-none absolute right-5 top-6 rotate-[18deg] rounded-lg border-[3px] border-red-400 px-3 py-1 text-[18px] font-black tracking-wider text-red-400'
+                                    style={{ opacity: nopeOpacity }}
+                                >
+                                    PASAR
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    {/* BOTONES DE ACCIÓN */}
-                    <div className='mt-5 flex items-center justify-center gap-3'>
-                        <button
-                            title='Pasar'
-                            onClick={() => handleSwipe('izquierda')}
-                            className='flex h-12 w-12 items-center justify-center rounded-full border border-white/[0.08] bg-[#1E1E24] text-red-400 transition hover:border-red-400/40 hover:bg-red-500/10'
-                        >
-                            <i className='ti ti-x text-[20px]' />
-                        </button>
-                        <button
-                            title='Ver detalle'
-                            onClick={() => onVerDetalle(actual)}
-                            className='flex h-11 w-11 items-center justify-center rounded-full border border-white/[0.08] bg-[#1E1E24] text-neutral-400 transition hover:text-neutral-100'
-                        >
-                            <i className='ti ti-info-circle text-[18px]' />
-                        </button>
-                        {actual.estado === 'abierto' && actual.creador?.id !== usuario?.id && (
+                        {/* BOTONES DE ACCIÓN */}
+                        <div className='mt-5 flex items-center justify-center gap-3'>
                             <button
-                                title='Postularme'
-                                onClick={() => onPostularClick(actual)}
-                                disabled={postuladosActivos.has(actual.id)}
-                                className='flex h-11 w-11 items-center justify-center rounded-full border border-white/[0.08] bg-[#1E1E24] text-indigo-400 transition hover:text-indigo-300 disabled:cursor-not-allowed disabled:opacity-30'
+                                title='Pasar'
+                                onClick={() => handleSwipe('izquierda')}
+                                className='flex h-12 w-12 items-center justify-center rounded-full border border-white/[0.08] bg-[#1E1E24] text-red-400 transition hover:border-red-400/40 hover:bg-red-500/10'
                             >
-                                <i className='ti ti-send text-[18px]' />
+                                <i className='ti ti-x text-[20px]' />
                             </button>
-                        )}
-                        <button
-                            title='Me interesa'
-                            onClick={() => handleSwipe('derecha')}
-                            className='flex h-12 w-12 items-center justify-center rounded-full border border-emerald-400/30 bg-emerald-500/10 text-emerald-400 transition hover:bg-emerald-500/20'
-                        >
-                            <i className='ti ti-heart text-[20px]' />
-                        </button>
-                    </div>
+                            <button
+                                title='Ver detalle'
+                                onClick={() => onVerDetalle(actual)}
+                                className='flex h-11 w-11 items-center justify-center rounded-full border border-white/[0.08] bg-[#1E1E24] text-neutral-400 transition hover:text-neutral-100'
+                            >
+                                <i className='ti ti-info-circle text-[18px]' />
+                            </button>
+                            {actual.estado === 'abierto' && actual.creador?.id !== usuario?.id && (
+                                <button
+                                    title='Postularme'
+                                    onClick={() => onPostularClick(actual)}
+                                    disabled={postuladosActivos.has(actual.id)}
+                                    className='flex h-11 w-11 items-center justify-center rounded-full border border-white/[0.08] bg-[#1E1E24] text-indigo-400 transition hover:text-indigo-300 disabled:cursor-not-allowed disabled:opacity-30'
+                                >
+                                    <i className='ti ti-send text-[18px]' />
+                                </button>
+                            )}
+                            <button
+                                title='Me interesa'
+                                onClick={() => handleSwipe('derecha')}
+                                className='flex h-12 w-12 items-center justify-center rounded-full border border-emerald-400/30 bg-emerald-500/10 text-emerald-400 transition hover:bg-emerald-500/20'
+                            >
+                                <i className='ti ti-heart text-[20px]' />
+                            </button>
+                        </div>
 
-                    <p className='mt-4 text-center text-[12px] text-neutral-600'>
-                        ¿Prefieres verlos todos en lista?{' '}
-                        <button
-                            onClick={onIrExplorar}
-                            className='font-semibold text-pink-500 hover:underline'
-                        >
-                            Ir a Explorar
-                        </button>
-                    </p>
-                </>
-            ) : (
-                <div className='flex flex-col items-center px-5 py-16 text-center'>
-                    <i className='ti ti-confetti mb-3 text-5xl text-neutral-700' />
-                    <h3 className='mb-1 text-[15px] font-bold text-neutral-300'>¡Viste todas las recomendaciones!</h3>
-                    <p className='mb-5 max-w-[280px] text-[13px] leading-relaxed text-neutral-600'>
-                        Puedes revisar los que te interesaron en "Guardados" o explorar todos los proyectos abiertos.
-                    </p>
-                    <div className='flex gap-2'>
-                        <button
-                            onClick={cargar}
-                            className='inline-flex items-center gap-1.5 rounded-[10px] border border-white/[0.07] bg-[#1E1E24] px-4 py-2 text-[12.5px] font-medium text-neutral-300 transition hover:text-neutral-100'
-                        >
-                            <i className='ti ti-refresh text-[14px]' /> Buscar de nuevo
-                        </button>
-                        <button
-                            onClick={onIrExplorar}
-                            className='inline-flex items-center gap-1.5 rounded-[10px] bg-pink-500 px-4 py-2 text-[12.5px] font-semibold text-white transition hover:bg-pink-600'
-                        >
-                            <i className='ti ti-compass text-[14px]' /> Ir a Explorar
-                        </button>
+                        <p className='mt-4 text-center text-[12px] text-neutral-600'>
+                            ¿Prefieres verlos todos en lista?{' '}
+                            <button
+                                onClick={onIrExplorar}
+                                className='font-semibold text-pink-500 hover:underline'
+                            >
+                                Ir a Explorar
+                            </button>
+                        </p>
+                    </>
+                ) : (
+                    <div className='flex flex-col items-center px-5 py-16 text-center'>
+                        <i className='ti ti-confetti mb-3 text-5xl text-neutral-700' />
+                        <h3 className='mb-1 text-[15px] font-bold text-neutral-300'>¡Viste todas las recomendaciones!</h3>
+                        <p className='mb-5 max-w-[280px] text-[13px] leading-relaxed text-neutral-600'>
+                            Puedes revisar los que te interesaron en "Guardados" o explorar todos los proyectos abiertos.
+                        </p>
+                        <div className='flex gap-2'>
+                            <button
+                                onClick={cargar}
+                                className='inline-flex items-center gap-1.5 rounded-[10px] border border-white/[0.07] bg-[#1E1E24] px-4 py-2 text-[12.5px] font-medium text-neutral-300 transition hover:text-neutral-100'
+                            >
+                                <i className='ti ti-refresh text-[14px]' /> Buscar de nuevo
+                            </button>
+                            <button
+                                onClick={onIrExplorar}
+                                className='inline-flex items-center gap-1.5 rounded-[10px] bg-pink-500 px-4 py-2 text-[12.5px] font-semibold text-white transition hover:bg-pink-600'
+                            >
+                                <i className='ti ti-compass text-[14px]' /> Ir a Explorar
+                            </button>
+                        </div>
                     </div>
+                )}
+            </div>
+
+            {/* PANEL LATERAL — solo aporta valor con espacio de escritorio, se oculta en mobile */}
+            <div className='hidden lg:block'>
+                <PanelLateral
+                    habilidades={habilidades}
+                    personasSimilares={personasSimilares}
+                    cargando={cargandoPanel}
+                    interesesIds={interesesIds}
+                    errorPersonas={errorPersonas}
+                    tieneIntereses={interesesIds.size > 0}
+                />
+            </div>
+        </div>
+    );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PANEL LATERAL: habilidades en demanda + personas con perfil similar
+// ─────────────────────────────────────────────────────────────────────────────
+
+function PanelLateral({ habilidades, personasSimilares, cargando, interesesIds, errorPersonas, tieneIntereses }) {
+    return (
+        <div className='sticky top-[70px] flex flex-col gap-5'>
+            {/* HABILIDADES EN DEMANDA */}
+            <div className='rounded-2xl border border-white/[0.06] bg-[#1E1E24] p-5'>
+                <div className='mb-3.5 flex items-center gap-2'>
+                    <i className='ti ti-trending-up text-[16px] text-pink-400' />
+                    <h3 className='text-[13.5px] font-bold text-neutral-100'>Habilidades en demanda</h3>
                 </div>
-            )}
+
+                {cargando && <p className='text-[12px] text-neutral-600'>Cargando…</p>}
+
+                {!cargando && habilidades.length === 0 && (
+                    <p className='text-[12px] leading-relaxed text-neutral-600'>
+                        Todavía no hay suficientes proyectos abiertos para calcular tendencias.
+                    </p>
+                )}
+
+                {!cargando && habilidades.length > 0 && (
+                    <div className='flex flex-col gap-2.5'>
+                        {(() => {
+                            const max = Math.max(...habilidades.map((h) => h.total_proyectos), 1);
+                            return habilidades.map((h) => (
+                                <div key={h.id}>
+                                    <div className='mb-1 flex items-center justify-between gap-2'>
+                                        <span className='inline-flex items-center gap-1.5 text-[12px] font-medium text-neutral-300'>
+                                            {h.nombre}
+                                            {h.es_interes_propio && (
+                                                <i title='Ya está entre tus intereses' className='ti ti-check text-[11px] text-pink-400' />
+                                            )}
+                                        </span>
+                                        <span className='flex-shrink-0 text-[11px] text-neutral-600'>
+                                            {h.total_proyectos} proyecto{h.total_proyectos === 1 ? '' : 's'}
+                                        </span>
+                                    </div>
+                                    <div className='h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]'>
+                                        <div
+                                            className='h-full rounded-full bg-gradient-to-r from-pink-500 to-indigo-400'
+                                            style={{ width: `${Math.max((h.total_proyectos / max) * 100, 8)}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            ));
+                        })()}
+                    </div>
+                )}
+            </div>
+
+            {/* PERSONAS CON PERFIL SIMILAR */}
+            <div className='rounded-2xl border border-white/[0.06] bg-[#1E1E24] p-5'>
+                <div className='mb-3.5 flex items-center gap-2'>
+                    <i className='ti ti-users-group text-[16px] text-pink-400' />
+                    <h3 className='text-[13.5px] font-bold text-neutral-100'>Perfiles similares al tuyo</h3>
+                </div>
+
+                {cargando && <p className='text-[12px] text-neutral-600'>Cargando…</p>}
+
+                {!cargando && errorPersonas && (
+                    <p className='text-[12px] leading-relaxed text-red-400'>
+                        No se pudieron cargar: {errorPersonas}
+                    </p>
+                )}
+
+                {!cargando && !errorPersonas && personasSimilares.length === 0 && !tieneIntereses && (
+                    <p className='text-[12px] leading-relaxed text-neutral-600'>
+                        Agrega intereses a tu perfil para que podamos encontrar personas afines a ti.
+                    </p>
+                )}
+
+                {!cargando && !errorPersonas && personasSimilares.length === 0 && tieneIntereses && (
+                    <p className='text-[12px] leading-relaxed text-neutral-600'>
+                        Por ahora no hay otras personas activas que compartan tus intereses.
+                    </p>
+                )}
+
+                {!cargando && personasSimilares.length > 0 && (
+                    <div className='flex flex-col gap-3'>
+                        {personasSimilares.map((p) => {
+                            const av = avatarColor(p.id);
+                            return (
+                                <div key={p.id} className='flex items-center gap-2.5'>
+                                    <div
+                                        className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${av.bg} ${av.text}`}
+                                    >
+                                        {getInitials(p.nombre_usuario)}
+                                    </div>
+                                    <div className='min-w-0 flex-1'>
+                                        <div className='truncate text-[12.5px] font-semibold text-neutral-100'>
+                                            {p.nombre_usuario}
+                                        </div>
+                                        <div className='truncate text-[11px] text-neutral-500'>
+                                            {p.etiquetas_compartidas?.slice(0, 2).map((et) => et.nombre).join(', ') || 'Intereses en común'}
+                                        </div>
+                                    </div>
+                                    <div className='flex-shrink-0 rounded-full bg-pink-500/10 px-2 py-0.5 text-[11px] font-bold text-pink-400'>
+                                        {p.porcentaje_match}%
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

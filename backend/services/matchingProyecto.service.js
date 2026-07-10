@@ -21,6 +21,8 @@ import {
     esEstadoProyectoValido,
     esModalidadProyectoValida,
     esEstadoPostulacionValido,
+    calcularPorcentajeMatchPerfiles,
+    formatearUsuarioSimilar,
 } from '../helpers/matchingProyecto.helper.js';
 
 //──────────────────────────────────────────────────────────────────────────────
@@ -460,6 +462,28 @@ async function obtenerFavoritos(usuario_id) {
 }
 
 //──────────────────────────────────────────────────────────────────────────────
+// DESCARTES ("no me interesa" en Descubrir — no debe volver a mostrarse)
+//──────────────────────────────────────────────────────────────────────────────
+
+async function descartarProyecto(usuario_id, proyecto_id) {
+    const proyecto = await prisma.proyecto.findUnique({ where: { id: proyecto_id } });
+    if (!proyecto) throw new NotFoundError('Proyecto');
+
+    //* idempotente: si ya estaba descartado no lanza error, solo lo confirma
+    await prisma.descarteProyecto.upsert({
+        where: { usuario_id_proyecto_id: { usuario_id, proyecto_id } },
+        update: {},
+        create: { usuario_id, proyecto_id },
+    });
+
+    //* un proyecto descartado no puede seguir siendo favorito a la vez
+    await prisma.favoritoProyecto.deleteMany({ where: { usuario_id, proyecto_id } });
+
+    logger.info('Proyecto descartado en Descubrir', { usuario_id, proyecto_id });
+    return { mensaje: 'Proyecto descartado, no volverá a aparecer en Descubrir' };
+}
+
+//──────────────────────────────────────────────────────────────────────────────
 // PORCETAJE DE MATCHING
 //──────────────────────────────────────────────────────────────────────────────
 async function obtenerProyectosRecomendados(usuario_id, { pagina = 1, limite = 20 } = {}) {
@@ -469,7 +493,7 @@ async function obtenerProyectosRecomendados(usuario_id, { pagina = 1, limite = 2
     });
     const etiquetasUsuarioIds = intereses.map((i) => i.etiqueta_id);
 
-    const [postulacionesActivas, integraciones] = await Promise.all([
+    const [postulacionesActivas, integraciones, descartes, favoritos] = await Promise.all([
         prisma.postulacionProyecto.findMany({
             where: { postulante_id: usuario_id, estado_postulacion: { in: ['pendiente', 'aceptada'] } },
             select: { proyecto_id: true },
@@ -478,11 +502,22 @@ async function obtenerProyectosRecomendados(usuario_id, { pagina = 1, limite = 2
             where: { usuario_id, fue_expulsado: false },
             select: { proyecto_id: true },
         }),
+        prisma.descarteProyecto.findMany({
+            where: { usuario_id },
+            select: { proyecto_id: true },
+        }),
+        //* si ya se marcó "me interesa" (favorito), tampoco debe seguir apareciendo en el mazo
+        prisma.favoritoProyecto.findMany({
+            where: { usuario_id },
+            select: { proyecto_id: true },
+        }),
     ]);
 
     const idsExcluidos = [
         ...postulacionesActivas.map((p) => p.proyecto_id),
         ...integraciones.map((i) => i.proyecto_id),
+        ...descartes.map((d) => d.proyecto_id),
+        ...favoritos.map((f) => f.proyecto_id),
     ];
 
     const proyectos = await prisma.proyecto.findMany({
@@ -515,6 +550,116 @@ async function obtenerProyectosRecomendados(usuario_id, { pagina = 1, limite = 2
 
 // ╰─────────────────────────────✧────────────────────────────────╮
 
+//──────────────────────────────────────────────────────────────────────────────
+// HABILIDADES EN DEMANDA (etiquetas más pedidas entre los proyectos abiertos)
+//──────────────────────────────────────────────────────────────────────────────
+async function obtenerHabilidadesEnDemanda(usuario_id, { limite = 8 } = {}) {
+    const [conteos, intereses] = await Promise.all([
+        prisma.proyectoEtiqueta.groupBy({
+            by: ['etiqueta_id'],
+            where: { proyecto: { estado_proyecto: 'abierto', creador_id: { not: usuario_id } } },
+            _count: { etiqueta_id: true },
+            orderBy: { _count: { etiqueta_id: 'desc' } },
+            take: limite,
+        }),
+        prisma.usuarioEtiqueta.findMany({ where: { usuario_id }, select: { etiqueta_id: true } }),
+    ]);
+
+    if (conteos.length === 0) return [];
+
+    const etiquetasUsuarioIds = new Set(intereses.map((i) => i.etiqueta_id));
+
+    const etiquetas = await prisma.etiqueta.findMany({
+        where: { id: { in: conteos.map((c) => c.etiqueta_id) } },
+    });
+    const etiquetasPorId = new Map(etiquetas.map((e) => [e.id, e]));
+
+    return conteos
+        .map((c) => {
+            const et = etiquetasPorId.get(c.etiqueta_id);
+            if (!et) return null;
+            return {
+                id: et.id,
+                nombre: et.nombre_etiqueta,
+                total_proyectos: c._count.etiqueta_id,
+                es_interes_propio: etiquetasUsuarioIds.has(et.id),
+            };
+        })
+        .filter(Boolean);
+}
+
+//──────────────────────────────────────────────────────────────────────────────
+// PERSONAS CON PERFIL SIMILAR (afinidad por intereses/etiquetas)
+//──────────────────────────────────────────────────────────────────────────────
+async function obtenerUsuariosSimilares(usuario_id, { limite = 6 } = {}) {
+    const misIntereses = await prisma.usuarioEtiqueta.findMany({
+        where: { usuario_id },
+        select: { etiqueta_id: true },
+    });
+    const misEtiquetasIds = misIntereses.map((i) => i.etiqueta_id);
+
+    if (misEtiquetasIds.length === 0) return [];
+
+    //* candidatos: usuarios (distintos de mí) que tengan alguna de mis etiquetas de interés.
+    //* se evita mezclar `distinct` con un filtro sobre una relación (usuario.esta_activo):
+    //* esa combinación es inestable en versiones recientes de Prisma. El filtro de activos
+    //* se aplica después, sobre el modelo Usuario directamente (filtro escalar, no relacional).
+    const candidatos = await prisma.usuarioEtiqueta.findMany({
+        where: {
+            etiqueta_id: { in: misEtiquetasIds },
+            usuario_id: { not: usuario_id },
+        },
+        select: { usuario_id: true },
+        distinct: ['usuario_id'],
+    });
+
+    if (candidatos.length === 0) return [];
+
+    const candidatoIds = candidatos.map((c) => c.usuario_id);
+
+    const [usuarios, etiquetasCandidatos] = await Promise.all([
+        prisma.usuario.findMany({
+            where: { id: { in: candidatoIds }, esta_activo: true },
+            include: { perfil: true },
+        }),
+        prisma.usuarioEtiqueta.findMany({
+            where: { usuario_id: { in: candidatoIds } },
+            include: { etiqueta: true },
+        }),
+    ]);
+
+    const etiquetasPorUsuario = new Map();
+    for (const ue of etiquetasCandidatos) {
+        if (!etiquetasPorUsuario.has(ue.usuario_id)) etiquetasPorUsuario.set(ue.usuario_id, []);
+        etiquetasPorUsuario.get(ue.usuario_id).push(ue.etiqueta);
+    }
+
+    const setMisEtiquetas = new Set(misEtiquetasIds);
+
+    const resultados = usuarios
+        .filter((u) => u.perfil) // se descartan usuarios sin perfil configurado
+        .map((u) => {
+            const etiquetasDeCandidato = etiquetasPorUsuario.get(u.id) || [];
+            const compartidas = etiquetasDeCandidato.filter((e) => setMisEtiquetas.has(e.id));
+            const porcentaje = calcularPorcentajeMatchPerfiles(
+                misEtiquetasIds,
+                etiquetasDeCandidato.map((e) => e.id),
+            );
+            return formatearUsuarioSimilar(
+                u,
+                compartidas.map((e) => ({ id: e.id, nombre: e.nombre_etiqueta })),
+                porcentaje,
+            );
+        })
+        .filter((u) => u.porcentaje_match > 0)
+        .sort((a, b) => b.porcentaje_match - a.porcentaje_match)
+        .slice(0, limite);
+
+    return resultados;
+}
+
+// ╰─────────────────────────────✧────────────────────────────────╮
+
 export {
     crearProyecto,
     obtenerProyectos,
@@ -533,4 +678,7 @@ export {
     toggleFavorito,
     obtenerFavoritos,
     obtenerProyectosRecomendados,
+    descartarProyecto,
+    obtenerHabilidadesEnDemanda,
+    obtenerUsuariosSimilares,
 };

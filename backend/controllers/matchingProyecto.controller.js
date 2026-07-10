@@ -16,6 +16,9 @@ import {
         toggleFavorito,
         obtenerFavoritos,
         obtenerProyectosRecomendados,
+        descartarProyecto,
+        obtenerHabilidadesEnDemanda,
+        obtenerUsuariosSimilares,
 } from '../services/matchingProyecto.service.js';
 import { manejarController } from '../helpers/matchingProyecto.helper.js';
 
@@ -205,6 +208,13 @@ async function listarFavoritosController(req, res) {
         res.json({ ok: true, data: favoritos });
 }
 
+// ╰─────────────────────────────✧────────────────────────────────╮
+
+async function descartarController(req, res) {
+        const resultado = await descartarProyecto(req.usuario.id, req.params.id);
+        res.json({ ok: true, mensaje: resultado.mensaje });
+}
+
 //──────────────────────────────────────────────────────────────────────────────
 // RECOMENDADOS
 //──────────────────────────────────────────────────────────────────────────────
@@ -226,6 +236,22 @@ async function listarRecomendadosController(req, res) {
         });
 }
 
+// ╰─────────────────────────────✧────────────────────────────────╮
+
+async function habilidadesDemandaController(req, res) {
+        const { limite } = req.query;
+        const datos = await obtenerHabilidadesEnDemanda(req.usuario.id, { limite: Number(limite) || 8 });
+        res.json({ ok: true, datos });
+}
+
+// ╰─────────────────────────────✧────────────────────────────────╮
+
+async function usuariosSimilaresController(req, res) {
+        const { limite } = req.query;
+        const datos = await obtenerUsuariosSimilares(req.usuario.id, { limite: Number(limite) || 6 });
+        res.json({ ok: true, datos });
+}
+
 export const crear = manejarController(crearController);
 export const listar = manejarController(listarController);
 export const listarMisProyectos = manejarController(listarMisProyectosController);
@@ -243,4 +269,7 @@ export const expulsar = manejarController(expulsarController);
 export const salirse = manejarController(salirseController);
 export const favorito = manejarController(favoritoController);
 export const listarFavoritos = manejarController(listarFavoritosController);
+export const descartar = manejarController(descartarController);
 export const listarRecomendados = manejarController(listarRecomendadosController);
+export const habilidadesDemanda = manejarController(habilidadesDemandaController);
+export const usuariosSimilares = manejarController(usuariosSimilaresController);

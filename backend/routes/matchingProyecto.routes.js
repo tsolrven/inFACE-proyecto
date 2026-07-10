@@ -18,6 +18,9 @@ import {
     favorito,
     listarFavoritos,
     listarRecomendados,
+    descartar,
+    habilidadesDemanda,
+    usuariosSimilares
 } from '../controllers/matchingProyecto.controller.js';
 import { autenticar, autorizar } from '../middlewares/auth.middleware.js';
 import { verificarCreador } from '../middlewares/matchingProyecto.middleware.js';
@@ -32,6 +35,8 @@ router.get('/favoritos', autenticar, listarFavoritos); // GET  /api/proyecto/fav
 router.get('/postulaciones/usuario', autenticar, listarPostulacionesUsuario);
 router.get('/mios', autenticar, listarMisProyectos);
 router.get('/recomendados', autenticar, listarRecomendados); // GET  /api/proyecto/recomendados (matching por etiquetas)
+router.get('/habilidades-demanda', autenticar, habilidadesDemanda); // GET  /api/proyecto/habilidades-demanda
+router.get('/usuarios-similares', autenticar, usuariosSimilares); // GET  /api/proyecto/usuarios-similares
 
 router.get('/', autenticar, listar); // GET  /api/proyecto
 router.post('/', autenticar, crear); // POST /api/proyecto

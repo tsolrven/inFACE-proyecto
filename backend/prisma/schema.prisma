@@ -32,6 +32,7 @@ model Usuario {
   postulaciones        PostulacionProyecto[]
   integrantes_proyecto IntegranteProyecto[]
   favoritos_proyecto   FavoritoProyecto[]
+  descartes_proyecto   DescarteProyecto[]
 
   @@map("usuarios")
 }
@@ -292,6 +293,7 @@ model Proyecto {
   integrantes          IntegranteProyecto[]
   favoritos            FavoritoProyecto[]
   etiquetas            ProyectoEtiqueta[]
+  descartes            DescarteProyecto[]
 
   @@map("proyectos")
 }
@@ -355,6 +357,22 @@ model ProyectoEtiqueta {
   @@id([proyecto_id, etiqueta_id])
   @@map("proyecto_etiquetas")
 }
+
+// ╰─────────────────────────────✧────────────────────────────────╮
+
+model DescarteProyecto {
+  usuario_id     String
+  proyecto_id    String
+  fecha_creacion DateTime @default(now())
+
+  usuario  Usuario  @relation(fields: [usuario_id], references: [id])
+  proyecto Proyecto @relation(fields: [proyecto_id], references: [id])
+
+  @@id([usuario_id, proyecto_id])
+  @@map("descartes_proyecto")
+}
+
+// ╰─────────────────────────────✧────────────────────────────────╮
 
 //───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 // MODERACIÓN 
