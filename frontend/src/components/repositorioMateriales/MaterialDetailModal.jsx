@@ -15,6 +15,7 @@ import { useAuthStore } from '../../stores/authStore';
 import { descargarArchivo } from '../../services/repositorioMateriales/archivo.service';
 import EditApunteModal from './EditApunteModal';
 import ConfirmDialog from '../ui/ConfirmDialog';
+import ReportModal from '../reportes/ReportModal';
 
 // inserta una respuesta nueva dentro del árbol de comentarios, sin importar
 // a qué profundidad esté el padre (recorre recursivamente)
@@ -24,7 +25,10 @@ function insertarRespuesta(comentarios, padreId, nueva) {
       return { ...c, respuestas: [...(c.respuestas ?? []), nueva] };
     }
     if (c.respuestas?.length) {
-      return { ...c, respuestas: insertarRespuesta(c.respuestas, padreId, nueva) };
+      return {
+        ...c,
+        respuestas: insertarRespuesta(c.respuestas, padreId, nueva),
+      };
     }
     return c;
   });
@@ -32,7 +36,8 @@ function insertarRespuesta(comentarios, padreId, nueva) {
 
 function contarComentarios(comentarios) {
   return comentarios.reduce(
-    (acc, c) => acc + 1 + (c.respuestas?.length ? contarComentarios(c.respuestas) : 0),
+    (acc, c) =>
+      acc + 1 + (c.respuestas?.length ? contarComentarios(c.respuestas) : 0),
     0,
   );
 }
@@ -40,9 +45,13 @@ function contarComentarios(comentarios) {
 export default function MaterialDetailModal() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const actualizarApunteEnFeed = useRepositorioStore((s) => s.actualizarApunteEnFeed);
+  const actualizarApunteEnFeed = useRepositorioStore(
+    (s) => s.actualizarApunteEnFeed,
+  );
   const editarApunte = useRepositorioStore((s) => s.editarApunte);
-  const eliminarApunteDelFeed = useRepositorioStore((s) => s.eliminarApunteDelFeed);
+  const eliminarApunteDelFeed = useRepositorioStore(
+    (s) => s.eliminarApunteDelFeed,
+  );
   const usuario = useAuthStore((s) => s.usuario);
 
   const [apunte, setApunte] = useState(null);
@@ -55,6 +64,7 @@ export default function MaterialDetailModal() {
   const [confirmandoEliminar, setConfirmandoEliminar] = useState(false);
   const [eliminando, setEliminando] = useState(false);
   const [errorEliminar, setErrorEliminar] = useState(null);
+  const [reportando, setReportando] = useState(false);
 
   const esDueno =
     usuario &&
@@ -94,7 +104,9 @@ export default function MaterialDetailModal() {
       const nuevo = await crearComentario(id, { contenido: textoNuevo });
       const actualizados = [...comentarios, nuevo];
       setComentarios(actualizados);
-      actualizarApunteEnFeed(id, { comentarios_count: contarComentarios(actualizados) });
+      actualizarApunteEnFeed(id, {
+        comentarios_count: contarComentarios(actualizados),
+      });
       setTextoNuevo('');
     } finally {
       setEnviando(false);
@@ -140,7 +152,11 @@ export default function MaterialDetailModal() {
   }
 
   return (
-    <Modal open onClose={handleClose} maxWidth='740px'>
+    <Modal
+      open
+      onClose={handleClose}
+      maxWidth='740px'
+    >
       {cargando && (
         <div className='flex items-center justify-center py-20'>
           <i className='ti ti-loader-2 animate-spin text-2xl text-neutral-600' />
@@ -183,6 +199,16 @@ export default function MaterialDetailModal() {
                 </button>
               </div>
             )}
+            {!esDueno && usuario && (
+              <button
+                type='button'
+                onClick={() => setReportando(true)}
+                className='ml-2 flex h-[26px] w-[26px] items-center justify-center rounded-md text-neutral-500 transition-colors hover:bg-white/[0.06] hover:text-neutral-200'
+                title='Reportar'
+              >
+                <i className='ti ti-flag text-[15px]' />
+              </button>
+            )}
           </ModalHeader>
 
           <div className='px-6 pb-4 pt-5'>
@@ -195,7 +221,10 @@ export default function MaterialDetailModal() {
                 {apunte.autor?.nombre_usuario?.slice(0, 2).toUpperCase()}
               </div>
               <span>
-                por <b className='text-neutral-400'>u/{apunte.autor?.nombre_usuario}</b>
+                por{' '}
+                <b className='text-neutral-400'>
+                  u/{apunte.autor?.nombre_usuario}
+                </b>
               </span>
               <span>·</span>
               <span>{formatearTiempoRelativo(apunte.creado_en)}</span>
@@ -212,7 +241,10 @@ export default function MaterialDetailModal() {
             {apunte.hashtags?.length > 0 && (
               <div className='flex flex-wrap gap-1.5'>
                 {apunte.hashtags.map((tag) => (
-                  <span key={tag} className='text-[11.5px] text-blue-400'>
+                  <span
+                    key={tag}
+                    className='text-[11.5px] text-blue-400'
+                  >
                     #{tag}
                   </span>
                 ))}
@@ -249,7 +281,8 @@ export default function MaterialDetailModal() {
             <div className='flex flex-col gap-4'>
               {comentarios.length === 0 && (
                 <p className='text-center text-[12.5px] text-neutral-600'>
-                  Todavía no hay comentarios. ¡Sé el primero en preguntar o aportar!
+                  Todavía no hay comentarios. ¡Sé el primero en preguntar o
+                  aportar!
                 </p>
               )}
               {comentarios.map((comentario) => (
@@ -290,6 +323,13 @@ export default function MaterialDetailModal() {
               />
             </>
           )}
+
+          <ReportModal
+            open={reportando}
+            onClose={() => setReportando(false)}
+            tipoContenido='apunte'
+            contenidoId={id}
+          />
         </>
       )}
     </Modal>
@@ -329,7 +369,10 @@ function DetalleArchivos({ apunte }) {
             key={archivo.id}
             className='flex items-center gap-3 rounded-lg border border-white/[0.07] bg-white/[0.03] px-3 py-2.5'
           >
-            <i className={`ti ${meta.icon} flex-shrink-0 text-lg`} style={{ color: meta.color }} />
+            <i
+              className={`ti ${meta.icon} flex-shrink-0 text-lg`}
+              style={{ color: meta.color }}
+            />
             <span className='flex-1 truncate text-[12.5px] font-medium text-neutral-300'>
               {archivo.nombre_archivo}
             </span>

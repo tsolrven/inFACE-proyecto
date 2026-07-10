@@ -2,20 +2,39 @@ import { useState } from 'react';
 import { votarComentario } from '../../services/repositorioMateriales/voto.service';
 import { crearComentario } from '../../services/repositorioMateriales/comentario.service';
 import { formatearTiempoRelativo } from '../../utils/formatRelativeTime';
+import { useAuthStore } from '../../stores/authStore';
+import ReportModal from '../reportes/ReportModal';
 
 const MAX_NIVEL = 2; // debe calzar con la validación del backend (comentario.service.js)
 
-export default function CommentThread({ comentario, apunteId, onNuevaRespuesta }) {
+export default function CommentThread({
+  comentario,
+  apunteId,
+  onNuevaRespuesta,
+}) {
   const [votoLocal, setVotoLocal] = useState(null); // el backend no devuelve "mi_voto" en comentarios
   const [votosNeto, setVotosNeto] = useState(comentario.votos_neto);
   const [respondiendo, setRespondiendo] = useState(false);
   const [textoRespuesta, setTextoRespuesta] = useState('');
   const [enviando, setEnviando] = useState(false);
+  const [reportando, setReportando] = useState(false);
+  const usuario = useAuthStore((s) => s.usuario);
+  const esDueno = usuario && comentario.autor?.id === usuario.id;
 
   async function handleVotar(tipo) {
     const anterior = { votoLocal, votosNeto };
     const mismoVoto = votoLocal === tipo;
-    const delta = mismoVoto ? (tipo === 'up' ? -1 : 1) : votoLocal === null ? (tipo === 'up' ? 1 : -1) : tipo === 'up' ? 2 : -2;
+    const delta = mismoVoto
+      ? tipo === 'up'
+        ? -1
+        : 1
+      : votoLocal === null
+        ? tipo === 'up'
+          ? 1
+          : -1
+        : tipo === 'up'
+          ? 2
+          : -2;
 
     setVotoLocal(mismoVoto ? null : tipo);
     setVotosNeto((v) => v + delta);
@@ -52,11 +71,17 @@ export default function CommentThread({ comentario, apunteId, onNuevaRespuesta }
 
       <div className='min-w-0 flex-1'>
         <div className='mb-1 flex items-center gap-1.5 text-xs'>
-          <span className='font-semibold text-neutral-400'>u/{comentario.autor?.nombre_usuario}</span>
-          <span className='text-neutral-600'>{formatearTiempoRelativo(comentario.creado_en)}</span>
+          <span className='font-semibold text-neutral-400'>
+            u/{comentario.autor?.nombre_usuario}
+          </span>
+          <span className='text-neutral-600'>
+            {formatearTiempoRelativo(comentario.creado_en)}
+          </span>
         </div>
 
-        <div className='mb-1.5 text-[13px] leading-relaxed text-neutral-100'>{comentario.contenido}</div>
+        <div className='mb-1.5 text-[13px] leading-relaxed text-neutral-100'>
+          {comentario.contenido}
+        </div>
 
         <div className='flex items-center gap-3'>
           <button
@@ -75,6 +100,15 @@ export default function CommentThread({ comentario, apunteId, onNuevaRespuesta }
               className='flex items-center gap-1 text-[11.5px] text-neutral-600 transition-colors hover:text-neutral-200'
             >
               <i className='ti ti-message-reply' /> Responder
+            </button>
+          )}
+          {!esDueno && usuario && (
+            <button
+              type='button'
+              onClick={() => setReportando(true)}
+              className='flex items-center gap-1 text-[11.5px] text-neutral-600 transition-colors hover:text-neutral-200'
+            >
+              <i className='ti ti-flag' /> Reportar
             </button>
           )}
         </div>
@@ -120,6 +154,13 @@ export default function CommentThread({ comentario, apunteId, onNuevaRespuesta }
             ))}
           </div>
         )}
+
+        <ReportModal
+          open={reportando}
+          onClose={() => setReportando(false)}
+          tipoContenido='comentario'
+          contenidoId={comentario.id}
+        />
       </div>
     </div>
   );

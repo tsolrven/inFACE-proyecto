@@ -12,6 +12,7 @@ import { formatearTiempoRelativo } from '../../utils/formatRelativeTime';
 import { descargarArchivo } from '../../services/repositorioMateriales/archivo.service';
 import EditApunteModal from './EditApunteModal';
 import ConfirmDialog from '../ui/ConfirmDialog';
+import ReportModal from '../reportes/ReportModal';
 
 export default function MaterialCard({ apunte }) {
   const navigate = useNavigate();
@@ -26,6 +27,7 @@ export default function MaterialCard({ apunte }) {
   const [confirmandoEliminar, setConfirmandoEliminar] = useState(false);
   const [eliminando, setEliminando] = useState(false);
   const [errorEliminar, setErrorEliminar] = useState(null);
+  const [reportando, setReportando] = useState(false);
 
   const esDueno =
     usuario &&
@@ -212,15 +214,31 @@ export default function MaterialCard({ apunte }) {
               </button>
             </>
           )}
-          <button
-            type='button'
-            onClick={(e) => e.stopPropagation()}
-            className='ml-auto flex items-center gap-1 transition-colors hover:text-red-400'
-          >
-            <i className='ti ti-flag text-[13px]' /> Reportar
-          </button>
+          {!esDueno && (
+            <button
+              type='button'
+              onClick={(e) => {
+                e.stopPropagation();
+                setReportando(true);
+              }}
+              className='ml-auto flex items-center gap-1 transition-colors hover:text-red-400'
+            >
+              <i className='ti ti-flag text-[13px]' /> Reportar
+            </button>
+          )}
         </div>
       </div>
+
+      {!esDueno && (
+        <div onClick={(e) => e.stopPropagation()}>
+          <ReportModal
+            open={reportando}
+            onClose={() => setReportando(false)}
+            tipoContenido='apunte'
+            contenidoId={apunte.id}
+          />
+        </div>
+      )}
 
       {esDueno && (
         <div onClick={(e) => e.stopPropagation()}>
