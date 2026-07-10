@@ -1,5 +1,9 @@
 import { create } from 'zustand';
-import { listarApuntes } from '../services/repositorioMateriales/apunte.service';
+import {
+  listarApuntes,
+  actualizarApunte,
+  eliminarApunte,
+} from '../services/repositorioMateriales/apunte.service';
 import { votarApunte } from '../services/repositorioMateriales/voto.service';
 
 const FILTROS_INICIALES = {
@@ -11,7 +15,7 @@ const FILTROS_INICIALES = {
 export const useRepositorioStore = create((set, get) => ({
   filtros: { ...FILTROS_INICIALES },
   apuntes: [],
-  meta: null, 
+  meta: null,
   pagina: 1,
   cargando: false,
   cargandoMas: false,
@@ -95,6 +99,43 @@ export const useRepositorioStore = create((set, get) => ({
       apuntes: state.apuntes.map((a) =>
         a.id === apunteId ? { ...a, ...cambios } : a,
       ),
+    }));
+  },
+
+  // edita metadata del apunte (título, descripción, ramo, hashtags, etc).
+  // OJO: el endpoint de actualizar devuelve el apunte formateado con
+  // comentarios_count/archivos/descargas en sus valores por defecto (no
+  // vienen recalculados), así que acá solo tomamos del response los campos
+  // que realmente pueden haber cambiado y dejamos el resto del item del
+  // feed intacto, en vez de hacer spread de todo el objeto.
+  editarApunte: async (apunteId, payload) => {
+    const actualizado = await actualizarApunte(apunteId, payload);
+    const {
+      titulo,
+      descripcion,
+      ramo,
+      hashtags,
+      link_repositorio,
+      codigo_snippet,
+      actualizado_en,
+    } = actualizado;
+    get().actualizarApunteEnFeed(apunteId, {
+      titulo,
+      descripcion,
+      ramo,
+      hashtags,
+      link_repositorio,
+      codigo_snippet,
+      actualizado_en,
+    });
+    return actualizado;
+  },
+
+  // elimina el apunte en el backend y lo saca del feed local
+  eliminarApunteDelFeed: async (apunteId) => {
+    await eliminarApunte(apunteId);
+    set((state) => ({
+      apuntes: state.apuntes.filter((a) => a.id !== apunteId),
     }));
   },
 }));

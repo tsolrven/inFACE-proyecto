@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useRepositorioStore } from '../../stores/repositorioStore';
+import { useAuthStore } from '../../stores/authStore';
 import { colorPorRamo } from '../../utils/ramoColors';
 import {
   metaPrincipal,
@@ -8,11 +10,28 @@ import {
 } from '../../utils/fileMeta';
 import { formatearTiempoRelativo } from '../../utils/formatRelativeTime';
 import { descargarArchivo } from '../../services/repositorioMateriales/archivo.service';
+import EditApunteModal from './EditApunteModal';
+import ConfirmDialog from '../ui/ConfirmDialog';
 
 export default function MaterialCard({ apunte }) {
   const navigate = useNavigate();
   const location = useLocation();
   const votar = useRepositorioStore((s) => s.votar);
+  const eliminarApunteDelFeed = useRepositorioStore(
+    (s) => s.eliminarApunteDelFeed,
+  );
+  const usuario = useAuthStore((s) => s.usuario);
+
+  const [editando, setEditando] = useState(false);
+  const [confirmandoEliminar, setConfirmandoEliminar] = useState(false);
+  const [eliminando, setEliminando] = useState(false);
+  const [errorEliminar, setErrorEliminar] = useState(null);
+
+  const esDueno =
+    usuario &&
+    (apunte.autor?.id === usuario.id ||
+      usuario.rol === 'admin' ||
+      usuario.rol === 'moderador');
 
   const iconMeta = metaPrincipal(apunte);
   const ramoColor = colorPorRamo(apunte.ramo?.id);
@@ -26,6 +45,19 @@ export default function MaterialCard({ apunte }) {
   function handleVotar(e, tipo) {
     e.stopPropagation();
     votar(apunte.id, tipo);
+  }
+
+  async function handleEliminar() {
+    setEliminando(true);
+    setErrorEliminar(null);
+    try {
+      await eliminarApunteDelFeed(apunte.id);
+      setConfirmandoEliminar(false);
+    } catch (err) {
+      setErrorEliminar(err.message || 'No se pudo eliminar el material.');
+    } finally {
+      setEliminando(false);
+    }
   }
 
   return (
@@ -156,6 +188,30 @@ export default function MaterialCard({ apunte }) {
           >
             <i className='ti ti-bookmark text-[13px]' /> Guardar
           </button>
+          {esDueno && (
+            <>
+              <button
+                type='button'
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEditando(true);
+                }}
+                className='flex items-center gap-1 transition-colors hover:text-neutral-200'
+              >
+                <i className='ti ti-edit text-[13px]' /> Editar
+              </button>
+              <button
+                type='button'
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setConfirmandoEliminar(true);
+                }}
+                className='flex items-center gap-1 transition-colors hover:text-red-400'
+              >
+                <i className='ti ti-trash text-[13px]' /> Eliminar
+              </button>
+            </>
+          )}
           <button
             type='button'
             onClick={(e) => e.stopPropagation()}
@@ -165,10 +221,39 @@ export default function MaterialCard({ apunte }) {
           </button>
         </div>
       </div>
+
+      {esDueno && (
+        <div onClick={(e) => e.stopPropagation()}>
+          <EditApunteModal
+            open={editando}
+            onClose={() => setEditando(false)}
+            apunte={apunte}
+            carreraId={usuario?.carrera_id}
+          />
+          <ConfirmDialog
+            open={confirmandoEliminar}
+            title='Eliminar material'
+            message={
+              errorEliminar ||
+              'Esta acción no se puede deshacer. Se eliminarán también sus archivos, comentarios y votos.'
+            }
+            confirmLabel='Eliminar'
+            danger
+            loading={eliminando}
+            onConfirm={handleEliminar}
+            onCancel={() => {
+              setConfirmandoEliminar(false);
+              setErrorEliminar(null);
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }
 
+// Renderiza el strip de GitHub, el snippet, o la lista de archivos
+// (1 o varios, la card se adapta al número real de archivos).
 function ArchivosPreview({ apunte }) {
   if (apunte.link_repositorio) {
     return (
