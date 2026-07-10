@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
     getInitials,
     avatarColor,
@@ -91,18 +92,21 @@ export default function DetalleProyecto({
                         )}
                     </div>
 
-                    <div className='mb-4 flex items-center gap-2.5'>
+                    <Link
+                        to={`/perfil/usuario/${proyecto.creador?.nombre_usuario}`}
+                        className='mb-4 flex items-center gap-2.5 transition hover:opacity-80'
+                    >
                         <div
                             className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${av.bg} ${av.text}`}
                         >
                             {getInitials(proyecto.creador?.nombre_usuario)}
                         </div>
                         <div className='text-[12.5px] text-neutral-400'>
-                            Creado por <strong className='text-neutral-100'>{proyecto.creador?.nombre_usuario}</strong>
+                            Creado por <strong className='text-neutral-100 underline-offset-2 hover:underline'>{proyecto.creador?.nombre_usuario}</strong>
                             {' · '}
                             {formatFecha(proyecto.fecha_creacion)}
                         </div>
-                    </div>
+                    </Link>
 
                     <p className='mb-4 whitespace-pre-line text-[13px] leading-relaxed text-neutral-300'>
                         {proyecto.descripcion}

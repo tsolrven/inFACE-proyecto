@@ -9,21 +9,9 @@ const actualizarPerfilSchema = z.object({
         .regex(/^[a-zA-Z0-9_]+$/, 'Solo letras, números y guiones bajos')
         .optional(),
 
-    nombre_completo: z
-        .string()
-        .max(120, 'El nombre completo no puede superar 120 caracteres')
-        .optional()
-        .nullable(),
-
     biografia: z
         .string()
         .max(280, 'La biografía no puede superar 280 caracteres')
-        .optional()
-        .nullable(),
-
-    campus: z
-        .string()
-        .max(12, 'El campus no puede superar 12 caracteres')
         .optional()
         .nullable(),
 });

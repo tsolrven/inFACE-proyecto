@@ -1,8 +1,17 @@
 import { useEffect, useState } from 'react';
-import { obtenerMiPerfil, actualizarMiPerfil, actualizarMisIntereses } from '../services/perfil';
-import { getInitials, avatarColor } from '../helpers/matchHelpers';
+import { Link } from 'react-router-dom';
+import {
+    obtenerMiPerfil,
+    actualizarMiPerfil,
+    actualizarMisIntereses,
+} from '../services/perfil';
+import { listarProyectos } from '../services/matchingProyecto';
+import { getInitials, avatarColor, etiquetaColor } from '../helpers/matchHelpers';
 import ModalShell from './cultural/ModalShell';
 import EtiquetasPicker from '../components/EtiquetasPicker';
+import PerfilTabs from '../components/PerfilTabs';
+// TODO(Silvana): importar aquí tu servicio de apuntes, ej:
+// import { listarMisApuntes, listarMisRespuestas } from '../services/apunte';
 
 const MESES = [
     'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
@@ -23,6 +32,15 @@ export default function Perfil() {
     const [modalEditar, setModalEditar] = useState(false);
     const [modalIntereses, setModalIntereses] = useState(false);
 
+    // datos de las pestañas (conexión con otros módulos)
+    const [proyectosCreados, setProyectosCreados] = useState([]);
+    const [proyectosParticipa, setProyectosParticipa] = useState([]);
+    const [cargandoTabs, setCargandoTabs] = useState(true);
+
+    // TODO(Silvana): volver a agregar acá tu estado, ej:
+    // const [apuntes, setApuntes] = useState([]);
+    // const [respuestas, setRespuestas] = useState([]);
+
     async function cargar() {
         setCargando(true);
         setError(null);
@@ -36,9 +54,33 @@ export default function Perfil() {
         }
     }
 
+    async function cargarTabs(usuarioId) {
+        setCargandoTabs(true);
+        const [creados, participa /* TODO(Silvana): agregar tus llamadas acá */] = await Promise.allSettled([
+            listarProyectos({ creador_id: usuarioId, limite: 50 }),
+            listarProyectos({ integrante_id: usuarioId, limite: 50 }),
+            // TODO(Silvana): agregar tus llamadas acá */
+        ]);
+        setProyectosCreados(creados.status === 'fulfilled' ? creados.value.datos : []);
+        setProyectosParticipa(
+            participa.status === 'fulfilled'
+                ? participa.value.datos.filter((p) => p.creador?.id !== usuarioId)
+                : [],
+        );
+        // TODO(Silvana): agregar tus setters, ej:
+        // setApuntes(misApuntes.status === 'fulfilled' ? misApuntes.value : []);
+        // setRespuestas(misRespuestas.status === 'fulfilled' ? misRespuestas.value : []);
+        setCargandoTabs(false);
+    }
+
     useEffect(() => {
         cargar();
     }, []);
+
+    useEffect(() => {
+        if (perfil?.id) cargarTabs(perfil.id);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [perfil?.id]);
 
     if (cargando) {
         return <p className='py-16 text-center text-[13px] text-neutral-500'>Cargando perfil…</p>;
@@ -83,6 +125,12 @@ export default function Perfil() {
                 </div>
 
                 <div className='ml-auto flex gap-2 pb-2'>
+                    <Link
+                        to={`/perfil/usuario/${perfil.nombre_usuario}`}
+                        className='inline-flex items-center gap-1.5 rounded-[10px] border border-white/[0.07] bg-[#1E1E24] px-3.5 py-1.5 text-[12.5px] font-medium text-neutral-300 transition hover:border-white/[0.18] hover:text-neutral-100'
+                    >
+                        <i className='ti ti-eye text-[14px]' /> Ver como otros
+                    </Link>
                     <button
                         onClick={() => setModalEditar(true)}
                         className='inline-flex items-center gap-1.5 rounded-[10px] border border-white/[0.07] bg-[#1E1E24] px-3.5 py-1.5 text-[12.5px] font-medium text-neutral-300 transition hover:border-white/[0.18] hover:text-neutral-100'
@@ -166,17 +214,30 @@ export default function Perfil() {
                         </p>
                     ) : (
                         <div className='flex flex-wrap gap-1.5'>
-                            {perfil.intereses.map((et) => (
-                                <span
-                                    key={et.id}
-                                    className='rounded-full border border-pink-500/25 bg-pink-500/10 px-2.5 py-1 text-[11px] font-semibold text-pink-400'
-                                >
-                                    {et.nombre}
-                                </span>
-                            ))}
+                            {perfil.intereses.map((et) => {
+                                const c = etiquetaColor(et.nombre);
+                                return (
+                                    <span
+                                        key={et.id}
+                                        className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${c.bg} ${c.text} ${c.border}`}
+                                    >
+                                        {et.nombre}
+                                    </span>
+                                );
+                            })}
                         </div>
                     )}
                 </div>
+
+                {/* PESTAÑAS: conexión con los demás módulos */}
+                <PerfilTabs
+                    proyectosCreados={proyectosCreados}
+                    proyectosParticipa={proyectosParticipa}
+                    // TODO(Silvana): agregar tus props, ej:
+                    // apuntes={apuntes}
+                    // respuestas={respuestas}
+                    cargando={cargandoTabs}
+                />
             </div>
 
             {/* MODAL: editar datos básicos */}
@@ -208,14 +269,14 @@ export default function Perfil() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MODAL: EDITAR DATOS BÁSICOS DEL PERFIL
+// Solo nombre de usuario y biografía son editables. El nombre completo queda
+// fijo desde el registro (se validó contra el correo institucional).
 // ─────────────────────────────────────────────────────────────────────────────
 
 function EditarPerfilModal({ perfil, onClose, onGuardado }) {
     const [form, setForm] = useState({
         nombre_usuario: perfil.nombre_usuario || '',
-        nombre_completo: perfil.nombre_completo || '',
         biografia: perfil.biografia || '',
-        campus: perfil.campus || '',
     });
     const [errores, setErrores] = useState([]);
     const [guardando, setGuardando] = useState(false);
@@ -227,9 +288,7 @@ function EditarPerfilModal({ perfil, onClose, onGuardado }) {
         try {
             const actualizado = await actualizarMiPerfil({
                 nombre_usuario: form.nombre_usuario.trim(),
-                nombre_completo: form.nombre_completo.trim() || null,
                 biografia: form.biografia.trim() || null,
-                campus: form.campus.trim() || null,
             });
             onGuardado(actualizado);
         } catch (err) {
@@ -260,6 +319,17 @@ function EditarPerfilModal({ perfil, onClose, onGuardado }) {
                 )}
 
                 <div>
+                    <label className='mb-1.5 block text-[11px] font-medium text-neutral-500'>Nombre completo</label>
+                    <div className='flex items-center gap-2 rounded-[10px] border border-white/[0.05] bg-[#17171B] px-3.5 py-2.5 text-[13px] text-neutral-500'>
+                        <i className='ti ti-lock text-[13px]' />
+                        {perfil.nombre_completo || 'Sin nombre completo'}
+                    </div>
+                    <p className='mt-1 text-[11px] text-neutral-600'>
+                        No se puede editar: se detectó automáticamente desde tu correo institucional al registrarte.
+                    </p>
+                </div>
+
+                <div>
                     <label className='mb-1.5 block text-[11px] font-medium text-neutral-500'>Nombre de usuario</label>
                     <input
                         type='text'
@@ -267,17 +337,7 @@ function EditarPerfilModal({ perfil, onClose, onGuardado }) {
                         onChange={(e) => setForm((f) => ({ ...f, nombre_usuario: e.target.value }))}
                         className='w-full rounded-[10px] border border-white/[0.07] bg-[#1E1E24] px-3.5 py-2.5 text-[13px] text-neutral-100 outline-none transition focus:border-pink-500/50'
                     />
-                </div>
-
-                <div>
-                    <label className='mb-1.5 block text-[11px] font-medium text-neutral-500'>Nombre completo</label>
-                    <input
-                        type='text'
-                        value={form.nombre_completo}
-                        onChange={(e) => setForm((f) => ({ ...f, nombre_completo: e.target.value }))}
-                        placeholder='Ej: Alumno InFACE'
-                        className='w-full rounded-[10px] border border-white/[0.07] bg-[#1E1E24] px-3.5 py-2.5 text-[13px] text-neutral-100 outline-none transition placeholder:text-neutral-600 focus:border-pink-500/50'
-                    />
+                    <p className='mt-1 text-[11px] text-neutral-600'>Debe ser único: no puede coincidir con el de otro usuario.</p>
                 </div>
 
                 <div>
@@ -289,17 +349,6 @@ function EditarPerfilModal({ perfil, onClose, onGuardado }) {
                         maxLength={280}
                         placeholder='Cuéntanos sobre ti...'
                         className='w-full resize-none rounded-[10px] border border-white/[0.07] bg-[#1E1E24] px-3.5 py-2.5 text-[13px] text-neutral-100 outline-none transition placeholder:text-neutral-600 focus:border-pink-500/50'
-                    />
-                </div>
-
-                <div>
-                    <label className='mb-1.5 block text-[11px] font-medium text-neutral-500'>Campus</label>
-                    <input
-                        type='text'
-                        value={form.campus}
-                        onChange={(e) => setForm((f) => ({ ...f, campus: e.target.value }))}
-                        placeholder='Ej: Concepción'
-                        className='w-full rounded-[10px] border border-white/[0.07] bg-[#1E1E24] px-3.5 py-2.5 text-[13px] text-neutral-100 outline-none transition placeholder:text-neutral-600 focus:border-pink-500/50'
                     />
                 </div>
 

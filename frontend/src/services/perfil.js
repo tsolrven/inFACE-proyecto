@@ -54,6 +54,11 @@ export async function obtenerMiPerfil() {
     return data.data;
 }
 
+export async function obtenerPerfilPublico(nombreUsuario) {
+    const data = await request(`/perfil/usuario/${encodeURIComponent(nombreUsuario)}`);
+    return data.data;
+}
+
 export async function actualizarMiPerfil(payload) {
     const data = await request('/perfil/me', { method: 'PUT', body: payload });
     return data.data;

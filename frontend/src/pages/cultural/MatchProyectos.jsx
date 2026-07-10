@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import {
   listarProyectos,
@@ -16,6 +17,7 @@ import {
 import {
   getInitials,
   avatarColor,
+  etiquetaColor,
   EstadoChip,
   ModalidadChip,
   EstadoPostulacionChip,
@@ -478,7 +480,7 @@ function ExplorarTab({ usuario, favoritosIds, postuladosActivos, onToggleFavorit
         />
       )}
 
-      <div>
+      <div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
         {proyectosFiltrados.map((p) => (
           <ProyectoCard
             key={p.id}
@@ -502,9 +504,9 @@ function ProyectoCard({ proyecto: p, esCreador, esFavorito, yaPostulado, onToggl
   const puedePostular = p.estado === 'abierto' && !esCreador;
 
   return (
-    <div className='mb-3 overflow-hidden rounded-2xl border border-white/[0.06] bg-[#1E1E24] transition hover:border-white/[0.12]'>
+    <div className='flex h-full flex-col overflow-hidden rounded-2xl border border-white/[0.06] bg-[#1E1E24] transition hover:border-white/[0.12]'>
       <div className='h-1' style={{ background: barGradient(p.estado) }} />
-      <div className='p-[18px]'>
+      <div className='flex flex-1 flex-col p-5'>
         <div className='mb-2.5 flex items-start justify-between gap-3'>
           <div className='flex-1'>
             <div className='mb-1.5 text-[14px] font-bold leading-snug text-neutral-100'>{p.titulo}</div>
@@ -521,18 +523,24 @@ function ProyectoCard({ proyecto: p, esCreador, esFavorito, yaPostulado, onToggl
 
         {p.etiquetas?.length > 0 && (
           <div className='mb-3 flex flex-wrap gap-1.5'>
-            {p.etiquetas.slice(0, 6).map((et) => (
-              <span
-                key={et.id}
-                className='rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] font-semibold text-neutral-400'
-              >
-                {et.nombre}
-              </span>
-            ))}
+            {p.etiquetas.slice(0, 6).map((et) => {
+              const c = etiquetaColor(et.nombre);
+              return (
+                <span
+                  key={et.id}
+                  className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${c.bg} ${c.text} ${c.border}`}
+                >
+                  {et.nombre}
+                </span>
+              );
+            })}
           </div>
         )}
 
-        <div className='mb-2.5 flex items-center gap-2'>
+        <Link
+          to={`/perfil/usuario/${p.creador?.nombre_usuario}`}
+          className='mb-2.5 flex items-center gap-2 transition hover:opacity-80'
+        >
           <div
             className={`flex h-6 w-6 items-center justify-center rounded-full text-[9px] font-bold ${av.bg} ${av.text}`}
           >
@@ -541,7 +549,7 @@ function ProyectoCard({ proyecto: p, esCreador, esFavorito, yaPostulado, onToggl
           <div className='text-[12px] text-neutral-400'>
             <strong className='text-neutral-100'>{p.creador?.nombre_usuario}</strong>
           </div>
-        </div>
+        </Link>
 
         <div className='mb-3 flex items-center gap-1.5 text-[11.5px] text-neutral-600'>
           <i className='ti ti-users text-[13px]' />
@@ -555,7 +563,7 @@ function ProyectoCard({ proyecto: p, esCreador, esFavorito, yaPostulado, onToggl
           )}
         </div>
 
-        <div className='flex gap-2 border-t border-white/[0.07] pt-3'>
+        <div className='mt-auto flex gap-2 border-t border-white/[0.07] pt-3'>
           {puedePostular && (
             <button
               onClick={onPostularClick}

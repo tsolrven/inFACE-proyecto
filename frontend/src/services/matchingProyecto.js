@@ -48,12 +48,13 @@ async function request(path, { method = 'GET', body, retry = true } = {}) {
 // PROYECTOS
 // ─────────────────────────────────────────────────────────────────────────────
 
-export async function listarProyectos({ modalidad, estado, etiquetas, creador_id, mias, pagina, limite } = {}) {
+export async function listarProyectos({ modalidad, estado, etiquetas, creador_id, integrante_id, mias, pagina, limite } = {}) {
     const params = new URLSearchParams();
     if (modalidad) params.set('modalidad', modalidad);
     if (estado) params.set('estado', estado);
     if (etiquetas?.length) params.set('etiquetas', etiquetas.join(','));
     if (creador_id) params.set('creador_id', creador_id);
+    if (integrante_id) params.set('integrante_id', integrante_id)
     if (mias) params.set('mias', 'true');
     params.set('pagina', pagina || 1);
     params.set('limite', limite || 50);

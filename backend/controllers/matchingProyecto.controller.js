@@ -34,13 +34,15 @@ async function crearController(req, res) {
 // ╰─────────────────────────────✧────────────────────────────────╮
 
 async function listarController(req, res) {
-        const { modalidad, estado, etiquetas, pagina, limite } = req.query;
+        const { modalidad, estado, etiquetas, creador_id, integrante_id, pagina, limite } = req.query;
         const etiqueta_ids = etiquetas ? etiquetas.split(',') : [];
 
         const resultado = await obtenerProyectos({
                 modalidad,
                 estado,
                 etiqueta_ids,
+                creador_id,
+                integrante_id,
                 pagina: Number(pagina) || 1,
                 limite: Number(limite) || 10,
         });

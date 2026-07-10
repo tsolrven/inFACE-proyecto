@@ -54,13 +54,16 @@ async function crearProyecto({ creador_id, titulo_proyecto, descripcion_proyecto
 
 // ╰─────────────────────────────✧────────────────────────────────╮
 
-async function obtenerProyectos({ modalidad, estado, etiqueta_ids = [], creador_id, pagina = 1, limite = 10 }) {
+async function obtenerProyectos({ modalidad, estado, etiqueta_ids = [], creador_id, integrante_id, pagina = 1, limite = 10 }) {
     const skip = (pagina - 1) * limite;
 
     const where = {
         ...(modalidad && { modalidad_proyecto: modalidad }),
         ...(estado && { estado_proyecto: estado }),
         ...(creador_id && { creador_id }),
+        ...(integrante_id && {
+            integrantes: { some: { usuario_id: integrante_id, fue_expulsado: false } },
+        }),
         ...(etiqueta_ids.length > 0 && {
             etiquetas: {
                 some: { etiqueta_id: { in: etiqueta_ids } },

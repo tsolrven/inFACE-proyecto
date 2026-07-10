@@ -1,5 +1,6 @@
 import {
     obtenerPerfilPropio,
+    obtenerPerfilPublico,
     actualizarPerfil,
     actualizarMisEtiquetas,
 } from '../services/perfil.service.js';
@@ -11,6 +12,14 @@ async function obtenerMiPerfilController(req, res) {
 }
 
 // ╰─────────────────────────────✧────────────────────────────────╮
+
+async function obtenerPerfilPublicoController(req, res) {
+    const perfil = await obtenerPerfilPublico(req.params.nombre_usuario);
+    res.json({ ok: true, data: perfil });
+}
+
+// ╰─────────────────────────────✧────────────────────────────────
+
 
 async function actualizarMiPerfilController(req, res) {
     const perfil = await actualizarPerfil(req.usuario.id, req.body);
@@ -25,5 +34,6 @@ async function actualizarMisEtiquetasController(req, res) {
 }
 
 export const obtenerMiPerfil = manejarController(obtenerMiPerfilController);
+export const obtenerPerfilPublicoExport = manejarController(obtenerPerfilPublicoController);
 export const actualizarMiPerfil = manejarController(actualizarMiPerfilController);
 export const actualizarMisEtiquetasExport = manejarController(actualizarMisEtiquetasController);

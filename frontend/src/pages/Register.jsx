@@ -132,10 +132,9 @@ export default function Register() {
                 placeholder={placeholder}
                 className={`w-full rounded-lg border bg-neutral-900 px-4 py-2.5 text-sm text-white placeholder-neutral-600 outline-none transition
                   focus:ring-2 focus:ring-indigo-500 focus:border-transparent
-                  ${
-                    errors.fields[id]
-                      ? 'border-red-500/60'
-                      : 'border-neutral-800 hover:border-neutral-600'
+                  ${errors.fields[id]
+                    ? 'border-red-500/60'
+                    : 'border-neutral-800 hover:border-neutral-600'
                   }`}
               />
               {errors.fields[id] && (

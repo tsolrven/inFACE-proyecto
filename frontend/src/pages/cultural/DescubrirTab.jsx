@@ -7,7 +7,7 @@ import {
     listarUsuariosSimilares,
 } from '../../services/matchingProyecto';
 import { obtenerMiPerfil } from '../../services/perfil';
-import { getInitials, avatarColor, EstadoChip, ModalidadChip } from '../../helpers/matchHelpers';
+import { getInitials, avatarColor, etiquetaColor, EstadoChip, ModalidadChip } from '../../helpers/matchHelpers';
 
 const UMBRAL_SWIPE = 110; // px de arrastre necesarios para confirmar un swipe
 
@@ -116,7 +116,7 @@ export default function DescubrirTab({
                 console.error('Error al descartar proyecto:', actual.id, err);
             });
         }
-        setTimeout(quitarActual, 260);
+        setTimeout(quitarActual, 300);
     }
 
     // ── gestos de arrastre (mouse + touch, sin librerías externas) ──
@@ -143,9 +143,9 @@ export default function DescubrirTab({
     }
 
     function transformActual() {
-        if (salida === 'derecha') return 'translate(650px, -40px) rotate(26deg)';
-        if (salida === 'izquierda') return 'translate(-650px, -40px) rotate(-26deg)';
-        return `translate(${dragPos.x}px, ${dragPos.y}px) rotate(${dragPos.x / 18}deg)`;
+        if (salida === 'derecha') return 'translate(650px, -30px) rotate(20deg) scale(1.04)';
+        if (salida === 'izquierda') return 'translate(-650px, -30px) rotate(-20deg) scale(0.96)';
+        return `translate(${dragPos.x}px, ${dragPos.y}px) rotate(${dragPos.x / 22}deg)`;
     }
 
     const likeOpacity = Math.min(Math.max(dragPos.x / UMBRAL_SWIPE, 0), 1);
@@ -216,10 +216,14 @@ export default function DescubrirTab({
                                 onPointerMove={onPointerMove}
                                 onPointerUp={onPointerUp}
                                 onPointerCancel={onPointerUp}
-                                className='absolute inset-0 cursor-grab touch-none overflow-hidden rounded-2xl border border-white/[0.08] bg-[#1E1E24] shadow-[0_20px_50px_rgba(0,0,0,0.45)] active:cursor-grabbing'
+                                className='absolute inset-0 cursor-grab touch-none overflow-hidden rounded-2xl border border-white/[0.08] bg-[#1E1E24] active:cursor-grabbing'
                                 style={{
                                     transform: transformActual(),
-                                    transition: drag.current.activo ? 'none' : 'transform .28s ease',
+                                    transition: drag.current.activo ? 'none' : 'transform .32s cubic-bezier(.22,.61,.36,1), box-shadow .32s ease',
+                                    boxShadow:
+                                        salida === 'derecha'
+                                            ? '0 20px 60px rgba(232,84,106,0.45)'
+                                            : '0 20px 50px rgba(0,0,0,0.45)',
                                 }}
                             >
                                 <TarjetaProyecto
@@ -229,7 +233,7 @@ export default function DescubrirTab({
 
                                 {/* sellos ME INTERESA / PASAR */}
                                 <div
-                                    className='pointer-events-none absolute left-5 top-6 -rotate-[18deg] rounded-lg border-[3px] border-emerald-400 px-3 py-1 text-[18px] font-black tracking-wider text-emerald-400'
+                                    className='pointer-events-none absolute left-5 top-6 -rotate-[18deg] rounded-lg border-[3px] border-pink-400 px-3 py-1 text-[18px] font-black tracking-wider text-pink-400'
                                     style={{ opacity: likeOpacity }}
                                 >
                                     ME INTERESA
@@ -240,6 +244,13 @@ export default function DescubrirTab({
                                 >
                                     PASAR
                                 </div>
+
+                                {/* pequeño estallido de corazón al confirmar match */}
+                                {salida === 'derecha' && (
+                                    <div className='pointer-events-none absolute inset-0 flex items-center justify-center'>
+                                        <i className='ti ti-heart-filled animate-ping text-[64px] text-pink-400/70' />
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -354,27 +365,34 @@ function PanelLateral({ habilidades, personasSimilares, cargando, interesesIds, 
                     <div className='flex flex-col gap-2.5'>
                         {(() => {
                             const max = Math.max(...habilidades.map((h) => h.total_proyectos), 1);
-                            return habilidades.map((h) => (
-                                <div key={h.id}>
-                                    <div className='mb-1 flex items-center justify-between gap-2'>
-                                        <span className='inline-flex items-center gap-1.5 text-[12px] font-medium text-neutral-300'>
-                                            {h.nombre}
-                                            {h.es_interes_propio && (
-                                                <i title='Ya está entre tus intereses' className='ti ti-check text-[11px] text-pink-400' />
-                                            )}
-                                        </span>
-                                        <span className='flex-shrink-0 text-[11px] text-neutral-600'>
-                                            {h.total_proyectos} proyecto{h.total_proyectos === 1 ? '' : 's'}
-                                        </span>
+                            return habilidades.map((h) => {
+                                const c = etiquetaColor(h.nombre);
+                                return (
+                                    <div key={h.id}>
+                                        <div className='mb-1 flex items-center justify-between gap-2'>
+                                            <span className={`inline-flex items-center gap-1.5 text-[12px] font-medium ${c.text}`}>
+                                                <span
+                                                    className='h-2 w-2 flex-shrink-0 rounded-full'
+                                                    style={{ background: c.hex }}
+                                                />
+                                                {h.nombre}
+                                                {h.es_interes_propio && (
+                                                    <i title='Ya está entre tus intereses' className='ti ti-check text-[11px]' />
+                                                )}
+                                            </span>
+                                            <span className='flex-shrink-0 text-[11px] text-neutral-600'>
+                                                {h.total_proyectos} proyecto{h.total_proyectos === 1 ? '' : 's'}
+                                            </span>
+                                        </div>
+                                        <div className='h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]'>
+                                            <div
+                                                className='h-full rounded-full transition-all'
+                                                style={{ width: `${Math.max((h.total_proyectos / max) * 100, 8)}%`, background: c.hex }}
+                                            />
+                                        </div>
                                     </div>
-                                    <div className='h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]'>
-                                        <div
-                                            className='h-full rounded-full bg-gradient-to-r from-pink-500 to-indigo-400'
-                                            style={{ width: `${Math.max((h.total_proyectos / max) * 100, 8)}%` }}
-                                        />
-                                    </div>
-                                </div>
-                            ));
+                                );
+                            });
                         })()}
                     </div>
                 )}
@@ -477,12 +495,11 @@ function TarjetaProyecto({ proyecto: p, interesesIds }) {
                 <div className='mb-3 flex flex-wrap gap-1.5'>
                     {p.etiquetas.slice(0, 8).map((et) => {
                         const coincide = interesesIds.has(et.id);
+                        const c = etiquetaColor(et.nombre);
                         return (
                             <span
                                 key={et.id}
-                                className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${coincide
-                                    ? 'border border-pink-500/40 bg-pink-500/10 text-pink-400'
-                                    : 'bg-white/[0.06] text-neutral-400'
+                                className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${c.bg} ${c.text} ${coincide ? `${c.border} ring-1 ring-inset ring-current` : 'border-transparent'
                                     }`}
                             >
                                 {coincide && <i className='ti ti-check mr-0.5 text-[9px]' />}

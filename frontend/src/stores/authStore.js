@@ -22,4 +22,9 @@ export const useAuthStore = create((set) => ({
     await apiLogout();
     set({ usuario: null });
   },
+
+  marcarInteresesConfigurados: () => {
+    set((state) => (state.usuario ? { usuario: { ...state.usuario, tiene_intereses: true } } : state));
+  },
+  
 }));

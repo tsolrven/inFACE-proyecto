@@ -12,6 +12,7 @@ import {
   ValidationError,
 } from '../errors/AppError.js';
 import { validarEtiquetasExisten } from './etiqueta.service.js';
+import { derivarNombreDesdeCorreo } from '../helpers/nombre.helper.js';
 
 // ────────────────────────────────────────────────────────────────────────────────────────
 function determinarRolPorCorreo(correo) {
@@ -46,6 +47,8 @@ async function registrar({ correo, contrasena, nombre_usuario, etiqueta_ids = []
 
   const hash = await bcrypt.hash(contrasena, 10);
 
+  const nombre_completo = derivarNombreDesdeCorreo(correo);
+
   const usuario = await prisma.usuario.create({
     data: {
       correo,
@@ -54,6 +57,7 @@ async function registrar({ correo, contrasena, nombre_usuario, etiqueta_ids = []
       perfil: {
         create: {
           nombre_usuario,
+          nombre_completo,
         },
       },
       usuario_etiquetas: {
@@ -73,6 +77,7 @@ async function registrar({ correo, contrasena, nombre_usuario, etiqueta_ids = []
     correo: usuario.correo,
     rol: usuario.rol,
     nombre_usuario: usuario.perfil.nombre_usuario,
+    nombre_completo: usuario.perfil.nombre_completo,
     intereses: usuario.usuario_etiquetas.map((ue) => ({
       id: ue.etiqueta.id,
       nombre: ue.etiqueta.nombre_etiqueta,
@@ -83,7 +88,7 @@ async function registrar({ correo, contrasena, nombre_usuario, etiqueta_ids = []
 async function iniciarSesion({ correo, contrasena }) {
   const usuario = await prisma.usuario.findUnique({
     where: { correo },
-    include: { perfil: true },
+    include: { perfil: true, usuario_etiquetas: true },
   });
 
   if (!usuario) throw new UnauthorizedError('Credenciales inválidas');
@@ -102,6 +107,7 @@ async function iniciarSesion({ correo, contrasena }) {
       correo: usuario.correo,
       rol: usuario.rol,
       nombre_usuario: usuario.perfil.nombre_usuario,
+      tiene_intereses: usuario.usuario_etiquetas.length > 0,
     },
   };
 }

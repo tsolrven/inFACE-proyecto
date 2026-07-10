@@ -1,6 +1,7 @@
 import express from 'express';
 import {
     obtenerMiPerfil,
+    obtenerPerfilPublicoExport,
     actualizarMiPerfil,
     actualizarMisEtiquetasExport,
 } from '../controllers/perfil.controller.js';
@@ -18,5 +19,7 @@ router.put(
     validate(actualizarEtiquetasSchema),
     actualizarMisEtiquetasExport,
 ); // PUT /api/perfil/me/etiquetas
+
+router.get('/usuario/:nombre_usuario', autenticar, obtenerPerfilPublicoExport); // GET /api/perfil/usuario/:nombre_usuario
 
 export default router;

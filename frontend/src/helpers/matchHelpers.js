@@ -81,6 +81,33 @@ export function tiempoRelativo(fecha) {
 }
 
 /*
+ * Paleta de colores por etiqueta (consistente con la estética rosa/oscura de la app).
+ * Se usa tanto en los chips de etiquetas como en las barras de "habilidades en demanda",
+ * para que una misma etiqueta siempre se vea del mismo color en todos lados.
+ */
+const PALETA_ETIQUETAS = [
+    { bg: 'bg-pink-500/10', text: 'text-pink-400', border: 'border-pink-500/25', hex: '#E8546A' },
+    { bg: 'bg-indigo-500/10', text: 'text-indigo-400', border: 'border-indigo-500/25', hex: '#818CF8' },
+    { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/25', hex: '#34D399' },
+    { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/25', hex: '#FBBF24' },
+    { bg: 'bg-sky-500/10', text: 'text-sky-400', border: 'border-sky-500/25', hex: '#38BDF8' },
+    { bg: 'bg-violet-500/10', text: 'text-violet-400', border: 'border-violet-500/25', hex: '#A78BFA' },
+    { bg: 'bg-rose-500/10', text: 'text-rose-400', border: 'border-rose-500/25', hex: '#FB7185' },
+    { bg: 'bg-teal-500/10', text: 'text-teal-400', border: 'border-teal-500/25', hex: '#2DD4BF' },
+    { bg: 'bg-orange-500/10', text: 'text-orange-400', border: 'border-orange-500/25', hex: '#FB923C' },
+    { bg: 'bg-fuchsia-500/10', text: 'text-fuchsia-400', border: 'border-fuchsia-500/25', hex: '#E879F9' },
+];
+
+export function etiquetaColor(idOrNombre) {
+    const str = String(idOrNombre || '');
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return PALETA_ETIQUETAS[Math.abs(hash) % PALETA_ETIQUETAS.length];
+}
+
+/*
  * Helper para renderizar los estados generales (Compatible con .js)
  */
 export function EstadoChip({ estado }) {

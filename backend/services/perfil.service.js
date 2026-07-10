@@ -63,7 +63,29 @@ async function obtenerPerfilPropio(usuario_id) {
 
 // ╰─────────────────────────────✧────────────────────────────────╮
 
-async function actualizarPerfil(usuario_id, { nombre_usuario, nombre_completo, biografia, campus }) {
+async function obtenerPerfilPublico(nombre_usuario) {
+    const perfilBuscado = await prisma.perfil.findUnique({ where: { nombre_usuario } });
+    if (!perfilBuscado) throw new NotFoundError('Usuario');
+
+    const [usuario, proyectos_creados, postulaciones_enviadas] = await Promise.all([
+        prisma.usuario.findUnique({
+            where: { id: perfilBuscado.usuario_id },
+            include: incluirPerfilCompleto(),
+        }),
+        prisma.proyecto.count({ where: { creador_id: perfilBuscado.usuario_id } }),
+        prisma.postulacionProyecto.count({ where: { postulante_id: perfilBuscado.usuario_id } }),
+    ]);
+
+    if (!usuario || !usuario.esta_activo) throw new NotFoundError('Usuario');
+
+    const formateado = formatearPerfil(usuario, { proyectos_creados, postulaciones_enviadas });
+    delete formateado.correo; // no se expone el correo de otros usuarios
+    return formateado;
+}
+
+// ╰─────────────────────────────✧────────────────────────────────╮
+
+async function actualizarPerfil(usuario_id, { nombre_usuario, biografia }) {
     if (nombre_usuario) {
         const enUso = await prisma.perfil.findFirst({
             where: { nombre_usuario, usuario_id: { not: usuario_id } },
@@ -75,9 +97,7 @@ async function actualizarPerfil(usuario_id, { nombre_usuario, nombre_completo, b
         where: { usuario_id },
         data: {
             ...(nombre_usuario !== undefined && { nombre_usuario }),
-            ...(nombre_completo !== undefined && { nombre_completo }),
             ...(biografia !== undefined && { biografia }),
-            ...(campus !== undefined && { campus }),
         },
     });
 
@@ -113,4 +133,10 @@ async function actualizarMisEtiquetas(usuario_id, etiqueta_ids = []) {
     return obtenerPerfilPropio(usuario_id);
 }
 
-export { obtenerPerfilPropio, actualizarPerfil, actualizarMisEtiquetas, MAX_INTERESES };
+export {
+    obtenerPerfilPropio,
+    obtenerPerfilPublico,
+    actualizarPerfil,
+    actualizarMisEtiquetas,
+    MAX_INTERESES,
+};
