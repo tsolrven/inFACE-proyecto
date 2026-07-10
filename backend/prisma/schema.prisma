@@ -160,13 +160,14 @@ model Voto {
 // ╰─────────────────────────────✧────────────────────────────────╮
 
 model Archivo {
-  id             String   @id @default(uuid())
-  tipo_contenido String  
-  contenido_id   String   
-  nombre_archivo String
-  ruta_url       String
-  tipo_mime      String?
-  tamanio        Int?
+  id                 String   @id @default(uuid())
+  tipo_contenido     String  
+  contenido_id       String   
+  nombre_archivo     String
+  ruta_url           String
+  tipo_mime          String?
+  tamanio            Int?
+  contador_descargas Int      @default(0)
 
   @@index([tipo_contenido, contenido_id])
   @@map("archivos")

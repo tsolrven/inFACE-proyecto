@@ -66,6 +66,32 @@ async function subirArchivo({ apunte_id, file, usuario_id, rol }) {
   return archivo;
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
+async function descargarArchivo(id) {
+  const archivo = await prisma.archivo
+    .update({
+      where: { id },
+      data: { contador_descargas: { increment: 1 } },
+    })
+    .catch(() => null);
+
+  if (!archivo) throw new NotFoundError('Archivo');
+
+  const rutaFisica = path.join(__dirname, '..', archivo.ruta_url);
+  if (!fs.existsSync(rutaFisica)) {
+    logger.warn('Archivo físico no encontrado al descargar', {
+      archivo_id: id,
+      ruta: rutaFisica,
+    });
+    throw new NotFoundError('Archivo');
+  }
+
+  return {
+    rutaFisica,
+    nombre_archivo: archivo.nombre_archivo,
+    tipo_mime: archivo.tipo_mime,
+  };
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
 async function eliminarArchivo(id, usuario_id, rol) {
   const archivo = await prisma.archivo.findUnique({ where: { id } });
   if (!archivo) throw new NotFoundError('Archivo');
@@ -94,4 +120,4 @@ async function eliminarArchivo(id, usuario_id, rol) {
   return { mensaje: 'Archivo eliminado' };
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-export { subirArchivo, eliminarArchivo };
+export { subirArchivo, eliminarArchivo, descargarArchivo };

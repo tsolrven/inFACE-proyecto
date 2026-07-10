@@ -1,5 +1,9 @@
 import fs from 'fs';
-import { subirArchivo, eliminarArchivo } from '../services/archivo.service.js';
+import {
+  subirArchivo,
+  eliminarArchivo,
+  descargarArchivo,
+} from '../services/archivo.service.js';
 import ApiResponse from '../utils/ApiResponse.js';
 import { BadRequestError } from '../errors/AppError.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
@@ -16,10 +20,6 @@ async function subir(req, res, next) {
     });
     return ApiResponse.created(res, archivo);
   } catch (err) {
-    // multer ya escribió el archivo en disco antes de llegar acá (corre
-    // antes que el controller). Si el servicio rechaza la subida (permiso,
-    // apunte no existe, límite alcanzado, etc.) el archivo físico queda
-    // huérfano si no lo borramos nosotros mismos.
     if (req.file?.path && fs.existsSync(req.file.path)) {
       fs.unlink(req.file.path, () => {});
     }
@@ -36,4 +36,16 @@ async function eliminar(req, res, next) {
   }
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-export { subir, eliminar };
+async function descargar(req, res, next) {
+  try {
+    const { rutaFisica, nombre_archivo, tipo_mime } = await descargarArchivo(
+      req.params.id,
+    );
+    if (tipo_mime) res.type(tipo_mime);
+    return res.download(rutaFisica, nombre_archivo);
+  } catch (err) {
+    next(err);
+  }
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+export { subir, eliminar, descargar };

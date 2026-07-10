@@ -16,11 +16,11 @@ const __dirname = path.dirname(__filename);
 async function listarApuntes({
   ramo_id,
   tipo,
-  tipo_archivo, 
+  tipo_archivo,
   orden = 'recientes',
   pagina = 1,
   limite = 20,
-  usuario_id, 
+  usuario_id,
 }) {
   const where = {};
   if (ramo_id) where.ramo_id = ramo_id;
@@ -47,22 +47,22 @@ async function listarApuntes({
   const orderBy =
     orden === 'populares' ? { votos_neto: 'desc' } : { creado_en: 'desc' };
 
-const [apuntes, total] = await Promise.all([
-  prisma.apunte.findMany({
-    where,
-    orderBy,
-    skip: (pagina - 1) * limite,
-    take: limite,
-    include: {
-      autor: { include: { perfil: { select: { nombre_usuario: true } } } },
-      ramo: {
-        select: { id: true, nombre: true, codigo: true, semestre: true },
+  const [apuntes, total] = await Promise.all([
+    prisma.apunte.findMany({
+      where,
+      orderBy,
+      skip: (pagina - 1) * limite,
+      take: limite,
+      include: {
+        autor: { include: { perfil: { select: { nombre_usuario: true } } } },
+        ramo: {
+          select: { id: true, nombre: true, codigo: true, semestre: true },
+        },
+        hashtags: { include: { hashtag: { select: { nombre: true } } } },
       },
-      hashtags: { include: { hashtag: { select: { nombre: true } } } },
-    },
-  }),
-  prisma.apunte.count({ where }),
-]);
+    }),
+    prisma.apunte.count({ where }),
+  ]);
 
   const ids = apuntes.map((a) => a.id);
 
@@ -217,7 +217,6 @@ async function actualizarApunte(id, usuario_id, rol, datos) {
     hashtags,
   } = datos;
 
-  // validar que no vengan link y snippet juntos
   const nuevoLink =
     link_repositorio !== undefined ? link_repositorio : apunte.link_repositorio;
   const nuevoSnippet =
@@ -226,7 +225,6 @@ async function actualizarApunte(id, usuario_id, rol, datos) {
     throw new BadRequestError('No puedes tener link y snippet a la vez');
   }
 
-  // validar ramo si se cambió
   if (ramo_id && ramo_id !== apunte.ramo_id) {
     const ramo = await prisma.ramo.findUnique({ where: { id: ramo_id } });
     if (!ramo) throw new NotFoundError('Ramo');
@@ -241,7 +239,6 @@ async function actualizarApunte(id, usuario_id, rol, datos) {
       ...(tipo && { tipo }),
       ...(link_repositorio !== undefined && { link_repositorio }),
       ...(codigo_snippet !== undefined && { codigo_snippet }),
-      // si vienen hashtags se reemplazan completamente
       ...(hashtags && {
         hashtags: {
           deleteMany: {},
@@ -274,14 +271,10 @@ async function eliminarApunte(id, usuario_id, rol) {
     throw new ForbiddenError('No tienes permiso para eliminar este apunte');
   }
 
-  // 1. obtener archivos físicos antes de borrar de la BD
   const archivos = await prisma.archivo.findMany({
     where: { tipo_contenido: 'apunte', contenido_id: id },
   });
 
-  // 2. eliminar el apunte (ApunteHashtag en cascada por el schema)
-  //    Comentarios y Votos son polimórficos, no tienen FK directa al apunte,
-  //    así que los borramos explícitamente antes.
   await prisma.$transaction([
     prisma.voto.deleteMany({
       where: { tipo_contenido: 'apunte', contenido_id: id },
@@ -295,8 +288,6 @@ async function eliminarApunte(id, usuario_id, rol) {
     prisma.apunte.delete({ where: { id } }),
   ]);
 
-  // 3. eliminar archivos físicos del disco (fuera de la transacción,
-  //    si falla solo se pierde el archivo físico, la BD ya está limpia)
   for (const archivo of archivos) {
     const rutaFisica = path.join(__dirname, '..', archivo.ruta_url);
     if (fs.existsSync(rutaFisica)) {
@@ -348,7 +339,10 @@ function formatearApunte(
     hashtags: apunte.hashtags.map((h) => h.hashtag.nombre),
     archivos,
     comentarios_count: comentarios,
-    descargas: null, // placeholder, lógica pendiente
+    descargas: archivos.reduce(
+      (acc, a) => acc + (a.contador_descargas ?? 0),
+      0,
+    ),
   };
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
