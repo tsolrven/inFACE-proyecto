@@ -5,6 +5,7 @@ import archivoRoutes from './archivo.routes.js';
 import votoRoutes from './voto.routes.js';
 import comentarioRoutes from './comentario.routes.js';
 import ramoRoutes from './ramo.routes.js';
+import reporteRoutes from './reporte.routes.js';
 
 function routerApi(app) {
   const router = Router();
@@ -20,6 +21,9 @@ function routerApi(app) {
   router.use('/votos', votoRoutes);
   router.use('/comentarios', comentarioRoutes);
   router.use('/repositorio', ramoRoutes);
+
+  // moderación (transversal a todos los módulos)
+  router.use('/reportes', reporteRoutes);
 }
 
 export { routerApi };
