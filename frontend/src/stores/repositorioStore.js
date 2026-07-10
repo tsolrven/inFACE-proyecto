@@ -5,13 +5,13 @@ import { votarApunte } from '../services/repositorioMateriales/voto.service';
 const FILTROS_INICIALES = {
   ramo_id: null,
   tipo_archivo: null,
-  orden: 'recientes', // 'recientes' | 'populares'
+  orden: 'recientes', // recientes | populares
 };
 
 export const useRepositorioStore = create((set, get) => ({
   filtros: { ...FILTROS_INICIALES },
   apuntes: [],
-  meta: null, // { total, page, limit, totalPages, hasNext, hasPrev }
+  meta: null, 
   pagina: 1,
   cargando: false,
   cargandoMas: false,

@@ -1,5 +1,5 @@
-// Convierte una fecha ISO a texto relativo en español, igual al mockup
-// ("hace 2 días", "hace 18 horas", etc.)
+//! convierte una fecha ISO a texto relativo en español ("hace 2 días", "hace 18 horas", etc)
+
 export function formatearTiempoRelativo(fechaISO) {
   const fecha = new Date(fechaISO);
   const ahora = new Date();

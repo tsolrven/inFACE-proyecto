@@ -1,4 +1,4 @@
-// Traduce un mimetype (o el "tipo_archivo" del filtro) a { icon, color, bg, label }.
+//! traduce un mimetype (el tipo_archivo del filtro) a { icon, color, bg, label }.
 
 const DEFS = {
   pdf: {
@@ -97,6 +97,10 @@ export function metaPrincipal(apunte) {
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 const SERVER_ORIGIN = API_URL.replace(/\/api\/?$/, '');
 
+// ya no sirve para descargar directamente (los /uploads dejaron de ser públicos)
+// para descargar un archivo usar descargarArchivo() del archivo.service, que pasa por el endpoint
+// autenticado.
+// dejo esto por si se necesita construir la URL "cruda" para otro propósito
 export function urlArchivo(archivo) {
   return `${SERVER_ORIGIN}${archivo.ruta_url}`;
 }

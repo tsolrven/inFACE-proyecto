@@ -1,8 +1,13 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useRepositorioStore } from '../../stores/repositorioStore';
 import { colorPorRamo } from '../../utils/ramoColors';
-import { metaPrincipal, metaDeArchivo, formatearTamanio, urlArchivo } from '../../utils/fileMeta';
+import {
+  metaPrincipal,
+  metaDeArchivo,
+  formatearTamanio,
+} from '../../utils/fileMeta';
 import { formatearTiempoRelativo } from '../../utils/formatRelativeTime';
+import { descargarArchivo } from '../../services/repositorioMateriales/archivo.service';
 
 export default function MaterialCard({ apunte }) {
   const navigate = useNavigate();
@@ -34,7 +39,10 @@ export default function MaterialCard({ apunte }) {
           className='flex h-[34px] w-[34px] items-center justify-center rounded-[10px]'
           style={{ background: iconMeta.bg }}
         >
-          <i className={`ti ${iconMeta.icon} text-lg`} style={{ color: iconMeta.color }} />
+          <i
+            className={`ti ${iconMeta.icon} text-lg`}
+            style={{ color: iconMeta.color }}
+          />
         </div>
       </div>
 
@@ -50,7 +58,9 @@ export default function MaterialCard({ apunte }) {
             apunte.mi_voto === 'up' ? 'text-[#FF6B35]' : 'text-neutral-600'
           }`}
         >
-          <i className={`ti ${apunte.mi_voto === 'up' ? 'ti-arrow-big-up-filled' : 'ti-arrow-big-up'} text-base`} />
+          <i
+            className={`ti ${apunte.mi_voto === 'up' ? 'ti-arrow-big-up-filled' : 'ti-arrow-big-up'} text-base`}
+          />
         </button>
         <span
           className={`text-xs font-bold leading-none ${
@@ -70,7 +80,9 @@ export default function MaterialCard({ apunte }) {
             apunte.mi_voto === 'down' ? 'text-[#7B8CDE]' : 'text-neutral-600'
           }`}
         >
-          <i className={`ti ${apunte.mi_voto === 'down' ? 'ti-arrow-big-down-filled' : 'ti-arrow-big-down'} text-base`} />
+          <i
+            className={`ti ${apunte.mi_voto === 'down' ? 'ti-arrow-big-down-filled' : 'ti-arrow-big-down'} text-base`}
+          />
         </button>
       </div>
 
@@ -84,7 +96,8 @@ export default function MaterialCard({ apunte }) {
             {apunte.ramo?.nombre}
           </span>
           <span className='text-[11.5px] text-neutral-600'>
-            por <b className='text-neutral-400'>u/{apunte.autor?.nombre_usuario}</b>
+            por{' '}
+            <b className='text-neutral-400'>u/{apunte.autor?.nombre_usuario}</b>
           </span>
           <span className='text-[11px] text-neutral-600'>
             · {formatearTiempoRelativo(apunte.creado_en)}
@@ -106,7 +119,10 @@ export default function MaterialCard({ apunte }) {
         {apunte.hashtags?.length > 0 && (
           <div className='mb-1.5 flex flex-wrap gap-1.5'>
             {apunte.hashtags.map((tag) => (
-              <span key={tag} className='text-[11px] text-blue-400'>
+              <span
+                key={tag}
+                className='text-[11px] text-blue-400'
+              >
                 #{tag}
               </span>
             ))}
@@ -119,10 +135,12 @@ export default function MaterialCard({ apunte }) {
             onClick={(e) => e.stopPropagation()}
             className='flex items-center gap-1 transition-colors hover:text-neutral-200'
           >
-            <i className='ti ti-message-circle-2 text-[13px]' /> {apunte.comentarios_count} comentarios
+            <i className='ti ti-message-circle-2 text-[13px]' />{' '}
+            {apunte.comentarios_count} comentarios
           </button>
           <span className='flex items-center gap-1'>
-            <i className='ti ti-download text-[13px]' /> {apunte.descargas ?? '—'} descargas
+            <i className='ti ti-download text-[13px]' />{' '}
+            {apunte.descargas ?? '—'} descargas
           </span>
           <button
             type='button'
@@ -151,8 +169,6 @@ export default function MaterialCard({ apunte }) {
   );
 }
 
-// Renderiza el strip de GitHub, el snippet, o la lista de archivos
-// (1 o varios, la card se adapta al número real de archivos).
 function ArchivosPreview({ apunte }) {
   if (apunte.link_repositorio) {
     return (
@@ -184,21 +200,26 @@ function ArchivosPreview({ apunte }) {
             key={archivo.id}
             className='flex items-center gap-2.5 rounded-md border border-white/[0.07] bg-white/[0.03] px-2 py-1.5'
           >
-            <i className={`ti ${meta.icon} flex-shrink-0 text-sm`} style={{ color: meta.color }} />
+            <i
+              className={`ti ${meta.icon} flex-shrink-0 text-sm`}
+              style={{ color: meta.color }}
+            />
             <span className='flex-1 truncate text-[11.5px] font-medium text-neutral-300'>
               {archivo.nombre_archivo}
             </span>
             <span className='flex-shrink-0 text-[10.5px] text-neutral-600'>
               {formatearTamanio(archivo.tamanio)}
             </span>
-            <a
-              href={urlArchivo(archivo)}
-              onClick={(e) => e.stopPropagation()}
-              download
+            <button
+              type='button'
+              onClick={(e) => {
+                e.stopPropagation();
+                descargarArchivo(archivo);
+              }}
               className='flex flex-shrink-0 items-center gap-1 text-[11px] font-semibold text-blue-400 hover:opacity-75'
             >
               <i className='ti ti-download text-[13px]' /> Descargar
-            </a>
+            </button>
           </div>
         );
       })}

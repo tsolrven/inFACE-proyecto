@@ -1,4 +1,4 @@
-// Genera un color consistente para cada ramo, sin necesidad de guardar
+//! genera un color consistente para cada ramo, sin necesidad de guardar
 
 const PALETTE = [
   '#818CF8', 

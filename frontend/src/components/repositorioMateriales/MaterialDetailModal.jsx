@@ -8,19 +8,21 @@ import {
   crearComentario,
 } from '../../services/repositorioMateriales/comentario.service';
 import { colorPorRamo } from '../../utils/ramoColors';
-import { metaDeArchivo, formatearTamanio, urlArchivo } from '../../utils/fileMeta';
+import { metaDeArchivo, formatearTamanio } from '../../utils/fileMeta';
 import { formatearTiempoRelativo } from '../../utils/formatRelativeTime';
 import { useRepositorioStore } from '../../stores/repositorioStore';
+import { descargarArchivo } from '../../services/repositorioMateriales/archivo.service';
 
-// inserta una respuesta nueva dentro del árbol de comentarios, sin importar
-// a qué profundidad esté el padre (recorre recursivamente)
 function insertarRespuesta(comentarios, padreId, nueva) {
   return comentarios.map((c) => {
     if (c.id === padreId) {
       return { ...c, respuestas: [...(c.respuestas ?? []), nueva] };
     }
     if (c.respuestas?.length) {
-      return { ...c, respuestas: insertarRespuesta(c.respuestas, padreId, nueva) };
+      return {
+        ...c,
+        respuestas: insertarRespuesta(c.respuestas, padreId, nueva),
+      };
     }
     return c;
   });
@@ -28,7 +30,8 @@ function insertarRespuesta(comentarios, padreId, nueva) {
 
 function contarComentarios(comentarios) {
   return comentarios.reduce(
-    (acc, c) => acc + 1 + (c.respuestas?.length ? contarComentarios(c.respuestas) : 0),
+    (acc, c) =>
+      acc + 1 + (c.respuestas?.length ? contarComentarios(c.respuestas) : 0),
     0,
   );
 }
@@ -36,7 +39,9 @@ function contarComentarios(comentarios) {
 export default function MaterialDetailModal() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const actualizarApunteEnFeed = useRepositorioStore((s) => s.actualizarApunteEnFeed);
+  const actualizarApunteEnFeed = useRepositorioStore(
+    (s) => s.actualizarApunteEnFeed,
+  );
 
   const [apunte, setApunte] = useState(null);
   const [comentarios, setComentarios] = useState([]);
@@ -62,7 +67,7 @@ export default function MaterialDetailModal() {
   }, [id]);
 
   function handleClose() {
-    navigate(-1); // vuelve a donde estaba (el feed sigue detrás gracias al backgroundLocation)
+    navigate(-1); 
   }
 
   function handleNuevaRespuesta(padreId, nueva) {
@@ -76,7 +81,9 @@ export default function MaterialDetailModal() {
       const nuevo = await crearComentario(id, { contenido: textoNuevo });
       const actualizados = [...comentarios, nuevo];
       setComentarios(actualizados);
-      actualizarApunteEnFeed(id, { comentarios_count: contarComentarios(actualizados) });
+      actualizarApunteEnFeed(id, {
+        comentarios_count: contarComentarios(actualizados),
+      });
       setTextoNuevo('');
     } finally {
       setEnviando(false);
@@ -84,7 +91,11 @@ export default function MaterialDetailModal() {
   }
 
   return (
-    <Modal open onClose={handleClose} maxWidth='740px'>
+    <Modal
+      open
+      onClose={handleClose}
+      maxWidth='740px'
+    >
       {cargando && (
         <div className='flex items-center justify-center py-20'>
           <i className='ti ti-loader-2 animate-spin text-2xl text-neutral-600' />
@@ -119,7 +130,10 @@ export default function MaterialDetailModal() {
                 {apunte.autor?.nombre_usuario?.slice(0, 2).toUpperCase()}
               </div>
               <span>
-                por <b className='text-neutral-400'>u/{apunte.autor?.nombre_usuario}</b>
+                por{' '}
+                <b className='text-neutral-400'>
+                  u/{apunte.autor?.nombre_usuario}
+                </b>
               </span>
               <span>·</span>
               <span>{formatearTiempoRelativo(apunte.creado_en)}</span>
@@ -136,7 +150,10 @@ export default function MaterialDetailModal() {
             {apunte.hashtags?.length > 0 && (
               <div className='flex flex-wrap gap-1.5'>
                 {apunte.hashtags.map((tag) => (
-                  <span key={tag} className='text-[11.5px] text-blue-400'>
+                  <span
+                    key={tag}
+                    className='text-[11.5px] text-blue-400'
+                  >
                     #{tag}
                   </span>
                 ))}
@@ -173,7 +190,8 @@ export default function MaterialDetailModal() {
             <div className='flex flex-col gap-4'>
               {comentarios.length === 0 && (
                 <p className='text-center text-[12.5px] text-neutral-600'>
-                  Todavía no hay comentarios. ¡Sé el primero en preguntar o aportar!
+                  Todavía no hay comentarios. ¡Sé el primero en preguntar o
+                  aportar!
                 </p>
               )}
               {comentarios.map((comentario) => (
@@ -225,20 +243,23 @@ function DetalleArchivos({ apunte }) {
             key={archivo.id}
             className='flex items-center gap-3 rounded-lg border border-white/[0.07] bg-white/[0.03] px-3 py-2.5'
           >
-            <i className={`ti ${meta.icon} flex-shrink-0 text-lg`} style={{ color: meta.color }} />
+            <i
+              className={`ti ${meta.icon} flex-shrink-0 text-lg`}
+              style={{ color: meta.color }}
+            />
             <span className='flex-1 truncate text-[12.5px] font-medium text-neutral-300'>
               {archivo.nombre_archivo}
             </span>
             <span className='flex-shrink-0 text-[10.5px] text-neutral-600'>
               {formatearTamanio(archivo.tamanio)}
             </span>
-            <a
-              href={urlArchivo(archivo)}
-              download
+            <button
+              type='button'
+              onClick={() => descargarArchivo(archivo)}
               className='flex flex-shrink-0 items-center gap-1 text-[12px] font-semibold text-blue-400 hover:opacity-75'
             >
               <i className='ti ti-download' /> Descargar
-            </a>
+            </button>
           </div>
         );
       })}
