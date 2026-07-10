@@ -46,13 +46,11 @@ async function refresh(req, res, next) {
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function logout(req, res) {
-  res.clearCookie('refreshToken');
+  const { maxAge, ...opcionesLimpieza } = REFRESH_COOKIE_OPTS;
+  res.clearCookie('refreshToken', opcionesLimpieza);
   return ApiResponse.success(res, { mensaje: 'Sesión cerrada' });
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-// GET /auth/me — protegido con `autenticar`, devuelve quién es el dueño
-// del access token actual. Lo usa el frontend para recuperar la sesión
-// tras un F5 (ver authStore.js → init()).
 async function me(req, res, next) {
   try {
     const usuario = await obtenerUsuarioActual(req.usuario.id);
