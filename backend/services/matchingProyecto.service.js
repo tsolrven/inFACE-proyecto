@@ -277,7 +277,8 @@ async function responderPostulacion(postulacion_id, usuario_id, rol, estado) {
         throw new BadRequestError('Esta postulación ya fue respondida');
 
     if (estado === 'aceptada') {
-        //* al aceptar: crear integrante y eliminar la postulación
+        //* al aceptar: crear integrante y marcar la postulación como aceptada (se conserva el historial;
+        //* antes se borraba, lo que hacía imposible que le apareciera al postulante que fue aceptado)
         await prisma.integranteProyecto.create({
             data: {
                 proyecto_id: postulacion.proyecto_id,
@@ -286,7 +287,10 @@ async function responderPostulacion(postulacion_id, usuario_id, rol, estado) {
             },
         });
 
-        await prisma.postulacionProyecto.delete({ where: { id: postulacion_id } });
+        await prisma.postulacionProyecto.update({
+            where: { id: postulacion_id },
+            data: { estado_postulacion: 'aceptada' },
+        });
 
         if (postulacion.proyecto.maximo_integrantes) {
             const totalIntegrantes = await prisma.integranteProyecto.count({
@@ -319,7 +323,9 @@ async function responderPostulacion(postulacion_id, usuario_id, rol, estado) {
 // ╰─────────────────────────────✧────────────────────────────────╮
 
 async function eliminarPostulacion(postulacion_id, usuario_id) {
-    //* el postulante retira su propia postulación (solo si está pendiente)
+    //* el postulante retira o "quita de su lista" cualquiera de sus propias postulaciones
+    //* (pendiente = retirar la postulación activa; aceptada/rechazada = solo limpiar el historial,
+    //* no afecta su membresía si ya es integrante, esa vive en otra tabla)
     const postulacion = await prisma.postulacionProyecto.findUnique({
         where: { id: postulacion_id },
     });
@@ -327,13 +333,11 @@ async function eliminarPostulacion(postulacion_id, usuario_id) {
     if (!postulacion) throw new NotFoundError('Postulación');
     if (postulacion.postulante_id !== usuario_id)
         throw new ForbiddenError('No puedes eliminar una postulación que no es tuya');
-    if (postulacion.estado_postulacion !== 'pendiente')
-        throw new BadRequestError('Solo puedes retirar postulaciones pendientes');
 
     await prisma.postulacionProyecto.delete({ where: { id: postulacion_id } });
 
-    logger.info('Postulación retirada por el postulante', { postulacion_id, usuario_id });
-    return { mensaje: 'Postulación retirada correctamente' };
+    logger.info('Postulación eliminada por el postulante', { postulacion_id, usuario_id, estado_previo: postulacion.estado_postulacion });
+    return { mensaje: 'Postulación eliminada correctamente' };
 }
 
 // ╰─────────────────────────────✧────────────────────────────────╮
@@ -560,7 +564,6 @@ async function obtenerHabilidadesEnDemanda(usuario_id, { limite = 8 } = {}) {
     const [conteos, intereses] = await Promise.all([
         prisma.proyectoEtiqueta.groupBy({
             by: ['etiqueta_id'],
-            where: { proyecto: { estado_proyecto: 'abierto', creador_id: { not: usuario_id } } },
             _count: { etiqueta_id: true },
             orderBy: { _count: { etiqueta_id: 'desc' } },
             take: limite,

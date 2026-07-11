@@ -3,10 +3,35 @@ import { Link } from 'react-router-dom';
 import {
     getInitials,
     avatarColor,
+    etiquetaColor,
     EstadoChip,
     ModalidadChip,
     formatFecha,
 } from '../../helpers/matchHelpers';
+
+// las etiquetas vienen con el nombre real del tipo (tal como está en la BD);
+// acá se traducen a las etiquetas que se le muestran al usuario y se fija el orden.
+const ORDEN_TIPOS = ['Área de Interés', 'Habilidad', 'Metodología', 'Tecnología', 'Otras'];
+const LABEL_TIPOS = {
+    'Área de Interés': 'Área',
+    Habilidad: 'Habilidades requeridas',
+    Metodología: 'Metodología del proyecto',
+    Tecnología: 'Tecnología a utilizar',
+    Otras: 'Otras',
+};
+
+function agruparEtiquetasPorTipo(etiquetas) {
+    const porTipo = etiquetas.reduce((acc, et) => {
+        const tipo = et.tipo || 'Otras';
+        (acc[tipo] ||= []).push(et);
+        return acc;
+    }, {});
+
+    return ORDEN_TIPOS.filter((tipo) => porTipo[tipo]?.length > 0).map((tipo) => [
+        LABEL_TIPOS[tipo] || tipo,
+        porTipo[tipo],
+    ]);
+}
 
 function barGradient(estado) {
     if (estado === 'abierto') return 'linear-gradient(90deg,#34D399,#059669)';
@@ -22,6 +47,10 @@ export default function DetalleProyecto({
     puedePostular,
     onVolver,
     onPostular,
+    onEditar,
+    onEliminar,
+    onVerIntegrantes,
+    onVerPostulaciones,
 }) {
     const [mostrarForm, setMostrarForm] = useState(false);
     const [mensaje, setMensaje] = useState('');
@@ -113,14 +142,26 @@ export default function DetalleProyecto({
                     </p>
 
                     {proyecto.etiquetas?.length > 0 && (
-                        <div className='mb-4 flex flex-wrap gap-1.5'>
-                            {proyecto.etiquetas.map((et) => (
-                                <span
-                                    key={et.id}
-                                    className='rounded-full bg-white/[0.06] px-2.5 py-1 text-[11px] font-semibold text-neutral-400'
-                                >
-                                    {et.nombre}
-                                </span>
+                        <div className='mb-4 flex flex-col gap-3'>
+                            {agruparEtiquetasPorTipo(proyecto.etiquetas).map(([etiqueta_tipo, etiquetas]) => (
+                                <div key={etiqueta_tipo}>
+                                    <div className='mb-1.5 text-[10px] font-bold uppercase tracking-wide text-neutral-600'>
+                                        {etiqueta_tipo}
+                                    </div>
+                                    <div className='flex flex-wrap gap-1.5'>
+                                        {etiquetas.map((et) => {
+                                            const c = etiquetaColor(et.nombre);
+                                            return (
+                                                <span
+                                                    key={et.id}
+                                                    className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${c.bg} ${c.text} ${c.border}`}
+                                                >
+                                                    {et.nombre}
+                                                </span>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
                             ))}
                         </div>
                     )}
@@ -179,17 +220,18 @@ export default function DetalleProyecto({
                                 {proyecto.integrantes.map((i) => {
                                     const iav = avatarColor(i.usuario_id);
                                     return (
-                                        <div
+                                        <Link
                                             key={i.usuario_id}
-                                            className='flex items-center gap-1.5 rounded-full border border-white/[0.07] bg-[#232329] py-1 pl-1 pr-3'
+                                            to={`/perfil/usuario/${i.nombre_usuario}`}
+                                            className='flex items-center gap-1.5 rounded-full border border-white/[0.07] bg-[#232329] py-1 pl-1 pr-3 transition hover:border-white/[0.16]'
                                         >
                                             <div
-                                                className={`flex h-6 w-6 items-center justify-center rounded-full text-[9px] font-bold ${iav.bg} ${iav.text}`}
+                                                className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[9px] font-bold ${iav.bg} ${iav.text}`}
                                             >
                                                 {getInitials(i.nombre_usuario)}
                                             </div>
                                             <span className='text-[11.5px] text-neutral-300'>{i.nombre_usuario}</span>
-                                        </div>
+                                        </Link>
                                     );
                                 })}
                             </div>
@@ -204,7 +246,7 @@ export default function DetalleProyecto({
                             </div>
                         )}
 
-                        {!enviado && yaPostulado && (
+                        {!enviado && yaPostulado && !esIntegrante && (
                             <div className='flex items-center gap-2.5 rounded-[10px] bg-[#2A2A32] px-3.5 py-2.5 text-[12.5px] text-neutral-400'>
                                 <i className='ti ti-clock text-amber-400' />
                                 Ya tienes una postulación activa en este proyecto.
@@ -212,13 +254,44 @@ export default function DetalleProyecto({
                         )}
 
                         {esCreador && (
-                            <p className='text-[12.5px] text-neutral-500'>
-                                Este es tu proyecto. Gestiona las postulaciones desde "Mis proyectos".
-                            </p>
+                            <div className='flex flex-wrap gap-2'>
+                                <button
+                                    onClick={onEditar}
+                                    className='inline-flex items-center gap-1.5 rounded-[10px] border border-white/[0.07] px-3.5 py-2 text-[12.5px] font-medium text-neutral-400 transition hover:text-neutral-100'
+                                >
+                                    <i className='ti ti-pencil text-[14px]' /> Editar
+                                </button>
+                                <button
+                                    onClick={onVerIntegrantes}
+                                    className='inline-flex items-center gap-1.5 rounded-[10px] border border-white/[0.07] px-3.5 py-2 text-[12.5px] font-medium text-neutral-400 transition hover:text-neutral-100'
+                                >
+                                    <i className='ti ti-users text-[14px]' /> Integrantes
+                                </button>
+                                <button
+                                    onClick={onEliminar}
+                                    className='inline-flex items-center gap-1.5 rounded-[10px] border border-white/[0.07] px-3.5 py-2 text-[12.5px] font-medium text-neutral-400 transition hover:border-red-500/30 hover:text-red-400'
+                                >
+                                    <i className='ti ti-trash text-[14px]' /> Eliminar
+                                </button>
+                                <button
+                                    onClick={onVerPostulaciones}
+                                    className='ml-auto inline-flex items-center gap-1.5 rounded-[10px] bg-pink-500 px-3.5 py-2 text-[12.5px] font-semibold text-white transition hover:bg-pink-600'
+                                >
+                                    <i className='ti ti-inbox text-[14px]' /> Ver postulaciones
+                                    {proyecto.total_postulaciones > 0 && (
+                                        <span className='rounded-full bg-white/20 px-1.5 py-px text-[10px]'>
+                                            {proyecto.total_postulaciones}
+                                        </span>
+                                    )}
+                                </button>
+                            </div>
                         )}
 
                         {esIntegrante && !esCreador && !enviado && (
-                            <p className='text-[12.5px] text-neutral-500'>Ya formas parte de este equipo.</p>
+                            <div className='flex items-center gap-2.5 rounded-[10px] bg-emerald-400/[0.08] px-3.5 py-2.5 text-[12.5px] text-emerald-400'>
+                                <i className='ti ti-circle-check text-base' />
+                                Ya formas parte de este equipo.
+                            </div>
                         )}
 
                         {!puedePostular && !esCreador && !esIntegrante && !yaPostulado && !enviado && (

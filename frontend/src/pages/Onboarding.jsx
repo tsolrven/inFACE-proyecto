@@ -32,16 +32,19 @@ export default function Onboarding() {
     }
 
     return (
-        <div className='min-h-screen bg-neutral-950 flex items-center justify-center px-4 py-10'>
+        <div
+            className='flex min-h-screen items-center justify-center px-4 py-10'
+            style={{ background: 'radial-gradient(ellipse 80% 60% at 50% -10%, rgba(232,84,106,.10) 0%, transparent 60%), #0B0B0E' }}
+        >
             <div className='w-full max-w-lg'>
                 <div className='mb-6 text-center'>
-                    <span className='text-xs font-mono tracking-widest text-indigo-400 uppercase'>
-                        UBB · Inface
+                    <span className='inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-widest text-pink-400'>
+                        <i className='ti ti-affiliate text-[13px]' /> UBB · Inface
                     </span>
-                    <h1 className='mt-2 text-2xl font-bold text-white leading-tight'>
-                        ¡Bienvenido{usuario?.nombre_usuario ? `, ${usuario.nombre_usuario}` : ''}! Configura tu perfil
+                    <h1 className='mt-2.5 text-[24px] font-bold leading-tight text-neutral-50'>
+                        ¡Bienvenid@{usuario?.nombre_usuario ? `, ${usuario.nombre_usuario}` : ''}! Configura tu perfil
                     </h1>
-                    <p className='mt-2 text-sm text-neutral-400'>
+                    <p className='mt-2 text-[13px] text-neutral-500'>
                         Elige tus intereses (tecnologías, habilidades, temas) para que podamos recomendarte proyectos
                         y personas afines desde el primer día. Puedes editarlos más adelante desde tu perfil.
                     </p>
@@ -65,8 +68,8 @@ export default function Onboarding() {
                         type='button'
                         onClick={handleContinuar}
                         disabled={guardando}
-                        className='mt-5 w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition
-                        hover:bg-indigo-500 active:scale-[.98] disabled:opacity-50 disabled:cursor-not-allowed'
+                        className='mt-5 w-full rounded-[10px] bg-pink-500 px-4 py-2.5 text-[13px] font-semibold text-white transition
+                        hover:bg-pink-600 active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-50'
                     >
                         {guardando ? 'Guardando…' : 'Empezar a usar InFACE'}
                     </button>

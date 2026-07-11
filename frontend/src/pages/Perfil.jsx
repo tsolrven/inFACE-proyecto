@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import {
     obtenerMiPerfil,
     actualizarMiPerfil,
@@ -114,23 +113,17 @@ export default function Perfil() {
             </div>
 
             {/* AVATAR + ACCIONES (se monta sobre el borde inferior del banner) */}
-            <div className='relative z-10 -mt-11 flex items-end gap-4 px-[28px]'>
+            <div className='relative z-10 mx-auto -mt-11 flex max-w-4xl items-end gap-4 px-[28px]'>
                 <div className='relative flex-shrink-0'>
                     <div
-                        className={`flex h-[90px] w-[90px] items-center justify-center rounded-full border-[3px] border-neutral-950 text-[28px] font-bold ${av.bg} ${av.text}`}
+                        className={`flex h-[90px] w-[90px] flex-shrink-0 items-center justify-center rounded-full border-[3px] border-neutral-950 text-[28px] font-bold ${av.bg} ${av.text}`}
                     >
                         {getInitials(nombreVisible)}
                     </div>
                     <span className='absolute bottom-1 right-1 h-[14px] w-[14px] rounded-full border-[2.5px] border-neutral-950 bg-emerald-400' />
                 </div>
 
-                <div className='ml-auto flex gap-2 pb-2'>
-                    <Link
-                        to={`/perfil/usuario/${perfil.nombre_usuario}`}
-                        className='inline-flex items-center gap-1.5 rounded-[10px] border border-white/[0.07] bg-[#1E1E24] px-3.5 py-1.5 text-[12.5px] font-medium text-neutral-300 transition hover:border-white/[0.18] hover:text-neutral-100'
-                    >
-                        <i className='ti ti-eye text-[14px]' /> Ver como otros
-                    </Link>
+                <div className='ml-auto pb-2'>
                     <button
                         onClick={() => setModalEditar(true)}
                         className='inline-flex items-center gap-1.5 rounded-[10px] border border-white/[0.07] bg-[#1E1E24] px-3.5 py-1.5 text-[12.5px] font-medium text-neutral-300 transition hover:border-white/[0.18] hover:text-neutral-100'
@@ -141,7 +134,7 @@ export default function Perfil() {
             </div>
 
             {/* INFO */}
-            <div className='px-[28px] pb-10 pt-3.5'>
+            <div className='mx-auto max-w-4xl px-[28px] pb-10 pt-3.5'>
                 <div className='text-[20px] font-bold tracking-tight text-neutral-100'>{nombreVisible}</div>
                 <div className='mt-px text-[13px] text-neutral-500'>u/{perfil.nombre_usuario}</div>
 
@@ -171,39 +164,34 @@ export default function Perfil() {
                     </span>
                 </div>
 
-                {/* ESTADÍSTICAS */}
-                <div className='mt-3.5 flex max-w-xl overflow-hidden rounded-2xl border border-white/[0.06] bg-[#1E1E24]'>
-                    <div className='flex-1 border-r border-white/[0.07] px-4 py-3 text-center'>
-                        <div className='text-[18px] font-bold text-neutral-100'>{perfil.stats.proyectos_creados}</div>
-                        <div className='mt-0.5 text-[10.5px] font-medium tracking-wide text-neutral-600'>
-                            Proyectos creados
-                        </div>
+                {/* ESTADÍSTICAS (fila plana, sin caja, como el mockup) */}
+                <div className='mt-3 flex flex-wrap items-center gap-x-6 gap-y-1.5 border-b border-white/[0.07] pb-4'>
+                    <div className='flex items-baseline gap-1.5'>
+                        <span className='text-[16px] font-bold text-neutral-100'>{perfil.stats.proyectos_creados}</span>
+                        <span className='text-[12px] text-neutral-500'>Proyectos creados</span>
                     </div>
-                    <div className='flex-1 border-r border-white/[0.07] px-4 py-3 text-center'>
-                        <div className='text-[18px] font-bold text-neutral-100'>{perfil.stats.postulaciones_enviadas}</div>
-                        <div className='mt-0.5 text-[10.5px] font-medium tracking-wide text-neutral-600'>
-                            Postulaciones enviadas
-                        </div>
+                    <div className='flex items-baseline gap-1.5'>
+                        <span className='text-[16px] font-bold text-pink-500'>{perfil.intereses.length}</span>
+                        <span className='text-[12px] text-neutral-500'>Intereses</span>
                     </div>
-                    <div className='flex-1 px-4 py-3 text-center'>
-                        <div className='text-[18px] font-bold text-pink-500'>{perfil.intereses.length}</div>
-                        <div className='mt-0.5 text-[10.5px] font-medium tracking-wide text-neutral-600'>
-                            Intereses
-                        </div>
-                    </div>
+                    {/* TODO(Silvana): agregar aquí más estadísticas cuando tengas los datos, ej:
+                    <div className='flex items-baseline gap-1.5'>
+                        <span className='text-[16px] font-bold text-neutral-100'>{apuntes.length}</span>
+                        <span className='text-[12px] text-neutral-500'>Apuntes subidos</span>
+                    </div> */}
                 </div>
 
-                {/* INTERESES */}
-                <div className='mt-4 max-w-xl rounded-2xl border border-white/[0.06] bg-[#1E1E24] p-[18px]'>
-                    <div className='mb-3 flex items-center justify-between'>
-                        <h2 className='flex items-center gap-1.5 text-[13px] font-bold text-neutral-100'>
-                            <i className='ti ti-tag text-[15px] text-pink-500' /> Mis intereses
+                {/* INTERESES (fila plana, con acción de editar al lado del título) */}
+                <div className='mt-4'>
+                    <div className='mb-2.5 flex items-center gap-2.5'>
+                        <h2 className='flex items-center gap-1.5 text-[12.5px] font-bold text-neutral-300'>
+                            <i className='ti ti-tag text-[14px] text-pink-500' /> Intereses
                         </h2>
                         <button
                             onClick={() => setModalIntereses(true)}
-                            className='inline-flex items-center gap-1.5 rounded-[10px] border border-white/[0.07] px-3 py-1 text-[11.5px] font-medium text-neutral-400 transition hover:border-white/[0.18] hover:text-neutral-100'
+                            className='inline-flex items-center gap-1 text-[11px] font-medium text-neutral-500 transition hover:text-pink-400'
                         >
-                            <i className='ti ti-pencil text-[12px]' /> Editar intereses
+                            <i className='ti ti-pencil text-[11px]' /> Editar
                         </button>
                     </div>
 

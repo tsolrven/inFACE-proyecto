@@ -33,6 +33,14 @@ function esquemaCrearProyecto(body) {
     if (fecha_inicio && isNaN(Date.parse(fecha_inicio)))
         errores.push('La fecha de inicio no es válida');
 
+    if (fecha_inicio && !isNaN(Date.parse(fecha_inicio))) {
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+        if (new Date(fecha_inicio) < hoy) {
+            errores.push('La fecha de inicio no puede ser anterior a hoy: el proyecto todavía no comienza');
+        }
+    }
+
     if (fecha_fin && isNaN(Date.parse(fecha_fin)))
         errores.push('La fecha de fin no es válida');
 

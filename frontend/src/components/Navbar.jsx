@@ -60,7 +60,7 @@ export default function Navbar() {
             type='button'
             title='Mi perfil'
             onClick={() => setDropdownOpen((open) => !open)}
-            className='flex h-[34px] w-[34px] items-center justify-center rounded-full border-[1.5px] border-pink-500/30 bg-pink-500/10 text-xs font-bold text-pink-500 transition-colors hover:border-pink-500'
+            className='flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-full border-[1.5px] border-pink-500/30 bg-pink-500/10 text-xs font-bold text-pink-500 transition-colors hover:border-pink-500'
           >
             {initials}
           </button>
@@ -68,14 +68,14 @@ export default function Navbar() {
           {dropdownOpen && (
             <div className='absolute right-0 top-[44px] w-[206px] overflow-hidden rounded-2xl border border-white/10 bg-[#1E1E24] shadow-[0_12px_40px_rgba(0,0,0,0.5)]'>
               <div className='flex items-center gap-2.5 border-b border-white/[0.07] bg-pink-500/[0.06] px-[15px] py-[13px]'>
-                <div className='flex h-9 w-9 items-center justify-center rounded-full border-[1.5px] border-pink-500/30 bg-pink-500/10 text-xs font-bold text-pink-500'>
+                <div className='flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border-[1.5px] border-pink-500/30 bg-pink-500/10 text-xs font-bold text-pink-500'>
                   {initials}
                 </div>
-                <div>
-                  <div className='text-[13px] font-semibold text-neutral-100'>
+                <div className='min-w-0 flex-1'>
+                  <div className='truncate text-[13px] font-semibold text-neutral-100'>
                     {usuario?.nombre_usuario || 'Usuario'}
                   </div>
-                  <div className='mt-px text-[11px] text-neutral-600'>
+                  <div className='mt-px truncate text-[11px] text-neutral-600'>
                     {usuario?.correo || ''}
                   </div>
                 </div>

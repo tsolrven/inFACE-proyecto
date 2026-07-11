@@ -84,6 +84,14 @@ export default function ProyectoFormModal({ proyecto, onClose, onSubmit }) {
             errs.push('La fecha de inicio debe ser anterior a la fecha de fin');
         }
 
+        if (!esEdicion && form.fecha_inicio) {
+            const hoy = new Date();
+            hoy.setHours(0, 0, 0, 0);
+            if (new Date(form.fecha_inicio) < hoy) {
+                errs.push('La fecha de inicio no puede ser anterior a hoy: el proyecto todavía no comienza');
+            }
+        }
+
         return errs;
     }
 
@@ -104,6 +112,7 @@ export default function ProyectoFormModal({ proyecto, onClose, onSubmit }) {
                 maximo_integrantes: form.maximo_integrantes === '' ? null : Number(form.maximo_integrantes),
                 fecha_inicio: form.fecha_inicio || null,
                 fecha_fin: form.fecha_fin || null,
+                etiqueta_ids: [...etiquetaIds],
             });
         } catch (err) {
             setErrores(err.details?.length ? err.details : [err.message]);
@@ -236,8 +245,8 @@ export default function ProyectoFormModal({ proyecto, onClose, onSubmit }) {
                                                 key={et.id}
                                                 onClick={() => toggleEtiqueta(et.id)}
                                                 className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${seleccionada
-                                                        ? 'border-pink-500/40 bg-pink-500/10 text-pink-500'
-                                                        : 'border-white/[0.07] text-neutral-400 hover:text-neutral-100'
+                                                    ? 'border-pink-500/40 bg-pink-500/10 text-pink-500'
+                                                    : 'border-white/[0.07] text-neutral-400 hover:text-neutral-100'
                                                     }`}
                                             >
                                                 {et.nombre}

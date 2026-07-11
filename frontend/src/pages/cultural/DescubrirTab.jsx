@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
     listarProyectosRecomendados,
     descartarProyecto,
@@ -7,13 +7,11 @@ import {
     listarUsuariosSimilares,
 } from '../../services/matchingProyecto';
 import { obtenerMiPerfil } from '../../services/perfil';
-import { getInitials, avatarColor, etiquetaColor, EstadoChip, ModalidadChip } from '../../helpers/matchHelpers';
+import { getInitials, avatarColor, etiquetaColor, EstadoChip, ModalidadChip, formatFecha } from '../../helpers/matchHelpers';
+import ModalShell from './ModalShell';
+import armadilloArma from '../../assets/armadillo.png';
 
 const UMBRAL_SWIPE = 110; // px de arrastre necesarios para confirmar un swipe
-
-// ─────────────────────────────────────────────────────────────────────────────
-// PESTAÑA: DESCUBRIR (swipe estilo Tinder) — punto de entrada del módulo de matching
-// ─────────────────────────────────────────────────────────────────────────────
 
 export default function DescubrirTab({
     usuario,
@@ -23,6 +21,7 @@ export default function DescubrirTab({
     onVerDetalle,
     onPostularClick,
     onIrExplorar,
+    search = '',
 }) {
     const navigate = useNavigate();
 
@@ -31,13 +30,15 @@ export default function DescubrirTab({
     const [error, setError] = useState(null);
     const [tieneIntereses, setTieneIntereses] = useState(true);
     const [interesesIds, setInteresesIds] = useState(new Set());
-    const [salida, setSalida] = useState(null); // 'izquierda' | 'derecha' | null
+    const [misIntereses, setMisIntereses] = useState([]);
+    const [salida, setSalida] = useState(null);
+    const [primerGenericoId, setPrimerGenericoId] = useState(null);
 
-    // ── panel lateral (solo aporta valor en pantallas anchas, pero se carga siempre) ──
     const [habilidades, setHabilidades] = useState([]);
     const [personasSimilares, setPersonasSimilares] = useState([]);
     const [cargandoPanel, setCargandoPanel] = useState(true);
     const [errorPersonas, setErrorPersonas] = useState(null);
+    const [panelMobile, setPanelMobile] = useState(null);
 
     const drag = useRef({ activo: false, startX: 0, startY: 0, x: 0, y: 0 });
     const [dragPos, setDragPos] = useState({ x: 0, y: 0 });
@@ -52,7 +53,14 @@ export default function DescubrirTab({
             ]);
             setCola(recomendados.datos);
             setTieneIntereses(recomendados.tieneIntereses);
-            if (perfil) setInteresesIds(new Set(perfil.intereses.map((et) => et.id)));
+            if (perfil) {
+                setInteresesIds(new Set(perfil.intereses.map((et) => et.id)));
+                setMisIntereses(perfil.intereses);
+            }
+
+            const primerConMatch = recomendados.datos.find((p) => (p.porcentaje_match ?? 0) > 0);
+            const primerSinMatch = recomendados.datos.find((p) => (p.porcentaje_match ?? 0) === 0);
+            setPrimerGenericoId(primerConMatch && primerSinMatch ? primerSinMatch.id : null);
         } catch (err) {
             setError(err.message);
         } finally {
@@ -93,11 +101,31 @@ export default function DescubrirTab({
         cargarPanel();
     }, [cargar, cargarPanel]);
 
-    const actual = cola[0];
-    const siguientes = cola.slice(1, 3);
+    useEffect(() => {
+        function alActualizarProyectos() {
+            cargarPanel();
+            cargar();
+        }
+        window.addEventListener('inface:mis-proyectos-actualizados', alActualizarProyectos);
+        return () => window.removeEventListener('inface:mis-proyectos-actualizados', alActualizarProyectos);
+    }, [cargar, cargarPanel]);
+
+    const colaVisible = useMemo(() => {
+        if (!search.trim()) return cola;
+        const q = search.trim().toLowerCase();
+        return cola.filter(
+            (p) =>
+                p.titulo.toLowerCase().includes(q) ||
+                p.descripcion?.toLowerCase().includes(q) ||
+                p.etiquetas?.some((e) => e.nombre.toLowerCase().includes(q)),
+        );
+    }, [cola, search]);
+
+    const actual = colaVisible[0];
+    const siguientes = colaVisible.slice(1, 3);
 
     function quitarActual() {
-        setCola((prev) => prev.slice(1));
+        setCola((prev) => prev.filter((p) => p.id !== actual.id));
         setSalida(null);
         setDragPos({ x: 0, y: 0 });
     }
@@ -106,20 +134,15 @@ export default function DescubrirTab({
         if (!actual || salida) return;
         setSalida(direccion);
         if (direccion === 'derecha') {
-            // "me interesa" = guardarlo en favoritos (si no lo estaba ya) para revisarlo con calma;
-            // el proyecto no vuelve a aparecer aquí porque el backend excluye los ya favoritos
             if (!favoritosIds.has(actual.id)) onToggleFavorito(actual.id);
         } else {
-            // "no me interesa" = se descarta de forma permanente, no vuelve a mostrarse en Descubrir
             descartarProyecto(actual.id).catch((err) => {
-                // se saca de la cola igual (mejor UX), pero se deja rastro del error para poder depurarlo
                 console.error('Error al descartar proyecto:', actual.id, err);
             });
         }
-        setTimeout(quitarActual, 300);
+        setTimeout(quitarActual, 380);
     }
 
-    // ── gestos de arrastre (mouse + touch, sin librerías externas) ──
     function onPointerDown(e) {
         if (!actual || salida) return;
         drag.current = { activo: true, startX: e.clientX, startY: e.clientY, x: 0, y: 0 };
@@ -143,15 +166,16 @@ export default function DescubrirTab({
     }
 
     function transformActual() {
-        if (salida === 'derecha') return 'translate(650px, -30px) rotate(20deg) scale(1.04)';
-        if (salida === 'izquierda') return 'translate(-650px, -30px) rotate(-20deg) scale(0.96)';
-        return `translate(${dragPos.x}px, ${dragPos.y}px) rotate(${dragPos.x / 22}deg)`;
+        if (salida === 'derecha') return 'translate(760px, -40px) rotate(24deg) scale(0.96)';
+        if (salida === 'izquierda') return 'translate(-760px, -40px) rotate(-24deg) scale(0.96)';
+        return `translate(${dragPos.x}px, ${dragPos.y}px) rotate(${dragPos.x / 14}deg)`;
     }
 
-    const likeOpacity = Math.min(Math.max(dragPos.x / UMBRAL_SWIPE, 0), 1);
-    const nopeOpacity = Math.min(Math.max(-dragPos.x / UMBRAL_SWIPE, 0), 1);
-
-    // ── estados de carga / error / vacío ──
+    function transitionActual() {
+        if (drag.current.activo) return 'none';
+        if (salida) return 'transform .5s cubic-bezier(.17,.67,.83,.67), box-shadow .4s ease';
+        return 'transform .35s cubic-bezier(.34,1.56,.64,1), box-shadow .4s ease';
+    }
 
     if (cargando) {
         return <p className='py-16 text-center text-[13px] text-neutral-500'>Buscando proyectos para ti…</p>;
@@ -166,8 +190,8 @@ export default function DescubrirTab({
     }
 
     return (
-        <div className='mx-auto grid max-w-[940px] gap-8 lg:grid-cols-[420px_1fr] lg:items-start'>
-            <div className='mx-auto w-full max-w-[420px]'>
+        <div className='grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start'>
+            <div className='w-full'>
                 {!tieneIntereses && (
                     <div className='mb-4 flex items-center gap-3 rounded-[10px] border border-amber-500/25 bg-amber-500/10 px-3.5 py-2.5 text-[12px] text-amber-300'>
                         <i className='ti ti-sparkles text-[16px]' />
@@ -186,19 +210,47 @@ export default function DescubrirTab({
                 {actual ? (
                     <>
                         <div className='mb-3 flex items-center justify-between text-[11.5px] text-neutral-600'>
-                            <span>{cola.length} proyecto{cola.length === 1 ? '' : 's'} recomendado{cola.length === 1 ? '' : 's'}</span>
+                            <span>{colaVisible.length} proyecto{colaVisible.length === 1 ? '' : 's'} recomendado{colaVisible.length === 1 ? '' : 's'}</span>
                             <span className='inline-flex items-center gap-1'>
                                 <i className='ti ti-arrows-left-right text-[13px]' /> Desliza o usa los botones
                             </span>
                         </div>
 
-                        {/* MAZO DE TARJETAS */}
-                        <div className='relative h-[520px] select-none'>
+                        {actual.id === primerGenericoId && (
+                            <div className='mb-3 flex items-center gap-2.5 rounded-[10px] border border-sky-500/25 bg-sky-500/10 px-3.5 py-2.5 text-[12px] text-sky-300'>
+                                <i className='ti ti-info-circle text-[16px]' />
+                                Ya viste los proyectos recomendados según tus intereses. Ahora te mostramos otros
+                                proyectos abiertos en general.
+                            </div>
+                        )}
+
+                        <div className='mb-3 flex flex-wrap gap-2 lg:hidden'>
+                            <button
+                                onClick={() => setPanelMobile('intereses')}
+                                className='flex items-center gap-1.5 rounded-full border border-white/[0.1] bg-[#1E1E24] px-3 py-1.5 text-[11.5px] font-medium text-neutral-300'
+                            >
+                                <i className='ti ti-tag text-[14px] text-pink-400' /> Mis intereses
+                            </button>
+                            <button
+                                onClick={() => setPanelMobile('habilidades')}
+                                className='flex items-center gap-1.5 rounded-full border border-white/[0.1] bg-[#1E1E24] px-3 py-1.5 text-[11.5px] font-medium text-neutral-300'
+                            >
+                                <i className='ti ti-trending-up text-[14px] text-pink-400' /> Habilidades en demanda
+                            </button>
+                            <button
+                                onClick={() => setPanelMobile('personas')}
+                                className='flex items-center gap-1.5 rounded-full border border-white/[0.1] bg-[#1E1E24] px-3 py-1.5 text-[11.5px] font-medium text-neutral-300'
+                            >
+                                <i className='ti ti-users-group text-[14px] text-pink-400' /> Perfiles
+                            </button>
+                        </div>
+
+                        <div className="relative select-none h-[560px] sm:h-[520px] md:h-[380px]">
                             {siguientes
                                 .slice()
                                 .reverse()
                                 .map((p, i) => {
-                                    const profundidad = siguientes.length - i; // 2, 1
+                                    const profundidad = siguientes.length - i;
                                     return (
                                         <div
                                             key={p.id}
@@ -206,6 +258,7 @@ export default function DescubrirTab({
                                             style={{
                                                 transform: `translateY(${profundidad * 10}px) scale(${1 - profundidad * 0.035})`,
                                                 opacity: 1 - profundidad * 0.28,
+                                                transition: 'transform .32s cubic-bezier(.34,1.56,.64,1), opacity .32s ease',
                                             }}
                                         />
                                     );
@@ -219,42 +272,18 @@ export default function DescubrirTab({
                                 className='absolute inset-0 cursor-grab touch-none overflow-hidden rounded-2xl border border-white/[0.08] bg-[#1E1E24] active:cursor-grabbing'
                                 style={{
                                     transform: transformActual(),
-                                    transition: drag.current.activo ? 'none' : 'transform .32s cubic-bezier(.22,.61,.36,1), box-shadow .32s ease',
-                                    boxShadow:
-                                        salida === 'derecha'
-                                            ? '0 20px 60px rgba(232,84,106,0.45)'
-                                            : '0 20px 50px rgba(0,0,0,0.45)',
+                                    transformOrigin: 'center bottom',
+                                    transition: transitionActual(),
+                                    boxShadow: '0 20px 50px rgba(0,0,0,0.45)',
                                 }}
                             >
                                 <TarjetaProyecto
                                     proyecto={actual}
                                     interesesIds={interesesIds}
                                 />
-
-                                {/* sellos ME INTERESA / PASAR */}
-                                <div
-                                    className='pointer-events-none absolute left-5 top-6 -rotate-[18deg] rounded-lg border-[3px] border-pink-400 px-3 py-1 text-[18px] font-black tracking-wider text-pink-400'
-                                    style={{ opacity: likeOpacity }}
-                                >
-                                    ME INTERESA
-                                </div>
-                                <div
-                                    className='pointer-events-none absolute right-5 top-6 rotate-[18deg] rounded-lg border-[3px] border-red-400 px-3 py-1 text-[18px] font-black tracking-wider text-red-400'
-                                    style={{ opacity: nopeOpacity }}
-                                >
-                                    PASAR
-                                </div>
-
-                                {/* pequeño estallido de corazón al confirmar match */}
-                                {salida === 'derecha' && (
-                                    <div className='pointer-events-none absolute inset-0 flex items-center justify-center'>
-                                        <i className='ti ti-heart-filled animate-ping text-[64px] text-pink-400/70' />
-                                    </div>
-                                )}
                             </div>
                         </div>
 
-                        {/* BOTONES DE ACCIÓN */}
                         <div className='mt-5 flex items-center justify-center gap-3'>
                             <button
                                 title='Pasar'
@@ -281,11 +310,11 @@ export default function DescubrirTab({
                                 </button>
                             )}
                             <button
-                                title='Me interesa'
+                                title='Guardar'
                                 onClick={() => handleSwipe('derecha')}
-                                className='flex h-12 w-12 items-center justify-center rounded-full border border-emerald-400/30 bg-emerald-500/10 text-emerald-400 transition hover:bg-emerald-500/20'
+                                className='flex h-12 w-12 items-center justify-center rounded-full border border-pink-400/30 bg-pink-500/10 text-pink-400 transition hover:bg-pink-500/20'
                             >
-                                <i className='ti ti-heart text-[20px]' />
+                                <i className='ti ti-bookmark text-[20px]' />
                             </button>
                         </div>
 
@@ -299,6 +328,14 @@ export default function DescubrirTab({
                             </button>
                         </p>
                     </>
+                ) : search.trim() && cola.length > 0 ? (
+                    <div className='flex flex-col items-center px-5 py-16 text-center'>
+                        <i className='ti ti-search-off mb-3 text-5xl text-neutral-700' />
+                        <h3 className='mb-1 text-[15px] font-bold text-neutral-300'>Sin resultados para "{search}"</h3>
+                        <p className='max-w-[280px] text-[13px] leading-relaxed text-neutral-600'>
+                            Ninguno de tus proyectos recomendados coincide con la búsqueda.
+                        </p>
+                    </div>
                 ) : (
                     <div className='flex flex-col items-center px-5 py-16 text-center'>
                         <i className='ti ti-confetti mb-3 text-5xl text-neutral-700' />
@@ -307,12 +344,6 @@ export default function DescubrirTab({
                             Puedes revisar los que te interesaron en "Guardados" o explorar todos los proyectos abiertos.
                         </p>
                         <div className='flex gap-2'>
-                            <button
-                                onClick={cargar}
-                                className='inline-flex items-center gap-1.5 rounded-[10px] border border-white/[0.07] bg-[#1E1E24] px-4 py-2 text-[12.5px] font-medium text-neutral-300 transition hover:text-neutral-100'
-                            >
-                                <i className='ti ti-refresh text-[14px]' /> Buscar de nuevo
-                            </button>
                             <button
                                 onClick={onIrExplorar}
                                 className='inline-flex items-center gap-1.5 rounded-[10px] bg-pink-500 px-4 py-2 text-[12.5px] font-semibold text-white transition hover:bg-pink-600'
@@ -324,142 +355,238 @@ export default function DescubrirTab({
                 )}
             </div>
 
-            {/* PANEL LATERAL — solo aporta valor con espacio de escritorio, se oculta en mobile */}
             <div className='hidden lg:block'>
-                <PanelLateral
-                    habilidades={habilidades}
-                    personasSimilares={personasSimilares}
-                    cargando={cargandoPanel}
-                    interesesIds={interesesIds}
-                    errorPersonas={errorPersonas}
-                    tieneIntereses={interesesIds.size > 0}
-                />
+                <div className='sticky top-[70px] divide-y divide-white/[0.06] overflow-hidden rounded-2xl border border-white/[0.06] bg-[#1E1E24]'>
+                    <div className='p-5'>
+                        <MisInteresesPanel
+                            misIntereses={misIntereses}
+                            cargando={cargandoPanel}
+                            sinBorde
+                        />
+                    </div>
+                    <div className='p-5'>
+                        <PersonasPanel
+                            personasSimilares={personasSimilares}
+                            cargando={cargandoPanel}
+                            errorPersonas={errorPersonas}
+                            tieneIntereses={interesesIds.size > 0}
+                            sinBorde
+                        />
+                    </div>
+                    <div className='p-5'>
+                        <HabilidadesPanel
+                            habilidades={habilidades}
+                            cargando={cargandoPanel}
+                            sinBorde
+                        />
+                    </div>
+                </div>
             </div>
+
+            {panelMobile === 'intereses' && (
+                <ModalShell
+                    title='Mis intereses'
+                    onClose={() => setPanelMobile(null)}
+                    maxWidth='max-w-[420px]'
+                >
+                    <MisInteresesPanel
+                        misIntereses={misIntereses}
+                        cargando={cargandoPanel}
+                        sinBorde
+                    />
+                </ModalShell>
+            )}
+            {panelMobile === 'habilidades' && (
+                <ModalShell
+                    title='Habilidades en demanda'
+                    onClose={() => setPanelMobile(null)}
+                    maxWidth='max-w-[420px]'
+                >
+                    <HabilidadesPanel
+                        habilidades={habilidades}
+                        cargando={cargandoPanel}
+                        sinBorde
+                    />
+                </ModalShell>
+            )}
+            {panelMobile === 'personas' && (
+                <ModalShell
+                    title='Perfiles similares al tuyo'
+                    onClose={() => setPanelMobile(null)}
+                    maxWidth='max-w-[420px]'
+                >
+                    <PersonasPanel
+                        personasSimilares={personasSimilares}
+                        cargando={cargandoPanel}
+                        errorPersonas={errorPersonas}
+                        tieneIntereses={interesesIds.size > 0}
+                        sinBorde
+                    />
+                </ModalShell>
+            )}
         </div>
     );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PANEL LATERAL: habilidades en demanda + personas con perfil similar
-// ─────────────────────────────────────────────────────────────────────────────
-
-function PanelLateral({ habilidades, personasSimilares, cargando, interesesIds, errorPersonas, tieneIntereses }) {
+function MisInteresesPanel({ misIntereses, cargando, sinBorde = false }) {
     return (
-        <div className='sticky top-[70px] flex flex-col gap-5'>
-            {/* HABILIDADES EN DEMANDA */}
-            <div className='rounded-2xl border border-white/[0.06] bg-[#1E1E24] p-5'>
-                <div className='mb-3.5 flex items-center gap-2'>
-                    <i className='ti ti-trending-up text-[16px] text-pink-400' />
-                    <h3 className='text-[13.5px] font-bold text-neutral-100'>Habilidades en demanda</h3>
-                </div>
-
-                {cargando && <p className='text-[12px] text-neutral-600'>Cargando…</p>}
-
-                {!cargando && habilidades.length === 0 && (
-                    <p className='text-[12px] leading-relaxed text-neutral-600'>
-                        Todavía no hay suficientes proyectos abiertos para calcular tendencias.
-                    </p>
-                )}
-
-                {!cargando && habilidades.length > 0 && (
-                    <div className='flex flex-col gap-2.5'>
-                        {(() => {
-                            const max = Math.max(...habilidades.map((h) => h.total_proyectos), 1);
-                            return habilidades.map((h) => {
-                                const c = etiquetaColor(h.nombre);
-                                return (
-                                    <div key={h.id}>
-                                        <div className='mb-1 flex items-center justify-between gap-2'>
-                                            <span className={`inline-flex items-center gap-1.5 text-[12px] font-medium ${c.text}`}>
-                                                <span
-                                                    className='h-2 w-2 flex-shrink-0 rounded-full'
-                                                    style={{ background: c.hex }}
-                                                />
-                                                {h.nombre}
-                                                {h.es_interes_propio && (
-                                                    <i title='Ya está entre tus intereses' className='ti ti-check text-[11px]' />
-                                                )}
-                                            </span>
-                                            <span className='flex-shrink-0 text-[11px] text-neutral-600'>
-                                                {h.total_proyectos} proyecto{h.total_proyectos === 1 ? '' : 's'}
-                                            </span>
-                                        </div>
-                                        <div className='h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]'>
-                                            <div
-                                                className='h-full rounded-full transition-all'
-                                                style={{ width: `${Math.max((h.total_proyectos / max) * 100, 8)}%`, background: c.hex }}
-                                            />
-                                        </div>
-                                    </div>
-                                );
-                            });
-                        })()}
-                    </div>
-                )}
+        <div className={sinBorde ? '' : 'rounded-2xl border border-white/[0.06] bg-[#1E1E24] p-5'}>
+            <div className='mb-3.5 flex items-center gap-2'>
+                <i className='ti ti-tag text-[16px] text-pink-400' />
+                <h3 className='text-[13.5px] font-bold text-neutral-100'>Mis intereses</h3>
             </div>
 
-            {/* PERSONAS CON PERFIL SIMILAR */}
-            <div className='rounded-2xl border border-white/[0.06] bg-[#1E1E24] p-5'>
-                <div className='mb-3.5 flex items-center gap-2'>
-                    <i className='ti ti-users-group text-[16px] text-pink-400' />
-                    <h3 className='text-[13.5px] font-bold text-neutral-100'>Perfiles similares al tuyo</h3>
+            {cargando && <p className='text-[12px] text-neutral-600'>Cargando…</p>}
+
+            {!cargando && misIntereses.length === 0 && (
+                <p className='text-[12px] leading-relaxed text-neutral-600'>
+                    Aún no tienes intereses configurados.{' '}
+                    <Link
+                        to='/perfil'
+                        className='font-semibold text-pink-400 hover:underline'
+                    >
+                        Agrégalos en tu perfil
+                    </Link>{' '}
+                    para recibir mejores recomendaciones.
+                </p>
+            )}
+
+            {!cargando && misIntereses.length > 0 && (
+                <div className='flex flex-wrap gap-1.5'>
+                    {misIntereses.map((et) => {
+                        const c = etiquetaColor(et.nombre);
+                        return (
+                            <span
+                                key={et.id}
+                                className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${c.bg} ${c.text} ${c.border}`}
+                            >
+                                {et.nombre}
+                            </span>
+                        );
+                    })}
                 </div>
+            )}
+        </div>
+    );
+}
 
-                {cargando && <p className='text-[12px] text-neutral-600'>Cargando…</p>}
+function HabilidadesPanel({ habilidades, cargando, sinBorde = false }) {
+    return (
+        <div className={sinBorde ? '' : 'rounded-2xl border border-white/[0.06] bg-[#1E1E24] p-5'}>
+            <div className='mb-3.5 flex items-center gap-2'>
+                <i className='ti ti-trending-up text-[16px] text-pink-400' />
+                <h3 className='text-[13.5px] font-bold text-neutral-100'>Habilidades en demanda</h3>
+            </div>
 
-                {!cargando && errorPersonas && (
-                    <p className='text-[12px] leading-relaxed text-red-400'>
-                        No se pudieron cargar: {errorPersonas}
-                    </p>
-                )}
+            {cargando && <p className='text-[12px] text-neutral-600'>Cargando…</p>}
 
-                {!cargando && !errorPersonas && personasSimilares.length === 0 && !tieneIntereses && (
-                    <p className='text-[12px] leading-relaxed text-neutral-600'>
-                        Agrega intereses a tu perfil para que podamos encontrar personas afines a ti.
-                    </p>
-                )}
+            {!cargando && habilidades.length === 0 && (
+                <p className='text-[12px] leading-relaxed text-neutral-600'>
+                    Todavía no hay suficientes proyectos abiertos para calcular tendencias.
+                </p>
+            )}
 
-                {!cargando && !errorPersonas && personasSimilares.length === 0 && tieneIntereses && (
-                    <p className='text-[12px] leading-relaxed text-neutral-600'>
-                        Por ahora no hay otras personas activas que compartan tus intereses.
-                    </p>
-                )}
-
-                {!cargando && personasSimilares.length > 0 && (
-                    <div className='flex flex-col gap-3'>
-                        {personasSimilares.map((p) => {
-                            const av = avatarColor(p.id);
+            {!cargando && habilidades.length > 0 && (
+                <div className='flex flex-col gap-2.5'>
+                    {(() => {
+                        const max = Math.max(...habilidades.map((h) => h.total_proyectos), 1);
+                        return habilidades.map((h) => {
+                            const c = etiquetaColor(h.nombre);
                             return (
-                                <div key={p.id} className='flex items-center gap-2.5'>
-                                    <div
-                                        className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${av.bg} ${av.text}`}
-                                    >
-                                        {getInitials(p.nombre_usuario)}
+                                <div key={h.id}>
+                                    <div className='mb-1 flex items-center justify-between gap-2'>
+                                        <span className={`inline-flex items-center gap-1.5 text-[12px] font-medium ${c.text}`}>
+                                            <span
+                                                className='h-2 w-2 flex-shrink-0 rounded-full'
+                                                style={{ background: c.hex }}
+                                            />
+                                            {h.nombre}
+                                            {h.es_interes_propio && (
+                                                <i title='Ya está entre tus intereses' className='ti ti-check text-[11px]' />
+                                            )}
+                                        </span>
+                                        <span className='flex-shrink-0 text-[11px] text-neutral-600'>
+                                            {h.total_proyectos} proyecto{h.total_proyectos === 1 ? '' : 's'}
+                                        </span>
                                     </div>
-                                    <div className='min-w-0 flex-1'>
-                                        <div className='truncate text-[12.5px] font-semibold text-neutral-100'>
-                                            {p.nombre_usuario}
-                                        </div>
-                                        <div className='truncate text-[11px] text-neutral-500'>
-                                            {p.etiquetas_compartidas?.slice(0, 2).map((et) => et.nombre).join(', ') || 'Intereses en común'}
-                                        </div>
-                                    </div>
-                                    <div className='flex-shrink-0 rounded-full bg-pink-500/10 px-2 py-0.5 text-[11px] font-bold text-pink-400'>
-                                        {p.porcentaje_match}%
+                                    <div className='h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]'>
+                                        <div
+                                            className='h-full rounded-full transition-all'
+                                            style={{ width: `${Math.max((h.total_proyectos / max) * 100, 8)}%`, background: c.hex }}
+                                        />
                                     </div>
                                 </div>
                             );
-                        })}
-                    </div>
-                )}
-            </div>
+                        });
+                    })()}
+                </div>
+            )}
         </div>
     );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// TARJETA
-// ─────────────────────────────────────────────────────────────────────────────
+function PersonasPanel({ personasSimilares, cargando, errorPersonas, tieneIntereses, sinBorde = false }) {
+    return (
+        <div className={sinBorde ? '' : 'rounded-2xl border border-white/[0.06] bg-[#1E1E24] p-5'}>
+            <div className='mb-3.5 flex items-center gap-2'>
+                <i className='ti ti-users-group text-[16px] text-pink-400' />
+                <h3 className='text-[13.5px] font-bold text-neutral-100'>Perfiles similares al tuyo</h3>
+            </div>
+
+            {cargando && <p className='text-[12px] text-neutral-600'>Cargando…</p>}
+
+            {!cargando && errorPersonas && (
+                <p className='text-[12px] leading-relaxed text-red-400'>
+                    No se pudieron cargar: {errorPersonas}
+                </p>
+            )}
+
+            {!cargando && !errorPersonas && personasSimilares.length === 0 && !tieneIntereses && (
+                <p className='text-[12px] leading-relaxed text-neutral-600'>
+                    Agrega intereses a tu perfil para que podamos encontrar personas afines a ti.
+                </p>
+            )}
+
+            {!cargando && !errorPersonas && personasSimilares.length === 0 && tieneIntereses && (
+                <p className='text-[12px] leading-relaxed text-neutral-600'>
+                    Por ahora no hay otras personas activas que compartan tus intereses.
+                </p>
+            )}
+
+            {!cargando && personasSimilares.length > 0 && (
+                <div className='flex flex-col gap-3'>
+                    {personasSimilares.map((p) => {
+                        const av = avatarColor(p.id);
+                        return (
+                            <Link
+                                key={p.id}
+                                to={`/perfil/usuario/${p.nombre_usuario}`}
+                                className='flex items-center gap-2.5 transition hover:opacity-80'
+                            >
+                                <div
+                                    className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${av.bg} ${av.text}`}
+                                >
+                                    {getInitials(p.nombre_usuario)}
+                                </div>
+                                <div className='min-w-0 flex-1'>
+                                    <div className='truncate text-[12.5px] font-semibold text-neutral-100'>
+                                        {p.nombre_usuario}
+                                    </div>
+                                    <div className='truncate text-[11px] text-neutral-500'>
+                                        {p.etiquetas_compartidas?.slice(0, 2).map((et) => et.nombre).join(', ') || 'Intereses en común'}
+                                    </div>
+                                </div>
+                                <div className='flex-shrink-0 rounded-full bg-pink-500/10 px-2 py-0.5 text-[11px] font-bold text-pink-400'>
+                                    {p.porcentaje_match}%
+                                </div>
+                            </Link>
+                        );
+                    })}
+                </div>
+            )}
+        </div>
+    );
+}
 
 function TarjetaProyecto({ proyecto: p, interesesIds }) {
     const av = avatarColor(p.creador?.id);
@@ -467,67 +594,137 @@ function TarjetaProyecto({ proyecto: p, interesesIds }) {
     const pct = p.porcentaje_match ?? 0;
 
     return (
-        <div className='flex h-full flex-col p-[18px]'>
-            <div className='mb-2.5 flex items-start justify-between gap-3'>
-                <div className='flex flex-wrap gap-1.5'>
-                    <EstadoChip estado={p.estado} />
-                    <ModalidadChip modalidad={p.modalidad} />
+        <div className="flex h-full flex-col overflow-y-auto overflow-x-hidden px-5 py-4 md:overflow-hidden md:px-7 md:py-5">
+
+            <div className="grid min-h-0 flex-1 grid-cols-1 items-center gap-6 md:grid-cols-[minmax(0,1fr)_200px_200px]">
+
+                <div className="flex min-w-0 flex-col justify-center gap-2.5">
+                    <div className="line-clamp-2 text-[19px] font-bold leading-tight text-neutral-100 md:text-[21px]">
+                        {p.titulo}
+                    </div>
+
+                    <div className="flex flex-wrap gap-1.5">
+                        <ModalidadChip modalidad={p.modalidad} />
+                        <EstadoChip estado={p.estado} />
+                    </div>
+
+                    <p className="line-clamp-2 text-[13px] leading-relaxed text-neutral-400">
+                        {p.descripcion}
+                    </p>
+
+                    {p.etiquetas?.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                            {p.etiquetas.slice(0, 8).map((et) => {
+                                const coincide = interesesIds.has(et.id);
+                                const c = etiquetaColor(et.nombre);
+                                return (
+                                    <span
+                                        key={et.id}
+                                        className={`rounded-full border px-2.5 py-1 text-[10.5px] font-semibold ${c.bg} ${c.text} ${coincide
+                                            ? `${c.border} ring-1 ring-inset ring-current`
+                                            : "border-transparent"
+                                            }`}
+                                    >
+                                        {coincide && <i className="ti ti-check mr-1 text-[9px]" />}
+                                        {et.nombre}
+                                    </span>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    {(p.fecha_inicio || p.fecha_fin) && (
+                        <div className="hidden flex-col gap-1.5 sm:flex">
+                            <span className="text-[10.5px] font-semibold uppercase tracking-wide text-neutral-600">
+                                Duración
+                            </span>
+                            <div className="flex flex-wrap items-center gap-2 text-[12.5px] text-neutral-300">
+                                {p.fecha_inicio && (
+                                    <span className="inline-flex items-center gap-1">
+                                        <i className="ti ti-calendar-event text-pink-400" />
+                                        {formatFecha(p.fecha_inicio)}
+                                    </span>
+                                )}
+                                {p.fecha_inicio && p.fecha_fin && (
+                                    <i className="ti ti-arrow-right text-neutral-600" />
+                                )}
+                                {p.fecha_fin && (
+                                    <span className="inline-flex items-center gap-1">
+                                        <i className="ti ti-calendar-due text-pink-400" />
+                                        {formatFecha(p.fecha_fin)}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    <Link
+                        to={`/perfil/usuario/${p.creador?.nombre_usuario}`}
+                        onPointerDown={(e) => e.stopPropagation()}
+                        className="mt-0.5 flex items-center gap-2.5 rounded-lg transition hover:opacity-85"
+                    >
+                        <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-[12.5px] font-bold ${av.bg} ${av.text}`}>
+                            {getInitials(p.creador?.nombre_usuario)}
+                        </div>
+                        <div className="min-w-0">
+                            <div className="truncate text-[13.5px] font-bold text-neutral-100">
+                                {p.creador?.nombre_completo || p.creador?.nombre_usuario}
+                            </div>
+                            <div className="text-[11px] text-neutral-500">
+                                u/{p.creador?.nombre_usuario}
+                            </div>
+                        </div>
+                    </Link>
                 </div>
 
-                {/* anillo de porcentaje de coincidencia */}
-                <div
-                    className='relative flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full'
-                    style={{ background: `conic-gradient(#E8546A ${pct * 3.6}deg, rgba(255,255,255,0.08) 0deg)` }}
-                >
-                    <div className='flex h-[38px] w-[38px] items-center justify-center rounded-full bg-[#1E1E24] text-[11px] font-bold text-pink-400'>
-                        {pct}%
+                <div className="flex h-full items-center justify-center">
+                    <div
+                        className="relative flex h-[160px] w-[160px] items-center justify-center rounded-full"
+                        style={{ background: `conic-gradient(#E8546A ${pct * 3.6}deg, rgba(255,255,255,0.08) 0deg)` }}
+                    >
+                        <div className="flex h-[130px] w-[130px] items-center justify-center rounded-full bg-[#1E1E24] text-[28px] font-extrabold text-pink-400">
+                            {pct}%
+                        </div>
                     </div>
+                </div>
+
+                <div className="hidden h-full items-center justify-center md:flex">
+                    <img
+                        src={armadilloArma}
+                        alt=""
+                        aria-hidden="true"
+                        className="h-[220px] w-auto max-w-[200px] object-contain"
+                    />
                 </div>
             </div>
 
-            <div className='mb-1.5 text-[16px] font-bold leading-snug text-neutral-100'>{p.titulo}</div>
-
-            <p className='mb-3 line-clamp-4 text-[12.5px] leading-relaxed text-neutral-400'>
-                {p.descripcion}
-            </p>
-
-            {p.etiquetas?.length > 0 && (
-                <div className='mb-3 flex flex-wrap gap-1.5'>
-                    {p.etiquetas.slice(0, 8).map((et) => {
-                        const coincide = interesesIds.has(et.id);
-                        const c = etiquetaColor(et.nombre);
-                        return (
-                            <span
-                                key={et.id}
-                                className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${c.bg} ${c.text} ${coincide ? `${c.border} ring-1 ring-inset ring-current` : 'border-transparent'
-                                    }`}
-                            >
-                                {coincide && <i className='ti ti-check mr-0.5 text-[9px]' />}
-                                {et.nombre}
-                            </span>
-                        );
-                    })}
-                </div>
-            )}
-
-            <div className='mt-auto flex items-center gap-2 border-t border-white/[0.07] pt-3'>
-                <div
-                    className={`flex h-6 w-6 items-center justify-center rounded-full text-[9px] font-bold ${av.bg} ${av.text}`}
-                >
-                    {getInitials(p.creador?.nombre_usuario)}
-                </div>
-                <div className='text-[12px] text-neutral-400'>
-                    <strong className='text-neutral-100'>{p.creador?.nombre_usuario}</strong>
-                </div>
-
-                <div className='ml-auto flex items-center gap-1.5 text-[11px] text-neutral-600'>
-                    <i className='ti ti-users text-[13px]' />
+            <div className="mt-3 flex flex-shrink-0 flex-col items-center gap-1.5 border-t border-white/10 pt-3">
+                <div className="flex items-center gap-2 text-[12px] text-neutral-400">
+                    <i className="ti ti-users text-[13px]" />
                     {p.maximo_integrantes ? (
                         <span>{cupos > 0 ? cupos : 0}/{p.maximo_integrantes} cupos</span>
                     ) : (
                         <span>{p.total_integrantes} integrantes</span>
                     )}
                 </div>
+
+                {p.integrantes?.length > 0 && (
+                    <div className="flex items-center">
+                        {p.integrantes.slice(0, 4).map((i, idx) => {
+                            const iav = avatarColor(i.usuario_id);
+                            return (
+                                <div
+                                    key={i.usuario_id}
+                                    title={i.nombre_usuario}
+                                    style={{ marginLeft: idx === 0 ? 0 : -8, zIndex: 5 - idx }}
+                                    className={`flex h-6 w-6 items-center justify-center rounded-full border-2 border-[#1E1E24] text-[8px] font-bold ${iav.bg} ${iav.text}`}
+                                >
+                                    {getInitials(i.nombre_usuario)}
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { listarEtiquetas } from '../services/etiqueta';
+import { etiquetaColor } from '../helpers/matchHelpers';
 
 export default function EtiquetasPicker({ selectedIds = [], onChange, max = 15, emptyHint }) {
     const [disponibles, setDisponibles] = useState([]);
@@ -38,18 +39,21 @@ export default function EtiquetasPicker({ selectedIds = [], onChange, max = 15, 
         <div>
             {seleccionadas.length > 0 ? (
                 <div className='mb-2 flex flex-wrap gap-1.5'>
-                    {seleccionadas.map((et) => (
-                        <span
-                            key={et.id}
-                            className='inline-flex items-center gap-1 rounded-full border border-pink-500/40 bg-pink-500/10 px-2.5 py-1 text-[11px] font-medium text-pink-500'
-                        >
-                            {et.nombre}
-                            <i
-                                onClick={() => toggle(et.id)}
-                                className='ti ti-x cursor-pointer text-[12px]'
-                            />
-                        </span>
-                    ))}
+                    {seleccionadas.map((et) => {
+                        const c = etiquetaColor(et.nombre);
+                        return (
+                            <span
+                                key={et.id}
+                                className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium ${c.bg} ${c.text} ${c.border}`}
+                            >
+                                {et.nombre}
+                                <i
+                                    onClick={() => toggle(et.id)}
+                                    className='ti ti-x cursor-pointer text-[12px]'
+                                />
+                            </span>
+                        );
+                    })}
                 </div>
             ) : (
                 emptyHint && <p className='mb-2 text-[12px] text-neutral-600'>{emptyHint}</p>
@@ -81,14 +85,15 @@ export default function EtiquetasPicker({ selectedIds = [], onChange, max = 15, 
                         <div className='flex flex-wrap gap-1.5'>
                             {etiquetas.map((et) => {
                                 const seleccionada = seleccionadasSet.has(et.id);
+                                const c = etiquetaColor(et.nombre);
                                 return (
                                     <button
                                         type='button'
                                         key={et.id}
                                         onClick={() => toggle(et.id)}
                                         className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${seleccionada
-                                            ? 'border-pink-500/40 bg-pink-500/10 text-pink-500'
-                                            : 'border-white/[0.07] text-neutral-400 hover:text-neutral-100'
+                                            ? `${c.bg} ${c.text} ${c.border}`
+                                            : 'border-white/[0.07] text-neutral-400 hover:border-white/[0.16] hover:text-neutral-100'
                                             }`}
                                     >
                                         {et.nombre}

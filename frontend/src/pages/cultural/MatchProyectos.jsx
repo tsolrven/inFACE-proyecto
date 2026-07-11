@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { createPortal } from 'react-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import {
   listarProyectos,
@@ -14,11 +15,9 @@ import {
   listarFavoritos,
   obtenerProyecto,
 } from '../../services/matchingProyecto';
+import { listarEtiquetas } from '../../services/etiqueta';
 import {
-  getInitials,
-  avatarColor,
   etiquetaColor,
-  EstadoChip,
   ModalidadChip,
   EstadoPostulacionChip,
   formatFecha,
@@ -41,8 +40,17 @@ const TABS = [
 
 export default function MatchProyectos() {
   const usuario = useAuthStore((s) => s.usuario);
+  const navigate = useNavigate();
   //const [tab, setTab] = useState('explorar');
   const [tab, setTab] = useState('descubrir');
+  const [search, setSearch] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  // true cuando el detalle se abrió por venir de otro módulo (ej. el perfil, con ?proyecto=ID):
+  // en ese caso "Volver" debe regresar de verdad a esa página, no solo cerrar el detalle local.
+  const [detalleDesdeOtroModulo, setDetalleDesdeOtroModulo] = useState(false);
+  // mientras esto es true no se muestra nada de las pestañas, para evitar el "flash" de
+  // Descubrir/tabs antes de que se resuelva el detalle al entrar con ?proyecto=ID desde otro módulo.
+  const [resolviendoDetalleInicial, setResolviendoDetalleInicial] = useState(() => !!searchParams.get('proyecto'));
 
   // datos globales usados por varias pestañas
   const [favoritos, setFavoritos] = useState([]);
@@ -107,42 +115,96 @@ export default function MatchProyectos() {
   }
 
   async function handleVerDetalle(proyecto) {
+    setDetalleDesdeOtroModulo(false);
     setProyectoDetalle(proyecto);
   }
 
-  async function handleVerDetallePorId(proyectoId) {
+  async function handleEliminarDesdeDetalle(proyecto) {
+    if (!confirm(`¿Eliminar el proyecto "${proyecto.titulo}"? Esta acción no se puede deshacer.`)) return;
+    try {
+      await eliminarProyecto(proyecto.id);
+      setProyectoDetalle(null);
+      window.dispatchEvent(new Event('inface:mis-proyectos-actualizados'));
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  async function handleVerDetallePorId(proyectoId, externo = false) {
     try {
       const p = await obtenerProyecto(proyectoId);
+      setDetalleDesdeOtroModulo(externo);
       setProyectoDetalle(p);
     } catch {
       // ignorar
+    } finally {
+      setResolviendoDetalleInicial(false);
+    }
+  }
+
+  // si se llega desde otro módulo (ej. el perfil) con ?proyecto=ID, se abre
+  // directo el detalle de ese proyecto en vez de mostrar el módulo genérico.
+  useEffect(() => {
+    const proyectoId = searchParams.get('proyecto');
+    if (!proyectoId) {
+      setResolviendoDetalleInicial(false);
+      return;
+    }
+    handleVerDetallePorId(proyectoId, true);
+    const next = new URLSearchParams(searchParams);
+    next.delete('proyecto');
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  function handleVolverDetalle() {
+    if (detalleDesdeOtroModulo) {
+      navigate(-1); // vuelve de verdad a la página de origen (ej. el perfil)
+    } else {
+      setProyectoDetalle(null);
     }
   }
 
   return (
     <div>
-      {/* BANNER */}
-      <div
-        className='relative flex h-[110px] items-end overflow-hidden px-[26px] pb-[18px]'
-        style={{ background: 'linear-gradient(135deg,#1a1a2e,#0f1a35,#1a0a20)' }}
-      >
-        <div
-          className='pointer-events-none absolute inset-0'
-          style={{
-            background:
-              'radial-gradient(ellipse 50% 100% at 80% 50%, rgba(232,84,106,.2) 0%, transparent 70%), radial-gradient(ellipse 30% 80% at 20% 50%, rgba(167,139,250,.15) 0%, transparent 60%)',
-          }}
-        />
-        <div className='relative z-[1]'>
-          <div className='mb-1 text-[10px] font-bold uppercase tracking-widest text-pink-500'>
-            Módulo Cultural
+      {/* HEADER (mismo estilo que Repositorio de materiales) */}
+      <div className='px-[26px] pt-6'>
+        <div className='mb-4 flex items-center gap-1.5 text-[12px] text-neutral-500'>
+          <span>Inicio</span>
+          <i className='ti ti-chevron-right text-[12px]' />
+          <span>Cultural</span>
+          <i className='ti ti-chevron-right text-[12px]' />
+          <span className='text-neutral-300'>Match de proyectos</span>
+        </div>
+
+        <div className='mb-5 flex items-start justify-between gap-4'>
+          <div className='flex items-center gap-3'>
+            <div className='flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-[12px] bg-pink-500/10'>
+              <i className='ti ti-puzzle text-[22px] text-pink-400' />
+            </div>
+            <div>
+              <h1 className='text-[19px] font-bold text-neutral-50'>Match de proyectos</h1>
+              <p className='text-[12.5px] text-neutral-500'>
+                Encuentra o forma equipos para proyectos académicos y de emprendimiento
+              </p>
+            </div>
           </div>
-          <div className='text-[20px] font-bold tracking-tight text-white'>🧩 Match de proyectos</div>
+
+          <div className='relative hidden sm:block'>
+            <i className='ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-[14px] text-neutral-600' />
+            <input
+              type='text'
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder='Buscar en Match de proyectos...'
+              className='w-64 rounded-[10px] border border-white/[0.07] bg-[#1E1E24] py-2 pl-9 pr-3 text-[12.5px] text-neutral-100 outline-none transition placeholder:text-neutral-600 focus:border-pink-500/50'
+            />
+          </div>
         </div>
       </div>
 
       {/* TABS */}
-      {!proyectoDetalle && (
+      {!proyectoDetalle && !resolviendoDetalleInicial && (
         <div className='sticky top-0 z-10 flex items-center overflow-x-auto border-b border-white/[0.07] bg-[#17171B] px-[26px]'>
           {TABS.map((t) => (
             <button
@@ -161,19 +223,27 @@ export default function MatchProyectos() {
       )}
 
       <div className='px-[26px] pb-10 pt-[22px]'>
-        {proyectoDetalle ? (
+        {resolviendoDetalleInicial ? (
+          <p className='py-16 text-center text-[13px] text-neutral-500'>Cargando…</p>
+        ) : proyectoDetalle ? (
           <DetalleProyecto
             proyecto={proyectoDetalle}
             esCreador={proyectoDetalle.creador?.id === usuario?.id}
             esIntegrante={proyectoDetalle.integrantes?.some((i) => i.usuario_id === usuario?.id)}
             yaPostulado={postuladosActivos.has(proyectoDetalle.id)}
             puedePostular={proyectoDetalle.estado === 'abierto'}
-            onVolver={() => setProyectoDetalle(null)}
+            onVolver={handleVolverDetalle}
             onPostular={handlePostular}
+            onEditar={() => setModalCrear(proyectoDetalle)}
+            onEliminar={() => handleEliminarDesdeDetalle(proyectoDetalle)}
+            onVerIntegrantes={() => setModalIntegrantes(proyectoDetalle)}
+            onVerPostulaciones={() => setModalPostulaciones(proyectoDetalle)}
           />
         ) : (
           <>
-            {tab === 'descubrir' && (
+            {/* las 5 pestañas quedan siempre montadas (solo se ocultan con CSS) para que su estado
+                y sus datos ya cargados no se pierdan/reinicien al cambiar de pestaña o volver a Descubrir */}
+            <div style={{ display: tab === 'descubrir' ? 'block' : 'none' }}>
               <DescubrirTab
                 usuario={usuario}
                 favoritosIds={favoritosIds}
@@ -182,9 +252,10 @@ export default function MatchProyectos() {
                 onVerDetalle={handleVerDetalle}
                 onPostularClick={setModalPostular}
                 onIrExplorar={() => setTab('explorar')}
+                search={search}
               />
-            )}
-            {tab === 'explorar' && (
+            </div>
+            <div style={{ display: tab === 'explorar' ? 'block' : 'none' }}>
               <ExplorarTab
                 usuario={usuario}
                 favoritosIds={favoritosIds}
@@ -192,9 +263,10 @@ export default function MatchProyectos() {
                 onToggleFavorito={handleToggleFavorito}
                 onVerDetalle={handleVerDetalle}
                 onPostularClick={setModalPostular}
+                search={search}
               />
-            )}
-            {tab === 'guardados' && (
+            </div>
+            <div style={{ display: tab === 'guardados' ? 'block' : 'none' }}>
               <GuardadosTab
                 usuario={usuario}
                 favoritos={favoritos}
@@ -203,25 +275,28 @@ export default function MatchProyectos() {
                 onToggleFavorito={handleToggleFavorito}
                 onVerDetalle={handleVerDetalle}
                 onPostularClick={setModalPostular}
+                search={search}
               />
-            )}
-            {tab === 'mis' && (
+            </div>
+            <div style={{ display: tab === 'mis' ? 'block' : 'none' }}>
               <MisProyectosTab
                 usuario={usuario}
                 onCrear={() => setModalCrear('crear')}
                 onEditar={(p) => setModalCrear(p)}
                 onVerPostulaciones={(p) => setModalPostulaciones(p)}
                 onVerIntegrantes={(p) => setModalIntegrantes(p)}
+                onVerDetalle={handleVerDetalle}
+                search={search}
               />
-            )}
-            {tab === 'postulaciones' && (
+            </div>
+            <div style={{ display: tab === 'postulaciones' ? 'block' : 'none' }}>
               <MisPostulacionesTab
                 postulaciones={misPostulaciones}
                 loaded={misPostulacionesLoaded}
                 onRecargar={recargarMisPostulaciones}
                 onVerProyecto={handleVerDetallePorId}
               />
-            )}
+            </div>
           </>
         )}
       </div>
@@ -236,6 +311,7 @@ export default function MatchProyectos() {
               await crearProyecto(payload);
             } else {
               await actualizarProyecto(modalCrear.id, payload);
+              if (proyectoDetalle?.id === modalCrear.id) handleVerDetallePorId(modalCrear.id, detalleDesdeOtroModulo);
             }
             setModalCrear(null);
             window.dispatchEvent(new Event('inface:mis-proyectos-actualizados'));
@@ -264,7 +340,10 @@ export default function MatchProyectos() {
           proyecto={modalIntegrantes}
           esCreador={modalIntegrantes.creador?.id === usuario?.id}
           onClose={() => setModalIntegrantes(null)}
-          onCambio={() => window.dispatchEvent(new Event('inface:mis-proyectos-actualizados'))}
+          onCambio={() => {
+            window.dispatchEvent(new Event('inface:mis-proyectos-actualizados'));
+            if (proyectoDetalle?.id === modalIntegrantes.id) handleVerDetallePorId(modalIntegrantes.id, detalleDesdeOtroModulo);
+          }}
         />
       )}
     </div>
@@ -275,77 +354,252 @@ export default function MatchProyectos() {
 // FILA DE BÚSQUEDA + FILTROS (compartida entre pestañas)
 // ─────────────────────────────────────────────────────────────────────────────
 
-function SearchRow({ placeholder, value, onChange, children }) {
-  return (
-    <div className='mb-4 flex gap-2.5'>
-      <div className='flex h-[38px] flex-1 items-center gap-2 rounded-[10px] border border-white/[0.07] bg-[#1E1E24] px-3.5'>
-        <i className='ti ti-search text-[15px] text-neutral-600' />
-        <input
-          type='text'
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          className='w-full flex-1 bg-transparent text-[13px] text-neutral-100 outline-none placeholder:text-neutral-600'
-        />
-      </div>
-      {children}
-    </div>
-  );
+function FilterRow({ children }) {
+  return <div className='mb-4 flex flex-wrap gap-2.5'>{children}</div>;
 }
 
 function FilterDropdown({ label, icon = 'ti-adjustments-horizontal', sections }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef(null);
+  const [coords, setCoords] = useState({ top: 0, left: 0 });
+  const btnRef = useRef(null);
+  const menuRef = useRef(null);
+  const MENU_WIDTH = 220;
+
+  function calcularPosicion() {
+    const rect = btnRef.current.getBoundingClientRect();
+    // por defecto se alinea a la derecha del botón, pero si el botón está muy cerca
+    // del borde izquierdo (ej. con el sidebar colapsado) eso deja el menú con
+    // coordenada negativa y se corta; en ese caso se alinea a la izquierda del botón.
+    let left = rect.right - MENU_WIDTH;
+    if (left < 8) left = rect.left;
+    // tampoco debe salirse por la derecha de la ventana
+    if (left + MENU_WIDTH > window.innerWidth - 8) left = window.innerWidth - MENU_WIDTH - 8;
+    return { top: rect.bottom + 6, left };
+  }
+
+  function abrir() {
+    setCoords(calcularPosicion());
+    setOpen(true);
+  }
 
   useEffect(() => {
+    if (!open) return;
     function onClick(e) {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+      if (
+        btnRef.current && !btnRef.current.contains(e.target) &&
+        menuRef.current && !menuRef.current.contains(e.target)
+      ) {
+        setOpen(false);
+      }
+    }
+    function onScrollOrResize() {
+      if (!btnRef.current) return;
+      setCoords(calcularPosicion());
     }
     document.addEventListener('mousedown', onClick);
-    return () => document.removeEventListener('mousedown', onClick);
-  }, []);
+    window.addEventListener('scroll', onScrollOrResize, true);
+    window.addEventListener('resize', onScrollOrResize);
+    return () => {
+      document.removeEventListener('mousedown', onClick);
+      window.removeEventListener('scroll', onScrollOrResize, true);
+      window.removeEventListener('resize', onScrollOrResize);
+    };
+  }, [open]);
 
   return (
-    <div
-      className='relative flex-shrink-0'
-      ref={ref}
-    >
+    <div className='flex-shrink-0'>
       <button
-        onClick={() => setOpen((o) => !o)}
+        ref={btnRef}
+        onClick={() => (open ? setOpen(false) : abrir())}
         className='flex h-[38px] items-center gap-1.5 whitespace-nowrap rounded-[10px] border border-white/[0.07] bg-[#1E1E24] px-3.5 text-[12.5px] font-medium text-neutral-400 transition hover:text-neutral-100'
       >
         <i className={`ti ${icon} text-[14px]`} />
         {label}
         <i className='ti ti-chevron-down text-[13px]' />
       </button>
-      {open && (
-        <div className='absolute right-0 top-[calc(100%+6px)] z-[100] w-[220px] overflow-hidden rounded-2xl border border-white/10 bg-[#1E1E24] py-2 shadow-[0_12px_32px_rgba(0,0,0,0.5)]'>
-          {sections.map((sec, i) => (
-            <div key={i}>
-              {sec.title && (
-                <div className='px-3.5 pb-1 pt-2 text-[10px] font-bold uppercase tracking-wide text-neutral-600'>
-                  {sec.title}
-                </div>
+      {open &&
+        createPortal(
+          <div
+            ref={menuRef}
+            className='fixed z-[300] w-[220px] overflow-hidden rounded-2xl border border-white/10 bg-[#1E1E24] py-2 shadow-[0_12px_32px_rgba(0,0,0,0.5)]'
+            style={{ top: coords.top, left: coords.left }}
+          >
+            {sections.map((sec, i) => (
+              <div key={i}>
+                {sec.title && (
+                  <div className='px-3.5 pb-1 pt-2 text-[10px] font-bold uppercase tracking-wide text-neutral-600'>
+                    {sec.title}
+                  </div>
+                )}
+                {sec.options.map((opt) => (
+                  <div
+                    key={opt.value}
+                    onClick={() => {
+                      sec.onSelect(opt.value);
+                      setOpen(false);
+                    }}
+                    className={`flex cursor-pointer items-center gap-2 px-3.5 py-2 text-[13px] transition hover:bg-white/[0.04] ${sec.selected === opt.value ? 'text-pink-500' : 'text-neutral-400'
+                      }`}
+                  >
+                    {opt.label}
+                    {sec.selected === opt.value && <i className='ti ti-check ml-auto text-[14px]' />}
+                  </div>
+                ))}
+                {i < sections.length - 1 && <div className='my-1 h-px bg-white/[0.07]' />}
+              </div>
+            ))}
+          </div>,
+          document.body,
+        )}
+    </div>
+  );
+}
+
+function EtiquetaFilterDropdown({ selectedIds, onChange }) {
+  const [open, setOpen] = useState(false);
+  const [coords, setCoords] = useState({ top: 0, left: 0 });
+  const [etiquetas, setEtiquetas] = useState([]);
+  const [busqueda, setBusqueda] = useState('');
+  const btnRef = useRef(null);
+  const menuRef = useRef(null);
+  const MENU_WIDTH = 260;
+
+  useEffect(() => {
+    listarEtiquetas().then(setEtiquetas).catch(() => setEtiquetas([]));
+  }, []);
+
+  function calcularPosicion() {
+    const rect = btnRef.current.getBoundingClientRect();
+    let left = rect.right - MENU_WIDTH;
+    if (left < 8) left = rect.left;
+    if (left + MENU_WIDTH > window.innerWidth - 8) left = window.innerWidth - MENU_WIDTH - 8;
+    return { top: rect.bottom + 6, left };
+  }
+
+  function abrir() {
+    setCoords(calcularPosicion());
+    setOpen(true);
+  }
+
+  useEffect(() => {
+    if (!open) return;
+    function onClick(e) {
+      if (
+        btnRef.current && !btnRef.current.contains(e.target) &&
+        menuRef.current && !menuRef.current.contains(e.target)
+      ) {
+        setOpen(false);
+      }
+    }
+    function onScrollOrResize() {
+      if (!btnRef.current) return;
+      setCoords(calcularPosicion());
+    }
+    document.addEventListener('mousedown', onClick);
+    window.addEventListener('scroll', onScrollOrResize, true);
+    window.addEventListener('resize', onScrollOrResize);
+    return () => {
+      document.removeEventListener('mousedown', onClick);
+      window.removeEventListener('scroll', onScrollOrResize, true);
+      window.removeEventListener('resize', onScrollOrResize);
+    };
+  }, [open]);
+
+  function toggle(id) {
+    if (selectedIds.includes(id)) onChange(selectedIds.filter((i) => i !== id));
+    else onChange([...selectedIds, id]);
+  }
+
+  const filtradas = etiquetas.filter((et) => et.nombre.toLowerCase().includes(busqueda.trim().toLowerCase()));
+  const porTipo = filtradas.reduce((acc, et) => {
+    const tipo = et.tipo || 'Otras';
+    (acc[tipo] ||= []).push(et);
+    return acc;
+  }, {});
+
+  return (
+    <div className='flex-shrink-0'>
+      <button
+        ref={btnRef}
+        onClick={() => (open ? setOpen(false) : abrir())}
+        className='flex h-[38px] items-center gap-1.5 whitespace-nowrap rounded-[10px] border border-white/[0.07] bg-[#1E1E24] px-3.5 text-[12.5px] font-medium text-neutral-400 transition hover:text-neutral-100'
+      >
+        <i className='ti ti-tag text-[14px]' />
+        Etiquetas
+        {selectedIds.length > 0 && (
+          <span className='flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-pink-500 px-1 text-[10px] font-bold text-white'>
+            {selectedIds.length}
+          </span>
+        )}
+        <i className='ti ti-chevron-down text-[13px]' />
+      </button>
+      {open &&
+        createPortal(
+          <div
+            ref={menuRef}
+            className='fixed z-[300] flex max-h-[380px] w-[260px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#1E1E24] shadow-[0_12px_32px_rgba(0,0,0,0.5)]'
+            style={{ top: coords.top, left: coords.left }}
+          >
+            <div className='p-3 pb-2'>
+              <div className='relative'>
+                <i className='ti ti-search absolute left-2.5 top-1/2 -translate-y-1/2 text-[13px] text-neutral-600' />
+                <input
+                  autoFocus
+                  type='text'
+                  value={busqueda}
+                  onChange={(e) => setBusqueda(e.target.value)}
+                  placeholder='Buscar etiqueta...'
+                  className='w-full rounded-[8px] border border-white/[0.07] bg-[#232329] py-1.5 pl-8 pr-2.5 text-[12px] text-neutral-100 outline-none placeholder:text-neutral-600 focus:border-pink-500/50'
+                />
+              </div>
+            </div>
+
+            <div className='flex-1 overflow-y-auto px-3 pb-2'>
+              {filtradas.length === 0 && (
+                <p className='py-3 text-center text-[12px] text-neutral-600'>Sin resultados</p>
               )}
-              {sec.options.map((opt) => (
+              {Object.entries(porTipo).map(([tipo, ets]) => (
                 <div
-                  key={opt.value}
-                  onClick={() => {
-                    sec.onSelect(opt.value);
-                    setOpen(false);
-                  }}
-                  className={`flex cursor-pointer items-center gap-2 px-3.5 py-2 text-[13px] transition hover:bg-white/[0.04] ${sec.selected === opt.value ? 'text-pink-500' : 'text-neutral-400'
-                    }`}
+                  key={tipo}
+                  className='mb-2.5'
                 >
-                  {opt.label}
-                  {sec.selected === opt.value && <i className='ti ti-check ml-auto text-[14px]' />}
+                  <div className='mb-1.5 px-0.5 text-[10px] font-bold uppercase tracking-wide text-neutral-600'>
+                    {tipo}
+                  </div>
+                  <div className='flex flex-wrap gap-1.5'>
+                    {ets.map((et) => {
+                      const c = etiquetaColor(et.nombre);
+                      const seleccionada = selectedIds.includes(et.id);
+                      return (
+                        <button
+                          key={et.id}
+                          onClick={() => toggle(et.id)}
+                          className={`rounded-full border px-2 py-1 text-[11px] font-medium transition ${seleccionada
+                            ? `${c.bg} ${c.text} ${c.border}`
+                            : 'border-white/[0.07] text-neutral-400 hover:border-white/[0.16] hover:text-neutral-100'
+                            }`}
+                        >
+                          {seleccionada && <i className='ti ti-check mr-1 text-[10px]' />}
+                          {et.nombre}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               ))}
-              {i < sections.length - 1 && <div className='my-1 h-px bg-white/[0.07]' />}
             </div>
-          ))}
-        </div>
-      )}
+
+            {selectedIds.length > 0 && (
+              <button
+                onClick={() => onChange([])}
+                className='m-3 mt-1 rounded-[8px] border border-white/[0.07] py-1.5 text-[11.5px] font-medium text-neutral-400 transition hover:text-neutral-100'
+              >
+                Limpiar selección
+              </button>
+            )}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
@@ -364,13 +618,13 @@ function EmptyState({ icon, title, subtitle }) {
 // PESTAÑA: EXPLORAR
 // ─────────────────────────────────────────────────────────────────────────────
 
-function ExplorarTab({ usuario, favoritosIds, postuladosActivos, onToggleFavorito, onVerDetalle, onPostularClick }) {
+function ExplorarTab({ usuario, favoritosIds, postuladosActivos, onToggleFavorito, onVerDetalle, onPostularClick, search }) {
   const [proyectos, setProyectos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [search, setSearch] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('');
   const [filtroModalidad, setFiltroModalidad] = useState('');
+  const [filtroEtiquetas, setFiltroEtiquetas] = useState([]);
   const [orden, setOrden] = useState('recientes');
 
   const cargar = useCallback(async () => {
@@ -380,6 +634,7 @@ function ExplorarTab({ usuario, favoritosIds, postuladosActivos, onToggleFavorit
       const data = await listarProyectos({
         estado: filtroEstado || undefined,
         modalidad: filtroModalidad || undefined,
+        etiquetas: filtroEtiquetas.length ? filtroEtiquetas : undefined,
         limite: 60,
       });
       setProyectos(data.datos);
@@ -388,7 +643,7 @@ function ExplorarTab({ usuario, favoritosIds, postuladosActivos, onToggleFavorit
     } finally {
       setLoading(false);
     }
-  }, [filtroEstado, filtroModalidad]);
+  }, [filtroEstado, filtroModalidad, filtroEtiquetas]);
 
   useEffect(() => {
     cargar();
@@ -421,11 +676,7 @@ function ExplorarTab({ usuario, favoritosIds, postuladosActivos, onToggleFavorit
 
   return (
     <div>
-      <SearchRow
-        placeholder='Buscar proyectos por nombre, habilidad o descripción...'
-        value={search}
-        onChange={setSearch}
-      >
+      <FilterRow>
         <FilterDropdown
           label='Filtrar'
           sections={[
@@ -462,7 +713,11 @@ function ExplorarTab({ usuario, favoritosIds, postuladosActivos, onToggleFavorit
             },
           ]}
         />
-      </SearchRow>
+        <EtiquetaFilterDropdown
+          selectedIds={filtroEtiquetas}
+          onChange={setFiltroEtiquetas}
+        />
+      </FilterRow>
 
       {loading && <p className='py-10 text-center text-[13px] text-neutral-500'>Cargando proyectos…</p>}
 
@@ -480,7 +735,7 @@ function ExplorarTab({ usuario, favoritosIds, postuladosActivos, onToggleFavorit
         />
       )}
 
-      <div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
+      <div className='flex flex-col gap-4'>
         {proyectosFiltrados.map((p) => (
           <ProyectoCard
             key={p.id}
@@ -498,28 +753,51 @@ function ExplorarTab({ usuario, favoritosIds, postuladosActivos, onToggleFavorit
   );
 }
 
-function ProyectoCard({ proyecto: p, esCreador, esFavorito, yaPostulado, onToggleFavorito, onVerDetalle, onPostularClick }) {
-  const av = avatarColor(p.creador?.id);
+function iconoYColorEstado(estado) {
+  if (estado === 'abierto') return { icono: 'ti-lock-open', clase: 'bg-emerald-400/10 text-emerald-400', titulo: 'Abierto' };
+  if (estado === 'en_progreso') return { icono: 'ti-progress', clase: 'bg-sky-400/10 text-sky-400', titulo: 'En progreso' };
+  return { icono: 'ti-lock', clase: 'bg-white/[0.06] text-neutral-500', titulo: 'Cerrado' };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TARJETA BASE (estilo "post" de feed): columna de acento a la izquierda + contenido
+// a lo ancho + footer con meta a la izquierda y acciones a la derecha. La misma
+// estructura se reutiliza en Explorar, Guardados, Mis proyectos y Mis postulaciones.
+// ─────────────────────────────────────────────────────────────────────────────
+
+function TarjetaProyectoBase({ proyecto: p, extra, accionesDerecha }) {
   const cupos = p.maximo_integrantes ? p.maximo_integrantes - p.total_integrantes : null;
-  const puedePostular = p.estado === 'abierto' && !esCreador;
+  const { icono, clase, titulo } = iconoYColorEstado(p.estado);
 
   return (
-    <div className='flex h-full flex-col overflow-hidden rounded-2xl border border-white/[0.06] bg-[#1E1E24] transition hover:border-white/[0.12]'>
-      <div className='h-1' style={{ background: barGradient(p.estado) }} />
-      <div className='flex flex-1 flex-col p-5'>
-        <div className='mb-2.5 flex items-start justify-between gap-3'>
-          <div className='flex-1'>
-            <div className='mb-1.5 text-[14px] font-bold leading-snug text-neutral-100'>{p.titulo}</div>
-            <div className='flex flex-wrap gap-1.5'>
-              <EstadoChip estado={p.estado} />
-              <ModalidadChip modalidad={p.modalidad} />
-            </div>
-          </div>
+    <div className='flex overflow-hidden rounded-2xl border border-white/[0.06] bg-[#1E1E24] transition hover:border-white/[0.12]'>
+      {/* columna de acento */}
+      <div className='flex w-[54px] flex-shrink-0 flex-col items-center gap-2 border-r border-white/[0.06] bg-white/[0.015] py-4'>
+        <div
+          title={titulo}
+          className={`flex h-9 w-9 items-center justify-center rounded-[10px] ${clase}`}
+        >
+          <i className={`ti ${icono} text-[17px]`} />
+        </div>
+      </div>
+
+      <div className='min-w-0 flex-1 p-4'>
+        {/* meta: modalidad · creador · tiempo */}
+        <div className='mb-2.5 flex flex-wrap items-center gap-1.5 text-[11.5px] text-neutral-500'>
+          <ModalidadChip modalidad={p.modalidad} />
+          <span>·</span>
+          <Link
+            to={`/perfil/usuario/${p.creador?.nombre_usuario}`}
+            className='font-semibold text-neutral-300 transition hover:text-pink-400 hover:underline'
+          >
+            u/{p.creador?.nombre_usuario}
+          </Link>
+          <span>· {tiempoRelativo(p.fecha_creacion)}</span>
         </div>
 
-        <p className='mb-2.5 line-clamp-3 text-[12.5px] leading-relaxed text-neutral-400'>
-          {p.descripcion}
-        </p>
+        <div className='mb-1 text-[15px] font-bold leading-snug text-neutral-100'>{p.titulo}</div>
+
+        <p className='mb-2.5 line-clamp-2 text-[12.5px] leading-relaxed text-neutral-400'>{p.descripcion}</p>
 
         {p.etiquetas?.length > 0 && (
           <div className='mb-3 flex flex-wrap gap-1.5'>
@@ -537,33 +815,36 @@ function ProyectoCard({ proyecto: p, esCreador, esFavorito, yaPostulado, onToggl
           </div>
         )}
 
-        <Link
-          to={`/perfil/usuario/${p.creador?.nombre_usuario}`}
-          className='mb-2.5 flex items-center gap-2 transition hover:opacity-80'
-        >
-          <div
-            className={`flex h-6 w-6 items-center justify-center rounded-full text-[9px] font-bold ${av.bg} ${av.text}`}
-          >
-            {getInitials(p.creador?.nombre_usuario)}
-          </div>
-          <div className='text-[12px] text-neutral-400'>
-            <strong className='text-neutral-100'>{p.creador?.nombre_usuario}</strong>
-          </div>
-        </Link>
+        {extra}
 
-        <div className='mb-3 flex items-center gap-1.5 text-[11.5px] text-neutral-600'>
-          <i className='ti ti-users text-[13px]' />
-          {p.maximo_integrantes ? (
-            <span>
-              <strong className='text-neutral-400'>{cupos > 0 ? cupos : 0} cupos</strong> disponibles de{' '}
-              {p.maximo_integrantes}
+        <div className='flex flex-wrap items-center justify-between gap-2.5 border-t border-white/[0.06] pt-3'>
+          <div className='flex items-center gap-4 text-[11.5px] text-neutral-600'>
+            <span
+              title='Comentarios: próximamente'
+              className='inline-flex items-center gap-1'
+            >
+              <i className='ti ti-message-circle text-[14px]' /> 0
             </span>
-          ) : (
-            <span>{p.total_integrantes} integrantes</span>
-          )}
+            <span className='inline-flex items-center gap-1'>
+              <i className='ti ti-users text-[14px]' />
+              {p.maximo_integrantes ? `${cupos > 0 ? cupos : 0}/${p.maximo_integrantes} cupos` : `${p.total_integrantes} integrantes`}
+            </span>
+          </div>
+          <div className='flex flex-wrap items-center gap-2'>{accionesDerecha}</div>
         </div>
+      </div>
+    </div>
+  );
+}
 
-        <div className='mt-auto flex gap-2 border-t border-white/[0.07] pt-3'>
+function ProyectoCard({ proyecto: p, esCreador, esIntegrante = false, esFavorito, yaPostulado, onToggleFavorito, onVerDetalle, onPostularClick }) {
+  const puedePostular = p.estado === 'abierto' && !esCreador && !esIntegrante;
+
+  return (
+    <TarjetaProyectoBase
+      proyecto={p}
+      accionesDerecha={
+        <>
           {puedePostular && (
             <button
               onClick={onPostularClick}
@@ -574,7 +855,12 @@ function ProyectoCard({ proyecto: p, esCreador, esFavorito, yaPostulado, onToggl
               {yaPostulado ? 'Ya postulaste' : 'Postularme'}
             </button>
           )}
-          {!puedePostular && !esCreador && (
+          {esIntegrante && !esCreador && (
+            <span className='inline-flex items-center gap-1.5 rounded-[10px] border border-emerald-400/25 bg-emerald-400/10 px-3.5 py-1.5 text-[12px] font-semibold text-emerald-400'>
+              <i className='ti ti-circle-check text-[13px]' /> Eres integrante
+            </span>
+          )}
+          {!puedePostular && !esCreador && !esIntegrante && (
             <span className='inline-flex items-center gap-1.5 rounded-[10px] border border-white/[0.07] px-3.5 py-1.5 text-[12px] text-neutral-600'>
               <i className='ti ti-lock text-[13px]' /> No acepta postulaciones
             </span>
@@ -586,34 +872,26 @@ function ProyectoCard({ proyecto: p, esCreador, esFavorito, yaPostulado, onToggl
               : 'border-white/[0.07] text-neutral-400 hover:text-neutral-100'
               }`}
           >
-            <i className={`ti ${esFavorito ? 'ti-bookmark-filled' : 'ti-bookmark'} text-[13px]`} />
+            <i className='ti ti-bookmark text-[13px]' />
             {esFavorito ? 'Guardado' : 'Guardar'}
           </button>
           <button
             onClick={onVerDetalle}
-            className='ml-auto inline-flex items-center gap-1.5 rounded-[10px] border border-pink-500/40 bg-pink-500/10 px-3.5 py-1.5 text-[12px] font-semibold text-pink-500 transition hover:bg-pink-500/20'
+            className='inline-flex items-center gap-1.5 rounded-[10px] border border-pink-500/40 bg-pink-500/10 px-3.5 py-1.5 text-[12px] font-semibold text-pink-500 transition hover:bg-pink-500/20'
           >
             Ver más <i className='ti ti-arrow-right text-[13px]' />
           </button>
-        </div>
-      </div>
-    </div>
+        </>
+      }
+    />
   );
-}
-
-function barGradient(estado) {
-  if (estado === 'abierto') return 'linear-gradient(90deg,#34D399,#059669)';
-  if (estado === 'en_progreso') return 'linear-gradient(90deg,#60A5FA,#2563AB)';
-  return 'linear-gradient(90deg,#6B7280,#4B5563)';
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PESTAÑA: GUARDADOS
 // ─────────────────────────────────────────────────────────────────────────────
 
-function GuardadosTab({ usuario, favoritos, loaded, postuladosActivos, onToggleFavorito, onVerDetalle, onPostularClick }) {
-  const [search, setSearch] = useState('');
-
+function GuardadosTab({ usuario, favoritos, loaded, postuladosActivos, onToggleFavorito, onVerDetalle, onPostularClick, search }) {
   const filtrados = useMemo(() => {
     if (!search.trim()) return favoritos;
     const q = search.trim().toLowerCase();
@@ -622,11 +900,11 @@ function GuardadosTab({ usuario, favoritos, loaded, postuladosActivos, onToggleF
 
   return (
     <div>
-      <SearchRow
-        placeholder='Buscar en tus proyectos guardados...'
-        value={search}
-        onChange={setSearch}
-      />
+      {loaded && filtrados.length > 0 && (
+        <div className='mb-4 text-[12.5px] text-neutral-500'>
+          {filtrados.length} proyecto{filtrados.length === 1 ? '' : 's'} guardado{filtrados.length === 1 ? '' : 's'}
+        </div>
+      )}
 
       {!loaded && <p className='py-10 text-center text-[13px] text-neutral-500'>Cargando…</p>}
 
@@ -638,18 +916,20 @@ function GuardadosTab({ usuario, favoritos, loaded, postuladosActivos, onToggleF
         />
       )}
 
-      {filtrados.map((p) => (
-        <ProyectoCard
-          key={p.id}
-          proyecto={p}
-          esCreador={p.creador?.id === usuario?.id}
-          esFavorito
-          yaPostulado={postuladosActivos.has(p.id)}
-          onToggleFavorito={() => onToggleFavorito(p.id)}
-          onVerDetalle={() => onVerDetalle(p)}
-          onPostularClick={() => onPostularClick(p)}
-        />
-      ))}
+      <div className='flex flex-col gap-3'>
+        {filtrados.map((p) => (
+          <ProyectoCard
+            key={p.id}
+            proyecto={p}
+            esCreador={p.creador?.id === usuario?.id}
+            esFavorito
+            yaPostulado={postuladosActivos.has(p.id)}
+            onToggleFavorito={() => onToggleFavorito(p.id)}
+            onVerDetalle={() => onVerDetalle(p)}
+            onPostularClick={() => onPostularClick(p)}
+          />
+        ))}
+      </div>
     </div>
   );
 }
@@ -658,19 +938,24 @@ function GuardadosTab({ usuario, favoritos, loaded, postuladosActivos, onToggleF
 // PESTAÑA: MIS PROYECTOS
 // ─────────────────────────────────────────────────────────────────────────────
 
-function MisProyectosTab({ usuario, onCrear, onEditar, onVerPostulaciones, onVerIntegrantes }) {
-  const [proyectos, setProyectos] = useState([]);
+function MisProyectosTab({ usuario, onCrear, onEditar, onVerPostulaciones, onVerIntegrantes, onVerDetalle, search }) {
+  const [sub, setSub] = useState('creados');
+  const [creados, setCreados] = useState([]);
+  const [participa, setParticipa] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [search, setSearch] = useState('');
 
   const cargar = useCallback(async () => {
     if (!usuario?.id) return;
     setLoading(true);
     setError(null);
     try {
-      const data = await listarMisProyectos();
-      setProyectos(data.datos);
+      const [misCreados, misParticipaciones] = await Promise.all([
+        listarMisProyectos(),
+        listarProyectos({ integrante_id: usuario.id, limite: 50 }),
+      ]);
+      setCreados(misCreados.datos);
+      setParticipa(misParticipaciones.datos.filter((p) => p.creador?.id !== usuario.id));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -697,28 +982,36 @@ function MisProyectosTab({ usuario, onCrear, onEditar, onVerPostulaciones, onVer
     }
   }
 
+  const lista = sub === 'creados' ? creados : participa;
+
   const filtrados = useMemo(() => {
-    if (!search.trim()) return proyectos;
+    if (!search.trim()) return lista;
     const q = search.trim().toLowerCase();
-    return proyectos.filter((p) => p.titulo.toLowerCase().includes(q));
-  }, [proyectos, search]);
+    return lista.filter((p) => p.titulo.toLowerCase().includes(q));
+  }, [lista, search]);
 
   return (
     <div>
-      <div className='mb-5 flex gap-2.5'>
-        <div className='flex h-[38px] flex-1 items-center gap-2 rounded-[10px] border border-white/[0.07] bg-[#1E1E24] px-3.5'>
-          <i className='ti ti-search text-[15px] text-neutral-600' />
-          <input
-            type='text'
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder='Buscar en mis proyectos...'
-            className='w-full flex-1 bg-transparent text-[13px] text-neutral-100 outline-none placeholder:text-neutral-600'
-          />
+      <div className='mb-4 flex items-center justify-between gap-2.5'>
+        <div className='flex gap-1 rounded-[10px] border border-white/[0.07] bg-[#1E1E24] p-1'>
+          <button
+            onClick={() => setSub('creados')}
+            className={`rounded-[8px] px-3.5 py-1.5 text-[12.5px] font-medium transition ${sub === 'creados' ? 'bg-pink-500 text-white' : 'text-neutral-400 hover:text-neutral-100'
+              }`}
+          >
+            Creados <span className='opacity-70'>({creados.length})</span>
+          </button>
+          <button
+            onClick={() => setSub('participa')}
+            className={`rounded-[8px] px-3.5 py-1.5 text-[12.5px] font-medium transition ${sub === 'participa' ? 'bg-pink-500 text-white' : 'text-neutral-400 hover:text-neutral-100'
+              }`}
+          >
+            Participo <span className='opacity-70'>({participa.length})</span>
+          </button>
         </div>
         <button
           onClick={onCrear}
-          className='inline-flex flex-shrink-0 items-center gap-1.5 rounded-[10px] bg-pink-500 px-4 text-[12.5px] font-semibold text-white transition hover:bg-pink-600'
+          className='inline-flex flex-shrink-0 items-center gap-1.5 rounded-[10px] bg-pink-500 px-4 py-2 text-[12.5px] font-semibold text-white transition hover:bg-pink-600'
         >
           <i className='ti ti-plus text-[14px]' /> Crear proyecto
         </button>
@@ -732,7 +1025,7 @@ function MisProyectosTab({ usuario, onCrear, onEditar, onVerPostulaciones, onVer
         </div>
       )}
 
-      {!loading && !error && filtrados.length === 0 && (
+      {!loading && !error && filtrados.length === 0 && sub === 'creados' && (
         <EmptyState
           icon='ti-folder-plus'
           title='Todavía no has creado proyectos'
@@ -740,104 +1033,122 @@ function MisProyectosTab({ usuario, onCrear, onEditar, onVerPostulaciones, onVer
         />
       )}
 
-      {filtrados.map((p) => (
-        <MiProyectoCard
-          key={p.id}
-          proyecto={p}
-          onEditar={() => onEditar(p)}
-          onEliminar={() => handleEliminar(p)}
-          onVerPostulaciones={() => onVerPostulaciones(p)}
-          onVerIntegrantes={() => onVerIntegrantes(p)}
+      {!loading && !error && filtrados.length === 0 && sub === 'participa' && (
+        <EmptyState
+          icon='ti-users'
+          title='Aún no participas en otros proyectos'
+          subtitle='Postúlate a proyectos en la pestaña "Explorar" para unirte a un equipo.'
         />
-      ))}
+      )}
+
+      {sub === 'creados' && (
+        <div className='flex flex-col gap-3'>
+          {filtrados.map((p) => (
+            <MiProyectoCard
+              key={p.id}
+              proyecto={p}
+              onVerDetalle={() => onVerDetalle(p)}
+              onEditar={() => onEditar(p)}
+              onEliminar={() => handleEliminar(p)}
+              onVerPostulaciones={() => onVerPostulaciones(p)}
+              onVerIntegrantes={() => onVerIntegrantes(p)}
+            />
+          ))}
+        </div>
+      )}
+
+      {sub === 'participa' && (
+        <div className='flex flex-col gap-3'>
+          {filtrados.map((p) => (
+            <ProyectoCard
+              key={p.id}
+              proyecto={p}
+              esCreador={false}
+              esIntegrante
+              esFavorito={false}
+              yaPostulado={false}
+              onToggleFavorito={() => { }}
+              onVerDetalle={() => onVerDetalle(p)}
+              onPostularClick={() => { }}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
-function MiProyectoCard({ proyecto: p, onEditar, onEliminar, onVerPostulaciones, onVerIntegrantes }) {
+function MiProyectoCard({ proyecto: p, onVerDetalle, onEditar, onEliminar, onVerPostulaciones, onVerIntegrantes }) {
   const cupos = p.maximo_integrantes ? p.maximo_integrantes - p.total_integrantes : null;
 
   return (
-    <div className='mb-3 rounded-2xl border border-white/[0.06] bg-[#1E1E24] p-[18px]'>
-      <div className='mb-2 flex items-start justify-between gap-3'>
-        <div>
-          <div className='mb-1.5 text-[14px] font-bold text-neutral-100'>{p.titulo}</div>
-          <div className='flex flex-wrap gap-1.5'>
-            <EstadoChip estado={p.estado} />
-            <ModalidadChip modalidad={p.modalidad} />
-            {p.etiquetas?.slice(0, 3).map((et) => (
-              <span
-                key={et.id}
-                className='rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] font-semibold text-neutral-500'
-              >
-                {et.nombre}
-              </span>
-            ))}
-          </div>
-        </div>
-        <span className='flex-shrink-0 whitespace-nowrap text-[11px] text-neutral-600'>
-          Creado {formatFecha(p.fecha_creacion)}
-        </span>
-      </div>
-
-      <p className='mb-3 line-clamp-2 text-[12.5px] leading-relaxed text-neutral-400'>{p.descripcion}</p>
-
-      <div className='mb-3 flex gap-3 rounded-[10px] bg-[#2A2A32] px-3.5 py-2.5'>
-        <div className='flex flex-1 items-center gap-2.5'>
-          <i className='ti ti-armchair text-xl text-pink-500' />
-          <div>
-            <div className='text-[16px] font-bold leading-none text-neutral-100'>
-              {cupos !== null ? Math.max(cupos, 0) : '∞'}
+    <TarjetaProyectoBase
+      proyecto={p}
+      extra={
+        <div className='mb-3 flex gap-3 rounded-[10px] bg-[#2A2A32] px-3.5 py-2.5'>
+          <div className='flex flex-1 items-center gap-2.5'>
+            <i className='ti ti-armchair text-xl text-pink-500' />
+            <div>
+              <div className='text-[16px] font-bold leading-none text-neutral-100'>
+                {cupos !== null ? Math.max(cupos, 0) : '∞'}
+              </div>
+              <div className='mt-0.5 text-[10px] text-neutral-500'>Cupos disponibles</div>
             </div>
-            <div className='mt-0.5 text-[10px] text-neutral-500'>Cupos disponibles</div>
+          </div>
+          <div className='flex flex-1 items-center gap-2.5'>
+            <i className='ti ti-inbox text-xl text-pink-500' />
+            <div>
+              <div className='text-[16px] font-bold leading-none text-neutral-100'>{p.total_postulaciones}</div>
+              <div className='mt-0.5 text-[10px] text-neutral-500'>Postulaciones</div>
+            </div>
+          </div>
+          <div className='flex flex-1 items-center gap-2.5'>
+            <i className='ti ti-users text-xl text-pink-500' />
+            <div>
+              <div className='text-[16px] font-bold leading-none text-neutral-100'>{p.total_integrantes}</div>
+              <div className='mt-0.5 text-[10px] text-neutral-500'>Integrantes</div>
+            </div>
           </div>
         </div>
-        <div className='flex flex-1 items-center gap-2.5'>
-          <i className='ti ti-inbox text-xl text-pink-500' />
-          <div>
-            <div className='text-[16px] font-bold leading-none text-neutral-100'>{p.total_postulaciones}</div>
-            <div className='mt-0.5 text-[10px] text-neutral-500'>Postulaciones</div>
-          </div>
-        </div>
-        <div className='flex flex-1 items-center gap-2.5'>
-          <i className='ti ti-users text-xl text-pink-500' />
-          <div>
-            <div className='text-[16px] font-bold leading-none text-neutral-100'>{p.total_integrantes}</div>
-            <div className='mt-0.5 text-[10px] text-neutral-500'>Integrantes</div>
-          </div>
-        </div>
-      </div>
-
-      <div className='flex flex-wrap gap-2 border-t border-white/[0.07] pt-3'>
-        <button
-          onClick={onEditar}
-          className='inline-flex items-center gap-1.5 rounded-[10px] border border-white/[0.07] px-3.5 py-1.5 text-[12px] font-medium text-neutral-400 transition hover:text-neutral-100'
-        >
-          <i className='ti ti-pencil text-[13px]' /> Editar
-        </button>
-        <button
-          onClick={onVerIntegrantes}
-          className='inline-flex items-center gap-1.5 rounded-[10px] border border-white/[0.07] px-3.5 py-1.5 text-[12px] font-medium text-neutral-400 transition hover:text-neutral-100'
-        >
-          <i className='ti ti-users text-[13px]' /> Integrantes
-        </button>
-        <button
-          onClick={onEliminar}
-          className='inline-flex items-center gap-1.5 rounded-[10px] border border-white/[0.07] px-3.5 py-1.5 text-[12px] font-medium text-neutral-400 transition hover:border-red-500/30 hover:text-red-400'
-        >
-          <i className='ti ti-trash text-[13px]' /> Eliminar
-        </button>
-        <button
-          onClick={onVerPostulaciones}
-          className='ml-auto inline-flex items-center gap-1.5 rounded-[10px] bg-pink-500 px-3.5 py-1.5 text-[12px] font-semibold text-white transition hover:bg-pink-600'
-        >
-          <i className='ti ti-users text-[13px]' /> Ver postulaciones
-          {p.total_postulaciones > 0 && (
-            <span className='rounded-full bg-white/20 px-1.5 py-px text-[10px]'>{p.total_postulaciones}</span>
-          )}
-        </button>
-      </div>
-    </div>
+      }
+      accionesDerecha={
+        <>
+          <button
+            onClick={onVerDetalle}
+            className='inline-flex items-center gap-1.5 rounded-[10px] border border-pink-500/40 bg-pink-500/10 px-3.5 py-1.5 text-[12px] font-semibold text-pink-500 transition hover:bg-pink-500/20'
+          >
+            <i className='ti ti-eye text-[13px]' /> Ver más
+          </button>
+          <button
+            onClick={onEditar}
+            className='inline-flex items-center gap-1.5 rounded-[10px] border border-white/[0.07] px-3.5 py-1.5 text-[12px] font-medium text-neutral-400 transition hover:text-neutral-100'
+          >
+            <i className='ti ti-pencil text-[13px]' /> Editar
+          </button>
+          <button
+            onClick={onVerIntegrantes}
+            className='inline-flex items-center gap-1.5 rounded-[10px] border border-white/[0.07] px-3.5 py-1.5 text-[12px] font-medium text-neutral-400 transition hover:text-neutral-100'
+          >
+            <i className='ti ti-users text-[13px]' /> Integrantes
+          </button>
+          <button
+            onClick={onEliminar}
+            className='inline-flex items-center gap-1.5 rounded-[10px] border border-white/[0.07] px-3.5 py-1.5 text-[12px] font-medium text-neutral-400 transition hover:border-red-500/30 hover:text-red-400'
+          >
+            <i className='ti ti-trash text-[13px]' /> Eliminar
+          </button>
+          <button
+            onClick={onVerPostulaciones}
+            className='inline-flex items-center gap-1.5 rounded-[10px] bg-pink-500 px-3.5 py-1.5 text-[12px] font-semibold text-white transition hover:bg-pink-600'
+          >
+            <i className='ti ti-users text-[13px]' /> Ver postulaciones
+            {p.total_postulaciones > 0 && (
+              <span className='rounded-full bg-white/20 px-1.5 py-px text-[10px]'>{p.total_postulaciones}</span>
+            )}
+          </button>
+        </>
+      }
+    />
   );
 }
 
@@ -850,7 +1161,8 @@ function MisPostulacionesTab({ postulaciones, loaded, onRecargar, onVerProyecto 
   const [procesando, setProcesando] = useState(null);
 
   async function handleRetirar(p) {
-    if (!confirm('¿Retirar esta postulación?')) return;
+    const mensaje = p.estado === 'pendiente' ? '¿Retirar esta postulación?' : '¿Quitar esta postulación de tu lista?';
+    if (!confirm(mensaje)) return;
     setProcesando(p.id);
     try {
       await retirarPostulacion(p.proyecto_id, p.id);
@@ -869,8 +1181,10 @@ function MisPostulacionesTab({ postulaciones, loaded, onRecargar, onVerProyecto 
 
   return (
     <div>
-      <div className='mb-5 flex gap-2.5'>
-        <div className='flex-1' />
+      <div className='mb-5 flex items-center justify-between gap-2.5'>
+        <span className='text-[12.5px] text-neutral-500'>
+          {filtradas.length} postulaci{filtradas.length === 1 ? 'ón' : 'ones'}
+        </span>
         <FilterDropdown
           label='Estado'
           sections={[
@@ -898,50 +1212,87 @@ function MisPostulacionesTab({ postulaciones, loaded, onRecargar, onVerProyecto 
         />
       )}
 
-      {filtradas.map((p) => (
-        <div
-          key={p.id}
-          className='mb-3 rounded-2xl border border-white/[0.06] bg-[#1E1E24] p-[18px]'
-        >
-          <div className='mb-2 flex items-start justify-between gap-3'>
-            <div className='text-[14px] font-bold text-neutral-100'>{p.titulo_proyecto}</div>
-            <EstadoPostulacionChip estado={p.estado} />
-          </div>
+      <div className='flex flex-col gap-3'>
+        {filtradas.map((p) => {
+          const { icono, clase, titulo } =
+            p.estado === 'aceptada'
+              ? { icono: 'ti-circle-check', clase: 'bg-emerald-400/10 text-emerald-400', titulo: 'Aceptada' }
+              : p.estado === 'rechazada'
+                ? { icono: 'ti-x', clase: 'bg-red-500/10 text-red-400', titulo: 'Rechazada' }
+                : { icono: 'ti-clock', clase: 'bg-amber-400/10 text-amber-400', titulo: 'Pendiente' };
 
-          <div className='mb-2.5 flex items-center gap-2 text-[12px] text-neutral-500'>
-            {p.creador && (
-              <>
-                Creado por <strong className='text-neutral-300'>{p.creador.nombre_usuario}</strong> ·{' '}
-              </>
-            )}
-            Postulé {tiempoRelativo(p.fecha_postulacion)}
-          </div>
-
-          <StatusBanner postulacion={p} />
-
-          {p.mensaje && (
-            <p className='mt-2.5 text-[12.5px] leading-relaxed text-neutral-400'>{p.mensaje}</p>
-          )}
-
-          <div className='mt-3 flex gap-2 border-t border-white/[0.07] pt-3'>
-            <button
-              onClick={() => onVerProyecto(p.proyecto_id)}
-              className='inline-flex items-center gap-1.5 rounded-[10px] border border-white/[0.07] px-3.5 py-1.5 text-[12px] font-medium text-neutral-400 transition hover:text-neutral-100'
+          return (
+            <div
+              key={p.id}
+              className='flex overflow-hidden rounded-2xl border border-white/[0.06] bg-[#1E1E24] transition hover:border-white/[0.12]'
             >
-              <i className='ti ti-eye text-[13px]' /> Ver proyecto
-            </button>
-            {p.estado === 'pendiente' && (
-              <button
-                onClick={() => handleRetirar(p)}
-                disabled={procesando === p.id}
-                className='inline-flex items-center gap-1.5 rounded-[10px] border border-red-500/25 px-3.5 py-1.5 text-[12px] font-medium text-red-400 transition hover:bg-red-500/10 disabled:opacity-50'
-              >
-                <i className='ti ti-x text-[13px]' /> Retirar postulación
-              </button>
-            )}
-          </div>
-        </div>
-      ))}
+              <div className='flex w-[54px] flex-shrink-0 flex-col items-center gap-2 border-r border-white/[0.06] bg-white/[0.015] py-4'>
+                <div
+                  title={titulo}
+                  className={`flex h-9 w-9 items-center justify-center rounded-[10px] ${clase}`}
+                >
+                  <i className={`ti ${icono} text-[17px]`} />
+                </div>
+              </div>
+
+              <div className='min-w-0 flex-1 p-4'>
+                <div className='mb-1.5 flex items-start justify-between gap-3'>
+                  <div className='text-[15px] font-bold leading-snug text-neutral-100'>{p.titulo_proyecto}</div>
+                  <EstadoPostulacionChip estado={p.estado} />
+                </div>
+
+                <div className='mb-2.5 flex flex-wrap items-center gap-1.5 text-[11.5px] text-neutral-500'>
+                  {p.creador && (
+                    <>
+                      <Link
+                        to={`/perfil/usuario/${p.creador.nombre_usuario}`}
+                        className='font-semibold text-neutral-300 transition hover:text-pink-400 hover:underline'
+                      >
+                        u/{p.creador.nombre_usuario}
+                      </Link>
+                      <span>·</span>
+                    </>
+                  )}
+                  <span>Postulé {tiempoRelativo(p.fecha_postulacion)}</span>
+                </div>
+
+                <StatusBanner postulacion={p} />
+
+                {p.mensaje && (
+                  <p className='mt-2.5 text-[12.5px] leading-relaxed text-neutral-400'>{p.mensaje}</p>
+                )}
+
+                <div className='mt-3 flex flex-wrap gap-2 border-t border-white/[0.06] pt-3'>
+                  <button
+                    onClick={() => onVerProyecto(p.proyecto_id)}
+                    className='inline-flex items-center gap-1.5 rounded-[10px] border border-white/[0.07] px-3.5 py-1.5 text-[12px] font-medium text-neutral-400 transition hover:text-neutral-100'
+                  >
+                    <i className='ti ti-eye text-[13px]' /> Ver proyecto
+                  </button>
+                  {p.estado === 'pendiente' && (
+                    <button
+                      onClick={() => handleRetirar(p)}
+                      disabled={procesando === p.id}
+                      className='inline-flex items-center gap-1.5 rounded-[10px] border border-red-500/25 px-3.5 py-1.5 text-[12px] font-medium text-red-400 transition hover:bg-red-500/10 disabled:opacity-50'
+                    >
+                      <i className='ti ti-x text-[13px]' /> Retirar postulación
+                    </button>
+                  )}
+                  {(p.estado === 'aceptada' || p.estado === 'rechazada') && (
+                    <button
+                      onClick={() => handleRetirar(p)}
+                      disabled={procesando === p.id}
+                      className='inline-flex items-center gap-1.5 rounded-[10px] border border-white/[0.07] px-3.5 py-1.5 text-[12px] font-medium text-neutral-400 transition hover:text-red-400 disabled:opacity-50'
+                    >
+                      <i className='ti ti-trash text-[13px]' /> Quitar de la lista
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

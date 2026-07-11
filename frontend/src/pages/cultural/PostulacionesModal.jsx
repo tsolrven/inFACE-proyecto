@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import ModalShell from './ModalShell';
 import { getInitials, avatarColor, tiempoRelativo } from '../../helpers/matchHelpers';
 import {
@@ -11,7 +12,7 @@ export default function PostulacionesModal({ proyecto, onClose, onCambio }) {
     const [postulaciones, setPostulaciones] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [procesando, setProcesando] = useState(null); 
+    const [procesando, setProcesando] = useState(null);
 
     async function cargar() {
         setLoading(true);
@@ -86,9 +87,12 @@ export default function PostulacionesModal({ proyecto, onClose, onCambio }) {
                             className='rounded-2xl border border-white/[0.06] bg-[#232329] p-4'
                         >
                             <div className='flex items-start justify-between gap-3'>
-                                <div className='flex items-center gap-2.5'>
+                                <Link
+                                    to={`/perfil/usuario/${p.postulante?.nombre_usuario}`}
+                                    className='flex items-center gap-2.5 transition hover:opacity-80'
+                                >
                                     <div
-                                        className={`flex h-8 w-8 items-center justify-center rounded-full text-[10px] font-bold ${av.bg} ${av.text}`}
+                                        className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${av.bg} ${av.text}`}
                                     >
                                         {getInitials(p.postulante?.nombre_usuario)}
                                     </div>
@@ -100,7 +104,7 @@ export default function PostulacionesModal({ proyecto, onClose, onCambio }) {
                                             Postuló {tiempoRelativo(p.fecha_postulacion)}
                                         </div>
                                     </div>
-                                </div>
+                                </Link>
                                 <EstadoPill estado={p.estado} />
                             </div>
 

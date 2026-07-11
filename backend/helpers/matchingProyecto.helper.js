@@ -160,7 +160,7 @@ function esquemaResponderPostulacion(body) {
 function incluirProyectoCompleto() {
     return {
         creador: { include: { perfil: true } },
-        etiquetas: { include: { etiqueta: true } },
+        etiquetas: { include: { etiqueta: { include: { tipo_etiqueta: true } } } },
         integrantes: { include: { usuario: { include: { perfil: true } } } },
         _count: { select: { postulaciones: true, integrantes: true } },
     };
@@ -192,6 +192,7 @@ function formatearProyecto(p, opciones = {}) {
         etiquetas: p.etiquetas?.map(e => ({
             id: e.etiqueta.id,
             nombre: e.etiqueta.nombre_etiqueta,
+            tipo: e.etiqueta.tipo_etiqueta?.nombre_tipo_etiqueta || null,
         })) || [],
         integrantes: p.integrantes?.map(i => ({
             usuario_id: i.usuario_id,

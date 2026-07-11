@@ -8,7 +8,7 @@ import {
 } from '../helpers/matchHelpers';
 
 const TABS = [
-    { id: 'proyectos', label: 'Proyectos', icon: 'ti-affiliate' },
+    { id: 'proyectos', label: 'Proyectos', icon: 'ti-puzzle' },
     { id: 'apuntes', label: 'Apuntes', icon: 'ti-file-text' },
     { id: 'respuestas', label: 'Respuestas', icon: 'ti-message-circle-2' },
     { id: 'creativo', label: 'Creativo', icon: 'ti-palette' },
@@ -105,7 +105,7 @@ function ProyectosTab({ creados, participa }) {
 
             {lista.length === 0 ? (
                 <EmptyState
-                    icono='ti-affiliate'
+                    icono='ti-puzzle'
                     texto={sub === 'creados' ? 'Aún no ha creado proyectos.' : 'Aún no participa en otros proyectos.'}
                 />
             ) : (
@@ -113,7 +113,7 @@ function ProyectosTab({ creados, participa }) {
                     {lista.map((p) => (
                         <div
                             key={p.id}
-                            onClick={() => navigate('/match-proyectos')}
+                            onClick={() => navigate(`/match-proyectos?proyecto=${p.id}`)}
                             className='cursor-pointer rounded-2xl border border-white/[0.06] bg-[#1E1E24] p-4 transition hover:border-white/[0.14]'
                         >
                             <div className='mb-2 flex flex-wrap items-center gap-1.5'>

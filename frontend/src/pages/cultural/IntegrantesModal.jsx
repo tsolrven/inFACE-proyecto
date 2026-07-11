@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import ModalShell from './ModalShell';
 import { getInitials, avatarColor, formatFecha } from '../../helpers/matchHelpers';
 import { listarIntegrantes, expulsarIntegrante } from '../../services/matchingProyecto';
@@ -71,19 +72,24 @@ export default function IntegrantesModal({ proyecto, esCreador, onClose, onCambi
                             key={i.usuario_id}
                             className='flex items-center gap-3 rounded-2xl border border-white/[0.06] bg-[#232329] px-3.5 py-2.5'
                         >
-                            <div
-                                className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${av.bg} ${av.text}`}
+                            <Link
+                                to={`/perfil/usuario/${i.nombre_usuario}`}
+                                className='flex min-w-0 flex-1 items-center gap-3 transition hover:opacity-80'
                             >
-                                {getInitials(i.nombre_usuario)}
-                            </div>
-                            <div className='min-w-0 flex-1'>
-                                <div className='truncate text-[13px] font-semibold text-neutral-100'>
-                                    {i.nombre_usuario}
+                                <div
+                                    className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${av.bg} ${av.text}`}
+                                >
+                                    {getInitials(i.nombre_usuario)}
                                 </div>
-                                <div className='text-[11px] text-neutral-500'>
-                                    {i.rol_en_proyecto || 'Integrante'} · desde {formatFecha(i.fecha_union)}
+                                <div className='min-w-0 flex-1'>
+                                    <div className='truncate text-[13px] font-semibold text-neutral-100'>
+                                        {i.nombre_usuario}
+                                    </div>
+                                    <div className='text-[11px] text-neutral-500'>
+                                        {i.rol_en_proyecto || 'Integrante'} · desde {formatFecha(i.fecha_union)}
+                                    </div>
                                 </div>
-                            </div>
+                            </Link>
                             {esCreador && (
                                 <button
                                     onClick={() => handleExpulsar(i.usuario_id)}

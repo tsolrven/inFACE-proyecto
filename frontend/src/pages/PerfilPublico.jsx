@@ -136,10 +136,10 @@ export default function PerfilPublico() {
             </div>
 
             {/* AVATAR (sin acciones de edición: es de solo lectura) */}
-            <div className='relative z-10 -mt-11 flex items-end gap-4 px-[28px]'>
+            <div className='relative z-10 mx-auto -mt-11 flex max-w-4xl items-end gap-4 px-[28px]'>
                 <div className='relative flex-shrink-0'>
                     <div
-                        className={`flex h-[90px] w-[90px] items-center justify-center rounded-full border-[3px] border-neutral-950 text-[28px] font-bold ${av.bg} ${av.text}`}
+                        className={`flex h-[90px] w-[90px] flex-shrink-0 items-center justify-center rounded-full border-[3px] border-neutral-950 text-[28px] font-bold ${av.bg} ${av.text}`}
                     >
                         {getInitials(nombreVisible)}
                     </div>
@@ -147,7 +147,7 @@ export default function PerfilPublico() {
             </div>
 
             {/* INFO */}
-            <div className='px-[28px] pb-10 pt-3.5'>
+            <div className='mx-auto max-w-4xl px-[28px] pb-10 pt-3.5'>
                 <div className='text-[20px] font-bold tracking-tight text-neutral-100'>{nombreVisible}</div>
                 <div className='mt-px text-[13px] text-neutral-500'>u/{perfil.nombre_usuario}</div>
 
@@ -174,27 +174,23 @@ export default function PerfilPublico() {
                     </span>
                 </div>
 
-                {/* ESTADÍSTICAS */}
-                <div className='mt-3.5 flex max-w-xl overflow-hidden rounded-2xl border border-white/[0.06] bg-[#1E1E24]'>
-                    <div className='flex-1 border-r border-white/[0.07] px-4 py-3 text-center'>
-                        <div className='text-[18px] font-bold text-neutral-100'>{perfil.stats.proyectos_creados}</div>
-                        <div className='mt-0.5 text-[10.5px] font-medium tracking-wide text-neutral-600'>
-                            Proyectos creados
-                        </div>
+                {/* ESTADÍSTICAS (fila plana, sin caja, como el mockup) */}
+                <div className='mt-3 flex flex-wrap items-center gap-x-6 gap-y-1.5 border-b border-white/[0.07] pb-4'>
+                    <div className='flex items-baseline gap-1.5'>
+                        <span className='text-[16px] font-bold text-neutral-100'>{perfil.stats.proyectos_creados}</span>
+                        <span className='text-[12px] text-neutral-500'>Proyectos creados</span>
                     </div>
-                    <div className='flex-1 px-4 py-3 text-center'>
-                        <div className='text-[18px] font-bold text-pink-500'>{perfil.intereses.length}</div>
-                        <div className='mt-0.5 text-[10.5px] font-medium tracking-wide text-neutral-600'>
-                            Intereses
-                        </div>
+                    <div className='flex items-baseline gap-1.5'>
+                        <span className='text-[16px] font-bold text-pink-500'>{perfil.intereses.length}</span>
+                        <span className='text-[12px] text-neutral-500'>Intereses</span>
                     </div>
                 </div>
 
                 {/* INTERESES */}
                 {perfil.intereses.length > 0 && (
-                    <div className='mt-4 max-w-xl rounded-2xl border border-white/[0.06] bg-[#1E1E24] p-[18px]'>
-                        <h2 className='mb-3 flex items-center gap-1.5 text-[13px] font-bold text-neutral-100'>
-                            <i className='ti ti-tag text-[15px] text-pink-500' /> Intereses
+                    <div className='mt-4'>
+                        <h2 className='mb-2.5 flex items-center gap-1.5 text-[12.5px] font-bold text-neutral-300'>
+                            <i className='ti ti-tag text-[14px] text-pink-500' /> Intereses
                         </h2>
                         <div className='flex flex-wrap gap-1.5'>
                             {perfil.intereses.map((et) => {
