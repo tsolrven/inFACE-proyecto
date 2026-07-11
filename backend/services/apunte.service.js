@@ -17,6 +17,7 @@ async function listarApuntes({
   ramo_id,
   tipo,
   tipo_archivo,
+  hashtag,
   orden = 'recientes',
   pagina = 1,
   limite = 20,
@@ -33,6 +34,9 @@ async function listarApuntes({
   };
   if (ramo_id) where.ramo_id = ramo_id;
   if (tipo) where.tipo = tipo;
+  if (hashtag) {
+    where.hashtags = { some: { hashtag: { nombre: hashtag } } };
+  }
 
   if (tipo_archivo && MIME_MAP[tipo_archivo]) {
     const archivosMatch = await prisma.archivo.findMany({
@@ -139,7 +143,7 @@ async function obtenerApunte(id, usuario_id, carrera_id) {
   });
   if (!apunte) throw new NotFoundError('Apunte');
 
-  // TODO: cuando exista el módulo de "comunidades", permitir además el acceso
+  // cuando exista el módulo de "comunidades", permitir además el acceso
   // de lectura si el apunte pertenece a una carrera distinta a la del usuario.
   const perteneceASuCarrera = apunte.ramo.ramo_carrera.some(
     (rc) => rc.carrera_id === carrera_id,

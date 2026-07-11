@@ -9,13 +9,15 @@ import ApiResponse from '../utils/ApiResponse.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function listar(req, res, next) {
   try {
-    const { ramo_id, tipo, tipo_archivo, orden, pagina, limite } = req.query;
+    const { ramo_id, tipo, tipo_archivo, hashtag, orden, pagina, limite } =
+      req.query;
     const pag = pagina ? parseInt(pagina) : 1;
     const lim = limite ? parseInt(limite) : 20;
     const { apuntes, total } = await listarApuntes({
       ramo_id,
       tipo,
       tipo_archivo,
+      hashtag,
       orden,
       pagina: pag,
       limite: lim,
