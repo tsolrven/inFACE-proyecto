@@ -15,19 +15,6 @@ const TIPOS = [
   { value: 'snippet', icon: 'ti-code', label: 'Snippet de código' },
 ];
 
-// Edita metadata (título, descripción, ramo, hashtags, link/snippet) y el
-// contenido del apunte (archivo / github / snippet), incluyendo cambiar de
-// un tipo a otro.
-//
-// OJO: apunte.tipo es una categoría académica ('apunte' | 'codigo' | 'guia'
-// | 'ejercicio' | 'otro'), NO el tipo de contenido. El tipo de contenido se
-// infiere de qué campo viene lleno (con prioridad link_repositorio >
-// codigo_snippet > archivos), igual que hace metaPrincipal() en
-// utils/fileMeta.js y como se renderiza en MaterialCard/MaterialDetailModal.
-// Por eso, si el usuario cambia de "file" a "github"/"snippet", los
-// archivos que hubiera subidos antes se vuelven invisibles en el resto de
-// la app (dejarían de mostrarse en todas partes) y por eso se borran al
-// guardar en vez de dejarlos huérfanos en el servidor.
 export default function EditApunteModal({
   open,
   onClose,
@@ -52,18 +39,15 @@ export default function EditApunteModal({
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(null);
 
-  // manejo de archivos (solo aplica si tipoContenido === 'file')
-  const [archivosActuales, setArchivosActuales] = useState([]); // ya subidos, vienen del apunte
-  const [archivosNuevos, setArchivosNuevos] = useState([]); // File[] pendientes de subir
-  const [eliminandoId, setEliminandoId] = useState(null); // id del archivo que se está borrando
+  const [archivosActuales, setArchivosActuales] = useState([]);
+  const [archivosNuevos, setArchivosNuevos] = useState([]);
+  const [eliminandoId, setEliminandoId] = useState(null);
 
   const editarApunte = useRepositorioStore((s) => s.editarApunte);
   const actualizarApunteEnFeed = useRepositorioStore(
     (s) => s.actualizarApunteEnFeed,
   );
 
-  // precarga el formulario con los datos actuales del apunte cada vez que
-  // se abre (o cambia el apunte que se está editando)
   useEffect(() => {
     if (!open || !apunte) return;
     setTipoContenido(tipoInicial(apunte));
@@ -92,9 +76,6 @@ export default function EditApunteModal({
     onClose();
   }
 
-  // borra un archivo YA subido. Se ejecuta al toque (no espera al "Guardar
-  // cambios") porque así es como ya funciona /archivos/:id en el resto del
-  // módulo, y evita mantener un estado "a medio borrar" complicado.
   async function handleEliminarArchivoExistente(archivoId) {
     setEliminandoId(archivoId);
     setError(null);
@@ -110,15 +91,13 @@ export default function EditApunteModal({
 
   function handleAgregarArchivos(e) {
     setArchivosNuevos((prev) => [...prev, ...Array.from(e.target.files)]);
-    e.target.value = ''; // permite volver a elegir el mismo archivo si lo saca y lo agrega de nuevo
+    e.target.value = '';
   }
 
   function handleQuitarArchivoNuevo(index) {
     setArchivosNuevos((prev) => prev.filter((_, i) => i !== index));
   }
 
-  // hay archivos (subidos o pendientes) que se perderían si se guarda con
-  // el tipo de contenido actual distinto de "file"
   const perderiaArchivos =
     tipoContenido !== 'file' &&
     (archivosActuales.length > 0 || archivosNuevos.length > 0);
@@ -155,9 +134,6 @@ export default function EditApunteModal({
         .map((t) => t.replace('#', '').trim())
         .filter(Boolean);
 
-      // se envían ambos campos siempre, explícitos: el que corresponde al
-      // tipo elegido con su valor, y el otro en null para "vaciarlo" (el
-      // backend lo soporta). Así es como se logra el cambio de tipo.
       const actualizado = await editarApunte(apunte.id, {
         titulo,
         descripcion,
@@ -171,10 +147,6 @@ export default function EditApunteModal({
       let huboFallidos = false;
 
       if (tipoContenido !== 'file') {
-        // ya no es tipo "file": cualquier archivo que haya quedado de antes
-        // deja de mostrarse en toda la app (metaPrincipal/MaterialDetailModal
-        // siempre priorizan link > snippet > archivos), así que se borran
-        // para no dejar basura huérfana en el servidor.
         if (archivosActuales.length > 0) {
           await Promise.all(archivosActuales.map((a) => eliminarArchivo(a.id)));
         }
@@ -182,11 +154,6 @@ export default function EditApunteModal({
         setArchivosActuales([]);
         setArchivosNuevos([]);
       } else if (archivosNuevos.length > 0) {
-        // si hay archivos nuevos por subir, se suben ahora (uno por
-        // request, igual que en UploadModal). Si alguno falla, no
-        // bloqueamos el resto del guardado: solo avisamos cuáles no se
-        // pudieron subir y dejamos el modal abierto para que el usuario
-        // reintente esos.
         const { exitosos, fallidos } = await subirArchivos(
           apunte.id,
           archivosNuevos,
@@ -207,8 +174,6 @@ export default function EditApunteModal({
         0,
       );
 
-      // el endpoint de editar metadata no sabe de archivos, así que
-      // sincronizamos esa parte del feed acá directamente
       actualizarApunteEnFeed(apunte.id, {
         archivos: archivosFinales,
         descargas,

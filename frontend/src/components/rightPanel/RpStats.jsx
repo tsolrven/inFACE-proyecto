@@ -1,20 +1,4 @@
-// grilla 2x2 de estadísticas
-
-// src/components/rightPanel/RpStats.jsx
-//
-// Grilla 2x2 de estadísticas para el panel derecho.
-//
-// Uso:
-//   <RpStats
-//     items={[
-//       { num: '24',  label: 'preguntas' },
-//       { num: '18',  label: 'resueltas' },
-//       { num: '312', label: 'miembros'  },
-//       { num: '75%', label: 'tasa resp.' },
-//     ]}
-//   />
-//
-// Acepta entre 2 y 4 items. Si pasas 2, quedan centrados en una fila.
+//! grilla 2x2 de estadísticas para el panel derecho.
 
 export default function RpStats({ items = [] }) {
   return (

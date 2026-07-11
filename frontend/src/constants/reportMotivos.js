@@ -1,9 +1,3 @@
-// Catálogo de motivos de reporte. Se usa en <ReportModal /> y debe calzar
-// con MOTIVOS_REPORTE en backend/validations/reporte.validation.js.
-//
-// requiereObjetivo: el motivo necesita un paso extra ("Next") antes de poder
-//                    enviar (ej. acoso: ¿hacia quién es?).
-// requiereDetalle:  el campo de texto libre pasa a ser obligatorio.
 export const MOTIVOS_REPORTE = [
   {
     value: 'spam',

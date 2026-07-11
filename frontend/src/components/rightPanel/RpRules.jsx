@@ -1,17 +1,4 @@
-// lista numerada de reglas
-
-// src/components/rightPanel/RpRules.jsx
-//
-// Lista numerada de reglas para el panel derecho.
-//
-// Uso:
-//   <RpRules
-//     items={[
-//       'Busca antes de publicar: revisa si tu duda ya fue respondida.',
-//       'Sé específico: incluye contexto, código o enunciado si aplica.',
-//       'Respeto entre compañeros, sin lenguaje ofensivo.',
-//     ]}
-//   />
+//! lista numerada de reglas para el panel derecho.
 
 export default function RpRules({ items = [] }) {
   return (

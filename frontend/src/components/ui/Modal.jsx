@@ -1,14 +1,8 @@
+//! MODAL GENÉRICO, SE USA EN CUALQUIER MÓDULO
+
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
-// Modal genérico. Se usa en cualquier módulo (subida de material, detalle,
-// confirmaciones, etc). No sabe nada del contenido, solo maneja:
-// overlay, click afuera para cerrar, tecla ESC, y bloqueo de scroll del body.
-//
-// Uso:
-//   <Modal open={open} onClose={() => setOpen(false)} maxWidth="740px">
-//     ...tu contenido...
-//   </Modal>
 export default function Modal({ open, onClose, children, maxWidth = '520px' }) {
   useEffect(() => {
     if (!open) return;
@@ -46,8 +40,6 @@ export default function Modal({ open, onClose, children, maxWidth = '520px' }) {
   );
 }
 
-// Header estándar para el contenido de un Modal: título/badges a la
-// izquierda, botón de cerrar a la derecha.
 export function ModalHeader({ children, onClose }) {
   return (
     <div className='flex items-center border-b border-white/[0.06] bg-white/[0.02] px-5 py-4'>

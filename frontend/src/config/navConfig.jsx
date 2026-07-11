@@ -171,9 +171,8 @@ export const allProtectedRoutes = [
   ...footerLinks,
 ];
 // ──────────────────────────────────────────────────────────────────────────
-// Rutas que se renderizan COMO MODAL (encima del feed), pero que también
-// funcionan como página normal si alguien entra directo al link.
-// Ver App.jsx: se dibujan en un <Routes> aparte cuando hay backgroundLocation.
+// rutas que se renderizan COMO MODAL, pero que también funcionan como página normal si alguien entra directo al link.
+// App.jsx: se dibujan en un <Routes> aparte cuando hay backgroundLocation.
 export const modalRoutes = [
   {
     path: '/repositorio-materiales/:id',

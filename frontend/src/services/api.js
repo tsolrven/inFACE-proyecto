@@ -32,13 +32,6 @@ function buildError(data, status) {
   return error;
 }
 
-/**
- * @param {string} path - ej. '/apuntes' (se le antepone API_URL)
- * @param {object} options
- * @param {string} [options.method='GET']
- * @param {object|FormData} [options.body]
- * @param {boolean} [options._isRetry] - uso interno, no pasar manualmente
- */
 export async function apiFetch(path, options = {}) {
   const { method = 'GET', body, _isRetry = false, ...rest } = options;
 
@@ -48,8 +41,6 @@ export async function apiFetch(path, options = {}) {
   if (!isFormData && body !== undefined) {
     headers['Content-Type'] = 'application/json';
   }
-  // Nunca seteamos Content-Type manualmente en FormData: el navegador
-  // arma el "multipart/form-data; boundary=..." correcto solo.
 
   const token = getAccessToken();
   if (token) {
@@ -59,7 +50,7 @@ export async function apiFetch(path, options = {}) {
   const res = await fetch(`${API_URL}${path}`, {
     method,
     headers,
-    credentials: 'include', // manda la cookie del refresh token
+    credentials: 'include',
     body: isFormData
       ? body
       : body !== undefined
@@ -68,23 +59,18 @@ export async function apiFetch(path, options = {}) {
     ...rest,
   });
 
-  // 204 No Content no trae body
   if (res.status === 204) return null;
 
   const data = await parseBody(res);
 
   if (res.ok) return data;
 
-  // si el access token venció, intentamos refrescar UNA sola vez y reintentar
   if (res.status === 401 && !_isRetry) {
     try {
       await getRefreshPromise();
       return apiFetch(path, { ...options, _isRetry: true });
     } catch {
       clearAccessToken();
-      // deja que quien use esto (ej. authStore) decida qué hacer;
-      // emitimos un evento global para que App.jsx pueda reaccionar
-      // (ej. redirigir a /login) sin acoplar este archivo a react-router.
       window.dispatchEvent(new CustomEvent('auth:session-expired'));
       throw buildError(data, res.status);
     }

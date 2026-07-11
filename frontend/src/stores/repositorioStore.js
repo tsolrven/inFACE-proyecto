@@ -9,7 +9,7 @@ import { votarApunte } from '../services/repositorioMateriales/voto.service';
 const FILTROS_INICIALES = {
   ramo_id: null,
   tipo_archivo: null,
-  orden: 'recientes', // recientes | populares
+  orden: 'recientes', 
 };
 
 export const useRepositorioStore = create((set, get) => ({
@@ -21,7 +21,6 @@ export const useRepositorioStore = create((set, get) => ({
   cargandoMas: false,
   error: null,
 
-  // reemplaza el feed completo (se usa al cambiar filtros, o al montar la página)
   fetchApuntes: async () => {
     set({ cargando: true, error: null });
     try {
@@ -33,7 +32,6 @@ export const useRepositorioStore = create((set, get) => ({
     }
   },
 
-  // trae la siguiente página y la agrega al final (scroll infinito / "cargar más")
   cargarMasApuntes: async () => {
     const { meta, pagina, filtros, cargandoMas } = get();
     if (cargandoMas || (meta && !meta.hasNext)) return;
@@ -56,7 +54,6 @@ export const useRepositorioStore = create((set, get) => ({
     }
   },
 
-  // cambia un filtro y vuelve a pedir el feed desde cero
   setFiltro: (key, value) => {
     set((state) => ({ filtros: { ...state.filtros, [key]: value } }));
     get().fetchApuntes();
@@ -67,8 +64,6 @@ export const useRepositorioStore = create((set, get) => ({
     get().fetchApuntes();
   },
 
-  // voto optimista: actualiza la UI al toque, y si el request falla,
-  // revierte al estado anterior (evita el "salto" de esperar la respuesta)
   votar: async (apunteId, tipo) => {
     const anterior = get().apuntes;
 
@@ -92,8 +87,6 @@ export const useRepositorioStore = create((set, get) => ({
     }
   },
 
-  // permite que un modal de detalle actualice un apunte puntual en el
-  // feed (ej. tras crear un comentario, para que "comentarios_count" cuadre)
   actualizarApunteEnFeed: (apunteId, cambios) => {
     set((state) => ({
       apuntes: state.apuntes.map((a) =>
@@ -102,12 +95,6 @@ export const useRepositorioStore = create((set, get) => ({
     }));
   },
 
-  // edita metadata del apunte (título, descripción, ramo, hashtags, etc).
-  // OJO: el endpoint de actualizar devuelve el apunte formateado con
-  // comentarios_count/archivos/descargas en sus valores por defecto (no
-  // vienen recalculados), así que acá solo tomamos del response los campos
-  // que realmente pueden haber cambiado y dejamos el resto del item del
-  // feed intacto, en vez de hacer spread de todo el objeto.
   editarApunte: async (apunteId, payload) => {
     const actualizado = await actualizarApunte(apunteId, payload);
     const {
@@ -131,7 +118,6 @@ export const useRepositorioStore = create((set, get) => ({
     return actualizado;
   },
 
-  // elimina el apunte en el backend y lo saca del feed local
   eliminarApunteDelFeed: async (apunteId) => {
     await eliminarApunte(apunteId);
     set((state) => ({
@@ -142,12 +128,10 @@ export const useRepositorioStore = create((set, get) => ({
 
 function calcularDeltaVoto(votoActual, tipoNuevo) {
   if (votoActual === tipoNuevo) {
-    // toggle: quitar el voto
     return tipoNuevo === 'up' ? -1 : 1;
   }
   if (votoActual === null) {
     return tipoNuevo === 'up' ? 1 : -1;
   }
-  // cambia de up a down o viceversa: cuenta doble
   return tipoNuevo === 'up' ? 2 : -2;
 }

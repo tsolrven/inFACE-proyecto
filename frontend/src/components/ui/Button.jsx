@@ -1,9 +1,4 @@
-// Botón genérico reutilizable en cualquier módulo.
-//
-// Uso:
-//   <Button variant="primary" icon="ti-upload" onClick={...}>Subir material</Button>
-//   <Button variant="ghost" icon="ti-share-3">Compartir</Button>
-//   <Button variant="danger" loading={enviando}>Eliminar</Button>
+//! BOTÓN GENÉRICO, SE USA EN CUALQUIER MÓDULO
 
 const VARIANTS = {
   primary:

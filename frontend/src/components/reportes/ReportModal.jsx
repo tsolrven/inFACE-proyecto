@@ -11,7 +11,7 @@ export default function ReportModal({
   tipoContenido,
   contenidoId,
 }) {
-  const [paso, setPaso] = useState('categorias'); // 'categorias' | 'objetivo'
+  const [paso, setPaso] = useState('categorias'); 
   const [motivoSeleccionado, setMotivoSeleccionado] = useState(null);
   const [objetivo, setObjetivo] = useState(null);
   const [detalle, setDetalle] = useState('');

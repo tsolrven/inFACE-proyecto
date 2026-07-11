@@ -270,8 +270,6 @@ export default function MaterialCard({ apunte }) {
   );
 }
 
-// Renderiza el strip de GitHub, el snippet, o la lista de archivos
-// (1 o varios, la card se adapta al número real de archivos).
 function ArchivosPreview({ apunte }) {
   if (apunte.link_repositorio) {
     return (

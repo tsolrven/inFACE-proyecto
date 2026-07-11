@@ -69,9 +69,6 @@ export default function RepositorioMateriales() {
   const [carreraId, setCarreraId] = useState(usuario?.carrera_id ?? null);
   const [uploadAbierto, setUploadAbierto] = useState(false);
 
-  // ⚠️ ASUNCIÓN: si `usuario` no trae `carrera_id` directo (depende de qué
-  // devuelva tu endpoint /auth/me), tomamos la primera carrera disponible
-  // como fallback. Ajusta esto cuando confirmes el shape real de `usuario`.
   useEffect(() => {
     if (carreraId) return;
     listarCarreras().then((carreras) => {

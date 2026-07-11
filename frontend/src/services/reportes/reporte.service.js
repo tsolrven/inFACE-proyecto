@@ -3,7 +3,7 @@ import { apiFetch } from '../api';
 export async function reportarApunte(apunteId, payload) {
   const res = await apiFetch(`/reportes/apunte/${apunteId}`, {
     method: 'POST',
-    body: payload, // { motivo, detalle?, objetivo? }
+    body: payload, 
   });
   return res.data;
 }
@@ -16,9 +16,6 @@ export async function reportarComentario(comentarioId, payload) {
   return res.data;
 }
 
-// Mapa genérico para que <ReportModal /> no tenga que saber qué endpoint
-// llamar según el tipo de contenido — así cuando agregues un módulo nuevo
-// (foros, perfiles, etc.) solo agregas una entrada acá.
 const REPORTAR_POR_TIPO = {
   apunte: reportarApunte,
   comentario: reportarComentario,

@@ -3,12 +3,6 @@ import { listarRamosPorCarrera } from '../../services/repositorioMateriales/ramo
 import { useRepositorioStore } from '../../stores/repositorioStore';
 import { colorPorRamo } from '../../utils/ramoColors';
 
-// ⚠️ ASUNCIÓN: el backend agrupa ramos por "semestre" (1, 2, 3...), pero
-// el mockup organiza el acordeón por "Año" (I Año, II Año...) y dentro
-// por semestre. Como un año universitario = 2 semestres, derivo el año
-// con Math.ceil(semestre / 2). Si tu concepto de "semestre" en el
-// schema ya es continuo (1..10), esto calza. Si tu backend maneja el
-// año de otra forma, ajusta la función `agruparPorAnio` de este archivo.
 function agruparPorAnio(ramosPorSemestre) {
   const anios = {};
   Object.entries(ramosPorSemestre).forEach(([semestre, ramos]) => {

@@ -1,6 +1,5 @@
 import { apiFetch } from '../api';
 
-// construye el query string ignorando valores null/undefined/''
 function buildQuery(params = {}) {
   const filtrados = Object.entries(params).filter(
     ([, v]) => v !== null && v !== undefined && v !== '',
@@ -18,7 +17,6 @@ export async function listarApuntes({
 } = {}) {
   const qs = buildQuery({ ramo_id, tipo, tipo_archivo, orden, pagina, limite });
   const res = await apiFetch(`/apuntes${qs ? `?${qs}` : ''}`);
-  // ApiResponse.paginated → { success, data: [...], meta: {...} }
   return { apuntes: res.data, meta: res.meta };
 }
 

@@ -1,17 +1,6 @@
 import Modal, { ModalHeader } from './Modal';
 import Button from './Button';
 
-// Uso:
-//   <ConfirmDialog
-//     open={confirmando}
-//     title="Eliminar material"
-//     message="Esta acción no se puede deshacer."
-//     confirmLabel="Eliminar"
-//     danger
-//     loading={eliminando}
-//     onConfirm={handleEliminar}
-//     onCancel={() => setConfirmando(false)}
-//   />
 export default function ConfirmDialog({
   open,
   title,

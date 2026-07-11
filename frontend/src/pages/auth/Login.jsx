@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 
-// extrae los errores del backend (auth.validation) y los agrupa por campo
 function parseApiError(err) {
   if (err.details && Array.isArray(err.details)) {
     const byField = {};
@@ -25,7 +24,6 @@ export default function Login() {
   function handleChange(e) {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
-    // limpia el error del campo al escribir
     setErrors((prev) => ({
       ...prev,
       fields: { ...prev.fields, [name]: undefined },

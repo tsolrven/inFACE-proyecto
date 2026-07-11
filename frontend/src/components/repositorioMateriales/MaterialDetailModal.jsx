@@ -17,8 +17,6 @@ import EditApunteModal from './EditApunteModal';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import ReportModal from '../reportes/ReportModal';
 
-// inserta una respuesta nueva dentro del árbol de comentarios, sin importar
-// a qué profundidad esté el padre (recorre recursivamente)
 function insertarRespuesta(comentarios, padreId, nueva) {
   return comentarios.map((c) => {
     if (c.id === padreId) {
@@ -90,7 +88,7 @@ export default function MaterialDetailModal() {
   }, [id]);
 
   function handleClose() {
-    navigate(-1); // vuelve a donde estaba (el feed sigue detrás gracias al backgroundLocation)
+    navigate(-1); 
   }
 
   function handleNuevaRespuesta(padreId, nueva) {

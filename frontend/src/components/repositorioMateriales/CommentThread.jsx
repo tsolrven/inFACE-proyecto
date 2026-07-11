@@ -5,14 +5,14 @@ import { formatearTiempoRelativo } from '../../utils/formatRelativeTime';
 import { useAuthStore } from '../../stores/authStore';
 import ReportModal from '../reportes/ReportModal';
 
-const MAX_NIVEL = 2; // debe calzar con la validación del backend (comentario.service.js)
+const MAX_NIVEL = 2; 
 
 export default function CommentThread({
   comentario,
   apunteId,
   onNuevaRespuesta,
 }) {
-  const [votoLocal, setVotoLocal] = useState(null); // el backend no devuelve "mi_voto" en comentarios
+  const [votoLocal, setVotoLocal] = useState(null); 
   const [votosNeto, setVotosNeto] = useState(comentario.votos_neto);
   const [respondiendo, setRespondiendo] = useState(false);
   const [textoRespuesta, setTextoRespuesta] = useState('');

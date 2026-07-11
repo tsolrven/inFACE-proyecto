@@ -18,7 +18,6 @@ export default function MaterialFeed({ carreraId, onAbrirSubida }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // scroll infinito: observa un "centinela" al final de la lista
   const centinelaRef = useRef(null);
   const handleObserver = useCallback(
     (entries) => {

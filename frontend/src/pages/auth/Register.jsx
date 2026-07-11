@@ -32,8 +32,6 @@ export default function Register() {
   const [cargandoCarreras, setCargandoCarreras] = useState(true);
   const [errorCarreras, setErrorCarreras] = useState(false);
 
-  // GET /repositorio/carreras es pública a propósito: acá todavía no
-  // existe cuenta ni token, así que no puede pedir un endpoint protegido.
   useEffect(() => {
     listarCarreras()
       .then(setCarreras)
@@ -59,7 +57,6 @@ export default function Register() {
     try {
       await register(form);
       setSuccess(true);
-      // redirige al login tras 1.5s para que el usuario vea el mensaje de éxito
       setTimeout(() => navigate('/login'), 1500);
     } catch (err) {
       setErrors(parseApiError(err));
@@ -164,7 +161,7 @@ export default function Register() {
             ),
           )}
 
-          {/* Select de carrera — poblado desde GET /repositorio/carreras (pública) */}
+          {/* Select de carrera */}
           <div>
             <label
               htmlFor='carrera_id'
