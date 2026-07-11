@@ -10,7 +10,11 @@ import { useAuthStore } from './stores/authStore';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import Layout from './components/Layout';
-import { allProtectedRoutes, modalRoutes } from './config/navConfig';
+import {
+  allProtectedRoutes,
+  extraRoutes,
+  modalRoutes,
+} from './config/navConfig';
 
 function ProtectedRoute({ children }) {
   const usuario = useAuthStore((s) => s.usuario);
@@ -74,7 +78,7 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         >
-          {allProtectedRoutes.map(({ path, element }) =>
+          {[...allProtectedRoutes, ...extraRoutes].map(({ path, element }) =>
             path === '/' ? (
               <Route
                 key={path}

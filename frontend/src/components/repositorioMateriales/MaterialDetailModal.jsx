@@ -88,7 +88,7 @@ export default function MaterialDetailModal() {
   }, [id]);
 
   function handleClose() {
-    navigate(-1); 
+    navigate(-1);
   }
 
   function handleNuevaRespuesta(padreId, nueva) {
@@ -241,7 +241,10 @@ export default function MaterialDetailModal() {
                 {apunte.hashtags.map((tag) => (
                   <span
                     key={tag}
-                    className='text-[11.5px] text-blue-400'
+                    onClick={() =>
+                      navigate(`/repositorio-materiales/tag/${tag}`)
+                    }
+                    className='cursor-pointer text-[11.5px] text-blue-400 hover:underline'
                   >
                     #{tag}
                   </span>

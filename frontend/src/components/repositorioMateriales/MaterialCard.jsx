@@ -155,7 +155,11 @@ export default function MaterialCard({ apunte }) {
             {apunte.hashtags.map((tag) => (
               <span
                 key={tag}
-                className='text-[11px] text-blue-400'
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/repositorio-materiales/tag/${tag}`);
+                }}
+                className='text-[11px] text-blue-400 hover:underline'
               >
                 #{tag}
               </span>

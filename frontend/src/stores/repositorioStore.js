@@ -9,7 +9,8 @@ import { votarApunte } from '../services/repositorioMateriales/voto.service';
 const FILTROS_INICIALES = {
   ramo_id: null,
   tipo_archivo: null,
-  orden: 'recientes', 
+  hashtag: null,
+  orden: 'recientes',
 };
 
 export const useRepositorioStore = create((set, get) => ({

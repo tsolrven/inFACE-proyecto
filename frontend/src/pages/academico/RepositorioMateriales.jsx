@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import RightPanel from '../../components/rightPanel/RightPanel';
 import RpCard from '../../components/rightPanel/RpCard';
 import RpStats from '../../components/rightPanel/RpStats';
@@ -6,7 +8,7 @@ import PageBanner from '../../components/banner/PageBanner';
 import MaterialFeed from '../../components/repositorioMateriales/MaterialFeed';
 import UploadModal from '../../components/repositorioMateriales/UploadModal';
 import { useAuthStore } from '../../stores/authStore';
-import { useState } from 'react';
+import { useRepositorioStore } from '../../stores/repositorioStore';
 
 const stats = [
   { num: '487', label: 'materiales' },
@@ -58,9 +60,9 @@ const tags = [
 const rules = [
   'Sube solo materiales propios o con autorización del autor original.',
   'No subas respuestas completas de pruebas o tareas evaluadas.',
-  'Elige bien el ramo y usa tags relevantes para que tu material sea fácil de encontrar.',
-  'Reporta contenido plagiado, falso, ofensivo o fuera de lugar — no solo material con errores.',
-  'Mantén un trato respetuoso en los comentarios y no manipules los votos.',
+  'Etiqueta correctamente el ramo y los tags para facilitar la búsqueda.',
+  'Reporta materiales con errores graves para que la comunidad pueda corregirlos.',
+  'El repositorio es un bien común: cuídalo y contribuye activamente.',
 ];
 
 export default function RepositorioMateriales() {
@@ -68,6 +70,35 @@ export default function RepositorioMateriales() {
   const carreraId = usuario?.carrera_id ?? null;
   const carreraNombre = usuario?.carreras?.[0]?.nombre ?? 'tu carrera';
   const [uploadAbierto, setUploadAbierto] = useState(false);
+
+  const { hashtag } = useParams();
+  const setFiltro = useRepositorioStore((s) => s.setFiltro);
+
+  useEffect(() => {
+    setFiltro('hashtag', hashtag ?? null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hashtag]);
+
+  const banner = hashtag
+    ? {
+        title: `#${hashtag}`,
+        subtitle: `Publicaciones con #${hashtag} en ${carreraNombre}`,
+        breadcrumb: [
+          { label: 'Inicio', to: '/' },
+          { label: 'Académico' },
+          { label: 'Repositorio de materiales', to: '/repositorio-materiales' },
+          { label: `#${hashtag}` },
+        ],
+      }
+    : {
+        title: 'Repositorio de materiales',
+        subtitle: `${carreraNombre} · Materiales compartidos por la comunidad`,
+        breadcrumb: [
+          { label: 'Inicio', to: '/' },
+          { label: 'Académico' },
+          { label: 'Repositorio de materiales' },
+        ],
+      };
 
   return (
     <div className='flex flex-1 overflow-hidden h-full'>
@@ -77,14 +108,10 @@ export default function RepositorioMateriales() {
           iconColor='text-blue-400'
           iconBg='bg-blue-400/10 border-blue-400/30'
           gradient='linear-gradient(135deg, rgba(96,165,250,0.07) 0%, rgba(129,140,248,0.05) 100%)'
-          title='Repositorio de materiales'
-          subtitle={`${carreraNombre} · Materiales compartidos por la comunidad`}
+          title={banner.title}
+          subtitle={banner.subtitle}
           searchPlaceholder='Buscar en el repositorio...'
-          breadcrumb={[
-            { label: 'Inicio', to: '/' },
-            { label: 'Académico' },
-            { label: 'Repositorio de materiales' },
-          ]}
+          breadcrumb={banner.breadcrumb}
         />
 
         <MaterialFeed
@@ -99,13 +126,12 @@ export default function RepositorioMateriales() {
           icon='ti-info-circle'
         >
           <p className='text-[12px] text-neutral-400 leading-relaxed mb-2.5'>
-            Espacio colaborativo para compartir y descubrir apuntes y material
-            de estudio de los ramos de{' '}
+            Espacio colaborativo para compartir y descubrir materiales de
+            estudio de los ramos de{' '}
             <span className='font-semibold text-neutral-200'>
               {carreraNombre}
             </span>
-            . Vota y comenta lo que te sirva. El repositorio es un bien común:
-            cuídalo y contribuye activamente.
+            . Solo estudiantes con correo institucional.
           </p>
           <RpStats items={stats} />
         </RpCard>

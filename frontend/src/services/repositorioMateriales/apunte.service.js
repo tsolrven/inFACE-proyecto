@@ -11,11 +11,20 @@ export async function listarApuntes({
   ramo_id,
   tipo,
   tipo_archivo,
+  hashtag,
   orden,
   pagina = 1,
   limite = 20,
 } = {}) {
-  const qs = buildQuery({ ramo_id, tipo, tipo_archivo, orden, pagina, limite });
+  const qs = buildQuery({
+    ramo_id,
+    tipo,
+    tipo_archivo,
+    hashtag,
+    orden,
+    pagina,
+    limite,
+  });
   const res = await apiFetch(`/apuntes${qs ? `?${qs}` : ''}`);
   return { apuntes: res.data, meta: res.meta };
 }

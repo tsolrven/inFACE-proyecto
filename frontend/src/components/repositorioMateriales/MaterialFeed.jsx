@@ -10,13 +10,7 @@ export default function MaterialFeed({ carreraId, onAbrirSubida }) {
   const cargandoMas = useRepositorioStore((s) => s.cargandoMas);
   const error = useRepositorioStore((s) => s.error);
   const meta = useRepositorioStore((s) => s.meta);
-  const fetchApuntes = useRepositorioStore((s) => s.fetchApuntes);
   const cargarMasApuntes = useRepositorioStore((s) => s.cargarMasApuntes);
-
-  useEffect(() => {
-    fetchApuntes();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const centinelaRef = useRef(null);
   const handleObserver = useCallback(
@@ -27,14 +21,19 @@ export default function MaterialFeed({ carreraId, onAbrirSubida }) {
   );
 
   useEffect(() => {
-    const observer = new IntersectionObserver(handleObserver, { rootMargin: '200px' });
+    const observer = new IntersectionObserver(handleObserver, {
+      rootMargin: '200px',
+    });
     if (centinelaRef.current) observer.observe(centinelaRef.current);
     return () => observer.disconnect();
   }, [handleObserver]);
 
   return (
     <div className='flex-1 overflow-y-auto p-4'>
-      <FeedTopbar carreraId={carreraId} onAbrirSubida={onAbrirSubida} />
+      <FeedTopbar
+        carreraId={carreraId}
+        onAbrirSubida={onAbrirSubida}
+      />
       <QuickUploadBox onClick={onAbrirSubida} />
 
       {error && (
@@ -52,7 +51,9 @@ export default function MaterialFeed({ carreraId, onAbrirSubida }) {
       {!cargando && apuntes.length === 0 && (
         <div className='flex flex-col items-center justify-center py-16 text-center select-none'>
           <i className='ti ti-mood-empty mb-3 block text-5xl text-neutral-700' />
-          <p className='text-sm font-semibold text-neutral-300'>No hay materiales todavía</p>
+          <p className='text-sm font-semibold text-neutral-300'>
+            No hay materiales todavía
+          </p>
           <p className='mt-1.5 text-xs text-neutral-600'>
             Sé el primero en compartir algo con la comunidad.
           </p>
@@ -60,10 +61,16 @@ export default function MaterialFeed({ carreraId, onAbrirSubida }) {
       )}
 
       {apuntes.map((apunte) => (
-        <MaterialCard key={apunte.id} apunte={apunte} />
+        <MaterialCard
+          key={apunte.id}
+          apunte={apunte}
+        />
       ))}
 
-      <div ref={centinelaRef} className='h-1' />
+      <div
+        ref={centinelaRef}
+        className='h-1'
+      />
 
       {cargandoMas && (
         <div className='flex items-center justify-center py-4 text-neutral-600'>
