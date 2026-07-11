@@ -1,8 +1,9 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from './stores/authStore';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import Onboarding from './pages/Onboarding';
+import Landing from './pages/Landing';
 import Layout from './components/Layout';
 import { allProtectedRoutes } from './config/navConfig';
 import Perfil from './pages/Perfil';
@@ -10,7 +11,13 @@ import PerfilPublico from './pages/PerfilPublico';
 
 function ProtectedRoute({ children }) {
   const usuario = useAuthStore((s) => s.usuario);
+  const location = useLocation();
+
   if (!usuario) {
+    // sin sesión, la raíz del sitio muestra la landing pública en vez de mandar directo al login
+    if (location.pathname === '/') {
+      return <Landing />;
+    }
     return (
       <Navigate
         to='/login'

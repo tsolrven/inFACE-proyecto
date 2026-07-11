@@ -55,6 +55,15 @@ export default function Login() {
       style={{ background: 'radial-gradient(ellipse 80% 60% at 50% -10%, rgba(232,84,106,.10) 0%, transparent 60%), #0B0B0E' }}
     >
       <div className='w-full max-w-sm'>
+        {/* Volver al inicio */}
+        <Link
+          to='/'
+          className='mb-6 inline-flex items-center gap-1.5 text-[12.5px] text-neutral-500 transition hover:text-neutral-200'
+        >
+          <i className='ti ti-arrow-left text-[14px]' />
+          Volver al inicio
+        </Link>
+
         {/* Encabezado */}
         <div className='mb-8 text-center'>
           <span className='inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-widest text-pink-400'>
