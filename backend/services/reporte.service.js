@@ -86,4 +86,69 @@ async function crearReporte({
 }
 
 // ────────────────────────────────────────────────────────────────────────────────────────
-export { crearReporte };
+// Devuelve los reportes que el usuario ha hecho (nunca los que le hicieron a
+// él), en orden cronológico descendente, con un preview del contenido
+// reportado para que la UI no muestre solo un "contenido_id" en crudo.
+//
+// Igual que obtenerAutorDelContenido, cuando agregues un tipo_contenido
+// nuevo hay que sumar acá cómo resolver su preview.
+async function listarReportesPropios(usuario_id) {
+  const reportes = await prisma.reporte.findMany({
+    where: { reportado_por: usuario_id },
+    orderBy: { creado_en: 'desc' },
+  });
+
+  const idsApuntes = reportes
+    .filter((r) => r.tipo_contenido === 'apunte')
+    .map((r) => r.contenido_id);
+  const idsComentarios = reportes
+    .filter((r) => r.tipo_contenido === 'comentario')
+    .map((r) => r.contenido_id);
+
+  const [apuntes, comentarios] = await Promise.all([
+    idsApuntes.length
+      ? prisma.apunte.findMany({
+          where: { id: { in: idsApuntes } },
+          select: { id: true, titulo: true },
+        })
+      : [],
+    idsComentarios.length
+      ? prisma.comentario.findMany({
+          where: { id: { in: idsComentarios } },
+          select: { id: true, contenido: true },
+        })
+      : [],
+  ]);
+
+  const mapaApuntes = new Map(apuntes.map((a) => [a.id, a]));
+  const mapaComentarios = new Map(comentarios.map((c) => [c.id, c]));
+
+  return reportes.map((r) => {
+    let contenido_preview = null;
+    let contenido_existe = true;
+
+    if (r.tipo_contenido === 'apunte') {
+      const apunte = mapaApuntes.get(r.contenido_id);
+      contenido_existe = !!apunte;
+      contenido_preview = apunte?.titulo ?? null;
+    } else if (r.tipo_contenido === 'comentario') {
+      const comentario = mapaComentarios.get(r.contenido_id);
+      contenido_existe = !!comentario;
+      contenido_preview = comentario?.contenido ?? null;
+    }
+
+    return {
+      id: r.id,
+      tipo_contenido: r.tipo_contenido,
+      motivo: r.motivo,
+      detalle: r.detalle,
+      estado: r.estado,
+      creado_en: r.creado_en,
+      contenido_existe,
+      contenido_preview,
+    };
+  });
+}
+
+// ────────────────────────────────────────────────────────────────────────────────────────
+export { crearReporte, listarReportesPropios };

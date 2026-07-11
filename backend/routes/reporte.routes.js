@@ -2,6 +2,7 @@ import express from 'express';
 import {
   reportarApunte,
   reportarComentario,
+  listarMisReportes,
 } from '../controllers/reporte.controller.js';
 import { autenticar } from '../middlewares/auth.middleware.js';
 import validate from '../middlewares/validate.js';
@@ -12,6 +13,8 @@ import {
 } from '../validations/reporte.validation.js';
 
 const router = express.Router();
+
+router.get('/me', autenticar, listarMisReportes);
 
 router.post(
   '/apunte/:apunte_id',

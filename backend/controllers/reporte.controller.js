@@ -1,4 +1,7 @@
-import { crearReporte } from '../services/reporte.service.js';
+import {
+  crearReporte,
+  listarReportesPropios,
+} from '../services/reporte.service.js';
 import ApiResponse from '../utils/apiResponse.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function reportarApunte(req, res, next) {
@@ -35,4 +38,13 @@ async function reportarComentario(req, res, next) {
   }
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-export { reportarApunte, reportarComentario };
+async function listarMisReportes(req, res, next) {
+  try {
+    const reportes = await listarReportesPropios(req.usuario.id);
+    return ApiResponse.success(res, reportes);
+  } catch (err) {
+    next(err);
+  }
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+export { reportarApunte, reportarComentario, listarMisReportes };
