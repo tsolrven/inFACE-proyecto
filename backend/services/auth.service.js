@@ -105,7 +105,8 @@ async function iniciarSesion({ correo, contrasena }) {
   const passwordValido = await bcrypt.compare(contrasena, usuario.contrasena);
   if (!passwordValido) throw new UnauthorizedError('Credenciales inválidas');
 
-  const payload = { id: usuario.id, rol: usuario.rol };
+  const carrera_id = usuario.usuario_carrera[0]?.carrera_id ?? null;
+  const payload = { id: usuario.id, rol: usuario.rol, carrera_id };
 
   return {
     accessToken: generarAccessToken(payload),
@@ -125,14 +126,21 @@ async function refrescarToken(token) {
 
   const usuario = await prisma.usuario.findUnique({
     where: { id: payload.id },
+    include: { usuario_carrera: true },
   });
 
   if (!usuario || !usuario.esta_activo) {
     throw new ForbiddenError('Usuario no válido');
   }
 
+  const carrera_id = usuario.usuario_carrera[0]?.carrera_id ?? null;
+
   return {
-    accessToken: generarAccessToken({ id: usuario.id, rol: usuario.rol }),
+    accessToken: generarAccessToken({
+      id: usuario.id,
+      rol: usuario.rol,
+      carrera_id,
+    }),
   };
 }
 // ────────────────────────────────────────────────────────────────────────────────────────

@@ -21,8 +21,16 @@ async function listarApuntes({
   pagina = 1,
   limite = 20,
   usuario_id,
+  carrera_id,
 }) {
-  const where = {};
+  if (!carrera_id) {
+    // usuario sin carrera asignada: no le corresponde ver ningún repositorio académico
+    return { apuntes: [], total: 0, pagina, paginas: 0 };
+  }
+
+  const where = {
+    ramo: { ramo_carrera: { some: { carrera_id } } },
+  };
   if (ramo_id) where.ramo_id = ramo_id;
   if (tipo) where.tipo = tipo;
 
@@ -112,18 +120,33 @@ async function listarApuntes({
   };
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-async function obtenerApunte(id, usuario_id) {
+async function obtenerApunte(id, usuario_id, carrera_id) {
   const apunte = await prisma.apunte.findUnique({
     where: { id },
     include: {
       autor: { include: { perfil: { select: { nombre_usuario: true } } } },
       ramo: {
-        select: { id: true, nombre: true, codigo: true, semestre: true },
+        select: {
+          id: true,
+          nombre: true,
+          codigo: true,
+          semestre: true,
+          ramo_carrera: { select: { carrera_id: true } },
+        },
       },
       hashtags: { include: { hashtag: { select: { nombre: true } } } },
     },
   });
   if (!apunte) throw new NotFoundError('Apunte');
+
+  // TODO: cuando exista el módulo de "comunidades", permitir además el acceso
+  // de lectura si el apunte pertenece a una carrera distinta a la del usuario.
+  const perteneceASuCarrera = apunte.ramo.ramo_carrera.some(
+    (rc) => rc.carrera_id === carrera_id,
+  );
+  if (!perteneceASuCarrera) {
+    throw new NotFoundError('Apunte');
+  }
 
   const [archivos, comentariosCount, miVoto] = await Promise.all([
     prisma.archivo.findMany({
@@ -154,6 +177,7 @@ async function obtenerApunte(id, usuario_id) {
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function crearApunte({
   autor_id,
+  carrera_id,
   ramo_id,
   titulo,
   descripcion,
@@ -166,8 +190,18 @@ async function crearApunte({
     throw new BadRequestError('No puedes enviar link y snippet a la vez');
   }
 
-  const ramo = await prisma.ramo.findUnique({ where: { id: ramo_id } });
+  const ramo = await prisma.ramo.findUnique({
+    where: { id: ramo_id },
+    include: { ramo_carrera: { select: { carrera_id: true } } },
+  });
   if (!ramo) throw new NotFoundError('Ramo');
+
+  const ramoEsDeSuCarrera = ramo.ramo_carrera.some(
+    (rc) => rc.carrera_id === carrera_id,
+  );
+  if (!ramoEsDeSuCarrera) {
+    throw new ForbiddenError('No puedes publicar en un ramo de otra carrera');
+  }
 
   const apunte = await prisma.apunte.create({
     data: {
@@ -226,8 +260,29 @@ async function actualizarApunte(id, usuario_id, rol, datos) {
   }
 
   if (ramo_id && ramo_id !== apunte.ramo_id) {
-    const ramo = await prisma.ramo.findUnique({ where: { id: ramo_id } });
-    if (!ramo) throw new NotFoundError('Ramo');
+    const [ramoActual, ramoNuevo] = await Promise.all([
+      prisma.ramo.findUnique({
+        where: { id: apunte.ramo_id },
+        include: { ramo_carrera: { select: { carrera_id: true } } },
+      }),
+      prisma.ramo.findUnique({
+        where: { id: ramo_id },
+        include: { ramo_carrera: { select: { carrera_id: true } } },
+      }),
+    ]);
+    if (!ramoNuevo) throw new NotFoundError('Ramo');
+
+    const carrerasActuales = new Set(
+      ramoActual.ramo_carrera.map((rc) => rc.carrera_id),
+    );
+    const compartenCarrera = ramoNuevo.ramo_carrera.some((rc) =>
+      carrerasActuales.has(rc.carrera_id),
+    );
+    if (!compartenCarrera) {
+      throw new ForbiddenError(
+        'No puedes mover este material a un ramo de otra carrera',
+      );
+    }
   }
 
   const apunteActualizado = await prisma.apunte.update({
@@ -326,7 +381,7 @@ function formatearApunte(
     descripcion: apunte.descripcion,
     tipo: apunte.tipo,
     votos_neto: apunte.votos_neto,
-    mi_voto, 
+    mi_voto,
     link_repositorio: apunte.link_repositorio,
     codigo_snippet: apunte.codigo_snippet,
     creado_en: apunte.creado_en,
@@ -335,7 +390,12 @@ function formatearApunte(
       id: apunte.autor.id,
       nombre_usuario: apunte.autor.perfil?.nombre_usuario,
     },
-    ramo: apunte.ramo,
+    ramo: {
+      id: apunte.ramo.id,
+      nombre: apunte.ramo.nombre,
+      codigo: apunte.ramo.codigo,
+      semestre: apunte.ramo.semestre,
+    },
     hashtags: apunte.hashtags.map((h) => h.hashtag.nombre),
     archivos,
     comentarios_count: comentarios,

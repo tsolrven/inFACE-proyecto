@@ -19,7 +19,8 @@ async function listar(req, res, next) {
       orden,
       pagina: pag,
       limite: lim,
-      usuario_id: req.usuario.id, 
+      usuario_id: req.usuario.id,
+      carrera_id: req.usuario.carrera_id,
     });
     return ApiResponse.paginated(res, apuntes, total, pag, lim);
   } catch (err) {
@@ -29,7 +30,11 @@ async function listar(req, res, next) {
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function detalle(req, res, next) {
   try {
-    const apunte = await obtenerApunte(req.params.id, req.usuario.id); 
+    const apunte = await obtenerApunte(
+      req.params.id,
+      req.usuario.id,
+      req.usuario.carrera_id,
+    );
     return ApiResponse.success(res, apunte);
   } catch (err) {
     next(err);
@@ -38,7 +43,11 @@ async function detalle(req, res, next) {
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function crear(req, res, next) {
   try {
-    const apunte = await crearApunte({ autor_id: req.usuario.id, ...req.body });
+    const apunte = await crearApunte({
+      autor_id: req.usuario.id,
+      carrera_id: req.usuario.carrera_id,
+      ...req.body,
+    });
     return ApiResponse.created(res, apunte);
   } catch (err) {
     next(err);
