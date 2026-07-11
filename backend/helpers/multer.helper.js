@@ -46,8 +46,6 @@ function fileFilter(req, file, cb) {
   if (permitidos.includes(ext)) {
     cb(null, true);
   } else {
-    // Al pasar un Error a cb, multer lo reenvía como err al siguiente middleware.
-    // errorHandler lo captura como error genérico y devuelve 400.
     cb(
       Object.assign(
         new Error(`Extensión ${ext} no permitida para tipo "${tipo}"`),
@@ -60,7 +58,7 @@ function fileFilter(req, file, cb) {
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB máximo
+  limits: { fileSize: 20 * 1024 * 1024 }, 
 });
 
 export { upload };

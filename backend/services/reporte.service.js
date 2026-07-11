@@ -1,14 +1,10 @@
 import { prisma } from '../config/configDb.js';
-import { BadRequestError, NotFoundError, ConflictError } from '../errors/appError.js';
-
+import {
+  BadRequestError,
+  NotFoundError,
+  ConflictError,
+} from '../errors/appError.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
-// Devuelve el autor_id del contenido a reportar y de paso valida que exista.
-// Igual que voto.service.js, cortamos acá con 404 si el contenido_id no
-// corresponde a nada real (evita reportes "huérfanos").
-//
-// Para agregar un módulo nuevo (ej. futuros foros, perfiles, etc.) solo hay
-// que sumar un case acá — el resto del sistema de reportes ya funciona igual
-// para cualquier tipo_contenido.
 async function obtenerAutorDelContenido(tipo_contenido, contenido_id) {
   if (tipo_contenido === 'apunte') {
     const apunte = await prisma.apunte.findUnique({
@@ -30,11 +26,7 @@ async function obtenerAutorDelContenido(tipo_contenido, contenido_id) {
 
   throw new BadRequestError(`Tipo de contenido "${tipo_contenido}" inválido`);
 }
-
 // ────────────────────────────────────────────────────────────────────────────────────────
-// Arma el texto que se guarda en "detalle": si el motivo requería precisar
-// un objetivo (ej. acoso hacia mí / hacia un tercero), lo antepone como
-// etiqueta legible para quien revise el reporte más adelante.
 function construirDetalle({ objetivo, detalle }) {
   const partes = [];
   if (objetivo === 'propio') partes.push('[Acoso dirigido a: quien reporta]');
@@ -42,7 +34,6 @@ function construirDetalle({ objetivo, detalle }) {
   if (detalle) partes.push(detalle);
   return partes.length ? partes.join(' ') : null;
 }
-
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function crearReporte({
   usuario_id,
@@ -69,7 +60,9 @@ async function crearReporte({
   });
 
   if (reporteExistente) {
-    throw new ConflictError('Ya reportaste este contenido, tu reporte está en revisión');
+    throw new ConflictError(
+      'Ya reportaste este contenido, tu reporte está en revisión',
+    );
   }
 
   const reporte = await prisma.reporte.create({
@@ -82,16 +75,12 @@ async function crearReporte({
     },
   });
 
-  return { mensaje: 'Reporte enviado, gracias por avisarnos', reporte_id: reporte.id };
+  return {
+    mensaje: 'Reporte enviado, gracias por avisarnos',
+    reporte_id: reporte.id,
+  };
 }
-
 // ────────────────────────────────────────────────────────────────────────────────────────
-// Devuelve los reportes que el usuario ha hecho (nunca los que le hicieron a
-// él), en orden cronológico descendente, con un preview del contenido
-// reportado para que la UI no muestre solo un "contenido_id" en crudo.
-//
-// Igual que obtenerAutorDelContenido, cuando agregues un tipo_contenido
-// nuevo hay que sumar acá cómo resolver su preview.
 async function listarReportesPropios(usuario_id) {
   const reportes = await prisma.reporte.findMany({
     where: { reportado_por: usuario_id },
@@ -149,6 +138,5 @@ async function listarReportesPropios(usuario_id) {
     };
   });
 }
-
 // ────────────────────────────────────────────────────────────────────────────────────────
 export { crearReporte, listarReportesPropios };

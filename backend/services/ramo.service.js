@@ -9,7 +9,6 @@ async function listarRamosPorCarrera(carrera_id) {
     select: { id: true, nombre: true, codigo: true, semestre: true },
   });
 
-  // agrupa por semestre
   const agrupados = {};
   for (const ramo of ramos) {
     const sem = ramo.semestre || 0;

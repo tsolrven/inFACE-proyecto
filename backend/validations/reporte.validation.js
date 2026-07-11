@@ -1,9 +1,5 @@
 import { z } from 'zod';
-
 // ─────────────────────────────────────────────────────────────────────────────
-// Motivos válidos para un reporte. Compartido conceptualmente con el frontend
-// (frontend/src/constants/reportMotivos.js) — si agregas un motivo nuevo acá,
-// agrégalo también allá (label + descripción para el modal).
 const MOTIVOS_REPORTE = [
   'spam',
   'acoso',
@@ -15,10 +11,8 @@ const MOTIVOS_REPORTE = [
   'otro',
 ];
 
-// motivos que requieren el campo "detalle" con contenido (no solo opcional)
 const MOTIVOS_QUE_REQUIEREN_DETALLE = ['otro'];
 
-// motivos que requieren el campo "objetivo" (ej. acoso: ¿hacia quién es?)
 const MOTIVOS_QUE_REQUIEREN_OBJETIVO = ['acoso'];
 
 const ERROR_MESSAGES = {
@@ -41,7 +35,6 @@ const ERROR_MESSAGES = {
     invalid: 'El id del comentario no es válido',
   },
 };
-
 // ─────────────────────────────────────────────────────────────────────────────
 const crearReporteSchema = z
   .object({
@@ -73,7 +66,6 @@ const crearReporteSchema = z
       path: ['objetivo'],
     },
   );
-
 // ─────────────────────────────────────────────────────────────────────────────
 const apunteIdParamSchema = z.object({
   apunte_id: z.string().uuid(ERROR_MESSAGES.apunte_id.invalid),
@@ -82,7 +74,6 @@ const apunteIdParamSchema = z.object({
 const comentarioIdParamSchema = z.object({
   comentario_id: z.string().uuid(ERROR_MESSAGES.comentario_id.invalid),
 });
-
 // ─────────────────────────────────────────────────────────────────────────────
 export {
   crearReporteSchema,

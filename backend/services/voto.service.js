@@ -1,9 +1,6 @@
 import { prisma } from '../config/configDb.js';
 import { BadRequestError, NotFoundError } from '../errors/AppError.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
-// evita votos "huérfanos": si contenido_id no corresponde a un apunte o
-// comentario real (UUID inventado, contenido ya borrado, etc.), cortamos
-// acá con un 404 en vez de dejar crear el Voto igual.
 async function verificarContenidoExiste(tipo_contenido, contenido_id) {
   if (tipo_contenido === 'apunte') {
     const existe = await prisma.apunte.findUnique({

@@ -11,10 +11,10 @@ import logger from '../lib/logger.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-// ────────────────────────────────────────────────────────────────────────────────────────
+
 const MAX_ARCHIVOS_POR_APUNTE = 10;
 const ROLES_STAFF = ['admin', 'moderador'];
-
+// ────────────────────────────────────────────────────────────────────────────────────────
 async function verificarPropietarioContenido(tipo_contenido, contenido_id) {
   if (tipo_contenido === 'apunte') {
     const apunte = await prisma.apunte.findUnique({

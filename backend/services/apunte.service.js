@@ -326,7 +326,7 @@ function formatearApunte(
     descripcion: apunte.descripcion,
     tipo: apunte.tipo,
     votos_neto: apunte.votos_neto,
-    mi_voto, // 'up' | 'down' | null
+    mi_voto, 
     link_repositorio: apunte.link_repositorio,
     codigo_snippet: apunte.codigo_snippet,
     creado_en: apunte.creado_en,

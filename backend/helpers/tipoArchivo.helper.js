@@ -1,4 +1,4 @@
-// mapea las categorías del filtro a prefijos de mimetype (lo utilizo en listarApuntes - apunte.service)
+//! mapea las categorías del filtro a prefijos de mimetype (lo utilizo en listarApuntes - apunte.service)
 
 const MIME_MAP = {
   pdf: ['application/pdf'],
