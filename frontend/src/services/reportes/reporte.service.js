@@ -26,9 +26,11 @@ const REPORTAR_POR_TIPO = {
 
 export async function reportar(tipoContenido, contenidoId, payload) {
   const fn = REPORTAR_POR_TIPO[tipoContenido];
-  if (!fn)
-    throw new Error(
-      `Tipo de contenido "${tipoContenido}" no soporta reportes aún`,
-    );
+  if (!fn) throw new Error(`Tipo de contenido "${tipoContenido}" no soporta reportes aún`);
   return fn(contenidoId, payload);
+}
+
+export async function listarMisReportes() {
+  const res = await apiFetch('/reportes/me');
+  return res.data;
 }
