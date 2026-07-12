@@ -31,6 +31,12 @@ const DEFS = {
     bg: 'rgba(167,139,250,.1)',
     label: 'Comprimido',
   },
+  excel: {
+    icon: 'ti-file-type-xls',
+    color: '#4ADE80',
+    bg: 'rgba(74,222,128,.1)',
+    label: 'Excel',
+  },
   codigo: {
     icon: 'ti-code',
     color: '#34D399',
@@ -64,6 +70,22 @@ export const TIPOS_ARCHIVO_FILTRO = [
   { value: 'doc', ...DEFS.doc },
   { value: 'imagen', ...DEFS.imagen },
   { value: 'zip', ...DEFS.zip },
+  { value: 'excel', ...DEFS.excel },
+];
+
+// catálogo de badges que el usuario puede marcar manualmente al subir/editar
+// un apunte (selector tipo "chips"). Controla solo el badge principal que se
+// muestra arriba del post; no reemplaza el ícono automático de cada archivo
+// individual en la lista de adjuntos (ese sigue viniendo de metaDeArchivo()).
+export const BADGES_SELECCIONABLES = [
+  { value: 'pdf', ...DEFS.pdf },
+  { value: 'doc', ...DEFS.doc },
+  { value: 'ppt', ...DEFS.ppt },
+  { value: 'excel', ...DEFS.excel },
+  { value: 'zip', ...DEFS.zip },
+  { value: 'imagen', ...DEFS.imagen },
+  { value: 'codigo', ...DEFS.codigo },
+  { value: 'github', ...DEFS.github },
 ];
 
 function categoriaDeMime(mime = '') {
@@ -73,6 +95,8 @@ function categoriaDeMime(mime = '') {
     return 'doc';
   if (mime.includes('ms-powerpoint') || mime.includes('presentationml'))
     return 'ppt';
+  if (mime.includes('ms-excel') || mime.includes('spreadsheetml'))
+    return 'excel';
   if (mime.includes('zip') || mime.includes('rar')) return 'zip';
   if (
     mime.startsWith('text/') ||
@@ -86,6 +110,15 @@ function categoriaDeMime(mime = '') {
 export function metaDeArchivo(archivo) {
   return DEFS[categoriaDeMime(archivo?.tipo_mime)] ?? DEFS.default;
 }
+
+// devuelve { icon, color, bg, label } para un badge elegido por el usuario
+// (apunte.etiquetas_visuales), o null si el value no está en el catálogo
+export function metaDeBadge(value) {
+  return DEFS[value] ?? null;
+}
+
+// ícono genérico para cuando el apunte no tiene ningún badge marcado
+export const BADGE_POR_DEFECTO = DEFS.default;
 
 export function metaPrincipal(apunte) {
   if (apunte.link_repositorio) return DEFS.github;

@@ -4,7 +4,7 @@ import { useRepositorioStore } from '../../stores/repositorioStore';
 import { useAuthStore } from '../../stores/authStore';
 import { colorPorRamo } from '../../utils/ramoColors';
 import {
-  metaPrincipal,
+  metaDeBadge,
   metaDeArchivo,
   formatearTamanio,
 } from '../../utils/fileMeta';
@@ -58,7 +58,6 @@ export default function MaterialCard({ apunte, onQuitarDeGuardados }) {
       usuario.rol === 'admin' ||
       usuario.rol === 'moderador');
 
-  const iconMeta = metaPrincipal(apunte);
   const ramoColor = colorPorRamo(apunte.ramo?.id);
 
   function abrirDetalle() {
@@ -179,19 +178,6 @@ export default function MaterialCard({ apunte, onQuitarDeGuardados }) {
         )}
       </div>
 
-      {/* columna ícono de archivo */}
-      <div className='flex w-[52px] flex-shrink-0 items-center justify-center border-r border-white/[0.07]'>
-        <div
-          className='flex h-[34px] w-[34px] items-center justify-center rounded-[10px]'
-          style={{ background: iconMeta.bg }}
-        >
-          <i
-            className={`ti ${iconMeta.icon} text-lg`}
-            style={{ color: iconMeta.color }}
-          />
-        </div>
-      </div>
-
       {/* cuerpo */}
       <div className='min-w-0 flex-1 p-3'>
         <div className='mb-1.5 flex flex-wrap items-center gap-1.5'>
@@ -218,6 +204,8 @@ export default function MaterialCard({ apunte, onQuitarDeGuardados }) {
         <div className='mb-1 cursor-pointer text-sm font-semibold leading-snug text-neutral-100 hover:text-blue-400'>
           {apunte.titulo}
         </div>
+
+        <BadgesPrincipales etiquetas={apunte.etiquetas_visuales} />
 
         {apunte.descripcion && (
           <p className='mb-1.5 line-clamp-2 text-xs leading-relaxed text-neutral-400'>
@@ -318,6 +306,32 @@ export default function MaterialCard({ apunte, onQuitarDeGuardados }) {
           />
         </div>
       )}
+    </div>
+  );
+}
+
+// badges que el usuario marcó manualmente al subir/editar el material.
+// Es independiente de los archivos reales adjuntos (esos siguen mostrando
+// su propio ícono automático en ArchivosPreview, más abajo).
+function BadgesPrincipales({ etiquetas }) {
+  if (!etiquetas?.length) return null;
+
+  return (
+    <div className='mb-1.5 flex flex-wrap gap-1.5'>
+      {etiquetas.map((valor) => {
+        const meta = metaDeBadge(valor);
+        if (!meta) return null;
+        return (
+          <span
+            key={valor}
+            className='flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-semibold'
+            style={{ background: meta.bg, color: meta.color }}
+          >
+            <i className={`ti ${meta.icon} text-[11px]`} />
+            {meta.label}
+          </span>
+        );
+      })}
     </div>
   );
 }

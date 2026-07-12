@@ -2,11 +2,7 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { prisma } from '../config/configDb.js';
-import {
-  BadRequestError,
-  NotFoundError,
-  ForbiddenError,
-} from '../errors/appError.js';
+import { NotFoundError, ForbiddenError } from '../errors/appError.js';
 import logger from '../lib/logger.js';
 import { MIME_MAP } from '../helpers/tipoArchivo.helper.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
@@ -214,11 +210,8 @@ async function crearApunte({
   codigo_snippet,
   lenguaje_snippet,
   hashtags = [],
+  etiquetas_visuales = [],
 }) {
-  if (link_repositorio && codigo_snippet) {
-    throw new BadRequestError('No puedes enviar link y snippet a la vez');
-  }
-
   const ramo = await prisma.ramo.findUnique({
     where: { id: ramo_id },
     include: { ramo_carrera: { select: { carrera_id: true } } },
@@ -242,6 +235,7 @@ async function crearApunte({
       link_repositorio,
       codigo_snippet,
       lenguaje_snippet: codigo_snippet ? lenguaje_snippet : null,
+      etiquetas_visuales,
       hashtags: {
         create: await resolverHashtags(hashtags),
       },
@@ -280,15 +274,8 @@ async function actualizarApunte(id, usuario_id, rol, datos) {
     codigo_snippet,
     lenguaje_snippet,
     hashtags,
+    etiquetas_visuales,
   } = datos;
-
-  const nuevoLink =
-    link_repositorio !== undefined ? link_repositorio : apunte.link_repositorio;
-  const nuevoSnippet =
-    codigo_snippet !== undefined ? codigo_snippet : apunte.codigo_snippet;
-  if (nuevoLink && nuevoSnippet) {
-    throw new BadRequestError('No puedes tener link y snippet a la vez');
-  }
 
   if (ramo_id && ramo_id !== apunte.ramo_id) {
     const [ramoActual, ramoNuevo] = await Promise.all([
@@ -328,6 +315,7 @@ async function actualizarApunte(id, usuario_id, rol, datos) {
         codigo_snippet,
         lenguaje_snippet: codigo_snippet ? lenguaje_snippet : null,
       }),
+      ...(etiquetas_visuales !== undefined && { etiquetas_visuales }),
       ...(hashtags && {
         hashtags: {
           deleteMany: {},
@@ -425,6 +413,7 @@ function formatearApunte(
     link_repositorio: apunte.link_repositorio,
     codigo_snippet: apunte.codigo_snippet,
     lenguaje_snippet: apunte.lenguaje_snippet,
+    etiquetas_visuales: apunte.etiquetas_visuales ?? [],
     creado_en: apunte.creado_en,
     actualizado_en: apunte.actualizado_en,
     autor: {

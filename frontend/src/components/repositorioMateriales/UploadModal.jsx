@@ -6,6 +6,7 @@ import { crearApunte } from '../../services/repositorioMateriales/apunte.service
 import { subirArchivos } from '../../services/repositorioMateriales/archivo.service';
 import { useRepositorioStore } from '../../stores/repositorioStore';
 import CodeEditor from './CodeEditor';
+import BadgeSelector, { InfoTooltip } from './BadgeSelector';
 
 const TIPOS = [
   { value: 'file', icon: 'ti-upload', label: 'Archivo' },
@@ -26,6 +27,7 @@ export default function UploadModal({ open, onClose, carreraId }) {
   const [codigoSnippet, setCodigoSnippet] = useState('');
   const [lenguajeSnippet, setLenguajeSnippet] = useState('texto');
   const [archivos, setArchivos] = useState([]);
+  const [etiquetasVisuales, setEtiquetasVisuales] = useState([]);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(null);
 
@@ -53,6 +55,7 @@ export default function UploadModal({ open, onClose, carreraId }) {
     setCodigoSnippet('');
     setLenguajeSnippet('texto');
     setArchivos([]);
+    setEtiquetasVisuales([]);
     setError(null);
   }
 
@@ -104,6 +107,7 @@ export default function UploadModal({ open, onClose, carreraId }) {
         link_repositorio: fuentes.github ? linkRepositorio : undefined,
         codigo_snippet: fuentes.snippet ? codigoSnippet : undefined,
         lenguaje_snippet: fuentes.snippet ? lenguajeSnippet : undefined,
+        etiquetas_visuales: etiquetasVisuales,
       });
 
       if (fuentes.file && archivos.length > 0) {
@@ -212,8 +216,21 @@ export default function UploadModal({ open, onClose, carreraId }) {
           />
         </Campo>
 
+        <BadgeSelector
+          value={etiquetasVisuales}
+          onChange={setEtiquetasVisuales}
+          disabled={enviando}
+        />
+
         {fuentes.file && (
-          <Campo label='Archivos (puedes seleccionar varios)'>
+          <Campo
+            label={
+              <span className='flex items-center gap-1.5'>
+                Archivos (puedes seleccionar varios)
+                <InfoTooltip texto='¿No ves tu tipo de archivo? Comprímelo en .zip y súbelo.' />
+              </span>
+            }
+          >
             <input
               type='file'
               multiple

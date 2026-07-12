@@ -8,7 +8,11 @@ import {
   crearComentario,
 } from '../../services/repositorioMateriales/comentario.service';
 import { colorPorRamo } from '../../utils/ramoColors';
-import { metaDeArchivo, formatearTamanio } from '../../utils/fileMeta';
+import {
+  metaDeArchivo,
+  metaDeBadge,
+  formatearTamanio,
+} from '../../utils/fileMeta';
 import { formatearTiempoRelativo } from '../../utils/formatRelativeTime';
 import {
   useRepositorioStore,
@@ -220,6 +224,7 @@ export default function MaterialDetailModal() {
       hashtags,
       link_repositorio,
       codigo_snippet,
+      etiquetas_visuales,
       actualizado_en,
       archivos,
       descargas,
@@ -228,6 +233,7 @@ export default function MaterialDetailModal() {
       ...prev,
       titulo,
       descripcion,
+      etiquetas_visuales,
       ramo,
       hashtags,
       link_repositorio,
@@ -361,6 +367,8 @@ export default function MaterialDetailModal() {
             <h2 className='mb-3 text-[18px] font-bold leading-snug text-neutral-100'>
               {apunte.titulo}
             </h2>
+
+            <BadgesPrincipales etiquetas={apunte.etiquetas_visuales} />
 
             <div className='mb-4 flex items-center gap-2 text-[12.5px] text-neutral-600'>
               <div className='flex h-[22px] w-[22px] items-center justify-center rounded-full bg-pink-500/10 text-[9px] font-bold text-pink-500'>
@@ -522,6 +530,32 @@ export default function MaterialDetailModal() {
         </>
       )}
     </Modal>
+  );
+}
+
+// badges que el usuario marcó manualmente al subir/editar el material.
+// Es independiente de los archivos reales adjuntos (esos siguen mostrando
+// su propio ícono automático más abajo, en DetalleArchivos).
+function BadgesPrincipales({ etiquetas }) {
+  if (!etiquetas?.length) return null;
+
+  return (
+    <div className='mb-3 flex flex-wrap gap-1.5'>
+      {etiquetas.map((valor) => {
+        const meta = metaDeBadge(valor);
+        if (!meta) return null;
+        return (
+          <span
+            key={valor}
+            className='flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold'
+            style={{ background: meta.bg, color: meta.color }}
+          >
+            <i className={`ti ${meta.icon} text-[13px]`} />
+            {meta.label}
+          </span>
+        );
+      })}
+    </div>
   );
 }
 

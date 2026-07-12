@@ -6,24 +6,27 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const TIPOS_PERMITIDOS = {
-  apunte: ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.txt'],
-  codigo: [
-    '.js',
-    '.py',
-    '.java',
-    '.c',
-    '.cpp',
-    '.cs',
-    '.ts',
-    '.html',
-    '.css',
-    '.zip',
-  ],
-  guia: ['.pdf', '.doc', '.docx', '.txt'],
-  ejercicio: ['.pdf', '.doc', '.docx', '.zip'],
-  otro: ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.txt', '.zip'],
-};
+// set reducido: documentos + comprimidos + imágenes + planillas.
+// el código va como snippet (texto plano en la BD) y los repos como link de
+// GitHub, así que ya no hace falta aceptar .js/.py/.java/etc. como archivo.
+// nota: req.body.tipo (apunte/codigo/guia/ejercicio/otro) no se usa hoy desde
+// el frontend, así que se dejó una sola lista en vez de una por categoría.
+const EXTENSIONES_PERMITIDAS = [
+  '.pdf',
+  '.doc',
+  '.docx',
+  '.ppt',
+  '.pptx',
+  '.xls',
+  '.xlsx',
+  '.txt',
+  '.zip',
+  '.jpg',
+  '.jpeg',
+  '.png',
+  '.webp',
+  '.gif',
+];
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -39,18 +42,16 @@ const storage = multer.diskStorage({
 });
 
 function fileFilter(req, file, cb) {
-  const tipo = req.body.tipo || 'otro';
   const ext = path.extname(file.originalname).toLowerCase();
-  const permitidos = TIPOS_PERMITIDOS[tipo] ?? TIPOS_PERMITIDOS.otro;
 
-  if (permitidos.includes(ext)) {
+  if (EXTENSIONES_PERMITIDAS.includes(ext)) {
     cb(null, true);
   } else {
     cb(
-      Object.assign(
-        new Error(`Extensión ${ext} no permitida para tipo "${tipo}"`),
-        { statusCode: 400, code: 'BAD_REQUEST' },
-      ),
+      Object.assign(new Error(`Extensión ${ext} no permitida`), {
+        statusCode: 400,
+        code: 'BAD_REQUEST',
+      }),
     );
   }
 }
@@ -58,7 +59,7 @@ function fileFilter(req, file, cb) {
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 20 * 1024 * 1024 }, 
+  limits: { fileSize: 20 * 1024 * 1024 },
 });
 
 export { upload };

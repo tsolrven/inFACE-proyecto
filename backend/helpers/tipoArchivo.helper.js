@@ -16,6 +16,10 @@ const MIME_MAP = {
     'application/x-zip-compressed',
     'application/x-rar-compressed',
   ],
+  excel: [
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml',
+  ],
   codigo: ['text/', 'application/json', 'application/javascript'],
 };
 

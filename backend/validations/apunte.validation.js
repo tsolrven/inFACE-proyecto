@@ -1,6 +1,18 @@
 import { z } from 'zod';
 // ─────────────────────────────────────────────────────────────────────────────
 const TIPOS_APUNTE = ['apunte', 'codigo', 'guia', 'ejercicio', 'otro'];
+// catálogo de badges/logos que el usuario puede marcar manualmente para el apunte
+// (independiente de los archivos reales que suba; ver fileMeta.js en el frontend)
+const BADGES_VISUALES = [
+  'pdf',
+  'doc',
+  'ppt',
+  'excel',
+  'zip',
+  'imagen',
+  'codigo',
+  'github',
+];
 const LENGUAJES_SNIPPET = [
   'texto',
   'javascript',
@@ -51,6 +63,10 @@ const ERROR_MESSAGES = {
     pattern: 'Los hashtags solo pueden tener letras, números y guiones bajos',
     max_largo: 'Cada hashtag no puede superar 30 caracteres',
   },
+  etiquetas_visuales: {
+    invalid: `Cada badge debe ser uno de: ${BADGES_VISUALES.join(', ')}`,
+    max_cantidad: 'No puedes marcar más de 8 badges',
+  },
 };
 // ─────────────────────────────────────────────────────────────────────────────
 const hashtagsSchema = z
@@ -98,6 +114,11 @@ const lenguajeSnippetSchema = z
   .enum(LENGUAJES_SNIPPET, { error: ERROR_MESSAGES.lenguaje_snippet.invalid })
   .optional()
   .nullable();
+
+const etiquetasVisualesSchema = z
+  .array(z.enum(BADGES_VISUALES, ERROR_MESSAGES.etiquetas_visuales.invalid))
+  .max(8, ERROR_MESSAGES.etiquetas_visuales.max_cantidad)
+  .optional();
 // ─────────────────────────────────────────────────────────────────────────────
 const crearApunteSchema = z.object({
   ramo_id: z
@@ -113,6 +134,7 @@ const crearApunteSchema = z.object({
   codigo_snippet: codigoSnippetSchema,
   lenguaje_snippet: lenguajeSnippetSchema,
   hashtags: hashtagsSchema,
+  etiquetas_visuales: etiquetasVisualesSchema,
 });
 // ─────────────────────────────────────────────────────────────────────────────
 const actualizarApunteSchema = z.object({
@@ -124,6 +146,7 @@ const actualizarApunteSchema = z.object({
   codigo_snippet: codigoSnippetSchema,
   lenguaje_snippet: lenguajeSnippetSchema,
   hashtags: hashtagsSchema,
+  etiquetas_visuales: etiquetasVisualesSchema,
 });
 // ─────────────────────────────────────────────────────────────────────────────
 const apunteIdParamSchema = z.object({

@@ -9,6 +9,7 @@ import {
 import { metaDeArchivo, formatearTamanio } from '../../utils/fileMeta';
 import { useRepositorioStore } from '../../stores/repositorioStore';
 import CodeEditor from './CodeEditor';
+import BadgeSelector, { InfoTooltip } from './BadgeSelector';
 
 const TIPOS = [
   { value: 'file', icon: 'ti-upload', label: 'Archivo' },
@@ -42,6 +43,7 @@ export default function EditApunteModal({
   const [linkRepositorio, setLinkRepositorio] = useState('');
   const [codigoSnippet, setCodigoSnippet] = useState('');
   const [lenguajeSnippet, setLenguajeSnippet] = useState('texto');
+  const [etiquetasVisuales, setEtiquetasVisuales] = useState([]);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(null);
 
@@ -64,6 +66,7 @@ export default function EditApunteModal({
     setLinkRepositorio(apunte.link_repositorio ?? '');
     setCodigoSnippet(apunte.codigo_snippet ?? '');
     setLenguajeSnippet(apunte.lenguaje_snippet ?? 'texto');
+    setEtiquetasVisuales(apunte.etiquetas_visuales ?? []);
     setArchivosActuales(apunte.archivos ?? []);
     setArchivosNuevos([]);
     setError(null);
@@ -158,6 +161,7 @@ export default function EditApunteModal({
         link_repositorio: fuentes.github ? linkRepositorio : null,
         codigo_snippet: fuentes.snippet ? codigoSnippet : null,
         lenguaje_snippet: fuentes.snippet ? lenguajeSnippet : null,
+        etiquetas_visuales: etiquetasVisuales,
       });
 
       let archivosFinales = archivosActuales;
@@ -302,6 +306,12 @@ export default function EditApunteModal({
           />
         </Campo>
 
+        <BadgeSelector
+          value={etiquetasVisuales}
+          onChange={setEtiquetasVisuales}
+          disabled={enviando}
+        />
+
         {fuentes.github && (
           <Campo label='Link del repositorio'>
             <input
@@ -325,7 +335,14 @@ export default function EditApunteModal({
         )}
 
         {fuentes.file && (
-          <Campo label='Archivos adjuntos'>
+          <Campo
+            label={
+              <span className='flex items-center gap-1.5'>
+                Archivos adjuntos
+                <InfoTooltip texto='¿No ves tu tipo de archivo? Comprímelo en .zip y súbelo.' />
+              </span>
+            }
+          >
             <div className='flex flex-col gap-1.5'>
               {archivosActuales.length === 0 && archivosNuevos.length === 0 && (
                 <p className='text-[11.5px] text-neutral-600'>
