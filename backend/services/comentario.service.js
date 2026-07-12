@@ -27,16 +27,34 @@ async function listarComentarios(apunte_id, usuario_id) {
     misVotos.map((v) => [v.contenido_id, v.tipo]),
   );
 
-  return construirArbolComentarios(comentarios, mapVotos);
+  const misGuardados = usuario_id
+    ? await prisma.guardado.findMany({
+        where: {
+          usuario_id,
+          tipo_contenido: 'comentario',
+          contenido_id: { in: comentarios.map((c) => c.id) },
+        },
+      })
+    : [];
+  const setGuardados = new Set(misGuardados.map((g) => g.contenido_id));
+
+  return construirArbolComentarios(comentarios, mapVotos, setGuardados);
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-function construirArbolComentarios(comentarios, mapVotos = {}) {
+function construirArbolComentarios(
+  comentarios,
+  mapVotos = {},
+  setGuardados = new Set(),
+) {
   const nodosPorId = new Map();
   const raices = [];
 
   for (const c of comentarios) {
     nodosPorId.set(c.id, {
-      ...formatearComentario(c, { mi_voto: mapVotos[c.id] || null }),
+      ...formatearComentario(c, {
+        mi_voto: mapVotos[c.id] || null,
+        esta_guardado: setGuardados.has(c.id),
+      }),
       respuestas: [],
     });
   }
@@ -65,8 +83,12 @@ async function crearComentario({ autor_id, apunte_id, contenido, padre_id }) {
     });
     if (!padre) throw new NotFoundError('Comentario padre');
     nivel = padre.nivel + 1;
-    if (nivel > 2) {
-      throw new BadRequestError('No se permiten más de 3 niveles de respuesta');
+    // Tope de seguridad (no un límite real de UX): evita hilos absurdos o
+    // recursión maliciosa, pero en la práctica el usuario nunca lo alcanza.
+    // El indentado visual se limita aparte en el frontend (ver MAX_NIVEL_INDENTADO
+    // en CommentThread.jsx), al estilo Reddit.
+    if (nivel > 50) {
+      throw new BadRequestError('Se alcanzó el límite máximo de anidamiento');
     }
   }
 
@@ -148,13 +170,17 @@ async function eliminarComentario(comentario_id, usuario_id) {
   };
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-function formatearComentario(comentario, { mi_voto = null } = {}) {
+function formatearComentario(
+  comentario,
+  { mi_voto = null, esta_guardado = false } = {},
+) {
   if (comentario.eliminado) {
     return {
       id: comentario.id,
       contenido: null,
       votos_neto: comentario.votos_neto,
       mi_voto: null,
+      esta_guardado,
       nivel: comentario.nivel,
       creado_en: comentario.creado_en,
       actualizado_en: comentario.actualizado_en,
@@ -168,6 +194,7 @@ function formatearComentario(comentario, { mi_voto = null } = {}) {
     contenido: comentario.contenido,
     votos_neto: comentario.votos_neto,
     mi_voto,
+    esta_guardado,
     nivel: comentario.nivel,
     creado_en: comentario.creado_en,
     actualizado_en: comentario.actualizado_en,
@@ -184,4 +211,5 @@ export {
   crearComentario,
   editarComentario,
   eliminarComentario,
+  formatearComentario,
 };

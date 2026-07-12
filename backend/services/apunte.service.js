@@ -78,25 +78,35 @@ async function listarApuntes({
 
   const ids = apuntes.map((a) => a.id);
 
-  const [conteoComentarios, archivos, misVotos] = await Promise.all([
-    prisma.comentario.groupBy({
-      by: ['contenido_id'],
-      where: { tipo_contenido: 'apunte', contenido_id: { in: ids } },
-      _count: { _all: true },
-    }),
-    prisma.archivo.findMany({
-      where: { tipo_contenido: 'apunte', contenido_id: { in: ids } },
-    }),
-    usuario_id
-      ? prisma.voto.findMany({
-          where: {
-            usuario_id,
-            tipo_contenido: 'apunte',
-            contenido_id: { in: ids },
-          },
-        })
-      : Promise.resolve([]),
-  ]);
+  const [conteoComentarios, archivos, misVotos, misGuardados] =
+    await Promise.all([
+      prisma.comentario.groupBy({
+        by: ['contenido_id'],
+        where: { tipo_contenido: 'apunte', contenido_id: { in: ids } },
+        _count: { _all: true },
+      }),
+      prisma.archivo.findMany({
+        where: { tipo_contenido: 'apunte', contenido_id: { in: ids } },
+      }),
+      usuario_id
+        ? prisma.voto.findMany({
+            where: {
+              usuario_id,
+              tipo_contenido: 'apunte',
+              contenido_id: { in: ids },
+            },
+          })
+        : Promise.resolve([]),
+      usuario_id
+        ? prisma.guardado.findMany({
+            where: {
+              usuario_id,
+              tipo_contenido: 'apunte',
+              contenido_id: { in: ids },
+            },
+          })
+        : Promise.resolve([]),
+    ]);
 
   const mapComentarios = Object.fromEntries(
     conteoComentarios.map((c) => [c.contenido_id, c._count._all]),
@@ -109,6 +119,7 @@ async function listarApuntes({
   const mapVotos = Object.fromEntries(
     misVotos.map((v) => [v.contenido_id, v.tipo]),
   );
+  const setGuardados = new Set(misGuardados.map((g) => g.contenido_id));
 
   return {
     apuntes: apuntes.map((a) =>
@@ -116,6 +127,7 @@ async function listarApuntes({
         comentarios: mapComentarios[a.id] || 0,
         archivos: mapArchivos[a.id] || [],
         mi_voto: mapVotos[a.id] || null,
+        esta_guardado: setGuardados.has(a.id),
       }),
     ),
     total,
@@ -152,7 +164,7 @@ async function obtenerApunte(id, usuario_id, carrera_id) {
     throw new NotFoundError('Apunte');
   }
 
-  const [archivos, comentariosCount, miVoto] = await Promise.all([
+  const [archivos, comentariosCount, miVoto, miGuardado] = await Promise.all([
     prisma.archivo.findMany({
       where: { tipo_contenido: 'apunte', contenido_id: id },
     }),
@@ -170,12 +182,24 @@ async function obtenerApunte(id, usuario_id, carrera_id) {
           },
         })
       : Promise.resolve(null),
+    usuario_id
+      ? prisma.guardado.findUnique({
+          where: {
+            usuario_id_tipo_contenido_contenido_id: {
+              usuario_id,
+              tipo_contenido: 'apunte',
+              contenido_id: id,
+            },
+          },
+        })
+      : Promise.resolve(null),
   ]);
 
   return formatearApunte(apunte, {
     comentarios: comentariosCount,
     archivos,
     mi_voto: miVoto?.tipo || null,
+    esta_guardado: !!miGuardado,
   });
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
@@ -377,7 +401,12 @@ async function resolverHashtags(hashtags) {
 // ────────────────────────────────────────────────────────────────────────────────────────
 function formatearApunte(
   apunte,
-  { comentarios = 0, archivos = [], mi_voto = null } = {},
+  {
+    comentarios = 0,
+    archivos = [],
+    mi_voto = null,
+    esta_guardado = false,
+  } = {},
 ) {
   return {
     id: apunte.id,
@@ -386,6 +415,7 @@ function formatearApunte(
     tipo: apunte.tipo,
     votos_neto: apunte.votos_neto,
     mi_voto,
+    esta_guardado,
     link_repositorio: apunte.link_repositorio,
     codigo_snippet: apunte.codigo_snippet,
     creado_en: apunte.creado_en,
@@ -416,4 +446,5 @@ export {
   crearApunte,
   actualizarApunte,
   eliminarApunte,
+  formatearApunte,
 };

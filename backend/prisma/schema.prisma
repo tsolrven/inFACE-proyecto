@@ -25,6 +25,7 @@ model Usuario {
   apuntes          Apunte[]
   comentarios      Comentario[]
   votos            Voto[]
+  guardados        Guardado[]
   reportes_creados Reporte[]  @relation("ReporteCreadoPor")
   reportes_revisados Reporte[] @relation("ReporteRevisadoPor")
 
@@ -157,6 +158,21 @@ model Voto {
   @@id([usuario_id, tipo_contenido, contenido_id])
   @@index([tipo_contenido, contenido_id])
   @@map("votos")
+}
+
+// ╰─────────────────────────────✧────────────────────────────────╮
+
+model Guardado {
+  usuario_id     String
+  tipo_contenido String
+  contenido_id   String
+  creado_en      DateTime @default(now())
+
+  usuario Usuario @relation(fields: [usuario_id], references: [id])
+
+  @@id([usuario_id, tipo_contenido, contenido_id])
+  @@index([tipo_contenido, contenido_id])
+  @@map("guardados")
 }
 
 // ╰─────────────────────────────✧────────────────────────────────╮
