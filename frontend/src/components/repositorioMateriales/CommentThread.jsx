@@ -5,14 +5,14 @@ import { formatearTiempoRelativo } from '../../utils/formatRelativeTime';
 import { useAuthStore } from '../../stores/authStore';
 import ReportModal from '../reportes/ReportModal';
 
-const MAX_NIVEL = 2; 
+const MAX_NIVEL = 2;
 
 export default function CommentThread({
   comentario,
   apunteId,
   onNuevaRespuesta,
 }) {
-  const [votoLocal, setVotoLocal] = useState(null); 
+  const [votoLocal, setVotoLocal] = useState(null);
   const [votosNeto, setVotosNeto] = useState(comentario.votos_neto);
   const [respondiendo, setRespondiendo] = useState(false);
   const [textoRespuesta, setTextoRespuesta] = useState('');
@@ -84,15 +84,33 @@ export default function CommentThread({
         </div>
 
         <div className='flex items-center gap-3'>
-          <button
-            type='button'
-            onClick={() => handleVotar('up')}
-            className={`flex items-center gap-1 text-[11.5px] transition-colors hover:text-[#FF6B35] ${
-              votoLocal === 'up' ? 'text-[#FF6B35]' : 'text-neutral-600'
-            }`}
-          >
-            <i className='ti ti-arrow-big-up' /> {votosNeto}
-          </button>
+          <div className='flex items-center gap-1'>
+            <button
+              type='button'
+              onClick={() => handleVotar('up')}
+              className={`flex items-center transition-colors hover:text-[#FF6B35] ${
+                votoLocal === 'up' ? 'text-[#FF6B35]' : 'text-neutral-600'
+              }`}
+            >
+              <i
+                className={`ti ${votoLocal === 'up' ? 'ti-arrow-big-up-filled' : 'ti-arrow-big-up'} text-[13px]`}
+              />
+            </button>
+            <span className='min-w-[14px] text-center text-[11.5px] font-semibold text-neutral-400'>
+              {votosNeto}
+            </span>
+            <button
+              type='button'
+              onClick={() => handleVotar('down')}
+              className={`flex items-center transition-colors hover:text-[#7B8CDE] ${
+                votoLocal === 'down' ? 'text-[#7B8CDE]' : 'text-neutral-600'
+              }`}
+            >
+              <i
+                className={`ti ${votoLocal === 'down' ? 'ti-arrow-big-down-filled' : 'ti-arrow-big-down'} text-[13px]`}
+              />
+            </button>
+          </div>
           {comentario.nivel < MAX_NIVEL && (
             <button
               type='button'

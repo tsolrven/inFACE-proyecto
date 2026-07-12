@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useRepositorioStore } from '../../stores/repositorioStore';
 import { useAuthStore } from '../../stores/authStore';
@@ -13,6 +13,7 @@ import { descargarArchivo } from '../../services/repositorioMateriales/archivo.s
 import EditApunteModal from './EditApunteModal';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import ReportModal from '../reportes/ReportModal';
+import VotePill from './VotePill';
 
 export default function MaterialCard({ apunte }) {
   const navigate = useNavigate();
@@ -28,6 +29,18 @@ export default function MaterialCard({ apunte }) {
   const [eliminando, setEliminando] = useState(false);
   const [errorEliminar, setErrorEliminar] = useState(null);
   const [reportando, setReportando] = useState(false);
+  const [menuAbierto, setMenuAbierto] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setMenuAbierto(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const esDueno =
     usuario &&
@@ -65,8 +78,47 @@ export default function MaterialCard({ apunte }) {
   return (
     <div
       onClick={abrirDetalle}
-      className='mb-2 flex cursor-pointer overflow-hidden rounded-[14px] border border-white/[0.06] bg-[#1E1E24] transition-colors hover:border-white/[0.12]'
+      className='relative mb-2 flex cursor-pointer overflow-hidden rounded-[14px] border border-white/[0.06] bg-[#1E1E24] transition-colors hover:border-white/[0.12]'
     >
+      {/* menú de tres puntos: guardar / reportar */}
+      <div
+        ref={menuRef}
+        onClick={(e) => e.stopPropagation()}
+        className='absolute right-2 top-2 z-10'
+      >
+        <button
+          type='button'
+          onClick={() => setMenuAbierto((abierto) => !abierto)}
+          className='flex h-7 w-7 items-center justify-center rounded-full text-neutral-500 transition-colors hover:bg-white/[0.08] hover:text-neutral-200'
+        >
+          <i className='ti ti-dots text-base' />
+        </button>
+
+        {menuAbierto && (
+          <div className='absolute right-0 top-[32px] w-[168px] overflow-hidden rounded-xl border border-white/10 bg-[#1E1E24] shadow-[0_12px_40px_rgba(0,0,0,0.5)]'>
+            <button
+              type='button'
+              onClick={() => setMenuAbierto(false)}
+              className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-neutral-300 transition-colors hover:bg-white/[0.05] hover:text-neutral-100'
+            >
+              <i className='ti ti-bookmark text-[14px]' /> Guardar
+            </button>
+            {!esDueno && (
+              <button
+                type='button'
+                onClick={() => {
+                  setMenuAbierto(false);
+                  setReportando(true);
+                }}
+                className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-red-400 transition-colors hover:bg-red-500/[0.08]'
+              >
+                <i className='ti ti-flag text-[14px]' /> Reportar
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* columna ícono de archivo */}
       <div className='flex w-[52px] flex-shrink-0 items-center justify-center border-r border-white/[0.07]'>
         <div
@@ -78,46 +130,6 @@ export default function MaterialCard({ apunte }) {
             style={{ color: iconMeta.color }}
           />
         </div>
-      </div>
-
-      {/* columna votos */}
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className='flex min-w-[40px] flex-col items-center gap-0.5 border-r border-white/[0.07] bg-white/[0.02] px-1.5 py-2.5'
-      >
-        <button
-          type='button'
-          onClick={(e) => handleVotar(e, 'up')}
-          className={`flex h-[26px] w-[26px] items-center justify-center rounded-md transition-colors hover:bg-[rgba(255,107,53,0.1)] hover:text-[#FF6B35] ${
-            apunte.mi_voto === 'up' ? 'text-[#FF6B35]' : 'text-neutral-600'
-          }`}
-        >
-          <i
-            className={`ti ${apunte.mi_voto === 'up' ? 'ti-arrow-big-up-filled' : 'ti-arrow-big-up'} text-base`}
-          />
-        </button>
-        <span
-          className={`text-xs font-bold leading-none ${
-            apunte.mi_voto === 'up'
-              ? 'text-[#FF6B35]'
-              : apunte.mi_voto === 'down'
-                ? 'text-[#7B8CDE]'
-                : 'text-neutral-400'
-          }`}
-        >
-          {apunte.votos_neto}
-        </span>
-        <button
-          type='button'
-          onClick={(e) => handleVotar(e, 'down')}
-          className={`flex h-[26px] w-[26px] items-center justify-center rounded-md transition-colors hover:bg-[rgba(123,140,222,0.1)] hover:text-[#7B8CDE] ${
-            apunte.mi_voto === 'down' ? 'text-[#7B8CDE]' : 'text-neutral-600'
-          }`}
-        >
-          <i
-            className={`ti ${apunte.mi_voto === 'down' ? 'ti-arrow-big-down-filled' : 'ti-arrow-big-down'} text-base`}
-          />
-        </button>
       </div>
 
       {/* cuerpo */}
@@ -167,33 +179,33 @@ export default function MaterialCard({ apunte }) {
           </div>
         )}
 
-        <div className='flex flex-wrap items-center gap-3 border-t border-white/[0.05] pt-1.5 text-[11.5px] text-neutral-500'>
+        <div className='flex flex-wrap items-center gap-2 border-t border-white/[0.05] pt-2 text-[11.5px] text-neutral-500'>
+          <VotePill
+            miVoto={apunte.mi_voto}
+            votosNeto={apunte.votos_neto}
+            onVotar={handleVotar}
+          />
+
           <button
             type='button'
-            onClick={(e) => e.stopPropagation()}
-            className='flex items-center gap-1 transition-colors hover:text-neutral-200'
+            onClick={(e) => {
+              e.stopPropagation();
+              abrirDetalle();
+            }}
+            className='flex items-center gap-1.5 rounded-full bg-white/[0.06] px-3 py-1.5 transition-colors hover:bg-white/[0.1] hover:text-neutral-200'
           >
             <i className='ti ti-message-circle-2 text-[13px]' />{' '}
-            {apunte.comentarios_count} comentarios
+            {apunte.comentarios_count}
           </button>
-          <span className='flex items-center gap-1'>
-            <i className='ti ti-download text-[13px]' />{' '}
-            {apunte.descargas ?? '—'} descargas
-          </span>
+
           <button
             type='button'
             onClick={(e) => e.stopPropagation()}
-            className='flex items-center gap-1 transition-colors hover:text-neutral-200'
+            className='flex items-center gap-1.5 rounded-full bg-white/[0.06] px-3 py-1.5 transition-colors hover:bg-white/[0.1] hover:text-neutral-200'
           >
             <i className='ti ti-share-3 text-[13px]' /> Compartir
           </button>
-          <button
-            type='button'
-            onClick={(e) => e.stopPropagation()}
-            className='flex items-center gap-1 transition-colors hover:text-neutral-200'
-          >
-            <i className='ti ti-bookmark text-[13px]' /> Guardar
-          </button>
+
           {esDueno && (
             <>
               <button
@@ -218,18 +230,14 @@ export default function MaterialCard({ apunte }) {
               </button>
             </>
           )}
-          {!esDueno && (
-            <button
-              type='button'
-              onClick={(e) => {
-                e.stopPropagation();
-                setReportando(true);
-              }}
-              className='ml-auto flex items-center gap-1 transition-colors hover:text-red-400'
-            >
-              <i className='ti ti-flag text-[13px]' /> Reportar
-            </button>
-          )}
+
+          <span
+            onClick={(e) => e.stopPropagation()}
+            className='ml-auto flex items-center gap-1'
+          >
+            <i className='ti ti-download text-[13px]' />{' '}
+            {apunte.descargas ?? '—'} descargas
+          </span>
         </div>
       </div>
 

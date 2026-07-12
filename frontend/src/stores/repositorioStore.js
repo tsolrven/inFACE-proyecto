@@ -127,7 +127,7 @@ export const useRepositorioStore = create((set, get) => ({
   },
 }));
 
-function calcularDeltaVoto(votoActual, tipoNuevo) {
+export function calcularDeltaVoto(votoActual, tipoNuevo) {
   if (votoActual === tipoNuevo) {
     return tipoNuevo === 'up' ? -1 : 1;
   }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Modal, { ModalHeader } from '../ui/Modal';
 import CommentThread from './CommentThread';
@@ -10,12 +10,17 @@ import {
 import { colorPorRamo } from '../../utils/ramoColors';
 import { metaDeArchivo, formatearTamanio } from '../../utils/fileMeta';
 import { formatearTiempoRelativo } from '../../utils/formatRelativeTime';
-import { useRepositorioStore } from '../../stores/repositorioStore';
+import {
+  useRepositorioStore,
+  calcularDeltaVoto,
+} from '../../stores/repositorioStore';
 import { useAuthStore } from '../../stores/authStore';
 import { descargarArchivo } from '../../services/repositorioMateriales/archivo.service';
+import { votarApunte } from '../../services/repositorioMateriales/voto.service';
 import EditApunteModal from './EditApunteModal';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import ReportModal from '../reportes/ReportModal';
+import VotePill from './VotePill';
 
 function insertarRespuesta(comentarios, padreId, nueva) {
   return comentarios.map((c) => {
@@ -63,6 +68,19 @@ export default function MaterialDetailModal() {
   const [eliminando, setEliminando] = useState(false);
   const [errorEliminar, setErrorEliminar] = useState(null);
   const [reportando, setReportando] = useState(false);
+  const [menuAbierto, setMenuAbierto] = useState(false);
+  const menuRef = useRef(null);
+  const comentariosRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setMenuAbierto(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const esDueno =
     usuario &&
@@ -86,6 +104,32 @@ export default function MaterialDetailModal() {
       cancelado = true;
     };
   }, [id]);
+
+  async function handleVotar(e, tipo) {
+    e?.stopPropagation?.();
+    const anterior = apunte;
+    const mismoVoto = apunte.mi_voto === tipo;
+    const delta = calcularDeltaVoto(apunte.mi_voto, tipo);
+    const actualizado = {
+      ...apunte,
+      mi_voto: mismoVoto ? null : tipo,
+      votos_neto: apunte.votos_neto + delta,
+    };
+    setApunte(actualizado);
+    actualizarApunteEnFeed(id, {
+      mi_voto: actualizado.mi_voto,
+      votos_neto: actualizado.votos_neto,
+    });
+    try {
+      await votarApunte(id, tipo);
+    } catch (err) {
+      setApunte(anterior);
+      actualizarApunteEnFeed(id, {
+        mi_voto: anterior.mi_voto,
+        votos_neto: anterior.votos_neto,
+      });
+    }
+  }
 
   function handleClose() {
     navigate(-1);
@@ -167,7 +211,55 @@ export default function MaterialDetailModal() {
 
       {apunte && !cargando && (
         <>
-          <ModalHeader onClose={handleClose}>
+          <ModalHeader
+            onClose={handleClose}
+            rightContent={
+              <div
+                ref={menuRef}
+                className='relative'
+              >
+                <button
+                  type='button'
+                  onClick={() => setMenuAbierto((abierto) => !abierto)}
+                  className='flex h-[30px] w-[30px] items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/[0.06] hover:text-neutral-100'
+                >
+                  <i className='ti ti-dots text-base' />
+                </button>
+
+                {menuAbierto && (
+                  <div className='absolute right-0 top-[36px] w-[168px] overflow-hidden rounded-xl border border-white/10 bg-[#1E1E24] shadow-[0_12px_40px_rgba(0,0,0,0.5)]'>
+                    <button
+                      type='button'
+                      onClick={() => setMenuAbierto(false)}
+                      className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-neutral-300 transition-colors hover:bg-white/[0.05] hover:text-neutral-100'
+                    >
+                      <i className='ti ti-bookmark text-[14px]' /> Guardar
+                    </button>
+                    {!esDueno && usuario && (
+                      <button
+                        type='button'
+                        onClick={() => {
+                          setMenuAbierto(false);
+                          setReportando(true);
+                        }}
+                        className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-red-400 transition-colors hover:bg-red-500/[0.08]'
+                      >
+                        <i className='ti ti-flag text-[14px]' /> Reportar
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            }
+          >
+            <button
+              type='button'
+              onClick={handleClose}
+              title='Volver'
+              className='flex h-[30px] w-[30px] items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/[0.06] hover:text-neutral-100'
+            >
+              <i className='ti ti-arrow-left text-base' />
+            </button>
             <span
               className='rounded-full px-2 py-0.5 text-[10px] font-bold'
               style={{
@@ -196,16 +288,6 @@ export default function MaterialDetailModal() {
                   <i className='ti ti-trash text-[15px]' />
                 </button>
               </div>
-            )}
-            {!esDueno && usuario && (
-              <button
-                type='button'
-                onClick={() => setReportando(true)}
-                className='ml-2 flex h-[26px] w-[26px] items-center justify-center rounded-md text-neutral-500 transition-colors hover:bg-white/[0.06] hover:text-neutral-200'
-                title='Reportar'
-              >
-                <i className='ti ti-flag text-[15px]' />
-              </button>
             )}
           </ModalHeader>
 
@@ -237,7 +319,7 @@ export default function MaterialDetailModal() {
             <DetalleArchivos apunte={apunte} />
 
             {apunte.hashtags?.length > 0 && (
-              <div className='flex flex-wrap gap-1.5'>
+              <div className='mb-4 flex flex-wrap gap-1.5'>
                 {apunte.hashtags.map((tag) => (
                   <span
                     key={tag}
@@ -251,9 +333,43 @@ export default function MaterialDetailModal() {
                 ))}
               </div>
             )}
+
+            <div className='flex flex-wrap items-center gap-2 border-t border-white/[0.06] pt-3 text-[11.5px] text-neutral-500'>
+              <VotePill
+                miVoto={apunte.mi_voto}
+                votosNeto={apunte.votos_neto}
+                onVotar={handleVotar}
+              />
+
+              <button
+                type='button'
+                onClick={() =>
+                  comentariosRef.current?.scrollIntoView({ behavior: 'smooth' })
+                }
+                className='flex items-center gap-1.5 rounded-full bg-white/[0.06] px-3 py-1.5 transition-colors hover:bg-white/[0.1] hover:text-neutral-200'
+              >
+                <i className='ti ti-message-circle-2 text-[13px]' />{' '}
+                {contarComentarios(comentarios)}
+              </button>
+
+              <button
+                type='button'
+                className='flex items-center gap-1.5 rounded-full bg-white/[0.06] px-3 py-1.5 transition-colors hover:bg-white/[0.1] hover:text-neutral-200'
+              >
+                <i className='ti ti-share-3 text-[13px]' /> Compartir
+              </button>
+
+              <span className='ml-auto flex items-center gap-1'>
+                <i className='ti ti-download text-[13px]' />{' '}
+                {apunte.descargas ?? '—'} descargas
+              </span>
+            </div>
           </div>
 
-          <div className='border-t border-white/[0.06] bg-[rgba(23,23,27,0.4)] p-6'>
+          <div
+            ref={comentariosRef}
+            className='border-t border-white/[0.06] bg-[rgba(23,23,27,0.4)] p-6'
+          >
             <h3 className='mb-4 flex items-center gap-1.5 text-sm font-semibold text-neutral-100'>
               <i className='ti ti-messages text-base text-pink-500' />
               Discusión y Respuestas ({contarComentarios(comentarios)})

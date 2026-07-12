@@ -40,17 +40,21 @@ export default function Modal({ open, onClose, children, maxWidth = '520px' }) {
   );
 }
 
-export function ModalHeader({ children, onClose }) {
+export function ModalHeader({ children, onClose, rightContent }) {
   return (
     <div className='flex items-center border-b border-white/[0.06] bg-white/[0.02] px-5 py-4'>
       <div className='flex flex-1 items-center gap-2'>{children}</div>
-      <button
-        type='button'
-        onClick={onClose}
-        className='ml-auto flex h-[30px] w-[30px] items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/[0.06] hover:text-neutral-100'
-      >
-        <i className='ti ti-x' />
-      </button>
+      <div className='ml-auto'>
+        {rightContent ?? (
+          <button
+            type='button'
+            onClick={onClose}
+            className='flex h-[30px] w-[30px] items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/[0.06] hover:text-neutral-100'
+          >
+            <i className='ti ti-x' />
+          </button>
+        )}
+      </div>
     </div>
   );
 }
