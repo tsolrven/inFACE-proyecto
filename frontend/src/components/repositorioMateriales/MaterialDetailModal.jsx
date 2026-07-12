@@ -21,6 +21,7 @@ import EditApunteModal from './EditApunteModal';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import ReportModal from '../reportes/ReportModal';
 import VotePill from './VotePill';
+import { fueEditado } from '../../utils/fueEditado';
 
 function insertarRespuesta(comentarios, padreId, nueva) {
   return comentarios.map((c) => {
@@ -31,6 +32,31 @@ function insertarRespuesta(comentarios, padreId, nueva) {
       return {
         ...c,
         respuestas: insertarRespuesta(c.respuestas, padreId, nueva),
+      };
+    }
+    return c;
+  });
+}
+
+function eliminarNodoDelArbol(comentarios, comentarioId) {
+  return comentarios
+    .filter((c) => c.id !== comentarioId)
+    .map((c) =>
+      c.respuestas?.length
+        ? { ...c, respuestas: eliminarNodoDelArbol(c.respuestas, comentarioId) }
+        : c,
+    );
+}
+
+function marcarComoEliminado(comentarios, comentarioId) {
+  return comentarios.map((c) => {
+    if (c.id === comentarioId) {
+      return { ...c, eliminado: true, contenido: null, autor: null };
+    }
+    if (c.respuestas?.length) {
+      return {
+        ...c,
+        respuestas: marcarComoEliminado(c.respuestas, comentarioId),
       };
     }
     return c;
@@ -139,6 +165,18 @@ export default function MaterialDetailModal() {
     setComentarios((prev) => insertarRespuesta(prev, padreId, nueva));
   }
 
+  function handleComentarioEliminado(comentarioId, eliminadoPermanente) {
+    setComentarios((prev) => {
+      const actualizados = eliminadoPermanente
+        ? eliminarNodoDelArbol(prev, comentarioId)
+        : marcarComoEliminado(prev, comentarioId);
+      actualizarApunteEnFeed(id, {
+        comentarios_count: contarComentarios(actualizados),
+      });
+      return actualizados;
+    });
+  }
+
   async function handleEnviarComentario() {
     if (!textoNuevo.trim()) return;
     setEnviando(true);
@@ -235,17 +273,43 @@ export default function MaterialDetailModal() {
                     >
                       <i className='ti ti-bookmark text-[14px]' /> Guardar
                     </button>
-                    {!esDueno && usuario && (
-                      <button
-                        type='button'
-                        onClick={() => {
-                          setMenuAbierto(false);
-                          setReportando(true);
-                        }}
-                        className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-red-400 transition-colors hover:bg-red-500/[0.08]'
-                      >
-                        <i className='ti ti-flag text-[14px]' /> Reportar
-                      </button>
+                    {esDueno ? (
+                      <>
+                        <button
+                          type='button'
+                          onClick={() => {
+                            setMenuAbierto(false);
+                            setEditando(true);
+                          }}
+                          className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-neutral-300 transition-colors hover:bg-white/[0.05] hover:text-neutral-100'
+                        >
+                          <i className='ti ti-edit text-[14px]' /> Editar
+                        </button>
+                        <button
+                          type='button'
+                          onClick={() => {
+                            setMenuAbierto(false);
+                            setConfirmandoEliminar(true);
+                          }}
+                          className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-red-400 transition-colors hover:bg-red-500/[0.08]'
+                        >
+                          <i className='ti ti-trash text-[14px]' /> Eliminar
+                        </button>
+                      </>
+                    ) : (
+                      !esDueno &&
+                      usuario && (
+                        <button
+                          type='button'
+                          onClick={() => {
+                            setMenuAbierto(false);
+                            setReportando(true);
+                          }}
+                          className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-red-400 transition-colors hover:bg-red-500/[0.08]'
+                        >
+                          <i className='ti ti-flag text-[14px]' /> Reportar
+                        </button>
+                      )
                     )}
                   </div>
                 )}
@@ -269,26 +333,6 @@ export default function MaterialDetailModal() {
             >
               {apunte.ramo?.nombre}
             </span>
-            {esDueno && (
-              <div className='ml-2 flex items-center gap-1'>
-                <button
-                  type='button'
-                  onClick={() => setEditando(true)}
-                  className='flex h-[26px] w-[26px] items-center justify-center rounded-md text-neutral-500 transition-colors hover:bg-white/[0.06] hover:text-neutral-200'
-                  title='Editar'
-                >
-                  <i className='ti ti-edit text-[15px]' />
-                </button>
-                <button
-                  type='button'
-                  onClick={() => setConfirmandoEliminar(true)}
-                  className='flex h-[26px] w-[26px] items-center justify-center rounded-md text-neutral-500 transition-colors hover:bg-red-500/[0.08] hover:text-red-400'
-                  title='Eliminar'
-                >
-                  <i className='ti ti-trash text-[15px]' />
-                </button>
-              </div>
-            )}
           </ModalHeader>
 
           <div className='px-6 pb-4 pt-5'>
@@ -308,6 +352,11 @@ export default function MaterialDetailModal() {
               </span>
               <span>·</span>
               <span>{formatearTiempoRelativo(apunte.creado_en)}</span>
+              {fueEditado(apunte.creado_en, apunte.actualizado_en) && (
+                <span className='text-neutral-700'>
+                  · editado {formatearTiempoRelativo(apunte.actualizado_en)}
+                </span>
+              )}
             </div>
 
             {apunte.descripcion && (
@@ -408,6 +457,7 @@ export default function MaterialDetailModal() {
                   comentario={comentario}
                   apunteId={id}
                   onNuevaRespuesta={handleNuevaRespuesta}
+                  onComentarioEliminado={handleComentarioEliminado}
                 />
               ))}
             </div>

@@ -14,6 +14,7 @@ import EditApunteModal from './EditApunteModal';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import ReportModal from '../reportes/ReportModal';
 import VotePill from './VotePill';
+import { fueEditado } from '../../utils/fueEditado';
 
 export default function MaterialCard({ apunte }) {
   const navigate = useNavigate();
@@ -103,17 +104,44 @@ export default function MaterialCard({ apunte }) {
             >
               <i className='ti ti-bookmark text-[14px]' /> Guardar
             </button>
-            {!esDueno && (
-              <button
-                type='button'
-                onClick={() => {
-                  setMenuAbierto(false);
-                  setReportando(true);
-                }}
-                className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-red-400 transition-colors hover:bg-red-500/[0.08]'
-              >
-                <i className='ti ti-flag text-[14px]' /> Reportar
-              </button>
+            {esDueno ? (
+              <>
+                <button
+                  type='button'
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setMenuAbierto(false);
+                    setEditando(true);
+                  }}
+                  className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-neutral-300 transition-colors hover:bg-white/[0.05] hover:text-neutral-100'
+                >
+                  <i className='ti ti-edit text-[14px]' /> Editar
+                </button>
+                <button
+                  type='button'
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setMenuAbierto(false);
+                    setConfirmandoEliminar(true);
+                  }}
+                  className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-red-400 transition-colors hover:bg-red-500/[0.08]'
+                >
+                  <i className='ti ti-trash text-[14px]' /> Eliminar
+                </button>
+              </>
+            ) : (
+              usuario && (
+                <button
+                  type='button'
+                  onClick={() => {
+                    setMenuAbierto(false);
+                    setReportando(true);
+                  }}
+                  className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-red-400 transition-colors hover:bg-red-500/[0.08]'
+                >
+                  <i className='ti ti-flag text-[14px]' /> Reportar
+                </button>
+              )
             )}
           </div>
         )}
@@ -148,6 +176,11 @@ export default function MaterialCard({ apunte }) {
           <span className='text-[11px] text-neutral-600'>
             · {formatearTiempoRelativo(apunte.creado_en)}
           </span>
+          {fueEditado(apunte.creado_en, apunte.actualizado_en) && (
+            <span className='text-[11px] text-neutral-700'>
+              · editado {formatearTiempoRelativo(apunte.actualizado_en)}
+            </span>
+          )}
         </div>
 
         <div className='mb-1 cursor-pointer text-sm font-semibold leading-snug text-neutral-100 hover:text-blue-400'>
@@ -205,31 +238,6 @@ export default function MaterialCard({ apunte }) {
           >
             <i className='ti ti-share-3 text-[13px]' /> Compartir
           </button>
-
-          {esDueno && (
-            <>
-              <button
-                type='button'
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setEditando(true);
-                }}
-                className='flex items-center gap-1 transition-colors hover:text-neutral-200'
-              >
-                <i className='ti ti-edit text-[13px]' /> Editar
-              </button>
-              <button
-                type='button'
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setConfirmandoEliminar(true);
-                }}
-                className='flex items-center gap-1 transition-colors hover:text-red-400'
-              >
-                <i className='ti ti-trash text-[13px]' /> Eliminar
-              </button>
-            </>
-          )}
 
           <span
             onClick={(e) => e.stopPropagation()}
