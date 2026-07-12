@@ -212,6 +212,7 @@ async function crearApunte({
   tipo,
   link_repositorio,
   codigo_snippet,
+  lenguaje_snippet,
   hashtags = [],
 }) {
   if (link_repositorio && codigo_snippet) {
@@ -240,6 +241,7 @@ async function crearApunte({
       tipo: tipo || 'apunte',
       link_repositorio,
       codigo_snippet,
+      lenguaje_snippet: codigo_snippet ? lenguaje_snippet : null,
       hashtags: {
         create: await resolverHashtags(hashtags),
       },
@@ -276,6 +278,7 @@ async function actualizarApunte(id, usuario_id, rol, datos) {
     tipo,
     link_repositorio,
     codigo_snippet,
+    lenguaje_snippet,
     hashtags,
   } = datos;
 
@@ -321,7 +324,10 @@ async function actualizarApunte(id, usuario_id, rol, datos) {
       ...(descripcion !== undefined && { descripcion }),
       ...(tipo && { tipo }),
       ...(link_repositorio !== undefined && { link_repositorio }),
-      ...(codigo_snippet !== undefined && { codigo_snippet }),
+      ...(codigo_snippet !== undefined && {
+        codigo_snippet,
+        lenguaje_snippet: codigo_snippet ? lenguaje_snippet : null,
+      }),
       ...(hashtags && {
         hashtags: {
           deleteMany: {},
@@ -418,6 +424,7 @@ function formatearApunte(
     esta_guardado,
     link_repositorio: apunte.link_repositorio,
     codigo_snippet: apunte.codigo_snippet,
+    lenguaje_snippet: apunte.lenguaje_snippet,
     creado_en: apunte.creado_en,
     actualizado_en: apunte.actualizado_en,
     autor: {

@@ -1,6 +1,25 @@
 import { z } from 'zod';
 // ─────────────────────────────────────────────────────────────────────────────
 const TIPOS_APUNTE = ['apunte', 'codigo', 'guia', 'ejercicio', 'otro'];
+const LENGUAJES_SNIPPET = [
+  'texto',
+  'javascript',
+  'typescript',
+  'python',
+  'java',
+  'c',
+  'cpp',
+  'csharp',
+  'html',
+  'css',
+  'json',
+  'sql',
+  'php',
+  'rust',
+  'go',
+  'bash',
+  'markdown',
+];
 // ─────────────────────────────────────────────────────────────────────────────
 const ERROR_MESSAGES = {
   ramo: {
@@ -23,6 +42,9 @@ const ERROR_MESSAGES = {
   },
   codigo_snippet: {
     max: 'El snippet no puede superar 20000 caracteres',
+  },
+  lenguaje_snippet: {
+    invalid: 'El lenguaje seleccionado no es válido',
   },
   hashtags: {
     max_cantidad: 'No puedes agregar más de 10 hashtags',
@@ -72,6 +94,11 @@ const codigoSnippetSchema = z
   .max(20000, ERROR_MESSAGES.codigo_snippet.max)
   .optional()
   .nullable();
+
+const lenguajeSnippetSchema = z
+  .enum(LENGUAJES_SNIPPET, { error: ERROR_MESSAGES.lenguaje_snippet.invalid })
+  .optional()
+  .nullable();
 // ─────────────────────────────────────────────────────────────────────────────
 const crearApunteSchema = z
   .object({
@@ -86,6 +113,7 @@ const crearApunteSchema = z
     tipo: tipoSchema.optional(),
     link_repositorio: linkRepositorioSchema,
     codigo_snippet: codigoSnippetSchema,
+    lenguaje_snippet: lenguajeSnippetSchema,
     hashtags: hashtagsSchema,
   })
   .refine((data) => !(data.link_repositorio && data.codigo_snippet), {
@@ -100,6 +128,7 @@ const actualizarApunteSchema = z.object({
   tipo: tipoSchema.optional(),
   link_repositorio: linkRepositorioSchema,
   codigo_snippet: codigoSnippetSchema,
+  lenguaje_snippet: lenguajeSnippetSchema,
   hashtags: hashtagsSchema,
 });
 // ─────────────────────────────────────────────────────────────────────────────

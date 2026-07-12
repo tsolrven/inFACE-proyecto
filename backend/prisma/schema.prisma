@@ -204,6 +204,7 @@ model Apunte {
   tipo              String   @default("apunte") 
   link_repositorio  String?   
   codigo_snippet    String?   
+  lenguaje_snippet  String?   
   votos_neto        Int      @default(0)
   creado_en         DateTime @default(now())
   actualizado_en    DateTime @updatedAt
