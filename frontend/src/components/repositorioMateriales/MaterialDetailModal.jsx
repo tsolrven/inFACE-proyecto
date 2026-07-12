@@ -23,6 +23,7 @@ import EditApunteModal from './EditApunteModal';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import ReportModal from '../reportes/ReportModal';
 import VotePill from './VotePill';
+import CodeViewer from './CodeViewer';
 import { fueEditado } from '../../utils/fueEditado';
 
 function insertarRespuesta(comentarios, padreId, nueva) {
@@ -540,9 +541,13 @@ function DetalleArchivos({ apunte }) {
 
   if (apunte.codigo_snippet) {
     return (
-      <pre className='mb-4 max-h-72 overflow-auto rounded-lg border border-white/[0.07] bg-black/30 p-3 text-[12px] text-emerald-300'>
-        <code>{apunte.codigo_snippet}</code>
-      </pre>
+      <div className='mb-4'>
+        <CodeViewer
+          codigo={apunte.codigo_snippet}
+          lenguaje={apunte.lenguaje_snippet}
+          maxHeight='420px'
+        />
+      </div>
     );
   }
 

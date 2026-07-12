@@ -123,6 +123,7 @@ export const useRepositorioStore = create((set, get) => ({
       hashtags,
       link_repositorio,
       codigo_snippet,
+      lenguaje_snippet,
       actualizado_en,
     } = actualizado;
     get().actualizarApunteEnFeed(apunteId, {
@@ -132,6 +133,7 @@ export const useRepositorioStore = create((set, get) => ({
       hashtags,
       link_repositorio,
       codigo_snippet,
+      lenguaje_snippet,
       actualizado_en,
     });
     return actualizado;

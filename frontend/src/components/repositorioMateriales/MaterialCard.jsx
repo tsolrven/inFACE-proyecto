@@ -16,6 +16,7 @@ import EditApunteModal from './EditApunteModal';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import ReportModal from '../reportes/ReportModal';
 import VotePill from './VotePill';
+import CodeViewer from './CodeViewer';
 import { fueEditado } from '../../utils/fueEditado';
 
 export default function MaterialCard({ apunte, onQuitarDeGuardados }) {
@@ -335,9 +336,14 @@ function ArchivosPreview({ apunte }) {
 
   if (apunte.codigo_snippet) {
     return (
-      <pre className='mb-1.5 max-h-24 overflow-hidden rounded-md border border-white/[0.07] bg-black/30 px-2.5 py-2 text-[11px] text-emerald-300'>
-        <code>{apunte.codigo_snippet.slice(0, 220)}</code>
-      </pre>
+      <div className='mb-1.5'>
+        <CodeViewer
+          codigo={apunte.codigo_snippet}
+          lenguaje={apunte.lenguaje_snippet}
+          interactivo={false}
+          maxHeight='140px'
+        />
+      </div>
     );
   }
 

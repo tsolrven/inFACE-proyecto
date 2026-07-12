@@ -5,6 +5,7 @@ import { listarRamosPorCarrera } from '../../services/repositorioMateriales/ramo
 import { crearApunte } from '../../services/repositorioMateriales/apunte.service';
 import { subirArchivos } from '../../services/repositorioMateriales/archivo.service';
 import { useRepositorioStore } from '../../stores/repositorioStore';
+import CodeEditor from './CodeEditor';
 
 const TIPOS = [
   { value: 'file', icon: 'ti-upload', label: 'Archivo' },
@@ -21,6 +22,7 @@ export default function UploadModal({ open, onClose, carreraId }) {
   const [hashtagsTexto, setHashtagsTexto] = useState('');
   const [linkRepositorio, setLinkRepositorio] = useState('');
   const [codigoSnippet, setCodigoSnippet] = useState('');
+  const [lenguajeSnippet, setLenguajeSnippet] = useState('texto');
   const [archivos, setArchivos] = useState([]);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(null);
@@ -43,6 +45,7 @@ export default function UploadModal({ open, onClose, carreraId }) {
     setHashtagsTexto('');
     setLinkRepositorio('');
     setCodigoSnippet('');
+    setLenguajeSnippet('texto');
     setArchivos([]);
     setError(null);
   }
@@ -88,6 +91,8 @@ export default function UploadModal({ open, onClose, carreraId }) {
         hashtags,
         link_repositorio: tipoSubida === 'github' ? linkRepositorio : undefined,
         codigo_snippet: tipoSubida === 'snippet' ? codigoSnippet : undefined,
+        lenguaje_snippet:
+          tipoSubida === 'snippet' ? lenguajeSnippet : undefined,
       });
 
       if (tipoSubida === 'file' && archivos.length > 0) {
@@ -112,12 +117,21 @@ export default function UploadModal({ open, onClose, carreraId }) {
   }
 
   return (
-    <Modal open={open} onClose={handleClose} maxWidth='560px'>
+    <Modal
+      open={open}
+      onClose={handleClose}
+      maxWidth='560px'
+    >
       <ModalHeader onClose={handleClose}>
-        <span className='text-[15px] font-semibold text-neutral-100'>Subir material</span>
+        <span className='text-[15px] font-semibold text-neutral-100'>
+          Subir material
+        </span>
       </ModalHeader>
 
-      <form onSubmit={handleSubmit} className='flex flex-col gap-3.5 p-5'>
+      <form
+        onSubmit={handleSubmit}
+        className='flex flex-col gap-3.5 p-5'
+      >
         {/* selector de tipo */}
         <div className='flex gap-2'>
           {TIPOS.map((t) => (
@@ -164,7 +178,10 @@ export default function UploadModal({ open, onClose, carreraId }) {
           >
             <option value=''>Selecciona un ramo...</option>
             {ramosOpciones.map((ramo) => (
-              <option key={ramo.id} value={ramo.id}>
+              <option
+                key={ramo.id}
+                value={ramo.id}
+              >
                 {ramo.nombre}
               </option>
             ))}
@@ -209,12 +226,11 @@ export default function UploadModal({ open, onClose, carreraId }) {
 
         {tipoSubida === 'snippet' && (
           <Campo label='Código'>
-            <textarea
+            <CodeEditor
               value={codigoSnippet}
-              onChange={(e) => setCodigoSnippet(e.target.value)}
-              rows={6}
-              placeholder='Pega tu código aquí...'
-              className={`${inputClasses} resize-none font-mono text-[12px]`}
+              onChange={setCodigoSnippet}
+              lenguaje={lenguajeSnippet}
+              onLenguajeChange={setLenguajeSnippet}
             />
           </Campo>
         )}
@@ -226,10 +242,19 @@ export default function UploadModal({ open, onClose, carreraId }) {
         )}
 
         <div className='mt-1 flex justify-end gap-2'>
-          <Button type='button' variant='ghost' onClick={handleClose} disabled={enviando}>
+          <Button
+            type='button'
+            variant='ghost'
+            onClick={handleClose}
+            disabled={enviando}
+          >
             Cancelar
           </Button>
-          <Button type='submit' variant='primary' loading={enviando}>
+          <Button
+            type='submit'
+            variant='primary'
+            loading={enviando}
+          >
             Publicar
           </Button>
         </div>
@@ -243,9 +268,11 @@ const inputClasses =
 
 function Campo({ label, children }) {
   return (
-    <label className='flex flex-col gap-1.5'>
-      <span className='text-[11.5px] font-semibold text-neutral-500'>{label}</span>
+    <div className='flex flex-col gap-1.5'>
+      <span className='text-[11.5px] font-semibold text-neutral-500'>
+        {label}
+      </span>
       {children}
-    </label>
+    </div>
   );
 }

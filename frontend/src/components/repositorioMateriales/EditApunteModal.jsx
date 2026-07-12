@@ -8,6 +8,7 @@ import {
 } from '../../services/repositorioMateriales/archivo.service';
 import { metaDeArchivo, formatearTamanio } from '../../utils/fileMeta';
 import { useRepositorioStore } from '../../stores/repositorioStore';
+import CodeEditor from './CodeEditor';
 
 const TIPOS = [
   { value: 'file', icon: 'ti-upload', label: 'Archivo' },
@@ -36,6 +37,7 @@ export default function EditApunteModal({
   const [hashtagsTexto, setHashtagsTexto] = useState('');
   const [linkRepositorio, setLinkRepositorio] = useState('');
   const [codigoSnippet, setCodigoSnippet] = useState('');
+  const [lenguajeSnippet, setLenguajeSnippet] = useState('texto');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(null);
 
@@ -57,6 +59,7 @@ export default function EditApunteModal({
     setHashtagsTexto((apunte.hashtags ?? []).join(' '));
     setLinkRepositorio(apunte.link_repositorio ?? '');
     setCodigoSnippet(apunte.codigo_snippet ?? '');
+    setLenguajeSnippet(apunte.lenguaje_snippet ?? 'texto');
     setArchivosActuales(apunte.archivos ?? []);
     setArchivosNuevos([]);
     setError(null);
@@ -141,6 +144,7 @@ export default function EditApunteModal({
         hashtags,
         link_repositorio: tipoContenido === 'github' ? linkRepositorio : null,
         codigo_snippet: tipoContenido === 'snippet' ? codigoSnippet : null,
+        lenguaje_snippet: tipoContenido === 'snippet' ? lenguajeSnippet : null,
       });
 
       let archivosFinales = archivosActuales;
@@ -297,12 +301,11 @@ export default function EditApunteModal({
 
         {tipoContenido === 'snippet' && (
           <Campo label='Código'>
-            <textarea
+            <CodeEditor
               value={codigoSnippet}
-              onChange={(e) => setCodigoSnippet(e.target.value)}
-              rows={6}
-              placeholder='Pega tu código aquí...'
-              className={`${inputClasses} resize-none font-mono text-[12px]`}
+              onChange={setCodigoSnippet}
+              lenguaje={lenguajeSnippet}
+              onLenguajeChange={setLenguajeSnippet}
             />
           </Campo>
         )}
@@ -416,11 +419,11 @@ const inputClasses =
 
 function Campo({ label, children }) {
   return (
-    <label className='flex flex-col gap-1.5'>
+    <div className='flex flex-col gap-1.5'>
       <span className='text-[11.5px] font-semibold text-neutral-500'>
         {label}
       </span>
       {children}
-    </label>
+    </div>
   );
 }
