@@ -323,64 +323,66 @@ export default function MaterialCard({ apunte, onQuitarDeGuardados }) {
 }
 
 function ArchivosPreview({ apunte }) {
-  if (apunte.link_repositorio) {
-    return (
-      <div className='mb-1.5 flex items-center gap-2 rounded-md border border-[rgba(129,140,248,0.18)] bg-[rgba(129,140,248,0.05)] px-2 py-1.5'>
-        <i className='ti ti-brand-github text-[15px] text-[#818CF8]' />
-        <span className='flex-1 truncate text-[11.5px] font-medium text-[#818CF8]'>
-          {apunte.link_repositorio}
-        </span>
-      </div>
-    );
-  }
+  const tieneLink = !!apunte.link_repositorio;
+  const tieneSnippet = !!apunte.codigo_snippet;
+  const tieneArchivos = apunte.archivos?.length > 0;
 
-  if (apunte.codigo_snippet) {
-    return (
-      <div className='mb-1.5'>
+  if (!tieneLink && !tieneSnippet && !tieneArchivos) return null;
+
+  return (
+    <div className='mb-1.5 flex flex-col gap-1.5'>
+      {tieneLink && (
+        <div className='flex items-center gap-2 rounded-md border border-[rgba(129,140,248,0.18)] bg-[rgba(129,140,248,0.05)] px-2 py-1.5'>
+          <i className='ti ti-brand-github text-[15px] text-[#818CF8]' />
+          <span className='flex-1 truncate text-[11.5px] font-medium text-[#818CF8]'>
+            {apunte.link_repositorio}
+          </span>
+        </div>
+      )}
+
+      {tieneSnippet && (
         <CodeViewer
           codigo={apunte.codigo_snippet}
           lenguaje={apunte.lenguaje_snippet}
           interactivo={false}
           maxHeight='140px'
         />
-      </div>
-    );
-  }
+      )}
 
-  if (!apunte.archivos?.length) return null;
-
-  return (
-    <div className='mb-1.5 flex flex-col gap-1'>
-      {apunte.archivos.map((archivo) => {
-        const meta = metaDeArchivo(archivo);
-        return (
-          <div
-            key={archivo.id}
-            className='flex items-center gap-2.5 rounded-md border border-white/[0.07] bg-white/[0.03] px-2 py-1.5'
-          >
-            <i
-              className={`ti ${meta.icon} flex-shrink-0 text-sm`}
-              style={{ color: meta.color }}
-            />
-            <span className='flex-1 truncate text-[11.5px] font-medium text-neutral-300'>
-              {archivo.nombre_archivo}
-            </span>
-            <span className='flex-shrink-0 text-[10.5px] text-neutral-600'>
-              {formatearTamanio(archivo.tamanio)}
-            </span>
-            <button
-              type='button'
-              onClick={(e) => {
-                e.stopPropagation();
-                descargarArchivo(archivo);
-              }}
-              className='flex flex-shrink-0 items-center gap-1 text-[11px] font-semibold text-blue-400 hover:opacity-75'
-            >
-              <i className='ti ti-download text-[13px]' /> Descargar
-            </button>
-          </div>
-        );
-      })}
+      {tieneArchivos && (
+        <div className='flex flex-col gap-1'>
+          {apunte.archivos.map((archivo) => {
+            const meta = metaDeArchivo(archivo);
+            return (
+              <div
+                key={archivo.id}
+                className='flex items-center gap-2.5 rounded-md border border-white/[0.07] bg-white/[0.03] px-2 py-1.5'
+              >
+                <i
+                  className={`ti ${meta.icon} flex-shrink-0 text-sm`}
+                  style={{ color: meta.color }}
+                />
+                <span className='flex-1 truncate text-[11.5px] font-medium text-neutral-300'>
+                  {archivo.nombre_archivo}
+                </span>
+                <span className='flex-shrink-0 text-[10.5px] text-neutral-600'>
+                  {formatearTamanio(archivo.tamanio)}
+                </span>
+                <button
+                  type='button'
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    descargarArchivo(archivo);
+                  }}
+                  className='flex flex-shrink-0 items-center gap-1 text-[11px] font-semibold text-blue-400 hover:opacity-75'
+                >
+                  <i className='ti ti-download text-[13px]' /> Descargar
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

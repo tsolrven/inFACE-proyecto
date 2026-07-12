@@ -23,13 +23,17 @@ export default function EditApunteModal({
   carreraId,
   onSaved,
 }) {
-  const tipoInicial = (a) => {
-    if (a?.link_repositorio) return 'github';
-    if (a?.codigo_snippet) return 'snippet';
-    return 'file';
-  };
+  const fuentesIniciales = (a) => ({
+    file: (a?.archivos?.length ?? 0) > 0,
+    github: !!a?.link_repositorio,
+    snippet: !!a?.codigo_snippet,
+  });
 
-  const [tipoContenido, setTipoContenido] = useState('file');
+  const [fuentes, setFuentes] = useState({
+    file: false,
+    github: false,
+    snippet: false,
+  });
   const [titulo, setTitulo] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [ramoId, setRamoId] = useState('');
@@ -52,7 +56,7 @@ export default function EditApunteModal({
 
   useEffect(() => {
     if (!open || !apunte) return;
-    setTipoContenido(tipoInicial(apunte));
+    setFuentes(fuentesIniciales(apunte));
     setTitulo(apunte.titulo ?? '');
     setDescripcion(apunte.descripcion ?? '');
     setRamoId(apunte.ramo?.id ?? '');
@@ -79,6 +83,10 @@ export default function EditApunteModal({
     onClose();
   }
 
+  function toggleFuente(value) {
+    setFuentes((prev) => ({ ...prev, [value]: !prev[value] }));
+  }
+
   async function handleEliminarArchivoExistente(archivoId) {
     setEliminandoId(archivoId);
     setError(null);
@@ -102,8 +110,7 @@ export default function EditApunteModal({
   }
 
   const perderiaArchivos =
-    tipoContenido !== 'file' &&
-    (archivosActuales.length > 0 || archivosNuevos.length > 0);
+    !fuentes.file && (archivosActuales.length > 0 || archivosNuevos.length > 0);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -113,20 +120,26 @@ export default function EditApunteModal({
       setError('Título y ramo son obligatorios.');
       return;
     }
-    if (tipoContenido === 'github' && !linkRepositorio.trim()) {
+    if (!fuentes.file && !fuentes.github && !fuentes.snippet) {
+      setError(
+        'Selecciona al menos un tipo de contenido: archivo, link o snippet.',
+      );
+      return;
+    }
+    if (fuentes.github && !linkRepositorio.trim()) {
       setError('Ingresa el link del repositorio.');
       return;
     }
-    if (tipoContenido === 'snippet' && !codigoSnippet.trim()) {
+    if (fuentes.snippet && !codigoSnippet.trim()) {
       setError('Pega el código del snippet.');
       return;
     }
     if (
-      tipoContenido === 'file' &&
+      fuentes.file &&
       archivosActuales.length === 0 &&
       archivosNuevos.length === 0
     ) {
-      setError('El material debe tener al menos un archivo.');
+      setError('Agrega al menos un archivo o desactiva la opción de archivo.');
       return;
     }
 
@@ -142,15 +155,15 @@ export default function EditApunteModal({
         descripcion,
         ramo_id: ramoId,
         hashtags,
-        link_repositorio: tipoContenido === 'github' ? linkRepositorio : null,
-        codigo_snippet: tipoContenido === 'snippet' ? codigoSnippet : null,
-        lenguaje_snippet: tipoContenido === 'snippet' ? lenguajeSnippet : null,
+        link_repositorio: fuentes.github ? linkRepositorio : null,
+        codigo_snippet: fuentes.snippet ? codigoSnippet : null,
+        lenguaje_snippet: fuentes.snippet ? lenguajeSnippet : null,
       });
 
       let archivosFinales = archivosActuales;
       let huboFallidos = false;
 
-      if (tipoContenido !== 'file') {
+      if (!fuentes.file) {
         if (archivosActuales.length > 0) {
           await Promise.all(archivosActuales.map((a) => eliminarArchivo(a.id)));
         }
@@ -210,16 +223,17 @@ export default function EditApunteModal({
         onSubmit={handleSubmit}
         className='flex flex-col gap-3.5 p-5'
       >
-        {/* selector de tipo de contenido */}
+        {/* selector de tipo de contenido (múltiple: se puede combinar más de uno) */}
         <div className='flex gap-2'>
           {TIPOS.map((t) => (
             <button
               key={t.value}
               type='button'
-              onClick={() => setTipoContenido(t.value)}
+              aria-pressed={fuentes[t.value]}
+              onClick={() => toggleFuente(t.value)}
               disabled={enviando}
               className={`flex flex-1 flex-col items-center gap-1 rounded-[10px] border py-2.5 text-[11.5px] font-medium transition-colors disabled:opacity-50 ${
-                tipoContenido === t.value
+                fuentes[t.value]
                   ? 'border-pink-500/40 bg-pink-500/10 text-pink-500'
                   : 'border-white/[0.07] text-neutral-500 hover:border-white/[0.18] hover:text-neutral-200'
               }`}
@@ -229,16 +243,16 @@ export default function EditApunteModal({
             </button>
           ))}
         </div>
+        <p className='-mt-2 text-[11px] text-neutral-600'>
+          Puedes combinar más de uno (ej: archivo + link de GitHub).
+        </p>
 
         {perderiaArchivos && (
           <p className='rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-[12px] text-amber-400'>
             <i className='ti ti-alert-triangle mr-1 text-[13px]' />
-            Al guardar como{' '}
-            {TIPOS.find(
-              (t) => t.value === tipoContenido,
-            )?.label.toLowerCase()}{' '}
-            se eliminarán los {archivosActuales.length + archivosNuevos.length}{' '}
-            archivo(s) adjuntos de este apunte.
+            Al desactivar la opción de archivo se eliminarán los{' '}
+            {archivosActuales.length + archivosNuevos.length} archivo(s)
+            adjuntos de este apunte.
           </p>
         )}
 
@@ -288,7 +302,7 @@ export default function EditApunteModal({
           />
         </Campo>
 
-        {tipoContenido === 'github' && (
+        {fuentes.github && (
           <Campo label='Link del repositorio'>
             <input
               value={linkRepositorio}
@@ -299,7 +313,7 @@ export default function EditApunteModal({
           </Campo>
         )}
 
-        {tipoContenido === 'snippet' && (
+        {fuentes.snippet && (
           <Campo label='Código'>
             <CodeEditor
               value={codigoSnippet}
@@ -310,7 +324,7 @@ export default function EditApunteModal({
           </Campo>
         )}
 
-        {tipoContenido === 'file' && (
+        {fuentes.file && (
           <Campo label='Archivos adjuntos'>
             <div className='flex flex-col gap-1.5'>
               {archivosActuales.length === 0 && archivosNuevos.length === 0 && (

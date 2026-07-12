@@ -13,8 +13,10 @@ const TIPOS = [
   { value: 'snippet', icon: 'ti-code', label: 'Snippet de código' },
 ];
 
+const FUENTES_INICIALES = { file: false, github: false, snippet: false };
+
 export default function UploadModal({ open, onClose, carreraId }) {
-  const [tipoSubida, setTipoSubida] = useState('file');
+  const [fuentes, setFuentes] = useState(FUENTES_INICIALES);
   const [titulo, setTitulo] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [ramoId, setRamoId] = useState('');
@@ -37,8 +39,12 @@ export default function UploadModal({ open, onClose, carreraId }) {
     });
   }, [open, carreraId]);
 
+  function toggleFuente(value) {
+    setFuentes((prev) => ({ ...prev, [value]: !prev[value] }));
+  }
+
   function resetForm() {
-    setTipoSubida('file');
+    setFuentes(FUENTES_INICIALES);
     setTitulo('');
     setDescripcion('');
     setRamoId('');
@@ -64,15 +70,21 @@ export default function UploadModal({ open, onClose, carreraId }) {
       setError('Título y ramo son obligatorios.');
       return;
     }
-    if (tipoSubida === 'file' && archivos.length === 0) {
+    if (!fuentes.file && !fuentes.github && !fuentes.snippet) {
+      setError(
+        'Selecciona al menos un tipo de contenido: archivo, link o snippet.',
+      );
+      return;
+    }
+    if (fuentes.file && archivos.length === 0) {
       setError('Selecciona al menos un archivo.');
       return;
     }
-    if (tipoSubida === 'github' && !linkRepositorio.trim()) {
+    if (fuentes.github && !linkRepositorio.trim()) {
       setError('Ingresa el link del repositorio.');
       return;
     }
-    if (tipoSubida === 'snippet' && !codigoSnippet.trim()) {
+    if (fuentes.snippet && !codigoSnippet.trim()) {
       setError('Pega el código del snippet.');
       return;
     }
@@ -89,13 +101,12 @@ export default function UploadModal({ open, onClose, carreraId }) {
         descripcion,
         ramo_id: ramoId,
         hashtags,
-        link_repositorio: tipoSubida === 'github' ? linkRepositorio : undefined,
-        codigo_snippet: tipoSubida === 'snippet' ? codigoSnippet : undefined,
-        lenguaje_snippet:
-          tipoSubida === 'snippet' ? lenguajeSnippet : undefined,
+        link_repositorio: fuentes.github ? linkRepositorio : undefined,
+        codigo_snippet: fuentes.snippet ? codigoSnippet : undefined,
+        lenguaje_snippet: fuentes.snippet ? lenguajeSnippet : undefined,
       });
 
-      if (tipoSubida === 'file' && archivos.length > 0) {
+      if (fuentes.file && archivos.length > 0) {
         const { fallidos } = await subirArchivos(apunte.id, archivos);
         if (fallidos.length > 0) {
           setError(
@@ -132,15 +143,16 @@ export default function UploadModal({ open, onClose, carreraId }) {
         onSubmit={handleSubmit}
         className='flex flex-col gap-3.5 p-5'
       >
-        {/* selector de tipo */}
+        {/* selector de tipo (múltiple: se puede combinar más de uno) */}
         <div className='flex gap-2'>
           {TIPOS.map((t) => (
             <button
               key={t.value}
               type='button'
-              onClick={() => setTipoSubida(t.value)}
+              aria-pressed={fuentes[t.value]}
+              onClick={() => toggleFuente(t.value)}
               className={`flex flex-1 flex-col items-center gap-1 rounded-[10px] border py-2.5 text-[11.5px] font-medium transition-colors ${
-                tipoSubida === t.value
+                fuentes[t.value]
                   ? 'border-pink-500/40 bg-pink-500/10 text-pink-500'
                   : 'border-white/[0.07] text-neutral-500 hover:border-white/[0.18] hover:text-neutral-200'
               }`}
@@ -150,6 +162,9 @@ export default function UploadModal({ open, onClose, carreraId }) {
             </button>
           ))}
         </div>
+        <p className='-mt-2 text-[11px] text-neutral-600'>
+          Puedes combinar más de uno (ej: archivo + link de GitHub).
+        </p>
 
         <Campo label='Título'>
           <input
@@ -197,7 +212,7 @@ export default function UploadModal({ open, onClose, carreraId }) {
           />
         </Campo>
 
-        {tipoSubida === 'file' && (
+        {fuentes.file && (
           <Campo label='Archivos (puedes seleccionar varios)'>
             <input
               type='file'
@@ -213,7 +228,7 @@ export default function UploadModal({ open, onClose, carreraId }) {
           </Campo>
         )}
 
-        {tipoSubida === 'github' && (
+        {fuentes.github && (
           <Campo label='Link del repositorio'>
             <input
               value={linkRepositorio}
@@ -224,7 +239,7 @@ export default function UploadModal({ open, onClose, carreraId }) {
           </Campo>
         )}
 
-        {tipoSubida === 'snippet' && (
+        {fuentes.snippet && (
           <Campo label='Código'>
             <CodeEditor
               value={codigoSnippet}
