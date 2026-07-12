@@ -159,15 +159,15 @@ export default function Perfil() {
                     )}
                     {perfil.carrera && (
                         <span className='inline-flex items-center gap-1.5 text-[12px] text-neutral-500'>
-                            <i className='ti ti-school text-[14px]' /> Estudiante de {perfil.carrera.nombre}
+                            <i className='ti ti-school text-[14px]' />{perfil.carrera.nombre}
                         </span>
                     )}
                     <span className='inline-flex items-center gap-1.5 text-[12px] text-neutral-500'>
                         <i className='ti ti-mail text-[14px]' /> {perfil.correo}
                     </span>
-                    <span className='inline-flex items-center gap-1.5 text-[12px] capitalize text-neutral-500'>
+                    {/*<span className='inline-flex items-center gap-1.5 text-[12px] capitalize text-neutral-500'>
                         <i className='ti ti-id-badge-2 text-[14px]' /> {perfil.rol}
-                    </span>
+                    </span>*/}
                 </div>
 
                 {/* ESTADÍSTICAS (fila plana, sin caja, como el mockup) */}
