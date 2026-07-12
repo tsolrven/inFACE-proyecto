@@ -202,7 +202,7 @@ model Apunte {
   titulo            String
   descripcion       String?
   tipo              String   @default("apunte") 
-  link_repositorio  String?   
+  links             String[] @default([])
   codigo_snippet    String?   
   lenguaje_snippet  String?   
   etiquetas_visuales String[] @default([])

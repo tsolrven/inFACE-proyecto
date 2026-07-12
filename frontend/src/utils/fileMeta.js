@@ -49,6 +49,12 @@ const DEFS = {
     bg: 'rgba(129,140,248,.1)',
     label: 'GitHub',
   },
+  link: {
+    icon: 'ti-link',
+    color: '#818CF8',
+    bg: 'rgba(129,140,248,.1)',
+    label: 'Link',
+  },
   default: {
     icon: 'ti-file',
     color: '#9898A8',
@@ -111,6 +117,61 @@ export function metaDeArchivo(archivo) {
   return DEFS[categoriaDeMime(archivo?.tipo_mime)] ?? DEFS.default;
 }
 
+// dominios conocidos -> { icon, color, bg, label }. Se usa solo para elegir
+// un ícono más específico al mostrar un link; no restringe qué se puede pegar.
+const DOMINIOS_LINK = {
+  'github.com': DEFS.github,
+  'gitlab.com': { ...DEFS.link, icon: 'ti-brand-gitlab', label: 'GitLab' },
+  'youtube.com': {
+    icon: 'ti-brand-youtube',
+    color: '#F87171',
+    bg: 'rgba(248,113,113,.1)',
+    label: 'YouTube',
+  },
+  'youtu.be': {
+    icon: 'ti-brand-youtube',
+    color: '#F87171',
+    bg: 'rgba(248,113,113,.1)',
+    label: 'YouTube',
+  },
+  'drive.google.com': {
+    icon: 'ti-brand-google-drive',
+    color: '#4ADE80',
+    bg: 'rgba(74,222,128,.1)',
+    label: 'Drive',
+  },
+  'docs.google.com': {
+    icon: 'ti-file-text',
+    color: '#60A5FA',
+    bg: 'rgba(96,165,250,.1)',
+    label: 'Google Docs',
+  },
+  'colab.research.google.com': { ...DEFS.codigo, label: 'Colab' },
+  'figma.com': {
+    icon: 'ti-brand-figma',
+    color: '#F472B6',
+    bg: 'rgba(244,114,182,.1)',
+    label: 'Figma',
+  },
+  'notion.so': {
+    icon: 'ti-brand-notion',
+    color: '#E5E5E5',
+    bg: 'rgba(229,229,229,.1)',
+    label: 'Notion',
+  },
+};
+
+// devuelve { icon, color, bg, label } para un link, según su dominio.
+// si no reconoce el dominio (o la url es inválida), cae al ícono genérico de link.
+export function metaDeLink(url) {
+  try {
+    const host = new URL(url).hostname.replace(/^www\./, '');
+    return DOMINIOS_LINK[host] ?? DEFS.link;
+  } catch {
+    return DEFS.link;
+  }
+}
+
 // devuelve { icon, color, bg, label } para un badge elegido por el usuario
 // (apunte.etiquetas_visuales), o null si el value no está en el catálogo
 export function metaDeBadge(value) {
@@ -121,7 +182,7 @@ export function metaDeBadge(value) {
 export const BADGE_POR_DEFECTO = DEFS.default;
 
 export function metaPrincipal(apunte) {
-  if (apunte.link_repositorio) return DEFS.github;
+  if (apunte.links?.[0]) return metaDeLink(apunte.links[0]);
   if (apunte.codigo_snippet) return DEFS.codigo;
   if (apunte.archivos?.[0]) return metaDeArchivo(apunte.archivos[0]);
   return DEFS.default;

@@ -49,8 +49,9 @@ const ERROR_MESSAGES = {
   tipo: {
     invalid: `El tipo debe ser uno de: ${TIPOS_APUNTE.join(', ')}`,
   },
-  link_repositorio: {
-    invalid: 'El link del repositorio debe ser una URL válida',
+  links: {
+    invalid: 'Cada link debe ser una URL válida',
+    max_cantidad: 'No puedes agregar más de 5 links',
   },
   codigo_snippet: {
     max: 'El snippet no puede superar 20000 caracteres',
@@ -97,12 +98,10 @@ const descripcionSchema = z
 
 const tipoSchema = z.enum(TIPOS_APUNTE, { error: ERROR_MESSAGES.tipo.invalid });
 
-const linkRepositorioSchema = z
-  .string()
-  .trim()
-  .url(ERROR_MESSAGES.link_repositorio.invalid)
-  .optional()
-  .nullable();
+const linksSchema = z
+  .array(z.string().trim().url(ERROR_MESSAGES.links.invalid))
+  .max(5, ERROR_MESSAGES.links.max_cantidad)
+  .optional();
 
 const codigoSnippetSchema = z
   .string()
@@ -130,7 +129,7 @@ const crearApunteSchema = z.object({
   titulo: tituloSchema,
   descripcion: descripcionSchema,
   tipo: tipoSchema.optional(),
-  link_repositorio: linkRepositorioSchema,
+  links: linksSchema,
   codigo_snippet: codigoSnippetSchema,
   lenguaje_snippet: lenguajeSnippetSchema,
   hashtags: hashtagsSchema,
@@ -142,7 +141,7 @@ const actualizarApunteSchema = z.object({
   titulo: tituloSchema.optional(),
   descripcion: descripcionSchema,
   tipo: tipoSchema.optional(),
-  link_repositorio: linkRepositorioSchema,
+  links: linksSchema,
   codigo_snippet: codigoSnippetSchema,
   lenguaje_snippet: lenguajeSnippetSchema,
   hashtags: hashtagsSchema,

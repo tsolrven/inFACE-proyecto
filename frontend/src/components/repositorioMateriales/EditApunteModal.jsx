@@ -13,9 +13,13 @@ import BadgeSelector, { InfoTooltip } from './BadgeSelector';
 
 const TIPOS = [
   { value: 'file', icon: 'ti-upload', label: 'Archivo' },
-  { value: 'github', icon: 'ti-brand-github', label: 'GitHub' },
+  { value: 'link', icon: 'ti-link', label: 'Link' },
   { value: 'snippet', icon: 'ti-code', label: 'Snippet de código' },
 ];
+
+const MAX_ARCHIVOS = 10; // debe coincidir con MAX_ARCHIVOS_POR_APUNTE en el backend
+const MAX_TAMANIO_MB = 20; // debe coincidir con el límite de multer.helper.js
+const MAX_TAMANIO_BYTES = MAX_TAMANIO_MB * 1024 * 1024;
 
 export default function EditApunteModal({
   open,
@@ -26,13 +30,13 @@ export default function EditApunteModal({
 }) {
   const fuentesIniciales = (a) => ({
     file: (a?.archivos?.length ?? 0) > 0,
-    github: !!a?.link_repositorio,
+    link: (a?.links?.length ?? 0) > 0,
     snippet: !!a?.codigo_snippet,
   });
 
   const [fuentes, setFuentes] = useState({
     file: false,
-    github: false,
+    link: false,
     snippet: false,
   });
   const [titulo, setTitulo] = useState('');
@@ -40,7 +44,7 @@ export default function EditApunteModal({
   const [ramoId, setRamoId] = useState('');
   const [ramosOpciones, setRamosOpciones] = useState([]);
   const [hashtagsTexto, setHashtagsTexto] = useState('');
-  const [linkRepositorio, setLinkRepositorio] = useState('');
+  const [links, setLinks] = useState(['']);
   const [codigoSnippet, setCodigoSnippet] = useState('');
   const [lenguajeSnippet, setLenguajeSnippet] = useState('texto');
   const [etiquetasVisuales, setEtiquetasVisuales] = useState([]);
@@ -63,7 +67,7 @@ export default function EditApunteModal({
     setDescripcion(apunte.descripcion ?? '');
     setRamoId(apunte.ramo?.id ?? '');
     setHashtagsTexto((apunte.hashtags ?? []).join(' '));
-    setLinkRepositorio(apunte.link_repositorio ?? '');
+    setLinks(apunte.links?.length ? apunte.links : ['']);
     setCodigoSnippet(apunte.codigo_snippet ?? '');
     setLenguajeSnippet(apunte.lenguaje_snippet ?? 'texto');
     setEtiquetasVisuales(apunte.etiquetas_visuales ?? []);
@@ -88,6 +92,20 @@ export default function EditApunteModal({
 
   function toggleFuente(value) {
     setFuentes((prev) => ({ ...prev, [value]: !prev[value] }));
+  }
+
+  function actualizarLink(index, valor) {
+    setLinks((prev) => prev.map((l, i) => (i === index ? valor : l)));
+  }
+
+  function agregarLink() {
+    setLinks((prev) => (prev.length >= 5 ? prev : [...prev, '']));
+  }
+
+  function quitarLink(index) {
+    setLinks((prev) =>
+      prev.length === 1 ? [''] : prev.filter((_, i) => i !== index),
+    );
   }
 
   async function handleEliminarArchivoExistente(archivoId) {
@@ -123,14 +141,14 @@ export default function EditApunteModal({
       setError('Título y ramo son obligatorios.');
       return;
     }
-    if (!fuentes.file && !fuentes.github && !fuentes.snippet) {
+    if (!fuentes.file && !fuentes.link && !fuentes.snippet) {
       setError(
         'Selecciona al menos un tipo de contenido: archivo, link o snippet.',
       );
       return;
     }
-    if (fuentes.github && !linkRepositorio.trim()) {
-      setError('Ingresa el link del repositorio.');
+    if (fuentes.link && links.every((l) => !l.trim())) {
+      setError('Ingresa al menos un link.');
       return;
     }
     if (fuentes.snippet && !codigoSnippet.trim()) {
@@ -145,7 +163,22 @@ export default function EditApunteModal({
       setError('Agrega al menos un archivo o desactiva la opción de archivo.');
       return;
     }
-
+    if (
+      fuentes.file &&
+      archivosActuales.length + archivosNuevos.length > MAX_ARCHIVOS
+    ) {
+      setError(`No puedes tener más de ${MAX_ARCHIVOS} archivos en total.`);
+      return;
+    }
+    const archivoDemasiadoGrande = archivosNuevos.find(
+      (f) => f.size > MAX_TAMANIO_BYTES,
+    );
+    if (fuentes.file && archivoDemasiadoGrande) {
+      setError(
+        `"${archivoDemasiadoGrande.name}" supera el límite de ${MAX_TAMANIO_MB}MB por archivo.`,
+      );
+      return;
+    }
     setEnviando(true);
     try {
       const hashtags = hashtagsTexto
@@ -158,7 +191,7 @@ export default function EditApunteModal({
         descripcion,
         ramo_id: ramoId,
         hashtags,
-        link_repositorio: fuentes.github ? linkRepositorio : null,
+        links: fuentes.link ? links.map((l) => l.trim()).filter(Boolean) : [],
         codigo_snippet: fuentes.snippet ? codigoSnippet : null,
         lenguaje_snippet: fuentes.snippet ? lenguajeSnippet : null,
         etiquetas_visuales: etiquetasVisuales,
@@ -248,7 +281,7 @@ export default function EditApunteModal({
           ))}
         </div>
         <p className='-mt-2 text-[11px] text-neutral-600'>
-          Puedes combinar más de uno (ej: archivo + link de GitHub).
+          Puedes combinar más de uno (ej: archivo + link).
         </p>
 
         {perderiaArchivos && (
@@ -312,14 +345,41 @@ export default function EditApunteModal({
           disabled={enviando}
         />
 
-        {fuentes.github && (
-          <Campo label='Link del repositorio'>
-            <input
-              value={linkRepositorio}
-              onChange={(e) => setLinkRepositorio(e.target.value)}
-              placeholder='https://github.com/usuario/repo'
-              className={inputClasses}
-            />
+        {fuentes.link && (
+          <Campo label='Links'>
+            <div className='flex flex-col gap-1.5'>
+              {links.map((link, i) => (
+                <div
+                  key={i}
+                  className='flex items-center gap-1.5'
+                >
+                  <input
+                    value={link}
+                    onChange={(e) => actualizarLink(i, e.target.value)}
+                    placeholder='https://...'
+                    className={inputClasses}
+                  />
+                  {links.length > 1 && (
+                    <button
+                      type='button'
+                      onClick={() => quitarLink(i)}
+                      className='flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md text-neutral-500 hover:bg-white/[0.06] hover:text-neutral-200'
+                    >
+                      <i className='ti ti-x text-sm' />
+                    </button>
+                  )}
+                </div>
+              ))}
+              {links.length < 5 && (
+                <button
+                  type='button'
+                  onClick={agregarLink}
+                  className='self-start text-[11.5px] font-semibold text-pink-500 hover:opacity-75'
+                >
+                  <i className='ti ti-plus text-[12px]' /> Agregar otro link
+                </button>
+              )}
+            </div>
           </Campo>
         )}
 
@@ -413,6 +473,10 @@ export default function EditApunteModal({
                 disabled={enviando}
                 className='mt-1 text-[12.5px] text-neutral-400 file:mr-3 file:rounded-md file:border-0 file:bg-pink-500/10 file:px-3 file:py-1.5 file:text-[11.5px] file:font-semibold file:text-pink-500'
               />
+              <p className='text-[11px] text-neutral-600'>
+                Mantén Ctrl (Windows/Linux) o Cmd (Mac) presionado para
+                seleccionar varios archivos a la vez.
+              </p>
             </div>
           </Campo>
         )}

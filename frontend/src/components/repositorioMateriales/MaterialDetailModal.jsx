@@ -11,6 +11,7 @@ import { colorPorRamo } from '../../utils/ramoColors';
 import {
   metaDeArchivo,
   metaDeBadge,
+  metaDeLink,
   formatearTamanio,
 } from '../../utils/fileMeta';
 import { formatearTiempoRelativo } from '../../utils/formatRelativeTime';
@@ -222,7 +223,7 @@ export default function MaterialDetailModal() {
       descripcion,
       ramo,
       hashtags,
-      link_repositorio,
+      links,
       codigo_snippet,
       etiquetas_visuales,
       actualizado_en,
@@ -236,7 +237,7 @@ export default function MaterialDetailModal() {
       etiquetas_visuales,
       ramo,
       hashtags,
-      link_repositorio,
+      links,
       codigo_snippet,
       actualizado_en,
       archivos,
@@ -560,25 +561,33 @@ function BadgesPrincipales({ etiquetas }) {
 }
 
 function DetalleArchivos({ apunte }) {
-  const tieneLink = !!apunte.link_repositorio;
+  const tieneLinks = apunte.links?.length > 0;
   const tieneSnippet = !!apunte.codigo_snippet;
   const tieneArchivos = apunte.archivos?.length > 0;
 
-  if (!tieneLink && !tieneSnippet && !tieneArchivos) return null;
+  if (!tieneLinks && !tieneSnippet && !tieneArchivos) return null;
 
   return (
     <div className='mb-4 flex flex-col gap-3'>
-      {tieneLink && (
-        <a
-          href={apunte.link_repositorio}
-          target='_blank'
-          rel='noreferrer'
-          className='flex items-center gap-2 rounded-md border border-[rgba(129,140,248,0.18)] bg-[rgba(129,140,248,0.05)] px-3 py-2 text-[12.5px] font-medium text-[#818CF8] hover:underline'
-        >
-          <i className='ti ti-brand-github text-base' />{' '}
-          {apunte.link_repositorio}
-        </a>
-      )}
+      {tieneLinks &&
+        apunte.links.map((link, i) => {
+          const meta = metaDeLink(link);
+          return (
+            <a
+              key={i}
+              href={link}
+              target='_blank'
+              rel='noreferrer'
+              className='flex items-center gap-2 rounded-md border border-[rgba(129,140,248,0.18)] bg-[rgba(129,140,248,0.05)] px-3 py-2 text-[12.5px] font-medium text-[#818CF8] hover:underline'
+            >
+              <i
+                className={`ti ${meta.icon} text-base`}
+                style={{ color: meta.color }}
+              />{' '}
+              {link}
+            </a>
+          );
+        })}
 
       {tieneSnippet && (
         <CodeViewer

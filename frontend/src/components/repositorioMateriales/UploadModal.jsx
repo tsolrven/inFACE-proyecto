@@ -10,11 +10,15 @@ import BadgeSelector, { InfoTooltip } from './BadgeSelector';
 
 const TIPOS = [
   { value: 'file', icon: 'ti-upload', label: 'Archivo' },
-  { value: 'github', icon: 'ti-brand-github', label: 'GitHub' },
+  { value: 'link', icon: 'ti-link', label: 'Link' },
   { value: 'snippet', icon: 'ti-code', label: 'Snippet de código' },
 ];
 
-const FUENTES_INICIALES = { file: false, github: false, snippet: false };
+const FUENTES_INICIALES = { file: false, link: false, snippet: false };
+
+const MAX_ARCHIVOS = 10; // debe coincidir con MAX_ARCHIVOS_POR_APUNTE en el backend
+const MAX_TAMANIO_MB = 20; // debe coincidir con el límite de multer.helper.js
+const MAX_TAMANIO_BYTES = MAX_TAMANIO_MB * 1024 * 1024;
 
 export default function UploadModal({ open, onClose, carreraId }) {
   const [fuentes, setFuentes] = useState(FUENTES_INICIALES);
@@ -23,7 +27,7 @@ export default function UploadModal({ open, onClose, carreraId }) {
   const [ramoId, setRamoId] = useState('');
   const [ramosOpciones, setRamosOpciones] = useState([]);
   const [hashtagsTexto, setHashtagsTexto] = useState('');
-  const [linkRepositorio, setLinkRepositorio] = useState('');
+  const [links, setLinks] = useState(['']);
   const [codigoSnippet, setCodigoSnippet] = useState('');
   const [lenguajeSnippet, setLenguajeSnippet] = useState('texto');
   const [archivos, setArchivos] = useState([]);
@@ -45,13 +49,27 @@ export default function UploadModal({ open, onClose, carreraId }) {
     setFuentes((prev) => ({ ...prev, [value]: !prev[value] }));
   }
 
+  function actualizarLink(index, valor) {
+    setLinks((prev) => prev.map((l, i) => (i === index ? valor : l)));
+  }
+
+  function agregarLink() {
+    setLinks((prev) => (prev.length >= 5 ? prev : [...prev, '']));
+  }
+
+  function quitarLink(index) {
+    setLinks((prev) =>
+      prev.length === 1 ? [''] : prev.filter((_, i) => i !== index),
+    );
+  }
+
   function resetForm() {
     setFuentes(FUENTES_INICIALES);
     setTitulo('');
     setDescripcion('');
     setRamoId('');
     setHashtagsTexto('');
-    setLinkRepositorio('');
+    setLinks(['']);
     setCodigoSnippet('');
     setLenguajeSnippet('texto');
     setArchivos([]);
@@ -73,9 +91,22 @@ export default function UploadModal({ open, onClose, carreraId }) {
       setError('Título y ramo son obligatorios.');
       return;
     }
-    if (!fuentes.file && !fuentes.github && !fuentes.snippet) {
+    if (!fuentes.file && !fuentes.link && !fuentes.snippet) {
       setError(
         'Selecciona al menos un tipo de contenido: archivo, link o snippet.',
+      );
+      return;
+    }
+    if (fuentes.file && archivos.length > MAX_ARCHIVOS) {
+      setError(`No puedes subir más de ${MAX_ARCHIVOS} archivos.`);
+      return;
+    }
+    const archivoDemasiadoGrande = archivos.find(
+      (f) => f.size > MAX_TAMANIO_BYTES,
+    );
+    if (fuentes.file && archivoDemasiadoGrande) {
+      setError(
+        `"${archivoDemasiadoGrande.name}" supera el límite de ${MAX_TAMANIO_MB}MB por archivo.`,
       );
       return;
     }
@@ -83,8 +114,8 @@ export default function UploadModal({ open, onClose, carreraId }) {
       setError('Selecciona al menos un archivo.');
       return;
     }
-    if (fuentes.github && !linkRepositorio.trim()) {
-      setError('Ingresa el link del repositorio.');
+    if (fuentes.link && links.every((l) => !l.trim())) {
+      setError('Ingresa al menos un link.');
       return;
     }
     if (fuentes.snippet && !codigoSnippet.trim()) {
@@ -104,15 +135,19 @@ export default function UploadModal({ open, onClose, carreraId }) {
         descripcion,
         ramo_id: ramoId,
         hashtags,
-        link_repositorio: fuentes.github ? linkRepositorio : undefined,
+        links: fuentes.link
+          ? links.map((l) => l.trim()).filter(Boolean)
+          : undefined,
         codigo_snippet: fuentes.snippet ? codigoSnippet : undefined,
         lenguaje_snippet: fuentes.snippet ? lenguajeSnippet : undefined,
         etiquetas_visuales: etiquetasVisuales,
       });
 
+      let huboFallidos = false;
       if (fuentes.file && archivos.length > 0) {
         const { fallidos } = await subirArchivos(apunte.id, archivos);
         if (fallidos.length > 0) {
+          huboFallidos = true;
           setError(
             `El material se creó, pero ${fallidos.length} archivo(s) no se pudieron subir. Puedes agregarlos después.`,
           );
@@ -120,7 +155,7 @@ export default function UploadModal({ open, onClose, carreraId }) {
       }
 
       await fetchApuntes();
-      if (!error) {
+      if (!huboFallidos) {
         resetForm();
         onClose();
       }
@@ -167,7 +202,7 @@ export default function UploadModal({ open, onClose, carreraId }) {
           ))}
         </div>
         <p className='-mt-2 text-[11px] text-neutral-600'>
-          Puedes combinar más de uno (ej: archivo + link de GitHub).
+          Puedes combinar más de uno (ej: archivo + link).
         </p>
 
         <Campo label='Título'>
@@ -237,6 +272,10 @@ export default function UploadModal({ open, onClose, carreraId }) {
               onChange={(e) => setArchivos(Array.from(e.target.files))}
               className='text-[12.5px] text-neutral-400 file:mr-3 file:rounded-md file:border-0 file:bg-pink-500/10 file:px-3 file:py-1.5 file:text-[11.5px] file:font-semibold file:text-pink-500'
             />
+            <p className='mt-1 text-[11px] text-neutral-600'>
+              Mantén Ctrl (Windows/Linux) o Cmd (Mac) presionado para
+              seleccionar varios archivos a la vez.
+            </p>
             {archivos.length > 0 && (
               <p className='mt-1 text-[11px] text-neutral-500'>
                 {archivos.length} archivo(s) seleccionado(s)
@@ -245,14 +284,41 @@ export default function UploadModal({ open, onClose, carreraId }) {
           </Campo>
         )}
 
-        {fuentes.github && (
-          <Campo label='Link del repositorio'>
-            <input
-              value={linkRepositorio}
-              onChange={(e) => setLinkRepositorio(e.target.value)}
-              placeholder='https://github.com/usuario/repo'
-              className={inputClasses}
-            />
+        {fuentes.link && (
+          <Campo label='Links'>
+            <div className='flex flex-col gap-1.5'>
+              {links.map((link, i) => (
+                <div
+                  key={i}
+                  className='flex items-center gap-1.5'
+                >
+                  <input
+                    value={link}
+                    onChange={(e) => actualizarLink(i, e.target.value)}
+                    placeholder='https://...'
+                    className={inputClasses}
+                  />
+                  {links.length > 1 && (
+                    <button
+                      type='button'
+                      onClick={() => quitarLink(i)}
+                      className='flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md text-neutral-500 hover:bg-white/[0.06] hover:text-neutral-200'
+                    >
+                      <i className='ti ti-x text-sm' />
+                    </button>
+                  )}
+                </div>
+              ))}
+              {links.length < 5 && (
+                <button
+                  type='button'
+                  onClick={agregarLink}
+                  className='self-start text-[11.5px] font-semibold text-pink-500 hover:opacity-75'
+                >
+                  <i className='ti ti-plus text-[12px]' /> Agregar otro link
+                </button>
+              )}
+            </div>
           </Campo>
         )}
 

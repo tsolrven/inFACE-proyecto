@@ -6,6 +6,7 @@ import { colorPorRamo } from '../../utils/ramoColors';
 import {
   metaDeBadge,
   metaDeArchivo,
+  metaDeLink,
   formatearTamanio,
 } from '../../utils/fileMeta';
 import { formatearTiempoRelativo } from '../../utils/formatRelativeTime';
@@ -337,22 +338,32 @@ function BadgesPrincipales({ etiquetas }) {
 }
 
 function ArchivosPreview({ apunte }) {
-  const tieneLink = !!apunte.link_repositorio;
+  const tieneLinks = apunte.links?.length > 0;
   const tieneSnippet = !!apunte.codigo_snippet;
   const tieneArchivos = apunte.archivos?.length > 0;
 
-  if (!tieneLink && !tieneSnippet && !tieneArchivos) return null;
+  if (!tieneLinks && !tieneSnippet && !tieneArchivos) return null;
 
   return (
     <div className='mb-1.5 flex flex-col gap-1.5'>
-      {tieneLink && (
-        <div className='flex items-center gap-2 rounded-md border border-[rgba(129,140,248,0.18)] bg-[rgba(129,140,248,0.05)] px-2 py-1.5'>
-          <i className='ti ti-brand-github text-[15px] text-[#818CF8]' />
-          <span className='flex-1 truncate text-[11.5px] font-medium text-[#818CF8]'>
-            {apunte.link_repositorio}
-          </span>
-        </div>
-      )}
+      {tieneLinks &&
+        apunte.links.map((link, i) => {
+          const meta = metaDeLink(link);
+          return (
+            <div
+              key={i}
+              className='flex items-center gap-2 rounded-md border border-[rgba(129,140,248,0.18)] bg-[rgba(129,140,248,0.05)] px-2 py-1.5'
+            >
+              <i
+                className={`ti ${meta.icon} text-[15px]`}
+                style={{ color: meta.color }}
+              />
+              <span className='flex-1 truncate text-[11.5px] font-medium text-[#818CF8]'>
+                {link}
+              </span>
+            </div>
+          );
+        })}
 
       {tieneSnippet && (
         <CodeViewer
