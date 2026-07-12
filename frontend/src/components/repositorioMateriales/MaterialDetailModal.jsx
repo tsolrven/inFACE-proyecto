@@ -17,6 +17,8 @@ import {
 import { useAuthStore } from '../../stores/authStore';
 import { descargarArchivo } from '../../services/repositorioMateriales/archivo.service';
 import { votarApunte } from '../../services/repositorioMateriales/voto.service';
+import { alternarGuardadoApunte } from '../../services/repositorioMateriales/guardado.service';
+import { mostrarToast } from '../../stores/toastStore';
 import EditApunteModal from './EditApunteModal';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import ReportModal from '../reportes/ReportModal';
@@ -161,6 +163,22 @@ export default function MaterialDetailModal() {
     navigate(-1);
   }
 
+  async function handleGuardar() {
+    setMenuAbierto(false);
+    const anterior = apunte.esta_guardado;
+    setApunte((prev) => ({ ...prev, esta_guardado: !anterior }));
+    actualizarApunteEnFeed(id, { esta_guardado: !anterior });
+    try {
+      const { guardado } = await alternarGuardadoApunte(id);
+      setApunte((prev) => ({ ...prev, esta_guardado: guardado }));
+      actualizarApunteEnFeed(id, { esta_guardado: guardado });
+      mostrarToast(guardado ? 'Publicación guardada' : 'Quitado de guardados');
+    } catch {
+      setApunte((prev) => ({ ...prev, esta_guardado: anterior }));
+      actualizarApunteEnFeed(id, { esta_guardado: anterior });
+    }
+  }
+
   function handleNuevaRespuesta(padreId, nueva) {
     setComentarios((prev) => insertarRespuesta(prev, padreId, nueva));
   }
@@ -268,10 +286,13 @@ export default function MaterialDetailModal() {
                   <div className='absolute right-0 top-[36px] w-[168px] overflow-hidden rounded-xl border border-white/10 bg-[#1E1E24] shadow-[0_12px_40px_rgba(0,0,0,0.5)]'>
                     <button
                       type='button'
-                      onClick={() => setMenuAbierto(false)}
+                      onClick={handleGuardar}
                       className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-neutral-300 transition-colors hover:bg-white/[0.05] hover:text-neutral-100'
                     >
-                      <i className='ti ti-bookmark text-[14px]' /> Guardar
+                      <i
+                        className={`ti ${apunte.esta_guardado ? 'ti-bookmark-filled text-pink-500' : 'ti-bookmark'} text-[14px]`}
+                      />{' '}
+                      {apunte.esta_guardado ? 'Quitar de guardados' : 'Guardar'}
                     </button>
                     {esDueno ? (
                       <>

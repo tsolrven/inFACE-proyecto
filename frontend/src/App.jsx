@@ -10,6 +10,7 @@ import { useAuthStore } from './stores/authStore';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import Layout from './components/Layout';
+import ToastContainer from './components/ui/Toast';
 import {
   allProtectedRoutes,
   extraRoutes,
@@ -133,6 +134,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AppRoutes />
+      <ToastContainer />
     </BrowserRouter>
   );
 }

@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { votarComentario } from '../../services/repositorioMateriales/voto.service';
+import { alternarGuardadoComentario } from '../../services/repositorioMateriales/guardado.service';
+import { mostrarToast } from '../../stores/toastStore';
 import {
   crearComentario,
   editarComentario,
@@ -12,7 +14,10 @@ import { useAuthStore } from '../../stores/authStore';
 import ReportModal from '../reportes/ReportModal';
 import ConfirmDialog from '../ui/ConfirmDialog';
 
-const MAX_NIVEL = 2;
+// A partir de este nivel, el hilo deja de indentarse más hacia la derecha
+// (estilo Reddit/Slack) para que la columna no se apachurre en hilos muy
+// profundos. El límite real de anidamiento lo controla el backend.
+const MAX_NIVEL_INDENTADO = 6;
 const ANCHO_MENU = 150;
 
 export default function CommentThread({
@@ -41,6 +46,9 @@ export default function CommentThread({
 
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [menuPos, setMenuPos] = useState(null);
+  const [estaGuardado, setEstaGuardado] = useState(
+    comentario.esta_guardado ?? false,
+  );
   const botonMenuRef = useRef(null);
   const dropdownRef = useRef(null);
 
@@ -133,6 +141,19 @@ export default function CommentThread({
     setEditando(true);
   }
 
+  async function handleGuardar() {
+    setMenuAbierto(false);
+    const anterior = estaGuardado;
+    setEstaGuardado(!anterior);
+    try {
+      const { guardado } = await alternarGuardadoComentario(comentario.id);
+      setEstaGuardado(guardado);
+      mostrarToast(guardado ? 'Comentario guardado' : 'Quitado de guardados');
+    } catch {
+      setEstaGuardado(anterior);
+    }
+  }
+
   async function handleGuardarEdicion() {
     if (!textoEditado.trim()) return;
     setGuardandoEdicion(true);
@@ -170,7 +191,13 @@ export default function CommentThread({
           </div>
 
           {comentario.respuestas?.length > 0 && (
-            <div className='mt-1 flex flex-col gap-3 border-l border-dashed border-white/[0.08] pl-4'>
+            <div
+              className={`mt-1 flex flex-col gap-3 ${
+                comentario.nivel < MAX_NIVEL_INDENTADO
+                  ? 'border-l border-dashed border-white/[0.08] pl-4'
+                  : ''
+              }`}
+            >
               {comentario.respuestas.map((respuesta) => (
                 <CommentThread
                   key={respuesta.id}
@@ -269,15 +296,13 @@ export default function CommentThread({
             </button>
           </div>
 
-          {comentario.nivel < MAX_NIVEL && (
-            <button
-              type='button'
-              onClick={() => setRespondiendo((r) => !r)}
-              className='flex items-center gap-1 text-[11.5px] text-neutral-600 transition-colors hover:text-neutral-200'
-            >
-              <i className='ti ti-message-reply' /> Responder
-            </button>
-          )}
+          <button
+            type='button'
+            onClick={() => setRespondiendo((r) => !r)}
+            className='flex items-center gap-1 text-[11.5px] text-neutral-600 transition-colors hover:text-neutral-200'
+          >
+            <i className='ti ti-message-reply' /> Responder
+          </button>
 
           {usuario && (
             <button
@@ -321,7 +346,13 @@ export default function CommentThread({
         )}
 
         {comentario.respuestas?.length > 0 && (
-          <div className='mt-3 flex flex-col gap-3 border-l border-dashed border-white/[0.08] pl-4'>
+          <div
+            className={`mt-3 flex flex-col gap-3 ${
+              comentario.nivel < MAX_NIVEL_INDENTADO
+                ? 'border-l border-dashed border-white/[0.08] pl-4'
+                : ''
+            }`}
+          >
             {comentario.respuestas.map((respuesta) => (
               <CommentThread
                 key={respuesta.id}
@@ -369,10 +400,13 @@ export default function CommentThread({
           >
             <button
               type='button'
-              onClick={() => setMenuAbierto(false)}
+              onClick={handleGuardar}
               className='flex w-full items-center gap-2 px-3 py-2 text-left text-[12px] text-neutral-300 transition-colors hover:bg-white/[0.05] hover:text-neutral-100'
             >
-              <i className='ti ti-bookmark text-[13px]' /> Guardar
+              <i
+                className={`ti ${estaGuardado ? 'ti-bookmark-filled text-pink-500' : 'ti-bookmark'} text-[13px]`}
+              />{' '}
+              {estaGuardado ? 'Quitar de guardados' : 'Guardar'}
             </button>
             {esDueno ? (
               <>

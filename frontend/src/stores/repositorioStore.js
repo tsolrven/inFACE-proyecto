@@ -5,6 +5,7 @@ import {
   eliminarApunte,
 } from '../services/repositorioMateriales/apunte.service';
 import { votarApunte } from '../services/repositorioMateriales/voto.service';
+import { alternarGuardadoApunte } from '../services/repositorioMateriales/guardado.service';
 
 const FILTROS_INICIALES = {
   ramo_id: null,
@@ -94,6 +95,23 @@ export const useRepositorioStore = create((set, get) => ({
         a.id === apunteId ? { ...a, ...cambios } : a,
       ),
     }));
+  },
+
+  guardar: async (apunteId) => {
+    const anterior = get().apuntes;
+
+    set((state) => ({
+      apuntes: state.apuntes.map((a) =>
+        a.id === apunteId ? { ...a, esta_guardado: !a.esta_guardado } : a,
+      ),
+    }));
+
+    try {
+      const { guardado } = await alternarGuardadoApunte(apunteId);
+      get().actualizarApunteEnFeed(apunteId, { esta_guardado: guardado });
+    } catch (err) {
+      set({ apuntes: anterior, error: err.message });
+    }
   },
 
   editarApunte: async (apunteId, payload) => {

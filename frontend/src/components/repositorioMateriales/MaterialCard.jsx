@@ -10,18 +10,23 @@ import {
 } from '../../utils/fileMeta';
 import { formatearTiempoRelativo } from '../../utils/formatRelativeTime';
 import { descargarArchivo } from '../../services/repositorioMateriales/archivo.service';
+import { alternarGuardadoApunte } from '../../services/repositorioMateriales/guardado.service';
+import { mostrarToast } from '../../stores/toastStore';
 import EditApunteModal from './EditApunteModal';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import ReportModal from '../reportes/ReportModal';
 import VotePill from './VotePill';
 import { fueEditado } from '../../utils/fueEditado';
 
-export default function MaterialCard({ apunte }) {
+export default function MaterialCard({ apunte, onQuitarDeGuardados }) {
   const navigate = useNavigate();
   const location = useLocation();
   const votar = useRepositorioStore((s) => s.votar);
   const eliminarApunteDelFeed = useRepositorioStore(
     (s) => s.eliminarApunteDelFeed,
+  );
+  const actualizarApunteEnFeed = useRepositorioStore(
+    (s) => s.actualizarApunteEnFeed,
   );
   const usuario = useAuthStore((s) => s.usuario);
 
@@ -31,6 +36,9 @@ export default function MaterialCard({ apunte }) {
   const [errorEliminar, setErrorEliminar] = useState(null);
   const [reportando, setReportando] = useState(false);
   const [menuAbierto, setMenuAbierto] = useState(false);
+  const [estaGuardado, setEstaGuardado] = useState(
+    apunte.esta_guardado ?? false,
+  );
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -61,6 +69,26 @@ export default function MaterialCard({ apunte }) {
   function handleVotar(e, tipo) {
     e.stopPropagation();
     votar(apunte.id, tipo);
+  }
+
+  async function handleGuardar(e) {
+    e.stopPropagation();
+    setMenuAbierto(false);
+    const anterior = estaGuardado;
+    setEstaGuardado(!anterior);
+    try {
+      const { guardado } = await alternarGuardadoApunte(apunte.id);
+      setEstaGuardado(guardado);
+      actualizarApunteEnFeed(apunte.id, { esta_guardado: guardado });
+      if (guardado) {
+        mostrarToast('Publicación guardada');
+      } else {
+        mostrarToast('Quitado de guardados');
+        onQuitarDeGuardados?.(apunte.id);
+      }
+    } catch {
+      setEstaGuardado(anterior);
+    }
   }
 
   async function handleEliminar() {
@@ -99,10 +127,13 @@ export default function MaterialCard({ apunte }) {
           <div className='absolute right-0 top-[32px] w-[168px] overflow-hidden rounded-xl border border-white/10 bg-[#1E1E24] shadow-[0_12px_40px_rgba(0,0,0,0.5)]'>
             <button
               type='button'
-              onClick={() => setMenuAbierto(false)}
+              onClick={handleGuardar}
               className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-neutral-300 transition-colors hover:bg-white/[0.05] hover:text-neutral-100'
             >
-              <i className='ti ti-bookmark text-[14px]' /> Guardar
+              <i
+                className={`ti ${estaGuardado ? 'ti-bookmark-filled text-pink-500' : 'ti-bookmark'} text-[14px]`}
+              />{' '}
+              {estaGuardado ? 'Quitar de guardados' : 'Guardar'}
             </button>
             {esDueno ? (
               <>

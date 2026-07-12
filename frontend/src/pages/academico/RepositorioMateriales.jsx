@@ -6,6 +6,7 @@ import RpStats from '../../components/rightPanel/RpStats';
 import RpRules from '../../components/rightPanel/RpRules';
 import PageBanner from '../../components/banner/PageBanner';
 import MaterialFeed from '../../components/repositorioMateriales/MaterialFeed';
+import GuardadosFeed from '../../components/repositorioMateriales/GuardadosFeed';
 import UploadModal from '../../components/repositorioMateriales/UploadModal';
 import { useAuthStore } from '../../stores/authStore';
 import { useRepositorioStore } from '../../stores/repositorioStore';
@@ -70,6 +71,7 @@ export default function RepositorioMateriales() {
   const carreraId = usuario?.carrera_id ?? null;
   const carreraNombre = usuario?.carreras?.[0]?.nombre ?? 'tu carrera';
   const [uploadAbierto, setUploadAbierto] = useState(false);
+  const [vista, setVista] = useState('publicaciones');
 
   const { hashtag } = useParams();
   const setFiltro = useRepositorioStore((s) => s.setFiltro);
@@ -114,10 +116,19 @@ export default function RepositorioMateriales() {
           breadcrumb={banner.breadcrumb}
         />
 
-        <MaterialFeed
-          carreraId={carreraId}
-          onAbrirSubida={() => setUploadAbierto(true)}
+        <MaterialSectionTabs
+          vista={vista}
+          onCambiar={setVista}
         />
+
+        {vista === 'publicaciones' ? (
+          <MaterialFeed
+            carreraId={carreraId}
+            onAbrirSubida={() => setUploadAbierto(true)}
+          />
+        ) : (
+          <GuardadosFeed />
+        )}
       </div>
 
       <RightPanel>
@@ -192,6 +203,35 @@ export default function RepositorioMateriales() {
         onClose={() => setUploadAbierto(false)}
         carreraId={carreraId}
       />
+    </div>
+  );
+}
+
+function MaterialSectionTabs({ vista, onCambiar }) {
+  return (
+    <div className='flex gap-1 border-b border-white/[0.06] px-4 pt-2'>
+      <button
+        type='button'
+        onClick={() => onCambiar('publicaciones')}
+        className={`flex items-center gap-1.5 border-b-2 px-3 py-2 text-[13px] font-semibold transition-colors ${
+          vista === 'publicaciones'
+            ? 'border-blue-400 text-neutral-100'
+            : 'border-transparent text-neutral-500 hover:text-neutral-200'
+        }`}
+      >
+        <i className='ti ti-layout-grid text-[15px]' /> Publicaciones
+      </button>
+      <button
+        type='button'
+        onClick={() => onCambiar('guardados')}
+        className={`flex items-center gap-1.5 border-b-2 px-3 py-2 text-[13px] font-semibold transition-colors ${
+          vista === 'guardados'
+            ? 'border-blue-400 text-neutral-100'
+            : 'border-transparent text-neutral-500 hover:text-neutral-200'
+        }`}
+      >
+        <i className='ti ti-bookmark text-[15px]' /> Guardados
+      </button>
     </div>
   );
 }
