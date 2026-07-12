@@ -6,7 +6,10 @@ import ApiResponse from '../utils/ApiResponse.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function listar(req, res, next) {
   try {
-    const comentarios = await listarComentarios(req.params.apunte_id);
+    const comentarios = await listarComentarios(
+      req.params.apunte_id,
+      req.usuario.id,
+    );
     return ApiResponse.success(res, comentarios);
   } catch (err) {
     next(err);

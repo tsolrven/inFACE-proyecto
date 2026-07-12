@@ -1,7 +1,7 @@
 import { prisma } from '../config/configDb.js';
 import { BadRequestError, NotFoundError } from '../errors/AppError.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
-async function listarComentarios(apunte_id) {
+async function listarComentarios(apunte_id, usuario_id) {
   const comentarios = await prisma.comentario.findMany({
     where: { tipo_contenido: 'apunte', contenido_id: apunte_id },
     orderBy: { creado_en: 'asc' },
@@ -10,15 +10,31 @@ async function listarComentarios(apunte_id) {
     },
   });
 
-  return construirArbolComentarios(comentarios);
+  const misVotos = usuario_id
+    ? await prisma.voto.findMany({
+        where: {
+          usuario_id,
+          tipo_contenido: 'comentario',
+          contenido_id: { in: comentarios.map((c) => c.id) },
+        },
+      })
+    : [];
+  const mapVotos = Object.fromEntries(
+    misVotos.map((v) => [v.contenido_id, v.tipo]),
+  );
+
+  return construirArbolComentarios(comentarios, mapVotos);
 }
-// ────────────────────────────────────────────────────────────────────────────────────────
-function construirArbolComentarios(comentarios) {
+
+function construirArbolComentarios(comentarios, mapVotos = {}) {
   const nodosPorId = new Map();
   const raices = [];
 
   for (const c of comentarios) {
-    nodosPorId.set(c.id, { ...formatearComentario(c), respuestas: [] });
+    nodosPorId.set(c.id, {
+      ...formatearComentario(c, { mi_voto: mapVotos[c.id] || null }),
+      respuestas: [],
+    });
   }
 
   for (const c of comentarios) {
@@ -67,11 +83,12 @@ async function crearComentario({ autor_id, apunte_id, contenido, padre_id }) {
   return formatearComentario(comentario);
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-function formatearComentario(comentario) {
+function formatearComentario(comentario, { mi_voto = null } = {}) {
   return {
     id: comentario.id,
     contenido: comentario.contenido,
     votos_neto: comentario.votos_neto,
+    mi_voto,
     nivel: comentario.nivel,
     creado_en: comentario.creado_en,
     autor: {
