@@ -51,7 +51,6 @@ const ERROR_MESSAGES = {
     pattern: 'Los hashtags solo pueden tener letras, números y guiones bajos',
     max_largo: 'Cada hashtag no puede superar 30 caracteres',
   },
-  mutuamente_exclusivos: 'No puedes enviar link y snippet a la vez',
 };
 // ─────────────────────────────────────────────────────────────────────────────
 const hashtagsSchema = z
@@ -100,26 +99,21 @@ const lenguajeSnippetSchema = z
   .optional()
   .nullable();
 // ─────────────────────────────────────────────────────────────────────────────
-const crearApunteSchema = z
-  .object({
-    ramo_id: z
-      .string({
-        error: (issue) =>
-          issue.input === undefined ? ERROR_MESSAGES.ramo.required : undefined,
-      })
-      .uuid(ERROR_MESSAGES.ramo.invalid),
-    titulo: tituloSchema,
-    descripcion: descripcionSchema,
-    tipo: tipoSchema.optional(),
-    link_repositorio: linkRepositorioSchema,
-    codigo_snippet: codigoSnippetSchema,
-    lenguaje_snippet: lenguajeSnippetSchema,
-    hashtags: hashtagsSchema,
-  })
-  .refine((data) => !(data.link_repositorio && data.codigo_snippet), {
-    message: ERROR_MESSAGES.mutuamente_exclusivos,
-    path: ['link_repositorio'],
-  });
+const crearApunteSchema = z.object({
+  ramo_id: z
+    .string({
+      error: (issue) =>
+        issue.input === undefined ? ERROR_MESSAGES.ramo.required : undefined,
+    })
+    .uuid(ERROR_MESSAGES.ramo.invalid),
+  titulo: tituloSchema,
+  descripcion: descripcionSchema,
+  tipo: tipoSchema.optional(),
+  link_repositorio: linkRepositorioSchema,
+  codigo_snippet: codigoSnippetSchema,
+  lenguaje_snippet: lenguajeSnippetSchema,
+  hashtags: hashtagsSchema,
+});
 // ─────────────────────────────────────────────────────────────────────────────
 const actualizarApunteSchema = z.object({
   ramo_id: z.string().uuid(ERROR_MESSAGES.ramo.invalid).optional(),
