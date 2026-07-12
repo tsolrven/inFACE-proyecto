@@ -40,6 +40,29 @@ function Reveal({ children, className = '' }) {
 }
 
 /*
+ * Flecha gorda para los botones de "Crear cuenta".
+ * SVG propio (no icon-font) para poder controlar el grosor del trazo.
+ */
+function ArrowRight({ className = 'h-4 w-4' }) {
+    return (
+        <svg
+            viewBox='0 0 24 24'
+            fill='none'
+            className={className}
+            aria-hidden='true'
+        >
+            <path
+                d='M4 12h16M13 5l7 7-7 7'
+                stroke='currentColor'
+                strokeWidth='3'
+                strokeLinecap='round'
+                strokeLinejoin='round'
+            />
+        </svg>
+    );
+}
+
+/*
  * Cajón de imagen provisorio: borde punteado + ícono + instrucción de reemplazo.
  * Cuando tengas el asset final, reemplaza el <div className="img-slot"> por:
  *   <img src="/ruta-del-archivo.png" alt="..." className="..." />
@@ -78,6 +101,22 @@ function BadgePorImplementar() {
     );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// PALETA DE COLORES POR MÓDULO/TECNOLOGÍA
+// Cada ítem desarrollado tiene un color distinto; los "por implementar"
+// se quedan siempre en gris neutro (no reciben color propio).
+// ─────────────────────────────────────────────────────────────────────────────
+
+const COLOR_CLASSES = {
+    pink: { bg: 'bg-pink-500/10', text: 'text-pink-400', bar: 'bg-pink-500', border: 'border-white/[0.06] hover:border-white/[0.14]', wash: 'bg-[#1E1E24]', label: 'text-neutral-600' },
+    indigo: { bg: 'bg-indigo-500/10', text: 'text-indigo-400', bar: 'bg-indigo-500', border: 'border-white/[0.06] hover:border-white/[0.14]', wash: 'bg-[#1E1E24]', label: 'text-neutral-600' },
+    cyan: { bg: 'bg-cyan-500/10', text: 'text-cyan-400', bar: 'bg-cyan-500', border: 'border-white/[0.06] hover:border-white/[0.14]', wash: 'bg-[#1E1E24]', label: 'text-neutral-600' },
+    amber: { bg: 'bg-amber-500/10', text: 'text-amber-400', bar: 'bg-amber-500', border: 'border-white/[0.06] hover:border-white/[0.14]', wash: 'bg-[#1E1E24]', label: 'text-neutral-600' },
+    emerald: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', bar: 'bg-emerald-500', border: 'border-white/[0.06] hover:border-white/[0.14]', wash: 'bg-[#1E1E24]', label: 'text-neutral-600' },
+    violet: { bg: 'bg-violet-500/10', text: 'text-violet-400', bar: 'bg-violet-500', border: 'border-white/[0.06] hover:border-white/[0.14]', wash: 'bg-[#1E1E24]', label: 'text-neutral-600' },
+    gray: { bg: 'bg-white/[0.05]', text: 'text-neutral-500', bar: 'bg-white/15', border: 'border-white/[0.06] hover:border-white/[0.14]', wash: 'bg-[#1E1E24]/60', label: 'text-neutral-600' },
+};
+
 const MODULOS = [
     {
         icon: 'ti-notebook',
@@ -85,6 +124,7 @@ const MODULOS = [
         titulo: 'Apuntes y códigos',
         descripcion: 'Repositorio organizado por ramo, con búsqueda semántica para encontrar justo lo que necesitas.',
         estado: 'beta',
+        color: 'indigo',
     },
     {
         icon: 'ti-messages',
@@ -92,6 +132,7 @@ const MODULOS = [
         titulo: 'Foro por ramos',
         descripcion: 'Preguntas y respuestas con votación, para que el conocimiento quede disponible semestre tras semestre.',
         estado: 'beta',
+        color: 'cyan',
     },
     {
         icon: 'ti-speakerphone',
@@ -106,7 +147,7 @@ const MODULOS = [
         titulo: 'Match de proyectos',
         descripcion: 'Encuentra equipo para proyectos académicos o emprendimientos, recomendados según tus intereses.',
         estado: 'beta',
-        destacado: true,
+        color: 'pink',
     },
     {
         icon: 'ti-palette',
@@ -122,6 +163,12 @@ const MODULOS = [
         descripcion: 'Compra y vende entre estudiantes verificados, sin exponerte a un público general.',
         estado: 'pendiente',
     },
+];
+
+const TECNOLOGIA = [
+    { icon: 'ti-search', titulo: 'Búsqueda semántica', texto: 'Encuentra contenido describiendo lo que necesitas, no adivinando la palabra exacta.', color: 'indigo' },
+    { icon: 'ti-shield-lock', titulo: 'Moderación automática', texto: 'Contenido inapropiado y nombres de usuario ofensivos se filtran antes de publicarse.', color: 'cyan' },
+    { icon: 'ti-heart-handshake', titulo: 'Recomendación por etiquetas', texto: 'Cada proyecto y contenido se compara con tus intereses para sugerirte lo más afín.', color: 'pink', destacado: true },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -175,9 +222,10 @@ export default function Landing() {
                         </Link>
                         <Link
                             to='/register'
-                            className='rounded-[10px] bg-pink-500 px-3.5 py-[7px] text-[12.5px] font-semibold text-white transition hover:bg-pink-600'
+                            className='inline-flex items-center gap-1.5 rounded-[10px] bg-pink-500 px-3.5 py-[7px] text-[12.5px] font-semibold text-white transition hover:bg-pink-600'
                         >
                             Crear cuenta
+                            <ArrowRight className='h-[14px] w-[14px]' />
                         </Link>
                     </div>
                 </nav>
@@ -195,8 +243,8 @@ export default function Landing() {
 
                 <div className='relative mx-auto grid max-w-6xl grid-cols-1 items-center gap-14 px-5 pb-20 pt-16 md:pb-24 md:pt-20 lg:grid-cols-2'>
                     <Reveal>
-                        <span className='inline-flex items-center gap-1.5 rounded-full border border-white/[0.09] bg-white/[0.03] px-3 py-1 font-mono text-[10.5px] uppercase tracking-widest text-indigo-400'>
-                            <i className='ti ti-building-bank text-[13px]' /> FACE · Universidad del Bío-Bío
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.09] bg-white/[0.03] px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-indigo-400" style={{ fontFamily: "'Sora', ui-sans-serif, system-ui, sans-serif" }}>
+                            <i className='ti ti-building-bank text-[13px]' /> Universidad del Bío-Bío
                         </span>
 
                         <h1 className='mt-5 text-[36px] font-bold leading-[1.12] tracking-tight text-neutral-50 md:text-[46px]'>
@@ -215,7 +263,7 @@ export default function Landing() {
                                 className='inline-flex items-center gap-2 rounded-[10px] bg-pink-500 px-5 py-3 text-[13.5px] font-semibold text-white transition hover:bg-pink-600 active:scale-[.98]'
                             >
                                 Crear cuenta gratis
-                                <i className='ti ti-arrow-right text-[15px]' />
+                                <ArrowRight className='h-4 w-4' />
                             </Link>
                             <Link
                                 to='/login'
@@ -305,39 +353,33 @@ export default function Landing() {
                 </Reveal>
 
                 <div className='grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3'>
-                    {MODULOS.map((m) => (
-                        <Reveal key={m.titulo}>
-                            <div
-                                className={`h-full rounded-2xl border p-6 transition ${m.destacado
-                                    ? 'border-pink-500/20 bg-gradient-to-b from-pink-500/[0.06] to-transparent hover:border-pink-500/40'
-                                    : m.estado === 'pendiente'
-                                        ? 'border-white/[0.06] bg-[#1E1E24]/60 opacity-70 hover:border-white/[0.14] hover:opacity-100'
-                                        : 'border-white/[0.06] bg-[#1E1E24] hover:border-white/[0.14]'
-                                    }`}
-                            >
-                                <div className='mb-4 flex items-start justify-between gap-2'>
-                                    <div
-                                        className={`flex h-10 w-10 items-center justify-center rounded-[10px] ${m.destacado
-                                            ? 'bg-pink-500/10 text-pink-400'
-                                            : m.estado === 'pendiente'
-                                                ? 'bg-white/[0.05] text-neutral-500'
-                                                : 'bg-indigo-500/10 text-indigo-400'
-                                            }`}
-                                    >
-                                        <i className={`ti ${m.icon} text-[19px]`} />
+                    {MODULOS.map((m) => {
+                        const c = COLOR_CLASSES[m.estado === 'pendiente' ? 'gray' : m.color];
+                        return (
+                            <Reveal key={m.titulo}>
+                                <div
+                                    className={`relative h-full overflow-hidden rounded-2xl border p-6 pt-[26px] transition ${c.border} ${c.wash} ${m.estado === 'pendiente' ? 'opacity-70 hover:opacity-100' : ''
+                                        }`}
+                                >
+                                    <div className={`absolute inset-x-0 top-0 h-1 ${c.bar}`} />
+
+                                    <div className='mb-4 flex items-start justify-between gap-2'>
+                                        <div className={`flex h-10 w-10 items-center justify-center rounded-[10px] ${c.bg} ${c.text}`}>
+                                            <i className={`ti ${m.icon} text-[19px]`} />
+                                        </div>
+                                        {m.estado === 'beta' ? <BadgeBeta /> : <BadgePorImplementar />}
                                     </div>
-                                    {m.estado === 'beta' ? <BadgeBeta /> : <BadgePorImplementar />}
+                                    <div className={`mb-1 text-[10px] font-bold uppercase tracking-wide ${m.estado === 'pendiente' ? c.label : c.text + '/70'}`}>
+                                        {m.categoria}
+                                    </div>
+                                    <h3 className={`mb-1.5 text-[15px] font-bold ${m.estado === 'pendiente' ? 'text-neutral-300' : 'text-neutral-100'}`}>
+                                        {m.titulo}
+                                    </h3>
+                                    <p className='text-[13px] leading-relaxed text-neutral-500'>{m.descripcion}</p>
                                 </div>
-                                <div className={`mb-1 text-[10px] font-bold uppercase tracking-wide ${m.destacado ? 'text-pink-500/70' : 'text-neutral-600'}`}>
-                                    {m.categoria}
-                                </div>
-                                <h3 className={`mb-1.5 text-[15px] font-bold ${m.estado === 'pendiente' ? 'text-neutral-300' : 'text-neutral-100'}`}>
-                                    {m.titulo}
-                                </h3>
-                                <p className='text-[13px] leading-relaxed text-neutral-500'>{m.descripcion}</p>
-                            </div>
-                        </Reveal>
-                    ))}
+                            </Reveal>
+                        );
+                    })}
                 </div>
             </section>
 
@@ -394,21 +436,20 @@ export default function Landing() {
                 </Reveal>
 
                 <div className='grid grid-cols-1 gap-5 md:grid-cols-3'>
-                    {[
-                        { icon: 'ti-search', titulo: 'Búsqueda semántica', texto: 'Encuentra contenido describiendo lo que necesitas, no adivinando la palabra exacta.' },
-                        { icon: 'ti-shield-lock', titulo: 'Moderación automática', texto: 'Contenido inapropiado y nombres de usuario ofensivos se filtran antes de publicarse.' },
-                        { icon: 'ti-heart-handshake', titulo: 'Recomendación por etiquetas', texto: 'Cada proyecto y contenido se compara con tus intereses para sugerirte lo más afín.', destacado: true },
-                    ].map((t) => (
-                        <Reveal key={t.titulo}>
-                            <div className={`h-full rounded-2xl border p-6 ${t.destacado ? 'border-pink-500/20 bg-pink-500/[0.04]' : 'border-white/[0.06] bg-[#1E1E24]'}`}>
-                                <div className={`mb-4 flex h-10 w-10 items-center justify-center rounded-[10px] ${t.destacado ? 'bg-pink-500/10 text-pink-400' : 'bg-indigo-500/10 text-indigo-400'}`}>
-                                    <i className={`ti ${t.icon} text-[18px]`} />
+                    {TECNOLOGIA.map((t) => {
+                        const c = COLOR_CLASSES[t.color];
+                        return (
+                            <Reveal key={t.titulo}>
+                                <div className={`h-full rounded-2xl border p-6 ${t.destacado ? `${c.border} ${c.wash}` : `${c.border} bg-[#1E1E24]`}`}>
+                                    <div className={`mb-4 flex h-10 w-10 items-center justify-center rounded-[10px] ${c.bg} ${c.text}`}>
+                                        <i className={`ti ${t.icon} text-[18px]`} />
+                                    </div>
+                                    <h3 className='mb-1.5 text-[14px] font-bold text-neutral-100'>{t.titulo}</h3>
+                                    <p className='text-[12.5px] leading-relaxed text-neutral-500'>{t.texto}</p>
                                 </div>
-                                <h3 className='mb-1.5 text-[14px] font-bold text-neutral-100'>{t.titulo}</h3>
-                                <p className='text-[12.5px] leading-relaxed text-neutral-500'>{t.texto}</p>
-                            </div>
-                        </Reveal>
-                    ))}
+                            </Reveal>
+                        );
+                    })}
                 </div>
             </section>
 
@@ -432,7 +473,7 @@ export default function Landing() {
                                 className='mt-7 inline-flex items-center gap-2 rounded-[10px] bg-pink-500 px-6 py-3.5 text-[14px] font-semibold text-white transition hover:bg-pink-600 active:scale-[.98]'
                             >
                                 Crear mi cuenta InFACE
-                                <i className='ti ti-arrow-right text-[16px]' />
+                                <ArrowRight className='h-[17px] w-[17px]' />
                             </Link>
                         </div>
 
