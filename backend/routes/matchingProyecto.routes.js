@@ -37,6 +37,7 @@ router.get('/mios', autenticar, listarMisProyectos);
 router.get('/recomendados', autenticar, listarRecomendados); // GET  /api/proyecto/recomendados (matching por etiquetas)
 router.get('/habilidades-demanda', autenticar, habilidadesDemanda); // GET  /api/proyecto/habilidades-demanda
 router.get('/usuarios-similares', autenticar, usuariosSimilares); // GET  /api/proyecto/usuarios-similares
+router.post('/:id/descartar', autenticar, descartar); // POST /api/proyecto/:id/descartar
 
 router.get('/', autenticar, listar); // GET  /api/proyecto
 router.post('/', autenticar, crear); // POST /api/proyecto

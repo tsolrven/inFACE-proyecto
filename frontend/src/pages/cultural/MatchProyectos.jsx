@@ -284,9 +284,11 @@ export default function MatchProyectos() {
       )}
 
       <div className='px-4 pb-10 pt-[22px] sm:px-[26px]'>
-        {resolviendoDetalleInicial ? (
+        {resolviendoDetalleInicial && (
           <p className='py-16 text-center text-[13px] text-neutral-500'>Cargando…</p>
-        ) : proyectoDetalle ? (
+        )}
+
+        {!resolviendoDetalleInicial && proyectoDetalle && (
           <DetalleProyecto
             proyecto={proyectoDetalle}
             esCreador={proyectoDetalle.creador?.id === usuario?.id}
@@ -304,66 +306,68 @@ export default function MatchProyectos() {
               setModalPostulaciones(proyectoDetalle);
             }}
           />
-        ) : (
-          <>
-            {/* las 5 pestañas quedan siempre montadas (solo se ocultan con CSS) para que su estado
-                y sus datos ya cargados no se pierdan/reinicien al cambiar de pestaña o volver a Descubrir */}
-            <div style={{ display: tab === 'descubrir' ? 'block' : 'none' }}>
-              <DescubrirTab
-                usuario={usuario}
-                favoritosIds={favoritosIds}
-                postuladosActivos={postuladosActivos}
-                onToggleFavorito={handleToggleFavorito}
-                onVerDetalle={handleVerDetalle}
-                onPostularClick={setModalPostular}
-                onIrExplorar={() => setTab('explorar')}
-                search={search}
-              />
-            </div>
-            <div style={{ display: tab === 'explorar' ? 'block' : 'none' }}>
-              <ExplorarTab
-                usuario={usuario}
-                favoritosIds={favoritosIds}
-                postuladosActivos={postuladosActivos}
-                onToggleFavorito={handleToggleFavorito}
-                onVerDetalle={handleVerDetalle}
-                onPostularClick={setModalPostular}
-                search={search}
-              />
-            </div>
-            <div style={{ display: tab === 'guardados' ? 'block' : 'none' }}>
-              <GuardadosTab
-                usuario={usuario}
-                favoritos={favoritos}
-                loaded={favoritosLoaded}
-                postuladosActivos={postuladosActivos}
-                onToggleFavorito={handleToggleFavorito}
-                onVerDetalle={handleVerDetalle}
-                onPostularClick={setModalPostular}
-                search={search}
-              />
-            </div>
-            <div style={{ display: tab === 'mis' ? 'block' : 'none' }}>
-              <MisProyectosTab
-                usuario={usuario}
-                onCrear={() => setModalCrear('crear')}
-                onEditar={(p) => setModalCrear(p)}
-                onVerPostulaciones={(p) => setModalPostulaciones(p)}
-                onVerIntegrantes={(p) => abrirDetalle(p.id, { conIntegrantes: true })}
-                onVerDetalle={handleVerDetalle}
-                search={search}
-              />
-            </div>
-            <div style={{ display: tab === 'postulaciones' ? 'block' : 'none' }}>
-              <MisPostulacionesTab
-                postulaciones={misPostulaciones}
-                loaded={misPostulacionesLoaded}
-                onRecargar={recargarMisPostulaciones}
-                onVerProyecto={handleVerDetallePorId}
-              />
-            </div>
-          </>
         )}
+
+        {/* las 5 pestañas quedan SIEMPRE montadas (solo se ocultan con CSS) para que su estado
+            y sus datos ya cargados no se pierdan/reinicien al cambiar de pestaña, ver el detalle
+            de un proyecto, o volver a Descubrir — antes esta sección se desmontaba por completo
+            cada vez que se abría un detalle, reiniciando la cola de swipes de Descubrir */}
+        <div style={{ display: resolviendoDetalleInicial || proyectoDetalle ? 'none' : 'block' }}>
+          <div style={{ display: tab === 'descubrir' ? 'block' : 'none' }}>
+            <DescubrirTab
+              usuario={usuario}
+              favoritosIds={favoritosIds}
+              postuladosActivos={postuladosActivos}
+              onToggleFavorito={handleToggleFavorito}
+              onVerDetalle={handleVerDetalle}
+              onPostularClick={setModalPostular}
+              onIrExplorar={() => setTab('explorar')}
+              search={search}
+            />
+          </div>
+          <div style={{ display: tab === 'explorar' ? 'block' : 'none' }}>
+            <ExplorarTab
+              usuario={usuario}
+              favoritosIds={favoritosIds}
+              postuladosActivos={postuladosActivos}
+              onToggleFavorito={handleToggleFavorito}
+              onVerDetalle={handleVerDetalle}
+              onPostularClick={setModalPostular}
+              search={search}
+            />
+          </div>
+          <div style={{ display: tab === 'guardados' ? 'block' : 'none' }}>
+            <GuardadosTab
+              usuario={usuario}
+              favoritos={favoritos}
+              loaded={favoritosLoaded}
+              postuladosActivos={postuladosActivos}
+              onToggleFavorito={handleToggleFavorito}
+              onVerDetalle={handleVerDetalle}
+              onPostularClick={setModalPostular}
+              search={search}
+            />
+          </div>
+          <div style={{ display: tab === 'mis' ? 'block' : 'none' }}>
+            <MisProyectosTab
+              usuario={usuario}
+              onCrear={() => setModalCrear('crear')}
+              onEditar={(p) => setModalCrear(p)}
+              onVerPostulaciones={(p) => setModalPostulaciones(p)}
+              onVerIntegrantes={(p) => abrirDetalle(p.id, { conIntegrantes: true })}
+              onVerDetalle={handleVerDetalle}
+              search={search}
+            />
+          </div>
+          <div style={{ display: tab === 'postulaciones' ? 'block' : 'none' }}>
+            <MisPostulacionesTab
+              postulaciones={misPostulaciones}
+              loaded={misPostulacionesLoaded}
+              onRecargar={recargarMisPostulaciones}
+              onVerProyecto={handleVerDetallePorId}
+            />
+          </div>
+        </div>
       </div>
 
       {/* MODALES */}

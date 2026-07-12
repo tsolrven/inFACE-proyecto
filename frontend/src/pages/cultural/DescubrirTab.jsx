@@ -65,10 +65,18 @@ export default function DescubrirTab({
                 setMisIntereses(perfil.intereses);
             }
 
-            // se marca, una sola vez, dónde termina lo recomendado y empieza lo genérico
-            const primerConMatch = recomendados.datos.find((p) => (p.porcentaje_match ?? 0) > 0);
-            const primerSinMatch = recomendados.datos.find((p) => (p.porcentaje_match ?? 0) === 0);
-            setPrimerGenericoId(primerConMatch && primerSinMatch ? primerSinMatch.id : null);
+            // se marca, una sola vez EN TOTAL (no solo por sesión), dónde termina lo recomendado
+            // y empieza lo genérico — así el aviso no se repite cada vez que se vuelve a "Descubrir"
+            const YA_VIO_AVISO_KEY = 'inface:descubrir-aviso-generales-visto';
+            if (localStorage.getItem(YA_VIO_AVISO_KEY) === 'true') {
+                setPrimerGenericoId(null);
+            } else {
+                const primerConMatch = recomendados.datos.find((p) => (p.porcentaje_match ?? 0) > 0);
+                const primerSinMatch = recomendados.datos.find((p) => (p.porcentaje_match ?? 0) === 0);
+                const id = primerConMatch && primerSinMatch ? primerSinMatch.id : null;
+                setPrimerGenericoId(id);
+                if (id) localStorage.setItem(YA_VIO_AVISO_KEY, 'true');
+            }
         } catch (err) {
             setError(err.message);
         } finally {
@@ -269,7 +277,7 @@ export default function DescubrirTab({
                             así el mazo crece con la descripción en vez de recortarla, y empuja los botones de abajo. */}
                         <div className="relative select-none min-h-[380px]">
                             <div
-                                className="invisible"
+                                className="invisible pointer-events-none"
                                 aria-hidden="true"
                             >
                                 <TarjetaProyecto
@@ -638,7 +646,7 @@ function TarjetaProyecto({ proyecto: p, interesesIds }) {
     const pct = p.porcentaje_match ?? 0;
 
     return (
-        <div className="flex h-full max-h-[80vh] flex-col overflow-y-auto overflow-x-hidden px-5 py-4 md:px-7 md:py-5">
+        <div className="flex h-full max-h-[80vh] select-none flex-col overflow-y-auto overflow-x-hidden px-5 py-4 md:px-7 md:py-5">
 
             {/* CONTENIDO — flex-1 + min-h-0 para que se achique si falta espacio, en vez de empujar el footer fuera de vista */}
             <div className="grid min-h-0 flex-1 grid-cols-1 items-center gap-6 md:grid-cols-[minmax(0,1fr)_200px_200px]">
