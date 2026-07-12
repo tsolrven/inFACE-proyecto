@@ -114,8 +114,9 @@ export async function postularProyecto(id, mensaje_postulacion) {
     return data.data;
 }
 
-export async function listarPostulacionesProyecto(id) {
-    const data = await request(`/proyecto/${id}/postulaciones`);
+export async function listarPostulacionesProyecto(id, { todas = false } = {}) {
+    const query = todas ? '?todas=true' : '';
+    const data = await request(`/proyecto/${id}/postulaciones${query}`);
     return data.data || [];
 }
 

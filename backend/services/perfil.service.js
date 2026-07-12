@@ -12,6 +12,8 @@ const MAX_INTERESES = 15;
 function formatearPerfil(usuario, stats = {}) {
     if (!usuario) return null;
 
+    const primeraCarrera = usuario.usuario_carrera?.[0]?.carrera ?? null;
+
     return {
         id: usuario.id,
         correo: usuario.correo,
@@ -21,6 +23,7 @@ function formatearPerfil(usuario, stats = {}) {
         nombre_completo: usuario.perfil?.nombre_completo ?? null,
         biografia: usuario.perfil?.biografia ?? null,
         campus: usuario.perfil?.campus ?? null,
+        carrera: primeraCarrera ? { id: primeraCarrera.id, nombre: primeraCarrera.nombre, codigo: primeraCarrera.codigo } : null,
         intereses: (usuario.usuario_etiquetas || []).map((ue) => ({
             id: ue.etiqueta.id,
             nombre: ue.etiqueta.nombre_etiqueta,
@@ -38,6 +41,9 @@ function incluirPerfilCompleto() {
         perfil: true,
         usuario_etiquetas: {
             include: { etiqueta: { include: { tipo_etiqueta: true } } },
+        },
+        usuario_carrera: {
+            include: { carrera: true },
         },
     };
 }

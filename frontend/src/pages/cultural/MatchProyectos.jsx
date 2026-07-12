@@ -17,6 +17,8 @@ import {
 } from '../../services/matchingProyecto';
 import { listarEtiquetas } from '../../services/etiqueta';
 import {
+  getInitials,
+  avatarColor,
   etiquetaColor,
   ModalidadChip,
   EstadoPostulacionChip,
@@ -29,6 +31,7 @@ import PostularModal from './PostularModal';
 import PostulacionesModal from './PostulacionesModal';
 import IntegrantesModal from './IntegrantesModal';
 import DescubrirTab from './DescubrirTab';
+import ConfirmDialog from './ConfirmDialog';
 
 const TABS = [
   { id: 'descubrir', label: 'Descubrir', icon: 'ti-flame' },
@@ -41,15 +44,13 @@ const TABS = [
 export default function MatchProyectos() {
   const usuario = useAuthStore((s) => s.usuario);
   const navigate = useNavigate();
-  //const [tab, setTab] = useState('explorar');
-  const [tab, setTab] = useState('descubrir');
-  const [search, setSearch] = useState('');
   const [searchParams, setSearchParams] = useSearchParams();
-  // true cuando el detalle se abrió por venir de otro módulo (ej. el perfil, con ?proyecto=ID):
-  // en ese caso "Volver" debe regresar de verdad a esa página, no solo cerrar el detalle local.
-  const [detalleDesdeOtroModulo, setDetalleDesdeOtroModulo] = useState(false);
-  // mientras esto es true no se muestra nada de las pestañas, para evitar el "flash" de
-  // Descubrir/tabs antes de que se resuelva el detalle al entrar con ?proyecto=ID desde otro módulo.
+  // se inicializa desde la URL para que sobreviva a un remount (ej. volver de ver
+  // el perfil de alguien), en vez de resetearse siempre a 'descubrir'.
+  const [tab, setTabState] = useState(() => searchParams.get('tab') || 'descubrir');
+  const [search, setSearch] = useState('');
+  // mientras esto es true no se muestra nada (ni tabs ni detalle), para evitar el "flash"
+  // de Descubrir antes de resolver un ?proyecto=ID que venga en la URL al montar.
   const [resolviendoDetalleInicial, setResolviendoDetalleInicial] = useState(() => !!searchParams.get('proyecto'));
 
   // datos globales usados por varias pestañas
@@ -62,7 +63,10 @@ export default function MatchProyectos() {
   const [proyectoDetalle, setProyectoDetalle] = useState(null);
   const [modalPostular, setModalPostular] = useState(null);
   const [modalPostulaciones, setModalPostulaciones] = useState(null);
+  const [verTodasPostulaciones, setVerTodasPostulaciones] = useState(false);
   const [modalIntegrantes, setModalIntegrantes] = useState(null);
+  const [confirmEliminarDetalle, setConfirmEliminarDetalle] = useState(null);
+  const [avisoError, setAvisoError] = useState(null);
 
   const favoritosIds = useMemo(() => new Set(favoritos.map((p) => p.id)), [favoritos]);
 
@@ -96,10 +100,20 @@ export default function MatchProyectos() {
   const postuladosActivos = useMemo(() => {
     const set = new Set();
     misPostulaciones.forEach((p) => {
-      if (p.estado === 'pendiente' || p.estado === 'aceptada') set.add(p.proyecto_id);
+      if (p.estado === 'pendiente') set.add(p.proyecto_id);
+      if (p.estado === 'aceptada' && p.sigue_siendo_integrante) set.add(p.proyecto_id);
     });
     return set;
   }, [misPostulaciones]);
+
+  function setTab(id) {
+    setTabState(id);
+    const params = new URLSearchParams(searchParams);
+    params.set('tab', id);
+    params.delete('proyecto');
+    params.delete('panel');
+    setSearchParams(params, { replace: true });
+  }
 
   async function handleToggleFavorito(proyectoId) {
     try {
@@ -114,61 +128,108 @@ export default function MatchProyectos() {
     recargarMisPostulaciones();
   }
 
-  async function handleVerDetalle(proyecto) {
-    setDetalleDesdeOtroModulo(false);
-    setProyectoDetalle(proyecto);
+  // abre el detalle de un proyecto como una navegación real (queda en el historial de
+  // verdad), así "Volver" y el botón "atrás" del navegador siempre funcionan como se
+  // espera, incluso después de salir a ver el perfil de alguien y regresar.
+  function abrirDetalle(proyectoId, { conIntegrantes = false } = {}) {
+    const params = new URLSearchParams();
+    params.set('proyecto', proyectoId);
+    if (conIntegrantes) params.set('panel', 'integrantes');
+    navigate(`/match-proyectos?${params.toString()}`);
+  }
+
+  function handleVerDetalle(proyecto) {
+    setProyectoDetalle(proyecto); // optimista: se muestra al toque, sin esperar el fetch
+    abrirDetalle(proyecto.id);
+  }
+
+  function handleVerDetallePorId(proyectoId) {
+    abrirDetalle(proyectoId);
+  }
+
+  function handleVerIntegrantesDesdeDetalle() {
+    abrirDetalle(proyectoDetalle.id, { conIntegrantes: true });
+  }
+
+  function handleVolverDetalle() {
+    navigate(-1);
+  }
+
+  function handleCerrarIntegrantes() {
+    navigate(-1);
   }
 
   async function handleEliminarDesdeDetalle(proyecto) {
-    if (!confirm(`¿Eliminar el proyecto "${proyecto.titulo}"? Esta acción no se puede deshacer.`)) return;
+    setConfirmEliminarDetalle(proyecto);
+  }
+
+  async function ejecutarEliminarDesdeDetalle() {
+    const proyecto = confirmEliminarDetalle;
+    setConfirmEliminarDetalle(null);
     try {
       await eliminarProyecto(proyecto.id);
-      setProyectoDetalle(null);
       window.dispatchEvent(new Event('inface:mis-proyectos-actualizados'));
+      navigate(-1);
     } catch (err) {
-      alert(err.message);
+      setAvisoError(err.message);
     }
   }
 
-  async function handleVerDetallePorId(proyectoId, externo = false) {
+  // vuelve a pedir el proyecto y refresca lo que esté mostrando ahora mismo (detalle
+  // y/o modal de integrantes), sin navegar a ningún lado — para usar después de editar,
+  // aceptar/rechazar postulaciones, o expulsar/agregar integrantes.
+  async function refrescarDetalle(proyectoId) {
     try {
       const p = await obtenerProyecto(proyectoId);
-      setDetalleDesdeOtroModulo(externo);
-      setProyectoDetalle(p);
+      p._completo = true;
+      setProyectoDetalle((actual) => (actual?.id === proyectoId ? p : actual));
+      setModalIntegrantes((actual) => (actual?.id === proyectoId ? p : actual));
     } catch {
       // ignorar
-    } finally {
-      setResolviendoDetalleInicial(false);
     }
   }
 
-  // si se llega desde otro módulo (ej. el perfil) con ?proyecto=ID, se abre
-  // directo el detalle de ese proyecto en vez de mostrar el módulo genérico.
+  // el estado de la vista (qué detalle está abierto, si el modal de integrantes está
+  // abierto encima) vive en la URL en vez de solo en memoria, así sobrevive a salir a
+  // ver el perfil de alguien y volver con "atrás" (o remontar el componente).
   useEffect(() => {
     const proyectoId = searchParams.get('proyecto');
+    const panel = searchParams.get('panel');
+
     if (!proyectoId) {
+      setProyectoDetalle(null);
+      setModalIntegrantes(null);
       setResolviendoDetalleInicial(false);
       return;
     }
-    handleVerDetallePorId(proyectoId, true);
-    const next = new URLSearchParams(searchParams);
-    next.delete('proyecto');
-    setSearchParams(next, { replace: true });
+
+    (async () => {
+      let detalle = null;
+      setProyectoDetalle((actual) => {
+        detalle = actual?.id === proyectoId && actual?._completo ? actual : null;
+        return actual;
+      });
+
+      if (!detalle) {
+        try {
+          detalle = await obtenerProyecto(proyectoId);
+          detalle._completo = true;
+          setProyectoDetalle(detalle);
+        } catch {
+          detalle = null;
+        }
+      }
+
+      setModalIntegrantes(panel === 'integrantes' && detalle ? detalle : null);
+      setResolviendoDetalleInicial(false);
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
-
-  function handleVolverDetalle() {
-    if (detalleDesdeOtroModulo) {
-      navigate(-1); // vuelve de verdad a la página de origen (ej. el perfil)
-    } else {
-      setProyectoDetalle(null);
-    }
-  }
 
   return (
     <div>
       {/* HEADER (mismo estilo que Repositorio de materiales) */}
-      <div className='px-[26px] pt-6'>
+      <div className='px-4 pt-6 sm:px-[26px]'>
         <div className='mb-4 flex items-center gap-1.5 text-[12px] text-neutral-500'>
           <span>Inicio</span>
           <i className='ti ti-chevron-right text-[12px]' />
@@ -177,27 +238,27 @@ export default function MatchProyectos() {
           <span className='text-neutral-300'>Match de proyectos</span>
         </div>
 
-        <div className='mb-5 flex items-start justify-between gap-4'>
+        <div className='mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between'>
           <div className='flex items-center gap-3'>
             <div className='flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-[12px] bg-pink-500/10'>
               <i className='ti ti-puzzle text-[22px] text-pink-400' />
             </div>
             <div>
               <h1 className='text-[19px] font-bold text-neutral-50'>Match de proyectos</h1>
-              <p className='text-[12.5px] text-neutral-500'>
+              <p className='hidden text-[12.5px] text-neutral-500 sm:block'>
                 Encuentra o forma equipos para proyectos académicos y de emprendimiento
               </p>
             </div>
           </div>
 
-          <div className='relative hidden sm:block'>
+          <div className='relative w-full sm:w-auto'>
             <i className='ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-[14px] text-neutral-600' />
             <input
               type='text'
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder='Buscar en Match de proyectos...'
-              className='w-64 rounded-[10px] border border-white/[0.07] bg-[#1E1E24] py-2 pl-9 pr-3 text-[12.5px] text-neutral-100 outline-none transition placeholder:text-neutral-600 focus:border-pink-500/50'
+              className='w-full rounded-[10px] border border-white/[0.07] bg-[#1E1E24] py-2 pl-9 pr-3 text-[12.5px] text-neutral-100 outline-none transition placeholder:text-neutral-600 focus:border-pink-500/50 sm:w-64'
             />
           </div>
         </div>
@@ -205,12 +266,12 @@ export default function MatchProyectos() {
 
       {/* TABS */}
       {!proyectoDetalle && !resolviendoDetalleInicial && (
-        <div className='sticky top-0 z-10 flex items-center overflow-x-auto border-b border-white/[0.07] bg-[#17171B] px-[26px]'>
+        <div className='sticky top-0 z-20 flex items-center overflow-x-auto border-b border-white/[0.07] bg-[#17171B] px-4 sm:px-[26px]'>
           {TABS.map((t) => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`-mb-px flex items-center gap-1.5 whitespace-nowrap border-b-2 px-4 py-3 text-[13px] font-medium transition ${tab === t.id
+              className={`-mb-px flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-[12.5px] font-medium transition sm:px-4 sm:py-3 sm:text-[13px] ${tab === t.id
                 ? 'border-pink-500 font-semibold text-pink-500'
                 : 'border-transparent text-neutral-500 hover:text-neutral-300'
                 }`}
@@ -222,7 +283,7 @@ export default function MatchProyectos() {
         </div>
       )}
 
-      <div className='px-[26px] pb-10 pt-[22px]'>
+      <div className='px-4 pb-10 pt-[22px] sm:px-[26px]'>
         {resolviendoDetalleInicial ? (
           <p className='py-16 text-center text-[13px] text-neutral-500'>Cargando…</p>
         ) : proyectoDetalle ? (
@@ -236,8 +297,12 @@ export default function MatchProyectos() {
             onPostular={handlePostular}
             onEditar={() => setModalCrear(proyectoDetalle)}
             onEliminar={() => handleEliminarDesdeDetalle(proyectoDetalle)}
-            onVerIntegrantes={() => setModalIntegrantes(proyectoDetalle)}
+            onVerIntegrantes={handleVerIntegrantesDesdeDetalle}
             onVerPostulaciones={() => setModalPostulaciones(proyectoDetalle)}
+            onVerHistorialPostulaciones={() => {
+              setVerTodasPostulaciones(true);
+              setModalPostulaciones(proyectoDetalle);
+            }}
           />
         ) : (
           <>
@@ -284,7 +349,7 @@ export default function MatchProyectos() {
                 onCrear={() => setModalCrear('crear')}
                 onEditar={(p) => setModalCrear(p)}
                 onVerPostulaciones={(p) => setModalPostulaciones(p)}
-                onVerIntegrantes={(p) => setModalIntegrantes(p)}
+                onVerIntegrantes={(p) => abrirDetalle(p.id, { conIntegrantes: true })}
                 onVerDetalle={handleVerDetalle}
                 search={search}
               />
@@ -311,7 +376,7 @@ export default function MatchProyectos() {
               await crearProyecto(payload);
             } else {
               await actualizarProyecto(modalCrear.id, payload);
-              if (proyectoDetalle?.id === modalCrear.id) handleVerDetallePorId(modalCrear.id, detalleDesdeOtroModulo);
+              if (proyectoDetalle?.id === modalCrear.id) refrescarDetalle(modalCrear.id);
             }
             setModalCrear(null);
             window.dispatchEvent(new Event('inface:mis-proyectos-actualizados'));
@@ -330,8 +395,16 @@ export default function MatchProyectos() {
       {modalPostulaciones && (
         <PostulacionesModal
           proyecto={modalPostulaciones}
-          onClose={() => setModalPostulaciones(null)}
-          onCambio={() => window.dispatchEvent(new Event('inface:mis-proyectos-actualizados'))}
+          verTodas={verTodasPostulaciones}
+          onIrAVerPendientes={() => setVerTodasPostulaciones(false)}
+          onClose={() => {
+            setModalPostulaciones(null);
+            setVerTodasPostulaciones(false);
+          }}
+          onCambio={() => {
+            window.dispatchEvent(new Event('inface:mis-proyectos-actualizados'));
+            if (proyectoDetalle?.id === modalPostulaciones.id) refrescarDetalle(modalPostulaciones.id);
+          }}
         />
       )}
 
@@ -339,13 +412,33 @@ export default function MatchProyectos() {
         <IntegrantesModal
           proyecto={modalIntegrantes}
           esCreador={modalIntegrantes.creador?.id === usuario?.id}
-          onClose={() => setModalIntegrantes(null)}
+          onClose={handleCerrarIntegrantes}
           onCambio={() => {
             window.dispatchEvent(new Event('inface:mis-proyectos-actualizados'));
-            if (proyectoDetalle?.id === modalIntegrantes.id) handleVerDetallePorId(modalIntegrantes.id, detalleDesdeOtroModulo);
+            refrescarDetalle(modalIntegrantes.id);
           }}
         />
       )}
+
+      <ConfirmDialog
+        open={!!confirmEliminarDetalle}
+        title='Eliminar proyecto'
+        message={confirmEliminarDetalle ? `¿Eliminar el proyecto "${confirmEliminarDetalle.titulo}"? Esta acción no se puede deshacer.` : ''}
+        confirmLabel='Eliminar'
+        danger
+        onConfirm={ejecutarEliminarDesdeDetalle}
+        onCancel={() => setConfirmEliminarDetalle(null)}
+      />
+
+      <ConfirmDialog
+        open={!!avisoError}
+        title='Ocurrió un error'
+        message={avisoError || ''}
+        confirmLabel='Entendido'
+        danger
+        soloConfirmar
+        onConfirm={() => setAvisoError(null)}
+      />
     </div>
   );
 }
@@ -727,6 +820,12 @@ function ExplorarTab({ usuario, favoritosIds, postuladosActivos, onToggleFavorit
         </div>
       )}
 
+      {!loading && !error && (search.trim() || filtroEstado || filtroModalidad || filtroEtiquetas.length > 0) && (
+        <p className='mb-3 text-[12.5px] text-neutral-500'>
+          {proyectosFiltrados.length} coincidencia{proyectosFiltrados.length === 1 ? '' : 's'} encontrada{proyectosFiltrados.length === 1 ? '' : 's'}
+        </p>
+      )}
+
       {!loading && !error && proyectosFiltrados.length === 0 && (
         <EmptyState
           icon='ti-mood-empty'
@@ -792,6 +891,7 @@ function TarjetaProyectoBase({ proyecto: p, extra, accionesDerecha }) {
           >
             u/{p.creador?.nombre_usuario}
           </Link>
+          {p.creador?.carrera && <span>· {p.creador.carrera.nombre}</span>}
           <span>· {tiempoRelativo(p.fecha_creacion)}</span>
         </div>
 
@@ -829,6 +929,23 @@ function TarjetaProyectoBase({ proyecto: p, extra, accionesDerecha }) {
               <i className='ti ti-users text-[14px]' />
               {p.maximo_integrantes ? `${cupos > 0 ? cupos : 0}/${p.maximo_integrantes} cupos` : `${p.total_integrantes} integrantes`}
             </span>
+            {p.integrantes?.length > 0 && (
+              <div className='flex items-center'>
+                {p.integrantes.slice(0, 4).map((i, idx) => {
+                  const iav = avatarColor(i.usuario_id);
+                  return (
+                    <div
+                      key={i.usuario_id}
+                      title={i.nombre_usuario}
+                      style={{ marginLeft: idx === 0 ? 0 : -6, zIndex: 5 - idx }}
+                      className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-2 border-[#1E1E24] text-[7.5px] font-bold ${iav.bg} ${iav.text}`}
+                    >
+                      {getInitials(i.nombre_usuario)}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
           <div className='flex flex-wrap items-center gap-2'>{accionesDerecha}</div>
         </div>
@@ -902,7 +1019,9 @@ function GuardadosTab({ usuario, favoritos, loaded, postuladosActivos, onToggleF
     <div>
       {loaded && filtrados.length > 0 && (
         <div className='mb-4 text-[12.5px] text-neutral-500'>
-          {filtrados.length} proyecto{filtrados.length === 1 ? '' : 's'} guardado{filtrados.length === 1 ? '' : 's'}
+          {search.trim()
+            ? `${filtrados.length} coincidencia${filtrados.length === 1 ? '' : 's'} encontrada${filtrados.length === 1 ? '' : 's'}`
+            : `${filtrados.length} proyecto${filtrados.length === 1 ? '' : 's'} guardado${filtrados.length === 1 ? '' : 's'}`}
         </div>
       )}
 
@@ -972,13 +1091,21 @@ function MisProyectosTab({ usuario, onCrear, onEditar, onVerPostulaciones, onVer
     return () => window.removeEventListener('inface:mis-proyectos-actualizados', cargar);
   }, [cargar]);
 
-  async function handleEliminar(proyecto) {
-    if (!confirm(`¿Eliminar el proyecto "${proyecto.titulo}"? Esta acción no se puede deshacer.`)) return;
+  const [confirmEliminar, setConfirmEliminar] = useState(null);
+  const [avisoError, setAvisoError] = useState(null);
+
+  function handleEliminar(proyecto) {
+    setConfirmEliminar(proyecto);
+  }
+
+  async function ejecutarEliminar() {
+    const proyecto = confirmEliminar;
+    setConfirmEliminar(null);
     try {
       await eliminarProyecto(proyecto.id);
       cargar();
     } catch (err) {
-      alert(err.message);
+      setAvisoError(err.message);
     }
   }
 
@@ -1074,6 +1201,26 @@ function MisProyectosTab({ usuario, onCrear, onEditar, onVerPostulaciones, onVer
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmEliminar}
+        title='Eliminar proyecto'
+        message={confirmEliminar ? `¿Eliminar el proyecto "${confirmEliminar.titulo}"? Esta acción no se puede deshacer.` : ''}
+        confirmLabel='Eliminar'
+        danger
+        onConfirm={ejecutarEliminar}
+        onCancel={() => setConfirmEliminar(null)}
+      />
+
+      <ConfirmDialog
+        open={!!avisoError}
+        title='Ocurrió un error'
+        message={avisoError || ''}
+        confirmLabel='Entendido'
+        danger
+        soloConfirmar
+        onConfirm={() => setAvisoError(null)}
+      />
     </div>
   );
 }
@@ -1099,7 +1246,7 @@ function MiProyectoCard({ proyecto: p, onVerDetalle, onEditar, onEliminar, onVer
             <i className='ti ti-inbox text-xl text-pink-500' />
             <div>
               <div className='text-[16px] font-bold leading-none text-neutral-100'>{p.total_postulaciones}</div>
-              <div className='mt-0.5 text-[10px] text-neutral-500'>Postulaciones</div>
+              <div className='mt-0.5 text-[10px] text-neutral-500'>Pendientes</div>
             </div>
           </div>
           <div className='flex flex-1 items-center gap-2.5'>
@@ -1159,16 +1306,22 @@ function MiProyectoCard({ proyecto: p, onVerDetalle, onEditar, onEliminar, onVer
 function MisPostulacionesTab({ postulaciones, loaded, onRecargar, onVerProyecto }) {
   const [filtroEstado, setFiltroEstado] = useState('');
   const [procesando, setProcesando] = useState(null);
+  const [confirmRetirar, setConfirmRetirar] = useState(null);
+  const [avisoError, setAvisoError] = useState(null);
 
-  async function handleRetirar(p) {
-    const mensaje = p.estado === 'pendiente' ? '¿Retirar esta postulación?' : '¿Quitar esta postulación de tu lista?';
-    if (!confirm(mensaje)) return;
+  function handleRetirar(p) {
+    setConfirmRetirar(p);
+  }
+
+  async function ejecutarRetirar() {
+    const p = confirmRetirar;
+    setConfirmRetirar(null);
     setProcesando(p.id);
     try {
       await retirarPostulacion(p.proyecto_id, p.id);
       onRecargar();
     } catch (err) {
-      alert(err.message);
+      setAvisoError(err.message);
     } finally {
       setProcesando(null);
     }
@@ -1250,6 +1403,7 @@ function MisPostulacionesTab({ postulaciones, loaded, onRecargar, onVerProyecto 
                       >
                         u/{p.creador.nombre_usuario}
                       </Link>
+                      {p.creador.carrera && <span>· {p.creador.carrera.nombre}</span>}
                       <span>·</span>
                     </>
                   )}
@@ -1293,6 +1447,30 @@ function MisPostulacionesTab({ postulaciones, loaded, onRecargar, onVerProyecto 
           );
         })}
       </div>
+
+      <ConfirmDialog
+        open={!!confirmRetirar}
+        title={confirmRetirar?.estado === 'pendiente' ? 'Retirar postulación' : 'Quitar de la lista'}
+        message={
+          confirmRetirar?.estado === 'pendiente'
+            ? '¿Retirar esta postulación?'
+            : '¿Quitar esta postulación de tu lista?'
+        }
+        confirmLabel={confirmRetirar?.estado === 'pendiente' ? 'Retirar' : 'Quitar'}
+        danger
+        onConfirm={ejecutarRetirar}
+        onCancel={() => setConfirmRetirar(null)}
+      />
+
+      <ConfirmDialog
+        open={!!avisoError}
+        title='Ocurrió un error'
+        message={avisoError || ''}
+        confirmLabel='Entendido'
+        danger
+        soloConfirmar
+        onConfirm={() => setAvisoError(null)}
+      />
     </div>
   );
 }

@@ -77,7 +77,7 @@ async function listarMisProyectosController(req, res) {
 // ╰─────────────────────────────✧────────────────────────────────╮
 
 async function obtenerUnoController(req, res) {
-        const proyecto = await obtenerProyectoPorId(req.params.id);
+        const proyecto = await obtenerProyectoPorId(req.params.id, req.usuario?.id);
         res.json({ ok: true, data: proyecto });
 }
 
@@ -121,6 +121,7 @@ async function listarPostulacionesController(req, res) {
                 req.params.id,
                 req.usuario.id,
                 req.usuario.rol,
+                { soloPendientes: req.query.todas !== 'true' },
         );
         res.json({ ok: true, data: postulaciones });
 }

@@ -1,24 +1,24 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import ModalShell from './ModalShell';
-import { getInitials, avatarColor, tiempoRelativo } from '../../helpers/matchHelpers';
+import { getInitials, avatarColor, carreraColor, tiempoRelativo } from '../../helpers/matchHelpers';
 import {
     listarPostulacionesProyecto,
     responderPostulacion,
     eliminarPostulacionRechazada,
 } from '../../services/matchingProyecto';
 
-export default function PostulacionesModal({ proyecto, onClose, onCambio }) {
+export default function PostulacionesModal({ proyecto, onClose, onCambio, verTodas = false, onIrAVerPendientes }) {
     const [postulaciones, setPostulaciones] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [procesando, setProcesando] = useState(null);
+    const [procesando, setProcesando] = useState(null); 
 
     async function cargar() {
         setLoading(true);
         setError(null);
         try {
-            const data = await listarPostulacionesProyecto(proyecto.id);
+            const data = await listarPostulacionesProyecto(proyecto.id, { todas: verTodas });
             setPostulaciones(data);
         } catch (err) {
             setError(err.message);
@@ -29,7 +29,8 @@ export default function PostulacionesModal({ proyecto, onClose, onCambio }) {
 
     useEffect(() => {
         cargar();
-    }, [proyecto.id]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [proyecto.id, verTodas]);
 
     async function handleResponder(postulacionId, estado) {
         setProcesando(postulacionId);
@@ -44,11 +45,12 @@ export default function PostulacionesModal({ proyecto, onClose, onCambio }) {
         }
     }
 
-    async function handleEliminarRechazada(postulacionId) {
+    async function handleEliminarResuelta(postulacionId) {
         setProcesando(postulacionId);
         try {
             await eliminarPostulacionRechazada(proyecto.id, postulacionId);
             await cargar();
+            onCambio?.();
         } catch (err) {
             setError(err.message);
         } finally {
@@ -58,7 +60,7 @@ export default function PostulacionesModal({ proyecto, onClose, onCambio }) {
 
     return (
         <ModalShell
-            title='Postulaciones'
+            title={verTodas ? 'Historial de postulaciones' : 'Postulaciones'}
             subtitle={proyecto.titulo}
             onClose={onClose}
             maxWidth='max-w-[560px]'
@@ -74,7 +76,11 @@ export default function PostulacionesModal({ proyecto, onClose, onCambio }) {
             {!loading && postulaciones.length === 0 && !error && (
                 <div className='flex flex-col items-center py-8 text-center'>
                     <i className='ti ti-inbox mb-2 text-3xl text-neutral-700' />
-                    <p className='text-[13px] text-neutral-500'>Aún no tienes postulaciones para este proyecto.</p>
+                    <p className='text-[13px] text-neutral-500'>
+                        {verTodas
+                            ? 'Este proyecto todavía no ha recibido postulaciones.'
+                            : 'Aún no tienes postulaciones pendientes para este proyecto.'}
+                    </p>
                 </div>
             )}
 
@@ -97,8 +103,16 @@ export default function PostulacionesModal({ proyecto, onClose, onCambio }) {
                                         {getInitials(p.postulante?.nombre_usuario)}
                                     </div>
                                     <div>
-                                        <div className='text-[13px] font-semibold text-neutral-100'>
+                                        <div className='flex items-center gap-1.5 text-[13px] font-semibold text-neutral-100'>
                                             {p.postulante?.nombre_usuario}
+                                            {p.postulante?.carrera?.codigo && (
+                                                <span
+                                                    title={p.postulante.carrera.nombre}
+                                                    className={`rounded-full border px-1.5 py-px text-[9.5px] font-bold ${carreraColor(p.postulante.carrera.codigo).bg} ${carreraColor(p.postulante.carrera.codigo).text} ${carreraColor(p.postulante.carrera.codigo).border}`}
+                                                >
+                                                    {p.postulante.carrera.codigo}
+                                                </span>
+                                            )}
                                         </div>
                                         <div className='text-[11px] text-neutral-500'>
                                             Postuló {tiempoRelativo(p.fecha_postulacion)}
@@ -118,7 +132,7 @@ export default function PostulacionesModal({ proyecto, onClose, onCambio }) {
                                 <p className='mt-2.5 text-[12.5px] leading-relaxed text-neutral-400'>{p.mensaje}</p>
                             )}
 
-                            {p.estado === 'pendiente' && (
+                            {p.estado === 'pendiente' && !verTodas && (
                                 <div className='mt-3 flex gap-2 border-t border-white/[0.06] pt-3'>
                                     <button
                                         onClick={() => handleResponder(p.id, 'aceptada')}
@@ -137,10 +151,20 @@ export default function PostulacionesModal({ proyecto, onClose, onCambio }) {
                                 </div>
                             )}
 
-                            {p.estado === 'rechazada' && (
+                            {p.estado === 'pendiente' && verTodas && (
+                                <button
+                                    onClick={onIrAVerPendientes}
+                                    className='mt-2.5 flex w-full items-center gap-1.5 border-t border-white/[0.06] pt-2.5 text-left text-[11.5px] text-pink-400 transition hover:text-pink-300'
+                                >
+                                    <i className='ti ti-arrow-right text-[12px]' />
+                                    Todavía sin responder — ir a "Ver postulaciones" para aceptar o rechazar
+                                </button>
+                            )}
+
+                            {(p.estado === 'rechazada' || p.estado === 'aceptada') && (
                                 <div className='mt-3 flex justify-end border-t border-white/[0.06] pt-3'>
                                     <button
-                                        onClick={() => handleEliminarRechazada(p.id)}
+                                        onClick={() => handleEliminarResuelta(p.id)}
                                         disabled={procesando === p.id}
                                         className='inline-flex items-center gap-1.5 text-[11.5px] font-medium text-neutral-500 transition hover:text-red-400 disabled:opacity-50'
                                     >

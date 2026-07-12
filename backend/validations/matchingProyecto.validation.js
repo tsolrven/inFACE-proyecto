@@ -36,8 +36,11 @@ function esquemaCrearProyecto(body) {
     if (fecha_inicio && !isNaN(Date.parse(fecha_inicio))) {
         const hoy = new Date();
         hoy.setHours(0, 0, 0, 0);
-        if (new Date(fecha_inicio) < hoy) {
-            errores.push('La fecha de inicio no puede ser anterior a hoy: el proyecto todavía no comienza');
+        // "fecha_inicio" llega como 'YYYY-MM-DD': hay que interpretarlo en hora LOCAL
+        // (new Date('YYYY-MM-DD') lo toma como UTC y podía quedar "antes de hoy" por el huso horario)
+        const inicioLocal = new Date(`${fecha_inicio}T00:00:00`);
+        if (inicioLocal <= hoy) {
+            errores.push('La fecha de inicio no puede ser hoy: elige una fecha futura para tu proyecto');
         }
     }
 

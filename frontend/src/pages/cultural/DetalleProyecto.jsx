@@ -51,6 +51,8 @@ export default function DetalleProyecto({
     onEliminar,
     onVerIntegrantes,
     onVerPostulaciones,
+    onVerHistorialPostulaciones,
+    esVistaExterna = false,
 }) {
     const [mostrarForm, setMostrarForm] = useState(false);
     const [mensaje, setMensaje] = useState('');
@@ -101,7 +103,7 @@ export default function DetalleProyecto({
                     style={{ background: barGradient(proyecto.estado) }}
                 />
 
-                <div className='p-6'>
+                <div className='p-4 sm:p-6'>
                     <div className='mb-1 flex flex-wrap items-start justify-between gap-3'>
                         <h1 className='text-[19px] font-bold leading-snug text-neutral-100'>{proyecto.titulo}</h1>
                     </div>
@@ -123,6 +125,7 @@ export default function DetalleProyecto({
 
                     <Link
                         to={`/perfil/usuario/${proyecto.creador?.nombre_usuario}`}
+                        replace={esVistaExterna}
                         className='mb-4 flex items-center gap-2.5 transition hover:opacity-80'
                     >
                         <div
@@ -132,6 +135,7 @@ export default function DetalleProyecto({
                         </div>
                         <div className='text-[12.5px] text-neutral-400'>
                             Creado por <strong className='text-neutral-100 underline-offset-2 hover:underline'>{proyecto.creador?.nombre_usuario}</strong>
+                            {proyecto.creador?.carrera && <> · {proyecto.creador.carrera.nombre}</>}
                             {' · '}
                             {formatFecha(proyecto.fecha_creacion)}
                         </div>
@@ -166,34 +170,52 @@ export default function DetalleProyecto({
                         </div>
                     )}
 
-                    <div className='mb-4 flex gap-3 rounded-[10px] bg-[#2A2A32] px-3.5 py-2.5'>
-                        <div className='flex flex-1 items-center gap-2.5'>
-                            <i className='ti ti-armchair text-xl text-pink-500' />
+                    <div className='mb-4 flex flex-wrap gap-2 rounded-[10px] bg-[#2A2A32] px-2.5 py-2 sm:gap-3 sm:px-3.5 sm:py-2.5'>
+                        <div className='flex flex-1 items-center gap-1.5 sm:gap-2.5'>
+                            <i className='ti ti-armchair text-base text-pink-500 sm:text-xl' />
                             <div>
-                                <div className='text-[16px] font-bold leading-none text-neutral-100'>
+                                <div className='text-[14px] font-bold leading-none text-neutral-100 sm:text-[16px]'>
                                     {cupos !== null ? cupos : '∞'}
                                 </div>
-                                <div className='mt-0.5 text-[10px] text-neutral-500'>Cupos disponibles</div>
+                                <div className='mt-0.5 text-[9.5px] text-neutral-500 sm:text-[10px]'>Cupos disponibles</div>
                             </div>
                         </div>
-                        <div className='flex flex-1 items-center gap-2.5'>
-                            <i className='ti ti-users text-xl text-pink-500' />
+                        <button
+                            onClick={onVerIntegrantes}
+                            className='flex flex-1 items-center gap-1.5 rounded-[8px] px-1 py-1 text-left transition hover:bg-white/[0.05] sm:gap-2.5 sm:px-1.5'
+                        >
+                            <i className='ti ti-users text-base text-pink-500 sm:text-xl' />
                             <div>
-                                <div className='text-[16px] font-bold leading-none text-neutral-100'>
+                                <div className='text-[14px] font-bold leading-none text-neutral-100 sm:text-[16px]'>
                                     {proyecto.total_integrantes}
                                 </div>
-                                <div className='mt-0.5 text-[10px] text-neutral-500'>Integrantes</div>
+                                <div className='mt-0.5 text-[9.5px] text-neutral-500 sm:text-[10px]'>Integrantes</div>
                             </div>
-                        </div>
-                        <div className='flex flex-1 items-center gap-2.5'>
-                            <i className='ti ti-inbox text-xl text-pink-500' />
-                            <div>
-                                <div className='text-[16px] font-bold leading-none text-neutral-100'>
-                                    {proyecto.total_postulaciones}
+                        </button>
+                        {esCreador ? (
+                            <button
+                                onClick={onVerHistorialPostulaciones}
+                                className='flex flex-1 items-center gap-1.5 rounded-[8px] px-1 py-1 text-left transition hover:bg-white/[0.05] sm:gap-2.5 sm:px-1.5'
+                            >
+                                <i className='ti ti-inbox text-base text-pink-500 sm:text-xl' />
+                                <div>
+                                    <div className='text-[14px] font-bold leading-none text-neutral-100 sm:text-[16px]'>
+                                        {proyecto.total_postulaciones_historico ?? proyecto.total_postulaciones}
+                                    </div>
+                                    <div className='mt-0.5 text-[9.5px] text-neutral-500 sm:text-[10px]'>Total Postulaciones</div>
                                 </div>
-                                <div className='mt-0.5 text-[10px] text-neutral-500'>Postulaciones</div>
+                            </button>
+                        ) : (
+                            <div className='flex flex-1 items-center gap-1.5 sm:gap-2.5'>
+                                <i className='ti ti-inbox text-base text-pink-500 sm:text-xl' />
+                                <div>
+                                    <div className='text-[14px] font-bold leading-none text-neutral-100 sm:text-[16px]'>
+                                        {proyecto.total_postulaciones_historico ?? proyecto.total_postulaciones}
+                                    </div>
+                                    <div className='mt-0.5 text-[9.5px] text-neutral-500 sm:text-[10px]'>Total Postulaciones</div>
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
 
                     {(proyecto.fecha_inicio || proyecto.fecha_fin) && (
@@ -213,16 +235,36 @@ export default function DetalleProyecto({
                         </div>
                     )}
 
-                    {proyecto.integrantes?.length > 0 && (
-                        <div className='mb-4'>
-                            <div className='mb-1.5 text-[11px] font-medium text-neutral-500'>Equipo actual</div>
-                            <div className='flex flex-wrap gap-2'>
-                                {proyecto.integrantes.map((i) => {
+                    <div className='mb-4'>
+                        <div className='mb-1.5 text-[11px] font-medium text-neutral-500'>Equipo actual</div>
+                        <div className='flex flex-wrap gap-2'>
+                            {proyecto.creador && (
+                                <Link
+                                    to={`/perfil/usuario/${proyecto.creador.nombre_usuario}`}
+                                    replace={esVistaExterna}
+                                    className='flex items-center gap-1.5 rounded-full border border-pink-500/25 bg-pink-500/[0.08] py-1 pl-1 pr-3 transition hover:border-pink-500/40'
+                                >
+                                    <div
+                                        className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[9px] font-bold ${avatarColor(proyecto.creador.id).bg} ${avatarColor(proyecto.creador.id).text}`}
+                                    >
+                                        {getInitials(proyecto.creador.nombre_usuario)}
+                                    </div>
+                                    <span className='inline-flex items-center gap-1 text-[11.5px] text-neutral-200'>
+                                        {proyecto.creador.nombre_usuario}
+                                        <i
+                                            title='Creador del proyecto'
+                                            className='ti ti-crown text-[12px] text-amber-400'
+                                        />
+                                    </span>
+                                </Link>
+                            )}
+                            {proyecto.integrantes?.map((i) => {
                                     const iav = avatarColor(i.usuario_id);
                                     return (
                                         <Link
                                             key={i.usuario_id}
                                             to={`/perfil/usuario/${i.nombre_usuario}`}
+                                            replace={esVistaExterna}
                                             className='flex items-center gap-1.5 rounded-full border border-white/[0.07] bg-[#232329] py-1 pl-1 pr-3 transition hover:border-white/[0.16]'
                                         >
                                             <div
@@ -236,10 +278,16 @@ export default function DetalleProyecto({
                                 })}
                             </div>
                         </div>
-                    )}
 
                     <div className='border-t border-white/[0.07] pt-4'>
-                        {enviado && (
+                        {enviado && proyecto.fui_expulsado && (
+                            <div className='flex items-center gap-2.5 rounded-[10px] bg-amber-400/[0.08] px-3.5 py-2.5 text-[12.5px] text-amber-400'>
+                                <i className='ti ti-alert-triangle text-base' />
+                                Tu postulación fue enviada, pero recuerda que fuiste expulsado de este proyecto anteriormente.
+                            </div>
+                        )}
+
+                        {enviado && !proyecto.fui_expulsado && (
                             <div className='flex items-center gap-2.5 rounded-[10px] bg-emerald-400/[0.08] px-3.5 py-2.5 text-[12.5px] text-emerald-400'>
                                 <i className='ti ti-circle-check text-base' />
                                 ¡Postulación enviada! Puedes verla en "Mis postulaciones".
@@ -291,6 +339,13 @@ export default function DetalleProyecto({
                             <div className='flex items-center gap-2.5 rounded-[10px] bg-emerald-400/[0.08] px-3.5 py-2.5 text-[12.5px] text-emerald-400'>
                                 <i className='ti ti-circle-check text-base' />
                                 Ya formas parte de este equipo.
+                            </div>
+                        )}
+
+                        {proyecto.fui_expulsado && !esIntegrante && !esCreador && !enviado && (
+                            <div className='flex items-center gap-2.5 rounded-[10px] bg-red-500/[0.06] px-3.5 py-2.5 text-[12.5px] text-red-400'>
+                                <i className='ti ti-user-x text-base' />
+                                Fuiste expulsado de este equipo.
                             </div>
                         )}
 

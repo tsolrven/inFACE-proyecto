@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import armadillo from '../assets/armadillo.png';
+import logoWhite from '../assets/logo_white.png';
 
 /*
  * Envuelve una sección para que aparezca suavemente al entrar en el viewport.
@@ -133,14 +134,15 @@ export default function Landing() {
             {/* ══════════════════════════ NAVBAR ══════════════════════════ */}
             <header className='sticky top-0 z-50 border-b border-white/[0.07] bg-[#0B0B0D]/85 backdrop-blur-md'>
                 <nav className='mx-auto flex h-[68px] max-w-6xl items-center gap-3 px-5'>
-                    {/* SLOT LOGO — reemplaza por <img src="/logo.svg" className="h-8 w-8" alt="InFACE" /> */}
-                    <ImgSlot
-                        icon='ti-photo text-[14px]'
-                        label=''
-                        className='h-8 w-8 flex-shrink-0 rounded-[8px]'
-                    />
-                    <div className='select-none text-[18px] font-bold tracking-tight'>
-                        In<span className='text-pink-500'>FACE</span>
+                    <div className='flex flex-shrink-0 items-center gap-1.5'>
+                        <img
+                            src={logoWhite}
+                            alt='InFACE'
+                            className='h-8 w-8 flex-shrink-0 rounded-[8px] object-contain'
+                        />
+                        <div className='select-none text-[18px] font-bold tracking-tight'>
+                            In<span className='text-pink-500'>FACE</span>
+                        </div>
                     </div>
 
                     <div className='ml-auto hidden items-center gap-8 md:flex'>
@@ -229,7 +231,7 @@ export default function Landing() {
                         </p>
                     </Reveal>
 
-                    {/* MASCOTA */}
+                    {/* MASCOTA — armadillo.png */}
                     <Reveal className='relative mx-auto w-full max-w-md'>
                         <div className='absolute -inset-6 -z-10 rounded-full bg-gradient-to-br from-pink-500/15 via-transparent to-indigo-500/15 blur-3xl' />
                         <img
@@ -434,11 +436,11 @@ export default function Landing() {
                             </Link>
                         </div>
 
-                        {/* MASCOTA - CAMBIAR AL LOGO CUANDO ME LO PASE EL VICTOR */}
+                        {/* LOGO */}
                         <img
-                            src={armadillo}
-                            alt='Mascota InFACE'
-                            className='h-32 w-32 flex-shrink-0 object-contain'
+                            src={logoWhite}
+                            alt='Logo InFACE'
+                            className='h-52 w-52 flex-shrink-0 object-contain'
                         />
                     </div>
                 </Reveal>
@@ -448,11 +450,10 @@ export default function Landing() {
             <footer className='border-t border-white/[0.06] px-5 py-10'>
                 <div className='mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 md:flex-row'>
                     <div className='flex items-center gap-2.5 text-center md:text-left'>
-                        {/* SLOT LOGO (footer) */}
-                        <ImgSlot
-                            icon='ti-photo text-[11px]'
-                            label=''
-                            className='h-7 w-7 flex-shrink-0 rounded-[7px]'
+                        <img
+                            src={logoWhite}
+                            alt='InFACE'
+                            className='h-11 w-11 flex-shrink-0 rounded-[9px] object-contain'
                         />
                         <div>
                             <div className='text-[14px] font-bold tracking-tight'>

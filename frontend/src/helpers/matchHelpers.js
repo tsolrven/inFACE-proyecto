@@ -108,6 +108,25 @@ export function etiquetaColor(idOrNombre) {
 }
 
 /*
+ * Asignación FIJA de color por carrera (no por hash), para que cada carrera
+ * conocida tenga siempre un color distinto y nunca choque con otra. Las
+ * carreras que no estén en esta lista igual reciben un color (por hash del
+ * código), solo que sin la garantía de no-choque entre ellas.
+ */
+const COLOR_POR_CODIGO_CARRERA = {
+    IECI: PALETA_ETIQUETAS[4], // sky
+    ICINF: PALETA_ETIQUETAS[1], // indigo
+    DER: PALETA_ETIQUETAS[6], // rose
+    ICO: PALETA_ETIQUETAS[3], // amber
+    CPA: PALETA_ETIQUETAS[2], // emerald
+};
+
+export function carreraColor(codigo) {
+    if (!codigo) return PALETA_ETIQUETAS[0];
+    return COLOR_POR_CODIGO_CARRERA[codigo] || etiquetaColor(codigo);
+}
+
+/*
  * Helper para renderizar los estados generales (Compatible con .js)
  */
 export function EstadoChip({ estado }) {

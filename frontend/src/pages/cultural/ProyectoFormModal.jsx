@@ -1,6 +1,13 @@
 import { useEffect, useState } from 'react';
 import ModalShell from './ModalShell';
 import { listarEtiquetas } from '../../services/etiqueta';
+import { etiquetaColor } from '../../helpers/matchHelpers';
+
+const MODALIDAD_COLORES = {
+    presencial: 'border-sky-400/25 bg-sky-400/10 text-sky-400',
+    remoto: 'border-purple-400/25 bg-purple-400/10 text-purple-400',
+    hibrido: 'border-teal-400/25 bg-teal-400/10 text-teal-400',
+};
 
 const MODALIDADES = [
     { value: 'remoto', label: 'Remoto', icon: 'ti-world' },
@@ -85,10 +92,9 @@ export default function ProyectoFormModal({ proyecto, onClose, onSubmit }) {
         }
 
         if (!esEdicion && form.fecha_inicio) {
-            const hoy = new Date();
-            hoy.setHours(0, 0, 0, 0);
-            if (new Date(form.fecha_inicio) < hoy) {
-                errs.push('La fecha de inicio no puede ser anterior a hoy: el proyecto todavía no comienza');
+            const hoyStr = new Date().toLocaleDateString('en-CA'); // 'YYYY-MM-DD' en hora local, comparable como texto
+            if (form.fecha_inicio <= hoyStr) {
+                errs.push('La fecha de inicio no puede ser hoy: elige una fecha futura para tu proyecto');
             }
         }
 
@@ -178,7 +184,7 @@ export default function ProyectoFormModal({ proyecto, onClose, onSubmit }) {
                                 key={m.value}
                                 onClick={() => setForm((f) => ({ ...f, modalidad_proyecto: m.value }))}
                                 className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-medium transition ${form.modalidad_proyecto === m.value
-                                    ? 'border-pink-500/40 bg-pink-500/10 text-pink-500'
+                                    ? MODALIDAD_COLORES[m.value]
                                     : 'border-white/[0.07] text-neutral-400 hover:text-neutral-100'
                                     }`}
                             >
@@ -198,18 +204,21 @@ export default function ProyectoFormModal({ proyecto, onClose, onSubmit }) {
                         <div className='mb-2 flex flex-wrap gap-1.5'>
                             {etiquetasDisponibles
                                 .filter((et) => etiquetaIds.has(et.id))
-                                .map((et) => (
-                                    <span
-                                        key={et.id}
-                                        className='inline-flex items-center gap-1 rounded-full border border-pink-500/40 bg-pink-500/10 px-2.5 py-1 text-[11px] font-medium text-pink-500'
-                                    >
-                                        {et.nombre}
-                                        <i
-                                            onClick={() => toggleEtiqueta(et.id)}
-                                            className='ti ti-x cursor-pointer text-[12px]'
-                                        />
-                                    </span>
-                                ))}
+                                .map((et) => {
+                                    const c = etiquetaColor(et.nombre);
+                                    return (
+                                        <span
+                                            key={et.id}
+                                            className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium ${c.bg} ${c.text} ${c.border}`}
+                                        >
+                                            {et.nombre}
+                                            <i
+                                                onClick={() => toggleEtiqueta(et.id)}
+                                                className='ti ti-x cursor-pointer text-[12px]'
+                                            />
+                                        </span>
+                                    );
+                                })}
                         </div>
                     )}
 
@@ -239,14 +248,15 @@ export default function ProyectoFormModal({ proyecto, onClose, onSubmit }) {
                                 <div className='flex flex-wrap gap-1.5'>
                                     {etiquetas.map((et) => {
                                         const seleccionada = etiquetaIds.has(et.id);
+                                        const c = etiquetaColor(et.nombre);
                                         return (
                                             <button
                                                 type='button'
                                                 key={et.id}
                                                 onClick={() => toggleEtiqueta(et.id)}
                                                 className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${seleccionada
-                                                    ? 'border-pink-500/40 bg-pink-500/10 text-pink-500'
-                                                    : 'border-white/[0.07] text-neutral-400 hover:text-neutral-100'
+                                                    ? `${c.bg} ${c.text} ${c.border}`
+                                                    : 'border-white/[0.07] text-neutral-400 hover:border-white/[0.16] hover:text-neutral-100'
                                                     }`}
                                             >
                                                 {et.nombre}

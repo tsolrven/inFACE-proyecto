@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
+import logoWhite from '../assets/logo_white.png';
 
 function getInitials(nombreUsuario) {
   if (!nombreUsuario) return '?';
@@ -32,16 +33,15 @@ export default function Navbar() {
 
   return (
     <nav className='sticky top-0 z-[300] flex h-[54px] flex-shrink-0 items-center gap-3 border-b border-white/[0.07] bg-[#17171B] px-[18px]'>
-      {/* SLOT LOGO — reemplaza este div por: <img src="/logo.svg" className="h-7 w-7 rounded-[7px]" alt="InFACE" /> */}
-      <div
-        title='Espacio para el logo de InFACE (SVG/PNG, 28×28px)'
-        className='flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-[7px] border-[1.5px] border-dashed border-white/[0.16] bg-white/[0.02] text-white/30'
-      >
-        <i className='ti ti-photo text-[12px]' />
-      </div>
-
-      <div className='select-none whitespace-nowrap text-[17px] font-bold tracking-tight text-neutral-100'>
-        In<span className='text-pink-500'>FACE</span>
+      <div className='flex flex-shrink-0 items-center gap-1.5'>
+        <img
+          src={logoWhite}
+          alt='InFACE'
+          className='h-7 w-7 flex-shrink-0 rounded-[7px] object-contain'
+        />
+        <div className='select-none whitespace-nowrap text-[17px] font-bold tracking-tight text-neutral-100'>
+          In<span className='text-pink-500'>FACE</span>
+        </div>
       </div>
 
       <div className='flex h-[34px] max-w-[420px] flex-1 cursor-text items-center gap-2 rounded-[10px] border border-white/[0.07] bg-[#1E1E24] px-3 transition-colors hover:border-white/[0.14]'>

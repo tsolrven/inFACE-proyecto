@@ -18,7 +18,8 @@ const MESES = [
 function formatMesAnio(fecha) {
     if (!fecha) return null;
     const d = new Date(fecha);
-    return `${MESES[d.getMonth()]} ${d.getFullYear()}`;
+    const mes = MESES[d.getMonth()];
+    return `${mes.charAt(0).toUpperCase()}${mes.slice(1)} ${d.getFullYear()}`;
 }
 
 export default function PerfilPublico() {
@@ -136,7 +137,7 @@ export default function PerfilPublico() {
             </div>
 
             {/* AVATAR (sin acciones de edición: es de solo lectura) */}
-            <div className='relative z-10 mx-auto -mt-11 flex max-w-4xl items-end gap-4 px-[28px]'>
+            <div className='relative z-10 mx-auto -mt-11 flex max-w-4xl items-end gap-4 px-4 sm:px-[28px]'>
                 <div className='relative flex-shrink-0'>
                     <div
                         className={`flex h-[90px] w-[90px] flex-shrink-0 items-center justify-center rounded-full border-[3px] border-neutral-950 text-[28px] font-bold ${av.bg} ${av.text}`}
@@ -147,7 +148,7 @@ export default function PerfilPublico() {
             </div>
 
             {/* INFO */}
-            <div className='mx-auto max-w-4xl px-[28px] pb-10 pt-3.5'>
+            <div className='mx-auto max-w-4xl px-4 sm:px-[28px] pb-10 pt-3.5'>
                 <div className='text-[20px] font-bold tracking-tight text-neutral-100'>{nombreVisible}</div>
                 <div className='mt-px text-[13px] text-neutral-500'>u/{perfil.nombre_usuario}</div>
 
@@ -167,6 +168,11 @@ export default function PerfilPublico() {
                     {perfil.campus && (
                         <span className='inline-flex items-center gap-1.5 text-[12px] text-neutral-500'>
                             <i className='ti ti-map-pin text-[14px]' /> {perfil.campus}
+                        </span>
+                    )}
+                    {perfil.carrera && (
+                        <span className='inline-flex items-center gap-1.5 text-[12px] text-neutral-500'>
+                            <i className='ti ti-school text-[14px]' /> Estudiante de {perfil.carrera.nombre}
                         </span>
                     )}
                     <span className='inline-flex items-center gap-1.5 text-[12px] capitalize text-neutral-500'>

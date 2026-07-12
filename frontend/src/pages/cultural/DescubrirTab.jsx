@@ -13,6 +13,10 @@ import armadilloArma from '../../assets/armadillo.png';
 
 const UMBRAL_SWIPE = 110; // px de arrastre necesarios para confirmar un swipe
 
+// ─────────────────────────────────────────────────────────────────────────────
+// PESTAÑA: DESCUBRIR (swipe estilo Tinder) — punto de entrada del módulo de matching
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function DescubrirTab({
     usuario,
     favoritosIds,
@@ -31,14 +35,17 @@ export default function DescubrirTab({
     const [tieneIntereses, setTieneIntereses] = useState(true);
     const [interesesIds, setInteresesIds] = useState(new Set());
     const [misIntereses, setMisIntereses] = useState([]);
-    const [salida, setSalida] = useState(null);
+    const [salida, setSalida] = useState(null); // 'izquierda' | 'derecha' | null
+    // id del primer proyecto "genérico" (0% de match) que sigue después de los recomendados;
+    // se calcula una sola vez por carga, así el aviso no se repite al volver a pasar por acá.
     const [primerGenericoId, setPrimerGenericoId] = useState(null);
 
+    // ── panel lateral (solo aporta valor en pantallas anchas, pero se carga siempre) ──
     const [habilidades, setHabilidades] = useState([]);
     const [personasSimilares, setPersonasSimilares] = useState([]);
     const [cargandoPanel, setCargandoPanel] = useState(true);
     const [errorPersonas, setErrorPersonas] = useState(null);
-    const [panelMobile, setPanelMobile] = useState(null);
+    const [panelMobile, setPanelMobile] = useState(null); // null | 'habilidades' | 'personas' — para las burbujas en mobile
 
     const drag = useRef({ activo: false, startX: 0, startY: 0, x: 0, y: 0 });
     const [dragPos, setDragPos] = useState({ x: 0, y: 0 });
@@ -58,6 +65,7 @@ export default function DescubrirTab({
                 setMisIntereses(perfil.intereses);
             }
 
+            // se marca, una sola vez, dónde termina lo recomendado y empieza lo genérico
             const primerConMatch = recomendados.datos.find((p) => (p.porcentaje_match ?? 0) > 0);
             const primerSinMatch = recomendados.datos.find((p) => (p.porcentaje_match ?? 0) === 0);
             setPrimerGenericoId(primerConMatch && primerSinMatch ? primerSinMatch.id : null);
@@ -102,6 +110,9 @@ export default function DescubrirTab({
     }, [cargar, cargarPanel]);
 
     useEffect(() => {
+        // cuando se crea/edita un proyecto en otra pestaña, se refresca habilidades en demanda
+        // (y la cola, por si hay proyectos nuevos) — pero solo cuando de verdad cambia algo,
+        // no cada vez que se vuelve a entrar a "Descubrir".
         function alActualizarProyectos() {
             cargarPanel();
             cargar();
@@ -134,15 +145,20 @@ export default function DescubrirTab({
         if (!actual || salida) return;
         setSalida(direccion);
         if (direccion === 'derecha') {
+            // "me interesa" = guardarlo en favoritos (si no lo estaba ya) para revisarlo con calma;
+            // el proyecto no vuelve a aparecer aquí porque el backend excluye los ya favoritos
             if (!favoritosIds.has(actual.id)) onToggleFavorito(actual.id);
         } else {
+            // "no me interesa" = se descarta de forma permanente, no vuelve a mostrarse en Descubrir
             descartarProyecto(actual.id).catch((err) => {
+                // se saca de la cola igual (mejor UX), pero se deja rastro del error para poder depurarlo
                 console.error('Error al descartar proyecto:', actual.id, err);
             });
         }
         setTimeout(quitarActual, 380);
     }
 
+    // ── gestos de arrastre (mouse + touch, sin librerías externas) ──
     function onPointerDown(e) {
         if (!actual || salida) return;
         drag.current = { activo: true, startX: e.clientX, startY: e.clientY, x: 0, y: 0 };
@@ -174,8 +190,10 @@ export default function DescubrirTab({
     function transitionActual() {
         if (drag.current.activo) return 'none';
         if (salida) return 'transform .5s cubic-bezier(.17,.67,.83,.67), box-shadow .4s ease';
-        return 'transform .35s cubic-bezier(.34,1.56,.64,1), box-shadow .4s ease';
+        return 'transform .35s cubic-bezier(.34,1.56,.64,1), box-shadow .4s ease'; // rebote elástico al soltar sin swipe
     }
+
+    // ── estados de carga / error / vacío ──
 
     if (cargando) {
         return <p className='py-16 text-center text-[13px] text-neutral-500'>Buscando proyectos para ti…</p>;
@@ -191,7 +209,7 @@ export default function DescubrirTab({
 
     return (
         <div className='grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start'>
-            <div className='w-full'>
+            <div className='min-w-0 w-full'>
                 {!tieneIntereses && (
                     <div className='mb-4 flex items-center gap-3 rounded-[10px] border border-amber-500/25 bg-amber-500/10 px-3.5 py-2.5 text-[12px] text-amber-300'>
                         <i className='ti ti-sparkles text-[16px]' />
@@ -224,6 +242,7 @@ export default function DescubrirTab({
                             </div>
                         )}
 
+                        {/* burbujas de acceso rápido (solo mobile: reemplazan los paneles laterales que sí se ven en escritorio) */}
                         <div className='mb-3 flex flex-wrap gap-2 lg:hidden'>
                             <button
                                 onClick={() => setPanelMobile('intereses')}
@@ -245,12 +264,25 @@ export default function DescubrirTab({
                             </button>
                         </div>
 
-                        <div className="relative select-none h-[560px] sm:h-[520px] md:h-[380px]">
+                        {/* MAZO DE TARJETAS — ocupa todo el ancho de la columna, del sidebar al panel derecho.
+                            El tamaño real lo define una copia invisible (en flujo normal) de la tarjeta activa,
+                            así el mazo crece con la descripción en vez de recortarla, y empuja los botones de abajo. */}
+                        <div className="relative select-none min-h-[380px]">
+                            <div
+                                className="invisible"
+                                aria-hidden="true"
+                            >
+                                <TarjetaProyecto
+                                    proyecto={actual}
+                                    interesesIds={interesesIds}
+                                />
+                            </div>
+
                             {siguientes
                                 .slice()
                                 .reverse()
                                 .map((p, i) => {
-                                    const profundidad = siguientes.length - i;
+                                    const profundidad = siguientes.length - i; // 2, 1
                                     return (
                                         <div
                                             key={p.id}
@@ -269,12 +301,13 @@ export default function DescubrirTab({
                                 onPointerMove={onPointerMove}
                                 onPointerUp={onPointerUp}
                                 onPointerCancel={onPointerUp}
-                                className='absolute inset-0 cursor-grab touch-none overflow-hidden rounded-2xl border border-white/[0.08] bg-[#1E1E24] active:cursor-grabbing'
+                                className='absolute inset-0 z-30 cursor-grab touch-none overflow-hidden rounded-2xl border border-white/[0.08] bg-[#1E1E24] active:cursor-grabbing'
                                 style={{
                                     transform: transformActual(),
                                     transformOrigin: 'center bottom',
                                     transition: transitionActual(),
                                     boxShadow: '0 20px 50px rgba(0,0,0,0.45)',
+                                    willChange: 'transform',
                                 }}
                             >
                                 <TarjetaProyecto
@@ -284,6 +317,7 @@ export default function DescubrirTab({
                             </div>
                         </div>
 
+                        {/* BOTONES DE ACCIÓN */}
                         <div className='mt-5 flex items-center justify-center gap-3'>
                             <button
                                 title='Pasar'
@@ -355,6 +389,7 @@ export default function DescubrirTab({
                 )}
             </div>
 
+            {/* COLUMNA DERECHA — mis intereses + perfiles similares + habilidades en demanda, todo en un solo bloque, solo escritorio */}
             <div className='hidden lg:block'>
                 <div className='sticky top-[70px] divide-y divide-white/[0.06] overflow-hidden rounded-2xl border border-white/[0.06] bg-[#1E1E24]'>
                     <div className='p-5'>
@@ -383,6 +418,7 @@ export default function DescubrirTab({
                 </div>
             </div>
 
+            {/* en mobile, las burbujas de arriba abren el mismo contenido en un modal */}
             {panelMobile === 'intereses' && (
                 <ModalShell
                     title='Mis intereses'
@@ -427,6 +463,10 @@ export default function DescubrirTab({
         </div>
     );
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MIS INTERESES: chips con los intereses del propio usuario, de referencia rápida
+// ─────────────────────────────────────────────────────────────────────────────
 
 function MisInteresesPanel({ misIntereses, cargando, sinBorde = false }) {
     return (
@@ -588,16 +628,22 @@ function PersonasPanel({ personasSimilares, cargando, errorPersonas, tieneIntere
     );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// TARJETA
+// ─────────────────────────────────────────────────────────────────────────────
+
 function TarjetaProyecto({ proyecto: p, interesesIds }) {
     const av = avatarColor(p.creador?.id);
     const cupos = p.maximo_integrantes ? p.maximo_integrantes - p.total_integrantes : null;
     const pct = p.porcentaje_match ?? 0;
 
     return (
-        <div className="flex h-full flex-col overflow-y-auto overflow-x-hidden px-5 py-4 md:overflow-hidden md:px-7 md:py-5">
+        <div className="flex h-full max-h-[80vh] flex-col overflow-y-auto overflow-x-hidden px-5 py-4 md:px-7 md:py-5">
 
+            {/* CONTENIDO — flex-1 + min-h-0 para que se achique si falta espacio, en vez de empujar el footer fuera de vista */}
             <div className="grid min-h-0 flex-1 grid-cols-1 items-center gap-6 md:grid-cols-[minmax(0,1fr)_200px_200px]">
 
+                {/* INFO */}
                 <div className="flex min-w-0 flex-col justify-center gap-2.5">
                     <div className="line-clamp-2 text-[19px] font-bold leading-tight text-neutral-100 md:text-[21px]">
                         {p.titulo}
@@ -608,7 +654,7 @@ function TarjetaProyecto({ proyecto: p, interesesIds }) {
                         <EstadoChip estado={p.estado} />
                     </div>
 
-                    <p className="line-clamp-2 text-[13px] leading-relaxed text-neutral-400">
+                    <p className="text-[13px] leading-relaxed text-neutral-400">
                         {p.descripcion}
                     </p>
 
@@ -677,6 +723,7 @@ function TarjetaProyecto({ proyecto: p, interesesIds }) {
                     </Link>
                 </div>
 
+                {/* MATCH — columna de 200px, círculo fijo que cabe cómodo en el alto real de la tarjeta */}
                 <div className="flex h-full items-center justify-center">
                     <div
                         className="relative flex h-[160px] w-[160px] items-center justify-center rounded-full"
@@ -688,6 +735,7 @@ function TarjetaProyecto({ proyecto: p, interesesIds }) {
                     </div>
                 </div>
 
+                {/* ARMADILLO — misma columna de 200px que el match, mismo criterio de tamaño fijo para que el gap se vea parejo en ambos lados */}
                 <div className="hidden h-full items-center justify-center md:flex">
                     <img
                         src={armadilloArma}
@@ -698,6 +746,7 @@ function TarjetaProyecto({ proyecto: p, interesesIds }) {
                 </div>
             </div>
 
+            {/* FOOTER — flex-shrink-0: nunca se comprime ni se corta, siempre visible al fondo de la tarjeta */}
             <div className="mt-3 flex flex-shrink-0 flex-col items-center gap-1.5 border-t border-white/10 pt-3">
                 <div className="flex items-center gap-2 text-[12px] text-neutral-400">
                     <i className="ti ti-users text-[13px]" />

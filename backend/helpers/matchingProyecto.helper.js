@@ -159,11 +159,38 @@ function esquemaResponderPostulacion(body) {
  */
 function incluirProyectoCompleto() {
     return {
-        creador: { include: { perfil: true } },
+        creador: { include: { perfil: true, usuario_carrera: { include: { carrera: true } } } },
         etiquetas: { include: { etiqueta: { include: { tipo_etiqueta: true } } } },
-        integrantes: { include: { usuario: { include: { perfil: true } } } },
-        _count: { select: { postulaciones: true, integrantes: true } },
+        integrantes: { where: { fue_expulsado: false }, include: { usuario: { include: { perfil: true, usuario_carrera: { include: { carrera: true } } } } } },
+        //* el conteo de "postulaciones" solo cuenta las PENDIENTES (lo que de verdad necesita
+        //* acción del creador); el total histórico se agrega aparte solo en el detalle de un proyecto
+        _count: { select: { postulaciones: { where: { estado_postulacion: 'pendiente' } }, integrantes: { where: { fue_expulsado: false } } } },
     };
+}
+
+/*
+ * Extrae la carrera "principal" (la primera) de un usuario, o null si no tiene ninguna asignada
+ */
+function extraerCarrera(usuario) {
+    const uc = usuario?.usuario_carrera?.[0];
+    return uc ? { id: uc.carrera.id, nombre: uc.carrera.nombre, codigo: uc.carrera.codigo } : null;
+}
+
+/*
+ * Calcula el estado "real" de un proyecto según sus fechas, sin necesidad de un cron:
+ * - si ya se cerró manualmente (o se llenaron los cupos), se respeta ese estado
+ * - si ya pasó la fecha de fin, se considera cerrado
+ * - si ya empezó (fecha_inicio <= hoy) y sigue "abierto", pasa a "en_progreso"
+ */
+function calcularEstadoEfectivo(estado_proyecto, fecha_inicio, fecha_fin) {
+    if (estado_proyecto === 'cerrado') return 'cerrado';
+
+    const hoy = new Date();
+
+    if (fecha_fin && new Date(fecha_fin) < hoy) return 'cerrado';
+    if (estado_proyecto === 'abierto' && fecha_inicio && new Date(fecha_inicio) <= hoy) return 'en_progreso';
+
+    return estado_proyecto;
 }
 
 /*
@@ -180,7 +207,7 @@ function formatearProyecto(p, opciones = {}) {
         descripcion: p.descripcion_proyecto,
         modalidad: p.modalidad_proyecto,
         maximo_integrantes: p.maximo_integrantes,
-        estado: p.estado_proyecto,
+        estado: calcularEstadoEfectivo(p.estado_proyecto, p.fecha_inicio, p.fecha_fin),
         fecha_inicio: p.fecha_inicio,
         fecha_fin: p.fecha_fin,
         fecha_creacion: p.fecha_creacion,
@@ -188,6 +215,7 @@ function formatearProyecto(p, opciones = {}) {
             id: p.creador?.id,
             nombre_usuario: p.creador?.perfil?.nombre_usuario,
             nombre_completo: p.creador?.perfil?.nombre_completo,
+            carrera: extraerCarrera(p.creador),
         },
         etiquetas: p.etiquetas?.map(e => ({
             id: e.etiqueta.id,
@@ -198,6 +226,7 @@ function formatearProyecto(p, opciones = {}) {
             usuario_id: i.usuario_id,
             nombre_usuario: i.usuario?.perfil?.nombre_usuario,
             rol_en_proyecto: i.rol_en_proyecto,
+            carrera: extraerCarrera(i.usuario),
         })) || [],
         total_postulaciones: p._count?.postulaciones || 0,
         total_integrantes: p._count?.integrantes || 0,
@@ -242,11 +271,13 @@ function formatearPostulacion(p) {
             id: p.postulante.id,
             nombre_usuario: p.postulante.perfil?.nombre_usuario,
             nombre_completo: p.postulante.perfil?.nombre_completo,
+            carrera: extraerCarrera(p.postulante),
         } : undefined,
         creador: p.proyecto?.creador ? {
             id: p.proyecto.creador.id,
             nombre_usuario: p.proyecto.creador.perfil?.nombre_usuario,
             nombre_completo: p.proyecto.creador.perfil?.nombre_completo,
+            carrera: extraerCarrera(p.proyecto.creador),
         } : undefined,
     };
 }
@@ -272,6 +303,7 @@ function formatearIntegrante(i) {
         usuario_id: i.usuario_id,
         nombre_usuario: i.usuario?.perfil?.nombre_usuario,
         nombre_completo: i.usuario?.perfil?.nombre_completo,
+        carrera: extraerCarrera(i.usuario),
         rol_en_proyecto: i.rol_en_proyecto,
         fecha_union: i.fecha_union,
     };
