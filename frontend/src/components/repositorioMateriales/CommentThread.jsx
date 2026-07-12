@@ -12,7 +12,7 @@ export default function CommentThread({
   apunteId,
   onNuevaRespuesta,
 }) {
-  const [votoLocal, setVotoLocal] = useState(null);
+  const [votoLocal, setVotoLocal] = useState(comentario.mi_voto ?? null);
   const [votosNeto, setVotosNeto] = useState(comentario.votos_neto);
   const [respondiendo, setRespondiendo] = useState(false);
   const [textoRespuesta, setTextoRespuesta] = useState('');
