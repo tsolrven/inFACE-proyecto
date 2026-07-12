@@ -130,7 +130,9 @@ model Comentario {
   contenido        String
   votos_neto       Int      @default(0)
   es_respuesta_aceptada Boolean @default(false)
+  eliminado        Boolean  @default(false)   // ← LÍNEA NUEVA
   creado_en        DateTime @default(now())
+  actualizado_en   DateTime @updatedAt
 
   autor      Usuario      @relation(fields: [autor_id], references: [id])
   padre      Comentario?  @relation("ComentarioRespuesta", fields: [padre_id], references: [id])
