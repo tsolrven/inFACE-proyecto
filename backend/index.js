@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import { connectDB } from './config/configDb.js';
 import { PORT } from './config/configEnv.js';
@@ -17,8 +18,11 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
+// cabeceras de seguridad HTTP 
+app.use(helmet());
+
 // middlewares de parseo
-app.use(cors({ origin: 'http://localhost:5173', credentials: true })); 
+app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
