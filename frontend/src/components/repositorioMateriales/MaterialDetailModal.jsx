@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import Modal, { ModalHeader } from '../ui/Modal';
 import CommentThread from './CommentThread';
 import { obtenerApunte } from '../../services/repositorioMateriales/apunte.service';
@@ -30,6 +30,7 @@ import ReportModal from '../reportes/ReportModal';
 import VotePill from './VotePill';
 import CodeViewer from './CodeViewer';
 import { fueEditado } from '../../utils/fueEditado';
+import BookmarkIcon from '../icons/BookmarkIcon';
 
 function insertarRespuesta(comentarios, padreId, nueva) {
   return comentarios.map((c) => {
@@ -296,8 +297,9 @@ export default function MaterialDetailModal() {
                       onClick={handleGuardar}
                       className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-neutral-300 transition-colors hover:bg-white/[0.05] hover:text-neutral-100'
                     >
-                      <i
-                        className={`ti ${apunte.esta_guardado ? 'ti-bookmark-filled text-pink-500' : 'ti-bookmark'} text-[14px]`}
+                      <BookmarkIcon
+                        filled={apunte.esta_guardado}
+                        className={`text-[14px] ${apunte.esta_guardado ? 'text-white' : ''}`}
                       />{' '}
                       {apunte.esta_guardado ? 'Quitar de guardados' : 'Guardar'}
                     </button>
@@ -371,15 +373,20 @@ export default function MaterialDetailModal() {
             <BadgesPrincipales etiquetas={apunte.etiquetas_visuales} />
 
             <div className='mb-4 flex items-center gap-2 text-[12.5px] text-neutral-600'>
-              <div className='flex h-[22px] w-[22px] items-center justify-center rounded-full bg-pink-500/10 text-[9px] font-bold text-pink-500'>
-                {apunte.autor?.nombre_usuario?.slice(0, 2).toUpperCase()}
-              </div>
-              <span>
-                por{' '}
-                <b className='text-neutral-400'>
-                  u/{apunte.autor?.nombre_usuario}
-                </b>
-              </span>
+              <Link
+                to={`/perfil/usuario/${apunte.autor?.nombre_usuario}`}
+                className='flex items-center gap-2 transition hover:opacity-80'
+              >
+                <div className='flex h-[22px] w-[22px] flex-shrink-0 items-center justify-center rounded-full bg-pink-500/10 text-[9px] font-bold text-pink-500'>
+                  {apunte.autor?.nombre_usuario?.slice(0, 2).toUpperCase()}
+                </div>
+                <span>
+                  por{' '}
+                  <b className='text-neutral-400 hover:text-neutral-100 hover:underline'>
+                    u/{apunte.autor?.nombre_usuario}
+                  </b>
+                </span>
+              </Link>
               <span>·</span>
               <span>{formatearTiempoRelativo(apunte.creado_en)}</span>
               {fueEditado(apunte.creado_en, apunte.actualizado_en) && (

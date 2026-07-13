@@ -11,7 +11,7 @@ export default function ReportModal({
   tipoContenido,
   contenidoId,
 }) {
-  const [paso, setPaso] = useState('categorias'); 
+  const [paso, setPaso] = useState('categorias');
   const [motivoSeleccionado, setMotivoSeleccionado] = useState(null);
   const [objetivo, setObjetivo] = useState(null);
   const [detalle, setDetalle] = useState('');
@@ -148,6 +148,7 @@ export default function ReportModal({
               ¿No estás seguro si esto infringe las reglas?{' '}
               <Link
                 to='/reglas'
+                state={{ desdeReporte: true }}
                 onClick={resetYCerrar}
                 className='text-blue-400 hover:underline'
               >

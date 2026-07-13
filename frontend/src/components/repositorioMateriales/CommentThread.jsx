@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { votarComentario } from '../../services/repositorioMateriales/voto.service';
 import { alternarGuardadoComentario } from '../../services/repositorioMateriales/guardado.service';
@@ -13,6 +14,7 @@ import { fueEditado } from '../../utils/fueEditado';
 import { useAuthStore } from '../../stores/authStore';
 import ReportModal from '../reportes/ReportModal';
 import ConfirmDialog from '../ui/ConfirmDialog';
+import BookmarkIcon from '../icons/BookmarkIcon';
 
 const MAX_NIVEL_INDENTADO = 6;
 const ANCHO_MENU = 150;
@@ -212,15 +214,21 @@ export default function CommentThread({
 
   return (
     <div className='flex gap-2.5'>
-      <div className='flex h-[26px] w-[26px] flex-shrink-0 items-center justify-center rounded-full bg-[#2A2A32] text-[10px] font-semibold text-neutral-400'>
+      <Link
+        to={`/perfil/usuario/${comentario.autor?.nombre_usuario}`}
+        className='flex h-[26px] w-[26px] flex-shrink-0 items-center justify-center rounded-full bg-[#2A2A32] text-[10px] font-semibold text-neutral-400 transition hover:opacity-80'
+      >
         {comentario.autor?.nombre_usuario?.slice(0, 2).toUpperCase() ?? '??'}
-      </div>
+      </Link>
 
       <div className='min-w-0 flex-1'>
         <div className='mb-1 flex items-center gap-1.5 text-xs'>
-          <span className='font-semibold text-neutral-400'>
+          <Link
+            to={`/perfil/usuario/${comentario.autor?.nombre_usuario}`}
+            className='font-semibold text-neutral-400 transition hover:text-neutral-100 hover:underline'
+          >
             u/{comentario.autor?.nombre_usuario}
-          </span>
+          </Link>
           <span className='text-neutral-600'>
             {formatearTiempoRelativo(comentario.creado_en)}
           </span>
@@ -272,9 +280,7 @@ export default function CommentThread({
                 votoLocal === 'up' ? 'text-[#FF6B35]' : 'text-neutral-600'
               }`}
             >
-              <i
-                className={`ti ${votoLocal === 'up' ? 'ti-arrow-big-up-filled' : 'ti-arrow-big-up'} text-[13px]`}
-              />
+              <i className='ti ti-arrow-big-up text-[13px]' />
             </button>
             <span className='min-w-[14px] text-center text-[11.5px] font-semibold text-neutral-400'>
               {votosNeto}
@@ -286,9 +292,7 @@ export default function CommentThread({
                 votoLocal === 'down' ? 'text-[#7B8CDE]' : 'text-neutral-600'
               }`}
             >
-              <i
-                className={`ti ${votoLocal === 'down' ? 'ti-arrow-big-down-filled' : 'ti-arrow-big-down'} text-[13px]`}
-              />
+              <i className='ti ti-arrow-big-down text-[13px]' />
             </button>
           </div>
 
@@ -399,8 +403,9 @@ export default function CommentThread({
               onClick={handleGuardar}
               className='flex w-full items-center gap-2 px-3 py-2 text-left text-[12px] text-neutral-300 transition-colors hover:bg-white/[0.05] hover:text-neutral-100'
             >
-              <i
-                className={`ti ${estaGuardado ? 'ti-bookmark-filled text-pink-500' : 'ti-bookmark'} text-[13px]`}
+              <BookmarkIcon
+                filled={estaGuardado}
+                className={`text-[13px] ${estaGuardado ? 'text-white' : ''}`}
               />{' '}
               {estaGuardado ? 'Quitar de guardados' : 'Guardar'}
             </button>

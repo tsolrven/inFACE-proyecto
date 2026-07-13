@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
+import { useUiStore } from '../stores/uiStore';
 import logoWhite from '../assets/logo_white.png';
 
 function getInitials(nombreUsuario) {
@@ -18,6 +19,7 @@ export default function Navbar() {
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const toggleSidebarMovil = useUiStore((s) => s.toggleSidebarMovil);
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -32,7 +34,17 @@ export default function Navbar() {
   const initials = getInitials(usuario?.nombre_usuario);
 
   return (
-    <nav className='sticky top-0 z-[300] flex h-[54px] flex-shrink-0 items-center gap-3 border-b border-white/[0.07] bg-[#17171B] px-[18px]'>
+    <nav className='sticky top-0 z-[300] flex h-[54px] flex-shrink-0 items-center gap-2 border-b border-white/[0.07] bg-[#17171B] px-3 sm:gap-3 sm:px-[18px]'>
+      {/* hamburguesa: solo en mobile, abre el sidebar como cajón */}
+      <button
+        type='button'
+        onClick={toggleSidebarMovil}
+        title='Abrir menú'
+        className='flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[8px] text-neutral-400 transition hover:bg-white/5 hover:text-neutral-100 lg:hidden'
+      >
+        <i className='ti ti-menu-2 text-lg' />
+      </button>
+
       <div className='flex flex-shrink-0 items-center gap-1.5'>
         <img
           src={logoWhite}
@@ -44,18 +56,18 @@ export default function Navbar() {
         </div>
       </div>
 
-      <div className='flex h-[34px] max-w-[420px] flex-1 cursor-text items-center gap-2 rounded-[10px] border border-white/[0.07] bg-[#1E1E24] px-3 transition-colors hover:border-white/[0.14]'>
-        <i className='ti ti-search text-sm text-neutral-600' />
-        <span className='text-[12.5px] text-neutral-600'>
+      <div className='flex h-[34px] min-w-0 flex-1 cursor-text items-center gap-2 rounded-[10px] border border-white/[0.07] bg-[#1E1E24] px-3 transition-colors hover:border-white/[0.14] sm:max-w-[420px]'>
+        <i className='ti ti-search flex-shrink-0 text-sm text-neutral-600' />
+        <span className='truncate text-[12.5px] text-neutral-600'>
           Buscar en InFACE...
         </span>
       </div>
 
-      <div className='ml-auto flex items-center gap-2'>
+      <div className='ml-auto flex flex-shrink-0 items-center gap-2'>
         <button
           type='button'
           title='Notificaciones'
-          className='flex h-[34px] w-[34px] items-center justify-center rounded-[10px] border border-white/[0.07] bg-[#1E1E24] text-neutral-400 transition-colors hover:text-neutral-100'
+          className='flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-[10px] border border-white/[0.07] bg-[#1E1E24] text-neutral-400 transition-colors hover:text-neutral-100'
         >
           <i className='ti ti-bell text-base' />
         </button>

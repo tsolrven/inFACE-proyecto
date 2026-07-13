@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useRepositorioStore } from '../../stores/repositorioStore';
 import { useAuthStore } from '../../stores/authStore';
 import { colorPorRamo } from '../../utils/ramoColors';
@@ -19,6 +19,7 @@ import ReportModal from '../reportes/ReportModal';
 import VotePill from './VotePill';
 import CodeViewer from './CodeViewer';
 import { fueEditado } from '../../utils/fueEditado';
+import BookmarkIcon from '../icons/BookmarkIcon';
 
 export default function MaterialCard({ apunte, onQuitarDeGuardados }) {
   const navigate = useNavigate();
@@ -131,8 +132,9 @@ export default function MaterialCard({ apunte, onQuitarDeGuardados }) {
               onClick={handleGuardar}
               className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-neutral-300 transition-colors hover:bg-white/[0.05] hover:text-neutral-100'
             >
-              <i
-                className={`ti ${estaGuardado ? 'ti-bookmark-filled text-pink-500' : 'ti-bookmark'} text-[14px]`}
+              <BookmarkIcon
+                filled={estaGuardado}
+                className={`text-[14px] ${estaGuardado ? 'text-white' : ''}`}
               />{' '}
               {estaGuardado ? 'Quitar de guardados' : 'Guardar'}
             </button>
@@ -190,7 +192,13 @@ export default function MaterialCard({ apunte, onQuitarDeGuardados }) {
           </span>
           <span className='text-[11.5px] text-neutral-600'>
             por{' '}
-            <b className='text-neutral-400'>u/{apunte.autor?.nombre_usuario}</b>
+            <Link
+              to={`/perfil/usuario/${apunte.autor?.nombre_usuario}`}
+              onClick={(e) => e.stopPropagation()}
+              className='font-bold text-neutral-400 transition hover:text-neutral-100 hover:underline'
+            >
+              u/{apunte.autor?.nombre_usuario}
+            </Link>
           </span>
           <span className='text-[11px] text-neutral-600'>
             · {formatearTiempoRelativo(apunte.creado_en)}

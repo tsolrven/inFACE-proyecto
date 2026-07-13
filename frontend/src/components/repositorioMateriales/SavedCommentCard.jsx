@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { formatearTiempoRelativo } from '../../utils/formatRelativeTime';
 import { alternarGuardadoComentario } from '../../services/repositorioMateriales/guardado.service';
 import { mostrarToast } from '../../stores/toastStore';
@@ -49,14 +49,22 @@ export default function SavedCommentCard({ comentario, onQuitarDeGuardados }) {
           title='Quitar de guardados'
           className='flex-shrink-0 text-neutral-600 transition-colors hover:text-pink-400 disabled:opacity-50'
         >
-          <i className='ti ti-bookmark-filled text-[14px]' />
+          <i className='ti ti-bookmark-off text-[14px]' />
         </button>
       </div>
 
       <div className='flex items-center gap-1.5 text-[11.5px] text-neutral-600'>
-        <span className='font-semibold text-neutral-400'>
-          u/{comentario.autor?.nombre_usuario ?? '[eliminado]'}
-        </span>
+        {comentario.autor?.nombre_usuario ? (
+          <Link
+            to={`/perfil/usuario/${comentario.autor.nombre_usuario}`}
+            onClick={(e) => e.stopPropagation()}
+            className='font-semibold text-neutral-400 transition hover:text-neutral-100 hover:underline'
+          >
+            u/{comentario.autor.nombre_usuario}
+          </Link>
+        ) : (
+          <span className='font-semibold text-neutral-400'>[eliminado]</span>
+        )}
         <span>· {formatearTiempoRelativo(comentario.creado_en)}</span>
       </div>
 

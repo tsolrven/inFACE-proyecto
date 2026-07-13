@@ -1,3 +1,5 @@
+import { useLocation, useNavigate } from 'react-router-dom';
+
 const REGLAS = [
   {
     titulo: 'Respeto ante todo',
@@ -60,8 +62,22 @@ const ACCIONES_ENFORCEMENT = [
 ];
 
 export default function ReglasInFace() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const vieneDeReporte = location.state?.desdeReporte === true;
+
   return (
     <div className='mx-auto w-full max-w-[720px] px-6 py-10'>
+      {vieneDeReporte && (
+        <button
+          onClick={() => navigate(-1)}
+          className='mb-4 flex items-center gap-1.5 text-[12.5px] text-neutral-500 transition hover:text-neutral-200'
+        >
+          <i className='ti ti-arrow-left text-[14px]' />
+          Volver
+        </button>
+      )}
+
       <h1 className='mb-2 text-xl font-bold text-neutral-100'>
         Reglas de InFACE
       </h1>
@@ -122,7 +138,7 @@ export default function ReglasInFace() {
               key={accion}
               className='flex items-start gap-2 text-[13px] text-neutral-400'
             >
-              <i className='ti ti-point-filled mt-1 flex-shrink-0 text-[8px] text-neutral-600' />
+              <span className='mt-[7px] h-[5px] w-[5px] flex-shrink-0 rounded-full bg-neutral-600' />
               {accion}
             </li>
           ))}
