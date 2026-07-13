@@ -6,11 +6,6 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// set reducido: documentos + comprimidos + imágenes + planillas.
-// el código va como snippet (texto plano en la BD) y los repos como link de
-// GitHub, así que ya no hace falta aceptar .js/.py/.java/etc. como archivo.
-// nota: req.body.tipo (apunte/codigo/guia/ejercicio/otro) no se usa hoy desde
-// el frontend, así que se dejó una sola lista en vez de una por categoría.
 const EXTENSIONES_PERMITIDAS = [
   '.pdf',
   '.doc',

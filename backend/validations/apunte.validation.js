@@ -1,8 +1,6 @@
 import { z } from 'zod';
 // ─────────────────────────────────────────────────────────────────────────────
 const TIPOS_APUNTE = ['apunte', 'codigo', 'guia', 'ejercicio', 'otro'];
-// catálogo de badges/logos que el usuario puede marcar manualmente para el apunte
-// (independiente de los archivos reales que suba; ver fileMeta.js en el frontend)
 const BADGES_VISUALES = [
   'pdf',
   'doc',

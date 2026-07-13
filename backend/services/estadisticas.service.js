@@ -1,13 +1,10 @@
 import { prisma } from '../config/configDb.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
-// suma los votos_neto que ha recibido cada usuario en sus apuntes + comentarios,
-// pero solo contenido que vive dentro del repositorio de materiales de SU carrera.
+// suma los votos_neto que ha recibido cada usuario en sus apuntes + comentarios, pero solo contenido que vive dentro del repositorio de materiales de SU carrera
+
 async function obtenerTopColaboradores(carrera_id, limite = 5) {
   if (!carrera_id) return [];
 
-  // apuntes que pertenecen a ramos de esta carrera (los necesitamos para
-  // acotar tanto el conteo de apuntes como el de comentarios, ya que
-  // Comentario no tiene una relación directa con Ramo/Carrera)
   const apuntesDeLaCarrera = await prisma.apunte.findMany({
     where: { ramo: { ramo_carrera: { some: { carrera_id } } } },
     select: { id: true },

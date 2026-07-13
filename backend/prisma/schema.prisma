@@ -131,7 +131,7 @@ model Comentario {
   contenido        String
   votos_neto       Int      @default(0)
   es_respuesta_aceptada Boolean @default(false)
-  eliminado        Boolean  @default(false)   // ← LÍNEA NUEVA
+  eliminado        Boolean  @default(false)   
   creado_en        DateTime @default(now())
   actualizado_en   DateTime @updatedAt
 

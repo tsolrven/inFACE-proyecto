@@ -129,9 +129,6 @@ async function formatearApuntesGuardados(ids, usuario_id) {
     misVotos.map((v) => [v.contenido_id, v.tipo]),
   );
 
-  // se recorre `ids` (no `apuntes`) para preservar el orden de guardado más
-  // reciente primero; si el apunte fue borrado el guardado queda huérfano y
-  // simplemente se omite
   return ids
     .filter((id) => mapApuntes[id])
     .map((id) =>
@@ -164,9 +161,6 @@ async function formatearComentariosGuardados(ids, usuario_id) {
     misVotos.map((v) => [v.contenido_id, v.tipo]),
   );
 
-  // los comentarios guardados siempre pertenecen a un apunte: se trae esa
-  // referencia liviana para poder enlazar de vuelta al post desde la vista
-  // de guardados
   const apunteIds = [...new Set(comentarios.map((c) => c.contenido_id))];
   const apuntesRelacionados = await prisma.apunte.findMany({
     where: { id: { in: apunteIds } },

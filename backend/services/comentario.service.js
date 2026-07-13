@@ -83,10 +83,6 @@ async function crearComentario({ autor_id, apunte_id, contenido, padre_id }) {
     });
     if (!padre) throw new NotFoundError('Comentario padre');
     nivel = padre.nivel + 1;
-    // Tope de seguridad (no un límite real de UX): evita hilos absurdos o
-    // recursión maliciosa, pero en la práctica el usuario nunca lo alcanza.
-    // El indentado visual se limita aparte en el frontend (ver MAX_NIVEL_INDENTADO
-    // en CommentThread.jsx), al estilo Reddit.
     if (nivel > 50) {
       throw new BadRequestError('Se alcanzó el límite máximo de anidamiento');
     }
@@ -145,7 +141,7 @@ async function eliminarComentario(comentario_id, usuario_id) {
   });
 
   if (cantidadRespuestas === 0) {
-    // sin respuestas: se elimina por completo, no hay nada que preservar
+    // sin respuestas se elimina por completo, no hay nada que preservar
     await prisma.$transaction([
       prisma.voto.deleteMany({
         where: { tipo_contenido: 'comentario', contenido_id: comentario_id },
@@ -155,7 +151,7 @@ async function eliminarComentario(comentario_id, usuario_id) {
     return { eliminado_permanente: true, comentario: null };
   }
 
-  // tiene respuestas: se preserva el nodo para no romper el hilo (soft-delete)
+  // tiene respuestas se preserva el nodo para no romper el hilo (soft-delete)
   const actualizado = await prisma.comentario.update({
     where: { id: comentario_id },
     data: { eliminado: true },

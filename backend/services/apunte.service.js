@@ -21,7 +21,6 @@ async function listarApuntes({
   carrera_id,
 }) {
   if (!carrera_id) {
-    // usuario sin carrera asignada: no le corresponde ver ningún repositorio académico
     return { apuntes: [], total: 0, pagina, paginas: 0 };
   }
 
@@ -150,9 +149,7 @@ async function obtenerApunte(id, usuario_id, carrera_id) {
     },
   });
   if (!apunte) throw new NotFoundError('Apunte');
-
-  // cuando exista el módulo de "comunidades", permitir además el acceso
-  // de lectura si el apunte pertenece a una carrera distinta a la del usuario.
+  
   const perteneceASuCarrera = apunte.ramo.ramo_carrera.some(
     (rc) => rc.carrera_id === carrera_id,
   );

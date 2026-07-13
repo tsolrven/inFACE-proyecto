@@ -26,8 +26,7 @@ const FIRMAS = {
   '.webp': [[0x52, 0x49, 0x46, 0x46]],
 };
 
-// únicas extensiones que se aceptan como texto plano (el resto de código va
-// como snippet, no como archivo)
+// únicas extensiones que se aceptan como texto plano 
 const EXTENSIONES_TEXTO = ['.txt'];
 
 function coincideFirma(buffer, firmas) {
