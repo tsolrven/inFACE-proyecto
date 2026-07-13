@@ -6,6 +6,7 @@ import votoRoutes from './voto.routes.js';
 import comentarioRoutes from './comentario.routes.js';
 import guardadoRoutes from './guardado.routes.js';
 import ramoRoutes from './ramo.routes.js';
+import estadisticasRoutes from './estadisticas.routes.js';
 import reporteRoutes from './reporte.routes.js';
 
 function routerApi(app) {
@@ -23,6 +24,7 @@ function routerApi(app) {
   router.use('/comentarios', comentarioRoutes);
   router.use('/guardados', guardadoRoutes);
   router.use('/repositorio', ramoRoutes);
+  router.use('/repositorio', estadisticasRoutes);
 
   // moderación (transversal a todos los módulos)
   router.use('/reportes', reporteRoutes);
