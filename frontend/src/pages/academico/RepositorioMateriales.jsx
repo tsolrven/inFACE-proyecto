@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import RightPanel from '../../components/rightPanel/RightPanel';
 import RpCard from '../../components/rightPanel/RpCard';
-import RpStats from '../../components/rightPanel/RpStats';
 import RpRules from '../../components/rightPanel/RpRules';
 import PageBanner from '../../components/banner/PageBanner';
 import MaterialFeed from '../../components/repositorioMateriales/MaterialFeed';
@@ -14,13 +13,7 @@ import {
   listarTopColaboradores,
   listarHashtagsPopulares,
 } from '../../services/repositorioMateriales/estadisticas.service';
-
-const stats = [
-  { num: '487', label: 'materiales' },
-  { num: '314', label: 'archivos PDF' },
-  { num: '89', label: 'repositorios' },
-  { num: '84%', label: 'aprobación' },
-];
+import armadilloRepositorio from '../../assets/armadillo-repositorio-materiales.png';
 
 const COLORES_COLABORADOR = [
   'bg-amber-400/10 text-amber-400',
@@ -139,7 +132,11 @@ export default function RepositorioMateriales() {
             </span>
             . Solo estudiantes con correo institucional.
           </p>
-          <RpStats items={stats} />
+          <img
+            src={armadilloRepositorio}
+            alt='Armadillo mascota del repositorio de materiales'
+            className='w-full rounded-[10px]'
+          />
         </RpCard>
 
         <RpCard
