@@ -1,0 +1,31 @@
+# Secrets
+.env
+.env.*
+
+# Dependencies
+node_modules/
+
+# Version control
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build outputs
+dist/
+build/
+
+# Tests
+test/
+tests/
+*.test.js
+*.spec.js

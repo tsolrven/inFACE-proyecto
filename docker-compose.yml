@@ -1,0 +1,61 @@
+services:
+  database:
+    image: postgres:17-alpine
+    container_name: inface-db
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres123}
+      POSTGRES_DB: ${DATABASE:-inface_db}
+    # sin "ports" hacia afuera: nadie te asignó uno para postgres, así que
+    # se queda solo accesible dentro de la red de docker (más seguro)
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DATABASE:-inface_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - inface-network
+
+  backend:
+    build: ./backend
+    container_name: inface-backend
+    environment:
+      # Prisma usa una sola URL de conexión, no variables sueltas.
+      # "database" es el nombre del servicio de arriba, así se resuelve dentro
+      # de la red interna de docker compose (no es un dominio público).
+      - DATABASE_URL=postgresql://${DB_USERNAME:-postgres}:${DB_PASSWORD:-postgres123}@database:5432/${DATABASE:-inface_db}
+      - PORT=80
+      - JWT_ACCESS_SECRET=${JWT_ACCESS_SECRET}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+    ports:
+      # te asignaron: afuera 8086 -> adentro 80
+      - "8086:80"
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - inface-network
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # el navegador del usuario llega al backend por su propio puerto público
+        VITE_API_URL: ${VITE_API_URL}
+    container_name: inface-frontend
+    ports:
+      # te asignaron: afuera 8449 -> adentro 443 (esta es la URL final de tu sitio)
+      - "8449:443"
+    depends_on:
+      - backend
+    networks:
+      - inface-network
+
+networks:
+  inface-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

@@ -1,0 +1,21 @@
+# ============================================
+# SECRETOS (el .env que usa docker-compose.yml)
+# ============================================
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# ============================================
+# DOCKER
+# ============================================
+# volúmenes/datos si alguna vez se generan sueltos en la raíz
+*.log
+
+# ============================================
+# EDITORES / SISTEMA
+# ============================================
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
