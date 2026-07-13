@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import RightPanel from '../../components/rightPanel/RightPanel';
 import RpCard from '../../components/rightPanel/RpCard';
 import RpStats from '../../components/rightPanel/RpStats';
@@ -10,6 +10,10 @@ import GuardadosFeed from '../../components/repositorioMateriales/GuardadosFeed'
 import UploadModal from '../../components/repositorioMateriales/UploadModal';
 import { useAuthStore } from '../../stores/authStore';
 import { useRepositorioStore } from '../../stores/repositorioStore';
+import {
+  listarTopColaboradores,
+  listarHashtagsPopulares,
+} from '../../services/repositorioMateriales/estadisticas.service';
 
 const stats = [
   { num: '487', label: 'materiales' },
@@ -18,45 +22,23 @@ const stats = [
   { num: '84%', label: 'aprobación' },
 ];
 
-const collaborators = [
-  {
-    initials: 'VR',
-    username: 'u/tutora_valentina',
-    pts: '1.8k pts',
-    color: 'bg-amber-400/10 text-amber-400',
-  },
-  {
-    initials: 'FM',
-    username: 'u/felipe_morales',
-    pts: '742 pts',
-    color: 'bg-blue-400/10 text-blue-400',
-  },
-  {
-    initials: 'CL',
-    username: 'u/camila_lagos',
-    pts: '489 pts',
-    color: 'bg-emerald-400/10 text-emerald-400',
-  },
-  {
-    initials: 'RM',
-    username: 'u/rodrigo_mm',
-    pts: '198 pts',
-    color: 'bg-violet-400/10 text-violet-400',
-  },
+const COLORES_COLABORADOR = [
+  'bg-amber-400/10 text-amber-400',
+  'bg-blue-400/10 text-blue-400',
+  'bg-emerald-400/10 text-emerald-400',
+  'bg-violet-400/10 text-violet-400',
+  'bg-rose-400/10 text-rose-400',
 ];
 
-const tags = [
-  '#certamen',
-  '#C++',
-  '#Java',
-  '#SQL',
-  '#arboles',
-  '#derivadas',
-  '#procesos',
-  '#normalizacion',
-  '#plantilla',
-  '#UML',
-];
+function inicialesDe(nombreUsuario) {
+  return (nombreUsuario || '??').slice(0, 2).toUpperCase();
+}
+
+function formatearPuntos(puntos) {
+  return puntos >= 1000
+    ? `${(puntos / 1000).toFixed(1)}k pts`
+    : `${puntos} pts`;
+}
 
 const rules = [
   'Sube solo materiales propios o con autorización del autor original.',
@@ -73,6 +55,9 @@ export default function RepositorioMateriales() {
   const [uploadAbierto, setUploadAbierto] = useState(false);
   const [vista, setVista] = useState('publicaciones');
 
+  const [colaboradores, setColaboradores] = useState([]);
+  const [tagsPopulares, setTagsPopulares] = useState([]);
+
   const { hashtag } = useParams();
   const setFiltro = useRepositorioStore((s) => s.setFiltro);
 
@@ -80,6 +65,16 @@ export default function RepositorioMateriales() {
     setFiltro('hashtag', hashtag ?? null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hashtag]);
+
+  useEffect(() => {
+    if (!carreraId) return;
+    listarTopColaboradores()
+      .then(setColaboradores)
+      .catch(() => setColaboradores([]));
+    listarHashtagsPopulares()
+      .then(setTagsPopulares)
+      .catch(() => setTagsPopulares([]));
+  }, [carreraId]);
 
   const banner = hashtag
     ? {
@@ -151,42 +146,59 @@ export default function RepositorioMateriales() {
           title='Top colaboradores'
           icon='ti-star'
         >
-          <div className='flex flex-col'>
-            {collaborators.map(({ initials, username, pts, color }) => (
-              <div
-                key={username}
-                className='flex items-center gap-2 py-1.5'
-              >
-                <div
-                  className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${color}`}
-                >
-                  {initials}
-                </div>
-                <span className='flex-1 text-[12px] text-neutral-400'>
-                  {username}
-                </span>
-                <span className='text-[11px] font-semibold text-pink-500'>
-                  {pts}
-                </span>
-              </div>
-            ))}
-          </div>
+          {colaboradores.length === 0 ? (
+            <p className='text-[11.5px] text-neutral-600'>
+              Aún no hay colaboradores con votos en tu carrera.
+            </p>
+          ) : (
+            <div className='flex flex-col'>
+              {colaboradores.map(
+                ({ usuario_id, nombre_usuario, puntos }, i) => (
+                  <div
+                    key={usuario_id}
+                    className='flex items-center gap-2 py-1.5'
+                  >
+                    <div
+                      className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${
+                        COLORES_COLABORADOR[i % COLORES_COLABORADOR.length]
+                      }`}
+                    >
+                      {inicialesDe(nombre_usuario)}
+                    </div>
+                    <span className='flex-1 text-[12px] text-neutral-400'>
+                      u/{nombre_usuario}
+                    </span>
+                    <span className='text-[11px] font-semibold text-pink-500'>
+                      {formatearPuntos(puntos)}
+                    </span>
+                  </div>
+                ),
+              )}
+            </div>
+          )}
         </RpCard>
 
         <RpCard
           title='Tags populares'
           icon='ti-hash'
         >
-          <div className='flex flex-wrap gap-1.5'>
-            {tags.map((tag) => (
-              <span
-                key={tag}
-                className='cursor-pointer rounded-full border border-transparent bg-[#2A2A32] px-2.5 py-0.5 text-[11px] text-neutral-500 transition-colors hover:border-white/[0.07] hover:bg-white/[0.06] hover:text-neutral-100'
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
+          {tagsPopulares.length === 0 ? (
+            <p className='text-[11.5px] text-neutral-600'>
+              Aún no hay tags usados en los últimos 30 días.
+            </p>
+          ) : (
+            <div className='flex flex-wrap gap-1.5'>
+              {tagsPopulares.map(({ nombre }) => (
+                <Link
+                  key={nombre}
+                  to={`/repositorio-materiales/tag/${nombre}`}
+                  className='cursor-pointer rounded-full border border-transparent bg-[#2A2A32] px-2.5 py-0.5 text-[11px] text-neutral-500 transition-colors hover:border-white/[0.07] hover:bg-white/[0.06] hover:text-neutral-100'
+                >
+                  #{nombre}
+                </Link>
+              ))}
+            </div>
+          )}
         </RpCard>
 
         <RpCard
