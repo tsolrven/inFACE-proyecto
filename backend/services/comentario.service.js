@@ -82,6 +82,11 @@ async function crearComentario({ autor_id, apunte_id, contenido, padre_id }) {
       where: { id: padre_id },
     });
     if (!padre) throw new NotFoundError('Comentario padre');
+    if (padre.tipo_contenido !== 'apunte' || padre.contenido_id !== apunte_id) {
+      throw new BadRequestError(
+        'El comentario padre no pertenece a este apunte',
+      );
+    }
     nivel = padre.nivel + 1;
     if (nivel > 50) {
       throw new BadRequestError('Se alcanzó el límite máximo de anidamiento');

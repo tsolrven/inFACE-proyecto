@@ -22,57 +22,62 @@ async function verificarContenidoExiste(tipo_contenido, contenido_id) {
 async function votar({ usuario_id, contenido_id, tipo_contenido, tipo }) {
   await verificarContenidoExiste(tipo_contenido, contenido_id);
 
-  const votoExistente = await prisma.voto.findUnique({
-    where: {
-      usuario_id_tipo_contenido_contenido_id: {
-        usuario_id,
-        tipo_contenido,
-        contenido_id,
+  return prisma.$transaction(async (tx) => {
+    const votoExistente = await tx.voto.findUnique({
+      where: {
+        usuario_id_tipo_contenido_contenido_id: {
+          usuario_id,
+          tipo_contenido,
+          contenido_id,
+        },
       },
-    },
-  });
-
-  if (votoExistente) {
-    if (votoExistente.tipo === tipo) {
-      // si vota igual elimina el voto (toggle)
-      await prisma.voto.delete({
-        where: {
-          usuario_id_tipo_contenido_contenido_id: {
-            usuario_id,
-            tipo_contenido,
-            contenido_id,
-          },
-        },
-      });
-      await actualizarVotosNeto(contenido_id, tipo_contenido);
-      return { mensaje: 'Voto eliminado' };
-    } else {
-      // si vota distinto actualiza el voto
-      await prisma.voto.update({
-        where: {
-          usuario_id_tipo_contenido_contenido_id: {
-            usuario_id,
-            tipo_contenido,
-            contenido_id,
-          },
-        },
-        data: { tipo },
-      });
-    }
-  } else {
-    await prisma.voto.create({
-      data: { usuario_id, tipo_contenido, contenido_id, tipo },
     });
-  }
 
-  await actualizarVotosNeto(contenido_id, tipo_contenido);
-  return { mensaje: 'Voto registrado' };
+    let mensaje;
+
+    if (votoExistente) {
+      if (votoExistente.tipo === tipo) {
+        // si vota igual elimina el voto (toggle)
+        await tx.voto.delete({
+          where: {
+            usuario_id_tipo_contenido_contenido_id: {
+              usuario_id,
+              tipo_contenido,
+              contenido_id,
+            },
+          },
+        });
+        mensaje = 'Voto eliminado';
+      } else {
+        // si vota distinto actualiza el voto
+        await tx.voto.update({
+          where: {
+            usuario_id_tipo_contenido_contenido_id: {
+              usuario_id,
+              tipo_contenido,
+              contenido_id,
+            },
+          },
+          data: { tipo },
+        });
+        mensaje = 'Voto registrado';
+      }
+    } else {
+      await tx.voto.create({
+        data: { usuario_id, tipo_contenido, contenido_id, tipo },
+      });
+      mensaje = 'Voto registrado';
+    }
+
+    await actualizarVotosNeto(tx, contenido_id, tipo_contenido);
+    return { mensaje };
+  });
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-async function actualizarVotosNeto(contenido_id, tipo_contenido) {
+async function actualizarVotosNeto(tx, contenido_id, tipo_contenido) {
   const [ups, downs] = await Promise.all([
-    prisma.voto.count({ where: { contenido_id, tipo_contenido, tipo: 'up' } }),
-    prisma.voto.count({
+    tx.voto.count({ where: { contenido_id, tipo_contenido, tipo: 'up' } }),
+    tx.voto.count({
       where: { contenido_id, tipo_contenido, tipo: 'down' },
     }),
   ]);
@@ -80,12 +85,12 @@ async function actualizarVotosNeto(contenido_id, tipo_contenido) {
   const neto = ups - downs;
 
   if (tipo_contenido === 'apunte') {
-    await prisma.apunte.update({
+    await tx.apunte.update({
       where: { id: contenido_id },
       data: { votos_neto: neto },
     });
   } else if (tipo_contenido === 'comentario') {
-    await prisma.comentario.update({
+    await tx.comentario.update({
       where: { id: contenido_id },
       data: { votos_neto: neto },
     });
