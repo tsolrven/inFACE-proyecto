@@ -1,18 +1,12 @@
 import { BADGES_SELECCIONABLES } from '../../utils/fileMeta';
 
-// selector tipo "chips" para que el usuario marque manualmente uno o varios
-// badges que representan el contenido del apunte. Es una decisión del
-// usuario, no se infiere del archivo real: solo controla el badge principal
-// que se muestra arriba del post (MaterialCard / MaterialDetailModal), no
-// afecta el ícono de cada archivo individual en la lista de adjuntos.
+// selector tipo "chips" para que el usuario marque manualmente uno o varios badges que representan el contenido del apunte
 export default function BadgeSelector({ value = [], onChange, disabled }) {
   function toggle(badgeValue) {
     if (disabled) return;
     const yaEsta = value.includes(badgeValue);
     onChange(
-      yaEsta
-        ? value.filter((v) => v !== badgeValue)
-        : [...value, badgeValue],
+      yaEsta ? value.filter((v) => v !== badgeValue) : [...value, badgeValue],
     );
   }
 
@@ -55,8 +49,7 @@ export default function BadgeSelector({ value = [], onChange, disabled }) {
   );
 }
 
-// ícono de información (ⓘ) con tooltip nativo, para cuando el tipo de
-// archivo del usuario no está en las extensiones permitidas
+// ícono de información 
 export function InfoTooltip({ texto }) {
   return (
     <span

@@ -171,8 +171,7 @@ export const allProtectedRoutes = [
   ...footerLinks,
 ];
 // ──────────────────────────────────────────────────────────────────────────
-// rutas que existen pero NO van en el sidebar (se llega a ellas navegando,
-// ej. al hacer click en un hashtag dentro del repositorio de materiales).
+// rutas que existen pero no van en el sidebar (se llega a ellas navegando por ej al hacer click en un hashtag dentro del repositorio de materiales)
 export const extraRoutes = [
   {
     path: '/repositorio-materiales/tag/:hashtag',
@@ -181,7 +180,6 @@ export const extraRoutes = [
 ];
 // ──────────────────────────────────────────────────────────────────────────
 // rutas que se renderizan COMO MODAL, pero que también funcionan como página normal si alguien entra directo al link.
-// App.jsx: se dibujan en un <Routes> aparte cuando hay backgroundLocation.
 export const modalRoutes = [
   {
     path: '/repositorio-materiales/:id',

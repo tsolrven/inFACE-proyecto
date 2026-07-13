@@ -79,10 +79,6 @@ export const TIPOS_ARCHIVO_FILTRO = [
   { value: 'excel', ...DEFS.excel },
 ];
 
-// catálogo de badges que el usuario puede marcar manualmente al subir/editar
-// un apunte (selector tipo "chips"). Controla solo el badge principal que se
-// muestra arriba del post; no reemplaza el ícono automático de cada archivo
-// individual en la lista de adjuntos (ese sigue viniendo de metaDeArchivo()).
 export const BADGES_SELECCIONABLES = [
   { value: 'pdf', ...DEFS.pdf },
   { value: 'doc', ...DEFS.doc },
@@ -117,8 +113,6 @@ export function metaDeArchivo(archivo) {
   return DEFS[categoriaDeMime(archivo?.tipo_mime)] ?? DEFS.default;
 }
 
-// dominios conocidos -> { icon, color, bg, label }. Se usa solo para elegir
-// un ícono más específico al mostrar un link; no restringe qué se puede pegar.
 const DOMINIOS_LINK = {
   'github.com': DEFS.github,
   'gitlab.com': { ...DEFS.link, icon: 'ti-brand-gitlab', label: 'GitLab' },
@@ -161,8 +155,6 @@ const DOMINIOS_LINK = {
   },
 };
 
-// devuelve { icon, color, bg, label } para un link, según su dominio.
-// si no reconoce el dominio (o la url es inválida), cae al ícono genérico de link.
 export function metaDeLink(url) {
   try {
     const host = new URL(url).hostname.replace(/^www\./, '');
@@ -172,13 +164,10 @@ export function metaDeLink(url) {
   }
 }
 
-// devuelve { icon, color, bg, label } para un badge elegido por el usuario
-// (apunte.etiquetas_visuales), o null si el value no está en el catálogo
 export function metaDeBadge(value) {
   return DEFS[value] ?? null;
 }
 
-// ícono genérico para cuando el apunte no tiene ningún badge marcado
 export const BADGE_POR_DEFECTO = DEFS.default;
 
 export function metaPrincipal(apunte) {

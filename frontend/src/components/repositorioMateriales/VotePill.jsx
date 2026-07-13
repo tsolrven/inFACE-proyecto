@@ -1,7 +1,3 @@
-// pequeño ícono de flecha grande (mismo trazo que "arrow-big-up/down" de Tabler),
-// dibujado a mano en SVG en vez de usar el webfont: así podemos alternar entre
-// contorno (outline) y relleno sólido según el voto, sin depender de la clase
-// "-filled" que el CDN de Tabler no incluye (por eso el ícono desaparecía antes).
 function FlechaVoto({ direccion, activo, className }) {
   const d =
     direccion === 'up'

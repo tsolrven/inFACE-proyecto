@@ -85,7 +85,6 @@ export default function MaterialDetailModal() {
   const actualizarApunteEnFeed = useRepositorioStore(
     (s) => s.actualizarApunteEnFeed,
   );
-  const editarApunte = useRepositorioStore((s) => s.editarApunte);
   const eliminarApunteDelFeed = useRepositorioStore(
     (s) => s.eliminarApunteDelFeed,
   );
@@ -534,9 +533,6 @@ export default function MaterialDetailModal() {
   );
 }
 
-// badges que el usuario marcó manualmente al subir/editar el material.
-// Es independiente de los archivos reales adjuntos (esos siguen mostrando
-// su propio ícono automático más abajo, en DetalleArchivos).
 function BadgesPrincipales({ etiquetas }) {
   if (!etiquetas?.length) return null;
 

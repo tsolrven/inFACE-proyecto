@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { listarGuardados } from '../services/repositorioMateriales/guardado.service';
 
 export const useGuardadosStore = create((set, get) => ({
-  tipo: 'apunte', // 'apunte' | 'comentario'
+  tipo: 'apunte', //apunte o comentaerio
   items: [],
   meta: null,
   pagina: 1,

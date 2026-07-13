@@ -14,9 +14,6 @@ import { useAuthStore } from '../../stores/authStore';
 import ReportModal from '../reportes/ReportModal';
 import ConfirmDialog from '../ui/ConfirmDialog';
 
-// A partir de este nivel, el hilo deja de indentarse más hacia la derecha
-// (estilo Reddit/Slack) para que la columna no se apachurre en hilos muy
-// profundos. El límite real de anidamiento lo controla el backend.
 const MAX_NIVEL_INDENTADO = 6;
 const ANCHO_MENU = 150;
 
@@ -178,7 +175,6 @@ export default function CommentThread({
     }
   }
 
-  // nodo eliminado (soft-delete): se preserva el hilo pero se oculta autor/contenido/acciones
   if (comentario.eliminado) {
     return (
       <div className='flex gap-2.5'>

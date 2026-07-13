@@ -8,7 +8,6 @@ function ToastItem({ id, mensaje, onCerrar }) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    // trigger de entrada en el siguiente frame para animar
     const raf = requestAnimationFrame(() => setVisible(true));
     const timeout = setTimeout(() => handleCerrar(), DURACION_MS);
     return () => {

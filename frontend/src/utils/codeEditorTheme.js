@@ -1,8 +1,6 @@
 import { createTheme } from '@uiw/codemirror-themes';
 import { tags as t } from '@lezer/highlight';
 
-// tema oscuro a medida, calzado con la paleta de inFace
-// (#111114 fondo de inputs, #1E1E24 cards, acento rosa pink-500)
 export const codeEditorTheme = createTheme({
   theme: 'dark',
   settings: {

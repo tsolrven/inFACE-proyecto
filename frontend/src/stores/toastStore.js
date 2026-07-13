@@ -20,7 +20,6 @@ export const useToastStore = create((set, get) => ({
   },
 }));
 
-// helper para usar fuera de componentes React (services, stores, etc.)
 export function mostrarToast(mensaje) {
   return useToastStore.getState().mostrarToast(mensaje);
 }

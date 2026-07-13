@@ -17,8 +17,8 @@ const TIPOS = [
   { value: 'snippet', icon: 'ti-code', label: 'Snippet de código' },
 ];
 
-const MAX_ARCHIVOS = 10; // debe coincidir con MAX_ARCHIVOS_POR_APUNTE en el backend
-const MAX_TAMANIO_MB = 20; // debe coincidir con el límite de multer.helper.js
+const MAX_ARCHIVOS = 10; //debe coincidir con MAX_ARCHIVOS_POR_APUNTE en el backend
+const MAX_TAMANIO_MB = 20; //debe coincidir con el límite de multer.helper.js
 const MAX_TAMANIO_BYTES = MAX_TAMANIO_MB * 1024 * 1024;
 
 export default function EditApunteModal({

@@ -311,9 +311,6 @@ export default function MaterialCard({ apunte, onQuitarDeGuardados }) {
   );
 }
 
-// badges que el usuario marcó manualmente al subir/editar el material.
-// Es independiente de los archivos reales adjuntos (esos siguen mostrando
-// su propio ícono automático en ArchivosPreview, más abajo).
 function BadgesPrincipales({ etiquetas }) {
   if (!etiquetas?.length) return null;
 

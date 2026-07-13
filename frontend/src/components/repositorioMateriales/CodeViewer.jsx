@@ -8,9 +8,6 @@ import {
 } from '../../utils/codeLanguages';
 import { codeEditorTheme } from '../../utils/codeEditorTheme';
 
-// interactivo=false se usa en las previews de las cards del feed: se ve
-// coloreado pero no captura clicks/scroll, para que el click siga abriendo
-// el detalle del material (igual que el resto de la card).
 export default function CodeViewer({
   codigo,
   lenguaje,
@@ -35,7 +32,7 @@ export default function CodeViewer({
       setCopiado(true);
       setTimeout(() => setCopiado(false), 1500);
     } catch {
-      // portapapeles no disponible, no hacemos nada
+      // portapapeles no disponible, no se hace nada
     }
   }
 
