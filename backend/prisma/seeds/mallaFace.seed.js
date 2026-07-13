@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { prisma } from '../config/configDb.js';
+import { prisma } from '../../config/configDb.js';
 
 const MALLAS = {
   IECI: {

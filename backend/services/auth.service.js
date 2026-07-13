@@ -12,6 +12,7 @@ import {
   ValidationError,
   NotFoundError,
 } from '../errors/appError.js';
+import { derivarNombreDesdeCorreo } from '../helpers/nombre.helper.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 function determinarRolPorCorreo(correo) {
   if (correo.endsWith('@alumnos.ubiobio.cl')) {
@@ -36,6 +37,7 @@ function formatearUsuario(usuario) {
       nombre: uc.carrera.nombre,
       codigo: uc.carrera.codigo,
     })),
+    tiene_intereses: (usuario.usuario_etiquetas?.length ?? 0) > 0,
   };
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
@@ -65,6 +67,8 @@ async function registrar({ correo, contrasena, nombre_usuario, carrera_id }) {
 
   const hash = await bcrypt.hash(contrasena, 10);
 
+  const nombre_completo = derivarNombreDesdeCorreo(correo);
+
   const usuario = await prisma.usuario.create({
     data: {
       correo,
@@ -73,6 +77,7 @@ async function registrar({ correo, contrasena, nombre_usuario, carrera_id }) {
       perfil: {
         create: {
           nombre_usuario,
+          nombre_completo,
         },
       },
       usuario_carrera: {
@@ -84,6 +89,7 @@ async function registrar({ correo, contrasena, nombre_usuario, carrera_id }) {
     include: {
       perfil: true,
       usuario_carrera: { include: { carrera: true } },
+      usuario_etiquetas: true,
     },
   });
 
@@ -96,6 +102,7 @@ async function iniciarSesion({ correo, contrasena }) {
     include: {
       perfil: true,
       usuario_carrera: { include: { carrera: true } },
+      usuario_etiquetas: true,
     },
   });
 
@@ -150,6 +157,7 @@ async function obtenerUsuarioActual(id) {
     include: {
       perfil: true,
       usuario_carrera: { include: { carrera: true } },
+      usuario_etiquetas: true,
     },
   });
 

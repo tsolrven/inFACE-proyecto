@@ -8,6 +8,9 @@ import guardadoRoutes from './guardado.routes.js';
 import ramoRoutes from './ramo.routes.js';
 import estadisticasRoutes from './estadisticas.routes.js';
 import reporteRoutes from './reporte.routes.js';
+import proyectoRoutes from './matchingProyecto.routes.js';
+import etiquetaRoutes from './etiqueta.routes.js';
+import perfilRoutes from './perfil.routes.js';
 
 function routerApi(app) {
   const router = Router();
@@ -28,6 +31,10 @@ function routerApi(app) {
 
   // moderación (transversal a todos los módulos)
   router.use('/reportes', reporteRoutes);
+  
+  router.use('/proyecto', proyectoRoutes);
+  router.use('/etiquetas', etiquetaRoutes);
+  router.use('/perfil', perfilRoutes);
 }
 
 export { routerApi };

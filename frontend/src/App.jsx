@@ -9,8 +9,12 @@ import {
 import { useAuthStore } from './stores/authStore';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
+import Onboarding from './pages/Onboarding';
+import Landing from './pages/Landing';
 import Layout from './components/Layout';
 import ToastContainer from './components/ui/Toast';
+import Perfil from './pages/Perfil';
+import PerfilPublico from './pages/PerfilPublico';
 import {
   allProtectedRoutes,
   extraRoutes,
@@ -19,14 +23,53 @@ import {
 
 function ProtectedRoute({ children }) {
   const usuario = useAuthStore((s) => s.usuario);
-  return usuario ? (
-    children
-  ) : (
-    <Navigate
-      to='/login'
-      replace
-    />
-  );
+  const location = useLocation();
+
+  if (!usuario) {
+    // sin sesión, la raíz del sitio muestra la landing pública en vez de mandar directo al login
+    if (location.pathname === '/') {
+      return <Landing />;
+    }
+    return (
+      <Navigate
+        to='/login'
+        replace
+      />
+    );
+  }
+
+  // mientras no configure sus intereses, no puede entrar al resto de la app
+  if (usuario.tiene_intereses === false) {
+    return (
+      <Navigate
+        to='/onboarding'
+        replace
+      />
+    );
+  }
+  return children;
+}
+
+function OnboardingRoute({ children }) {
+  const usuario = useAuthStore((s) => s.usuario);
+  if (!usuario) {
+    return (
+      <Navigate
+        to='/login'
+        replace
+      />
+    );
+  }
+  // si ya configuró intereses, no tiene sentido que vuelva a ver el onboarding
+  if (usuario.tiene_intereses !== false) {
+    return (
+      <Navigate
+        to='/'
+        replace
+      />
+    );
+  }
+  return children;
 }
 
 function GuestRoute({ children }) {
@@ -73,6 +116,14 @@ function AppRoutes() {
           }
         />
         <Route
+          path='/onboarding'
+          element={
+            <OnboardingRoute>
+              <Onboarding />
+            </OnboardingRoute>
+          }
+        />
+        <Route
           element={
             <ProtectedRoute>
               <Layout />
@@ -94,6 +145,15 @@ function AppRoutes() {
               />
             ),
           )}
+
+          <Route
+            path='/perfil'
+            element={<Perfil />}
+          />
+          <Route
+            path='/perfil/usuario/:nombreUsuario'
+            element={<PerfilPublico />}
+          />
         </Route>
 
         <Route
@@ -106,6 +166,7 @@ function AppRoutes() {
           }
         />
       </Routes>
+
       {backgroundLocation && (
         <Routes>
           {modalRoutes.map(({ path, element }) => (

@@ -39,7 +39,16 @@ export const useAuthStore = create((set) => ({
       set({ cargando: false });
     }
   },
+
+  marcarInteresesConfigurados: () => {
+    set((state) =>
+      state.usuario
+        ? { usuario: { ...state.usuario, tiene_intereses: true } }
+        : state,
+    );
+  },
 }));
+
 window.addEventListener('auth:session-expired', () => {
   useAuthStore.setState({ usuario: null });
 });

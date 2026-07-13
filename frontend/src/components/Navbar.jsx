@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
+<<<<<<< HEAD
 import { useAuthStore } from '../stores/authStore';
+=======
+import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../stores/authStore';
+import logoWhite from '../assets/logo_white.png';
+>>>>>>> master-deploy
 
 function getInitials(nombreUsuario) {
   if (!nombreUsuario) return '?';
@@ -13,6 +19,10 @@ function getInitials(nombreUsuario) {
 
 export default function Navbar() {
   const { usuario, logout } = useAuthStore();
+<<<<<<< HEAD
+=======
+  const navigate = useNavigate();
+>>>>>>> master-deploy
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -30,8 +40,20 @@ export default function Navbar() {
 
   return (
     <nav className='sticky top-0 z-[300] flex h-[54px] flex-shrink-0 items-center gap-3 border-b border-white/[0.07] bg-[#17171B] px-[18px]'>
+<<<<<<< HEAD
       <div className='select-none whitespace-nowrap text-[17px] font-bold tracking-tight text-neutral-100'>
         In<span className='text-pink-500'>FACE</span>
+=======
+      <div className='flex flex-shrink-0 items-center gap-1.5'>
+        <img
+          src={logoWhite}
+          alt='InFACE'
+          className='h-7 w-7 flex-shrink-0 rounded-[7px] object-contain'
+        />
+        <div className='select-none whitespace-nowrap text-[17px] font-bold tracking-tight text-neutral-100'>
+          In<span className='text-pink-500'>FACE</span>
+        </div>
+>>>>>>> master-deploy
       </div>
 
       <div className='flex h-[34px] max-w-[420px] flex-1 cursor-text items-center gap-2 rounded-[10px] border border-white/[0.07] bg-[#1E1E24] px-3 transition-colors hover:border-white/[0.14]'>
@@ -58,7 +80,11 @@ export default function Navbar() {
             type='button'
             title='Mi perfil'
             onClick={() => setDropdownOpen((open) => !open)}
+<<<<<<< HEAD
             className='flex h-[34px] w-[34px] items-center justify-center rounded-full border-[1.5px] border-pink-500/30 bg-pink-500/10 text-xs font-bold text-pink-500 transition-colors hover:border-pink-500'
+=======
+            className='flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-full border-[1.5px] border-pink-500/30 bg-pink-500/10 text-xs font-bold text-pink-500 transition-colors hover:border-pink-500'
+>>>>>>> master-deploy
           >
             {initials}
           </button>
@@ -66,6 +92,7 @@ export default function Navbar() {
           {dropdownOpen && (
             <div className='absolute right-0 top-[44px] w-[206px] overflow-hidden rounded-2xl border border-white/10 bg-[#1E1E24] shadow-[0_12px_40px_rgba(0,0,0,0.5)]'>
               <div className='flex items-center gap-2.5 border-b border-white/[0.07] bg-pink-500/[0.06] px-[15px] py-[13px]'>
+<<<<<<< HEAD
                 <div className='flex h-9 w-9 items-center justify-center rounded-full border-[1.5px] border-pink-500/30 bg-pink-500/10 text-xs font-bold text-pink-500'>
                   {initials}
                 </div>
@@ -74,6 +101,16 @@ export default function Navbar() {
                     {usuario?.nombre_usuario || 'Usuario'}
                   </div>
                   <div className='mt-px text-[11px] text-neutral-600'>
+=======
+                <div className='flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border-[1.5px] border-pink-500/30 bg-pink-500/10 text-xs font-bold text-pink-500'>
+                  {initials}
+                </div>
+                <div className='min-w-0 flex-1'>
+                  <div className='truncate text-[13px] font-semibold text-neutral-100'>
+                    {usuario?.nombre_usuario || 'Usuario'}
+                  </div>
+                  <div className='mt-px truncate text-[11px] text-neutral-600'>
+>>>>>>> master-deploy
                     {usuario?.correo || ''}
                   </div>
                 </div>
@@ -82,6 +119,13 @@ export default function Navbar() {
               <DropdownItem
                 icon='ti-user'
                 label='Ver perfil'
+<<<<<<< HEAD
+=======
+                onClick={() => {
+                  setDropdownOpen(false);
+                  navigate('/perfil');
+                }}
+>>>>>>> master-deploy
               />
               <div className='mx-0 my-0.5 h-px bg-white/[0.07]' />
               <DropdownItem
@@ -109,10 +153,18 @@ export default function Navbar() {
   );
 }
 
+<<<<<<< HEAD
 function DropdownItem({ icon, label }) {
   return (
     <button
       type='button'
+=======
+function DropdownItem({ icon, label, onClick }) {
+  return (
+    <button
+      type='button'
+      onClick={onClick}
+>>>>>>> master-deploy
       className='group flex w-full items-center gap-2.5 px-[15px] py-[9px] text-left text-[13px] text-neutral-400 transition-colors hover:bg-white/[0.04] hover:text-neutral-100'
     >
       <i
