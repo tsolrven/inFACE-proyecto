@@ -1,6 +1,3 @@
-import 'dotenv/config';
-import { prisma } from '../../config/configDb.js';
-
 const MALLAS = {
   IECI: {
     nombre: 'Ingeniería de Ejecución en Computación e Informática',
@@ -206,9 +203,9 @@ const MALLAS = {
       ['Actividad de Graduación', 'Electivo II', 'Práctica Profesional II'],
     ],
   },
-  ICOM: {
+  ICO: {
     nombre: 'Ingeniería Comercial',
-    codigo: 'ICOM',
+    codigo: 'ICO',
     semestres: [
       [
         'Administración General',
@@ -357,7 +354,12 @@ const MALLAS = {
   },
 };
 
-async function main() {
+// recibe el mismo `prisma` que ya crea seed.js, en vez de crear/desconectar el suyo propio.
+// devuelve el mapa de carreras creadas (por código), para que seedBase pueda vincular
+// a los usuarios de prueba con su carrera sin volver a consultarlas.
+export async function seedMallaFace(prisma) {
+  const carrerasCreadas = {};
+
   for (const sigla of Object.keys(MALLAS)) {
     const { nombre, codigo, semestres } = MALLAS[sigla];
 
@@ -367,6 +369,7 @@ async function main() {
       update: {},
       create: { nombre, codigo },
     });
+    carrerasCreadas[codigo] = carrera;
 
     for (let i = 0; i < semestres.length; i++) {
       const semestreGlobal = i + 1;
@@ -404,14 +407,6 @@ async function main() {
     console.log(`${nombre}: ${semestres.flat().length} ramos sembrados`);
   }
 
-  console.log('Listo.');
+  console.log('Mallas curriculares sembradas.');
+  return carrerasCreadas;
 }
-
-main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });

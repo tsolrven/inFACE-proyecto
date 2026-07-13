@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import { useEffect, useState } from 'react';
 import { listarMisReportes } from '../../services/reportes/reporte.service';
 import { obtenerMotivo } from '../../constants/reportMotivos';
@@ -124,10 +123,4 @@ export default function Reportes() {
       )}
     </div>
   );
-=======
-import PlaceholderPage from '../../components/PlaceholderPage';
-
-export default function Reportes() {
-  return <PlaceholderPage title='Reportes' />;
->>>>>>> master-deploy
 }

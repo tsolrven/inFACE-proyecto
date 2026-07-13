@@ -101,7 +101,7 @@ export async function seedMatching(prisma, contexto) {
 
     //* Proyectos
     const usuarioIECI = usuarios['est_ieci'];
-    const usuarioICI = usuarios['est_ici'];
+    const usuarioICINF = usuarios['est_icinf'];
     const usuarioDER = usuarios['est_der'];
 
     const proyectos = [
@@ -117,7 +117,7 @@ export async function seedMatching(prisma, contexto) {
             etiquetas: ['Frontend', 'Backend', 'Base de Datos', 'Trabajo en Equipo', 'Scrum'],
         },
         {
-            creador_id: usuarioICI.id,
+            creador_id: usuarioICINF.id,
             titulo_proyecto: 'Sistema de detección de plagio con IA',
             descripcion_proyecto: 'Herramienta que usa NLP para detectar similitudes en trabajos académicos entregados en la plataforma.',
             modalidad_proyecto: 'hibrido',
@@ -161,7 +161,7 @@ export async function seedMatching(prisma, contexto) {
             etiquetas: ['Blockchain', 'Backend', 'Derecho Digital', 'Ciberseguridad', 'Pensamiento Crítico'],
         },
         {
-            creador_id: usuarioICI.id,
+            creador_id: usuarioICINF.id,
             titulo_proyecto: 'Sistema de orquestación de microservicios',
             descripcion_proyecto: 'Plataforma para gestionar y orquestar microservicios en entornos cloud.',
             modalidad_proyecto: 'remoto',
@@ -183,7 +183,7 @@ export async function seedMatching(prisma, contexto) {
             etiquetas: ['Frontend', 'Backend', 'Base de Datos', 'Scrum', 'Kanban', 'Liderazgo', 'Trabajo en Equipo'],
         },
         {
-            creador_id: usuarioICI.id,
+            creador_id: usuarioICINF.id,
             titulo_proyecto: 'Sistema IoT para monitoreo ambiental',
             descripcion_proyecto: 'Plataforma para monitorear sensores ambientales en tiempo real con análisis de datos.',
             modalidad_proyecto: 'hibrido',
@@ -216,7 +216,7 @@ export async function seedMatching(prisma, contexto) {
             etiquetas: ['Derecho Digital', 'Frontend', 'Base de Datos', 'Ciberseguridad', 'Gestión de Proyectos'],
         },
         {
-            creador_id: usuarioICI.id,
+            creador_id: usuarioICINF.id,
             titulo_proyecto: 'Analizador de sentimientos en redes sociales',
             descripcion_proyecto: 'Herramienta que usa IA para analizar el sentimiento de publicaciones en redes sociales.',
             modalidad_proyecto: 'remoto',
