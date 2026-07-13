@@ -4,7 +4,7 @@ import {
   refrescarToken,
   obtenerUsuarioActual,
 } from '../services/auth.service.js';
-import ApiResponse from '../utils/ApiResponse.js';
+import ApiResponse from '../utils/apiResponse.js';
 import logger from '../lib/logger.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 const REFRESH_COOKIE_OPTS = {

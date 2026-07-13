@@ -2,7 +2,7 @@ import {
   listarRamosPorCarrera,
   getCarreras,
 } from '../services/ramo.service.js';
-import ApiResponse from '../utils/ApiResponse.js';
+import ApiResponse from '../utils/apiResponse.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function listarCarreras(req, res, next) {
   try {

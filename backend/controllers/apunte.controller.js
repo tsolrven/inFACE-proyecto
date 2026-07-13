@@ -5,7 +5,7 @@ import {
   actualizarApunte,
   eliminarApunte,
 } from '../services/apunte.service.js';
-import ApiResponse from '../utils/ApiResponse.js';
+import ApiResponse from '../utils/apiResponse.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function listar(req, res, next) {
   try {

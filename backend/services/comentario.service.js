@@ -3,7 +3,7 @@ import {
   BadRequestError,
   ForbiddenError,
   NotFoundError,
-} from '../errors/AppError.js';
+} from '../errors/appError.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function listarComentarios(apunte_id, usuario_id) {
   const comentarios = await prisma.comentario.findMany({

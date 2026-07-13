@@ -7,7 +7,7 @@ import {
   NotFoundError,
   InternalError,
 } from '../errors/appError.js';
-import ApiResponse from '../utils/ApiResponse.js';
+import ApiResponse from '../utils/apiResponse.js';
 import logger from '../lib/logger.js';
 
 // manejo de errores de prisma (traduce errores específicos de la bd en errores de aplicación)

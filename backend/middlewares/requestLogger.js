@@ -1,20 +1,19 @@
 //! lógica de loggin http
 
-import logger from '../lib/logger.js'; 
+import logger from '../lib/logger.js';
 
 const requestLogger = (req, res, next) => {
   const start = Date.now();
-
-  const shouldLog =
-    process.env.NODE_ENV !== 'production' || res.statusCode >= 400;
-
-  if (!shouldLog) {
-    return next();
-  }
-
   const originalSend = res.send;
 
   res.send = function (data) {
+    const shouldLog =
+      process.env.NODE_ENV !== 'production' || res.statusCode >= 400;
+
+    if (!shouldLog) {
+      return originalSend.call(this, data);
+    }
+
     const duration = Date.now() - start;
 
     const logData = {
