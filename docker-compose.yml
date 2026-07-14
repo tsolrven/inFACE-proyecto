@@ -7,45 +7,43 @@ services:
       POSTGRES_PASSWORD: postgres123
       POSTGRES_DB: inface_db
     ports:
-      
-"5000:5432"
-  volumes:
-postgres_data:/var/lib/postgresql/data
-healthcheck:
-  test: ["CMD-SHELL", "pg_isready -U postgres -d inface_db"]
-  interval: 10s
-  timeout: 5s
-  retries: 5
-networks:
-inface-network
+      - "5000:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d inface_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - inface-network
 
   backend:
     build: ./backend
     container_name: inface-backend
     env_file:
-      
-./backend/.env
-  ports:# te asignaron: afuera 8086 -> adentro 80
-"80:80"
-depends_on:
-  database:
-    condition: service_healthy
-networks:
-inface-network
+      - ./backend/.env
+    ports:
+      # te asignaron: afuera 80 -> adentro 80
+      - "80:80"
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - inface-network
 
   frontend:
     build:
       context: ./frontend
       args:
-      
-VITE_API_URL=http://146.83.194.168:8086/api
-  container_name: inface-frontend
-  ports:# te asignaron: afuera 8449 -> adentro 443 (esta es la URL final de tu sitio)
-"443:443"
-depends_on:
-backend
-networks:
-inface-network
+        VITE_API_URL: http://146.83.194.168:8086/api
+    container_name: inface-frontend
+    ports:
+      - "443:443"
+    depends_on:
+      - backend
+    networks:
+      - inface-network
 
 networks:
   inface-network:
