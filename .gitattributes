@@ -1,0 +1,14 @@
+# Fuerza saltos de línea estilo Unix (LF) para todo el código, sin importar
+# si se edita/comitea desde Windows, Mac o Linux. Esto evita que Git convierta
+# automáticamente a CRLF (\r\n) al hacer checkout en Windows — que es lo que
+# rompió el .env y otros archivos usados por Docker en el servidor (Linux).
+* text=auto eol=lf
+
+# Los archivos binarios no se tocan (por si acaso, aunque "text=auto" ya los detecta)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
