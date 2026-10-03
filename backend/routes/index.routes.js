@@ -1,16 +1,16 @@
 import { Router } from 'express';
-import authRoutes from './auth.routes.js';
-import apunteRoutes from './apunte.routes.js';
-import archivoRoutes from './archivo.routes.js';
-import votoRoutes from './voto.routes.js';
-import comentarioRoutes from './comentario.routes.js';
-import guardadoRoutes from './guardado.routes.js';
-import ramoRoutes from './ramo.routes.js';
-import estadisticasRoutes from './estadisticas.routes.js';
-import reporteRoutes from './reporte.routes.js';
-import proyectoRoutes from './matchingProyecto.routes.js';
-import etiquetaRoutes from './etiqueta.routes.js';
-import perfilRoutes from './perfil.routes.js';
+import authRoutes from '../identity/auth.routes.js';
+import apunteRoutes from '../modules/module-1/materials.routes.js';
+import archivoRoutes from '../shared/files/files.routes.js';
+import votoRoutes from '../shared/votes/votes.routes.js';
+import comentarioRoutes from '../shared/comments/comments.routes.js';
+import guardadoRoutes from '../shared/bookmarks/bookmarks.routes.js';
+import ramoRoutes from '../modules/module-1/courses.routes.js';
+import estadisticasRoutes from '../modules/module-1/statistics.routes.js';
+import reporteRoutes from '../moderation/reports.routes.js';
+import proyectoRoutes from '../modules/module-4/matchingProyecto.routes.js';
+import etiquetaRoutes from '../identity/etiqueta.routes.js';
+import perfilRoutes from '../identity/perfil.routes.js';
 
 function routerApi(app) {
   const router = Router();
@@ -31,7 +31,7 @@ function routerApi(app) {
 
   // moderación (transversal a todos los módulos)
   router.use('/reportes', reporteRoutes);
-  
+
   router.use('/proyecto', proyectoRoutes);
   router.use('/etiquetas', etiquetaRoutes);
   router.use('/perfil', perfilRoutes);
