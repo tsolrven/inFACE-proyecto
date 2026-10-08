@@ -1,12 +1,12 @@
 import { apiFetch } from '../api';
 
 export async function listarComentarios(apunteId) {
-  const res = await apiFetch(`/comentarios/material/${apunteId}`);
+  const res = await apiFetch(`/comentarios/apunte/${apunteId}`);
   return res.data;
 }
 
 export async function crearComentario(apunteId, { contenido, padre_id } = {}) {
-  const res = await apiFetch(`/comentarios/material/${apunteId}`, {
+  const res = await apiFetch(`/comentarios/apunte/${apunteId}`, {
     method: 'POST',
     body: { contenido, padre_id },
   });
@@ -14,7 +14,7 @@ export async function crearComentario(apunteId, { contenido, padre_id } = {}) {
 }
 
 export async function editarComentario(comentarioId, contenido) {
-  const res = await apiFetch(`/comentarios/comentario/${comentarioId}`, {
+  const res = await apiFetch(`/comentarios/${comentarioId}`, {
     method: 'PATCH',
     body: { contenido },
   });
@@ -22,7 +22,7 @@ export async function editarComentario(comentarioId, contenido) {
 }
 
 export async function eliminarComentario(comentarioId) {
-  const res = await apiFetch(`/comentarios/comentario/${comentarioId}`, {
+  const res = await apiFetch(`/comentarios/${comentarioId}`, {
     method: 'DELETE',
   });
   return res.data;

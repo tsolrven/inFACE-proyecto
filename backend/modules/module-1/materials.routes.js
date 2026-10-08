@@ -11,31 +11,34 @@ import validate from '../../middlewares/validate.js';
 import {
   crearApunteSchema,
   actualizarApunteSchema,
-  apunteIdParamSchema,
+  listarApuntesQuerySchema,
 } from './materials.validation.js';
+import { idParamSchema } from '../../shared/validation/common.schemas.js';
+import { publicacionLimiter } from '../../middlewares/rateLimiter.js';
 
 const router = express.Router();
 
-router.get('/', autenticar, listar);
 router.get(
-  '/:id',
+  '/',
   autenticar,
-  validate(apunteIdParamSchema, 'params'),
-  detalle,
+  validate(listarApuntesQuerySchema, 'query'),
+  listar,
 );
-router.post('/', autenticar, validate(crearApunteSchema), crear);
+router.get('/:id', autenticar, validate(idParamSchema, 'params'), detalle);
+router.post(
+  '/',
+  autenticar,
+  publicacionLimiter,
+  validate(crearApunteSchema),
+  crear,
+);
 router.patch(
   '/:id',
   autenticar,
-  validate(apunteIdParamSchema, 'params'),
+  validate(idParamSchema, 'params'),
   validate(actualizarApunteSchema),
   actualizar,
 );
-router.delete(
-  '/:id',
-  autenticar,
-  validate(apunteIdParamSchema, 'params'),
-  eliminar,
-);
+router.delete('/:id', autenticar, validate(idParamSchema, 'params'), eliminar);
 
 export default router;

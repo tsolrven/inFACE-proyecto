@@ -1,6 +1,7 @@
 import { prisma } from '../../config/configDb.js';
 import {
   verificarContenidoExiste,
+  bloquearContenido,
   actualizarVotosNetoContenido,
 } from '../content/contentRegistry.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
@@ -8,6 +9,9 @@ async function votar({ usuario_id, contenido_id, tipo_contenido, tipo }) {
   await verificarContenidoExiste(tipo_contenido, contenido_id);
 
   return prisma.$transaction(async (tx) => {
+    // serializa los votos sobre este contenido (evita que el contador se desfase)
+    await bloquearContenido(tipo_contenido, contenido_id, tx);
+
     const votoExistente = await tx.voto.findUnique({
       where: {
         usuario_id_tipo_contenido_contenido_id: {

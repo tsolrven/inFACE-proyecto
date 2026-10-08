@@ -3,6 +3,9 @@ import { NotFoundError, ForbiddenError } from '../../errors/appError.js';
 import logger from '../../lib/logger.js';
 import { MIME_MAP } from './fileType.helper.js';
 import { borrarArchivosFisicos } from '../../shared/files/files.service.js';
+import { eliminarInteracciones } from '../../shared/content/contentCleanup.js';
+import { registrarHidratadorGuardados } from '../../shared/content/contentRegistry.js';
+import { esStaff } from '../../shared/auth/permissions.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function listarApuntes({
   ramo_id,
@@ -72,7 +75,11 @@ async function listarApuntes({
     await Promise.all([
       prisma.comentario.groupBy({
         by: ['contenido_id'],
-        where: { tipo_contenido: 'apunte', contenido_id: { in: ids } },
+        where: {
+          tipo_contenido: 'apunte',
+          contenido_id: { in: ids },
+          eliminado: false,
+        },
         _count: { _all: true },
       }),
       prisma.archivo.findMany({
@@ -157,7 +164,7 @@ async function obtenerApunte(id, usuario_id, carrera_id) {
       where: { tipo_contenido: 'apunte', contenido_id: id },
     }),
     prisma.comentario.count({
-      where: { tipo_contenido: 'apunte', contenido_id: id },
+      where: { tipo_contenido: 'apunte', contenido_id: id, eliminado: false },
     }),
     usuario_id
       ? prisma.voto.findUnique({
@@ -248,12 +255,7 @@ async function actualizarApunte(id, usuario_id, rol, datos) {
   const apunte = await prisma.apunte.findUnique({ where: { id } });
   if (!apunte) throw new NotFoundError('Apunte');
 
-  // solo el autor o un moderador/admin pueden editar
-  if (
-    apunte.autor_id !== usuario_id &&
-    rol !== 'admin' &&
-    rol !== 'moderador'
-  ) {
+  if (apunte.autor_id !== usuario_id && !esStaff(rol)) {
     throw new ForbiddenError('No tienes permiso para editar este apunte');
   }
 
@@ -331,12 +333,7 @@ async function eliminarApunte(id, usuario_id, rol) {
   const apunte = await prisma.apunte.findUnique({ where: { id } });
   if (!apunte) throw new NotFoundError('Apunte');
 
-  // solo el autor o un moderador/admin pueden eliminar
-  if (
-    apunte.autor_id !== usuario_id &&
-    rol !== 'admin' &&
-    rol !== 'moderador'
-  ) {
+  if (apunte.autor_id !== usuario_id && !esStaff(rol)) {
     throw new ForbiddenError('No tienes permiso para eliminar este apunte');
   }
 
@@ -344,23 +341,91 @@ async function eliminarApunte(id, usuario_id, rol) {
     where: { tipo_contenido: 'apunte', contenido_id: id },
   });
 
-  await prisma.$transaction([
-    prisma.voto.deleteMany({
+  await prisma.$transaction(async (tx) => {
+    // ids de los comentarios del apunte, para limpiar también lo que cuelga de ellos
+    const comentarios = await tx.comentario.findMany({
       where: { tipo_contenido: 'apunte', contenido_id: id },
-    }),
-    prisma.comentario.deleteMany({
+      select: { id: true },
+    });
+
+    await eliminarInteracciones(
+      tx,
+      'comentario',
+      comentarios.map((c) => c.id),
+    );
+    await eliminarInteracciones(tx, 'apunte', [id]);
+
+    await tx.comentario.deleteMany({
       where: { tipo_contenido: 'apunte', contenido_id: id },
-    }),
-    prisma.archivo.deleteMany({
+    });
+    await tx.archivo.deleteMany({
       where: { tipo_contenido: 'apunte', contenido_id: id },
-    }),
-    prisma.apunte.delete({ where: { id } }),
-  ]);
+    });
+    await tx.apunte.delete({ where: { id } });
+  });
 
   // después del commit: si el disco falla, la BD ya quedó consistente
   await borrarArchivosFisicos(archivos);
 
   logger.info('Apunte eliminado', { apunte_id: id, eliminado_por: usuario_id });
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+async function hidratarApuntesGuardados(ids, usuario_id) {
+  const [apuntes, conteoComentarios, archivos, misVotos] = await Promise.all([
+    prisma.apunte.findMany({
+      where: { id: { in: ids } },
+      include: {
+        autor: { include: { perfil: { select: { nombre_usuario: true } } } },
+        ramo: {
+          select: { id: true, nombre: true, codigo: true, semestre: true },
+        },
+        hashtags: { include: { hashtag: { select: { nombre: true } } } },
+      },
+    }),
+    prisma.comentario.groupBy({
+      by: ['contenido_id'],
+      where: {
+        tipo_contenido: 'apunte',
+        contenido_id: { in: ids },
+        eliminado: false,
+      },
+      _count: { _all: true },
+    }),
+    prisma.archivo.findMany({
+      where: { tipo_contenido: 'apunte', contenido_id: { in: ids } },
+    }),
+    prisma.voto.findMany({
+      where: {
+        usuario_id,
+        tipo_contenido: 'apunte',
+        contenido_id: { in: ids },
+      },
+    }),
+  ]);
+
+  const mapApuntes = Object.fromEntries(apuntes.map((a) => [a.id, a]));
+  const mapComentarios = Object.fromEntries(
+    conteoComentarios.map((c) => [c.contenido_id, c._count._all]),
+  );
+  const mapArchivos = {};
+  for (const arch of archivos) {
+    if (!mapArchivos[arch.contenido_id]) mapArchivos[arch.contenido_id] = [];
+    mapArchivos[arch.contenido_id].push(arch);
+  }
+  const mapVotos = Object.fromEntries(
+    misVotos.map((v) => [v.contenido_id, v.tipo]),
+  );
+
+  return ids
+    .filter((id) => mapApuntes[id])
+    .map((id) =>
+      formatearApunte(mapApuntes[id], {
+        comentarios: mapComentarios[id] || 0,
+        archivos: mapArchivos[id] || [],
+        mi_voto: mapVotos[id] || null,
+        esta_guardado: true,
+      }),
+    );
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function resolverHashtags(hashtags) {
@@ -418,6 +483,8 @@ function formatearApunte(
     ),
   };
 }
+// ────────────────────────────────────────────────────────────────────────────────────────
+registrarHidratadorGuardados('apunte', hidratarApuntesGuardados);
 // ────────────────────────────────────────────────────────────────────────────────────────
 export {
   listarApuntes,

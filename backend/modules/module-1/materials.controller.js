@@ -11,20 +11,18 @@ async function listar(req, res, next) {
   try {
     const { ramo_id, tipo, tipo_archivo, hashtag, orden, pagina, limite } =
       req.query;
-    const pag = pagina ? parseInt(pagina) : 1;
-    const lim = limite ? parseInt(limite) : 20;
     const { apuntes, total } = await listarApuntes({
       ramo_id,
       tipo,
       tipo_archivo,
       hashtag,
       orden,
-      pagina: pag,
-      limite: lim,
+      pagina,
+      limite,
       usuario_id: req.usuario.id,
       carrera_id: req.usuario.carrera_id,
     });
-    return ApiResponse.paginated(res, apuntes, total, pag, lim);
+    return ApiResponse.paginated(res, apuntes, total, pagina, limite);
   } catch (err) {
     next(err);
   }

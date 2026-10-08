@@ -6,26 +6,24 @@ import {
 } from './comments.service.js';
 import ApiResponse from '../../utils/apiResponse.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
-async function listarComentariosApunte(req, res, next) {
+async function listarDeContenido(req, res, next) {
   try {
-    const comentarios = await listarComentarios(
-      'apunte',
-      req.params.apunte_id,
-      req.usuario.id,
-    );
+    const { tipo, id } = req.params;
+    const comentarios = await listarComentarios(tipo, id, req.usuario.id);
     return ApiResponse.success(res, comentarios);
   } catch (err) {
     next(err);
   }
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-async function crearComentarioApunte(req, res, next) {
+async function crearEnContenido(req, res, next) {
   try {
+    const { tipo, id } = req.params;
     const { contenido, padre_id } = req.body;
     const comentario = await crearComentario({
       autor_id: req.usuario.id,
-      tipo_contenido: 'apunte',
-      contenido_id: req.params.apunte_id,
+      tipo_contenido: tipo,
+      contenido_id: id,
       contenido,
       padre_id,
     });
@@ -54,6 +52,7 @@ async function eliminar(req, res, next) {
     const resultado = await eliminarComentario(
       req.params.comentario_id,
       req.usuario.id,
+      req.usuario.rol,
     );
     return ApiResponse.success(res, resultado);
   } catch (err) {
@@ -61,4 +60,4 @@ async function eliminar(req, res, next) {
   }
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-export { listarComentariosApunte, crearComentarioApunte, editar, eliminar };
+export { listarDeContenido, crearEnContenido, editar, eliminar };

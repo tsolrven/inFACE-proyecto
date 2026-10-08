@@ -1,30 +1,15 @@
 import { crearReporte, listarReportesPropios } from './reports.service.js';
 import ApiResponse from '../utils/apiResponse.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
-async function reportarApunte(req, res, next) {
+async function reportarContenido(req, res, next) {
   try {
+    const { tipo: tipo_contenido, id: contenido_id } = req.params;
     const { motivo, detalle, objetivo } = req.body;
+
     const resultado = await crearReporte({
       usuario_id: req.usuario.id,
-      contenido_id: req.params.apunte_id,
-      tipo_contenido: 'apunte',
-      motivo,
-      detalle,
-      objetivo,
-    });
-    return ApiResponse.created(res, resultado);
-  } catch (err) {
-    next(err);
-  }
-}
-// ────────────────────────────────────────────────────────────────────────────────────────
-async function reportarComentario(req, res, next) {
-  try {
-    const { motivo, detalle, objetivo } = req.body;
-    const resultado = await crearReporte({
-      usuario_id: req.usuario.id,
-      contenido_id: req.params.comentario_id,
-      tipo_contenido: 'comentario',
+      contenido_id,
+      tipo_contenido,
       motivo,
       detalle,
       objetivo,
@@ -44,4 +29,4 @@ async function listarMisReportes(req, res, next) {
   }
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-export { reportarApunte, reportarComentario, listarMisReportes };
+export { reportarContenido, listarMisReportes };

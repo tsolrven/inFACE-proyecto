@@ -1,6 +1,7 @@
 //! validación de contenido real de archivos subidos (después de multer)
 
 import fs from 'fs';
+import { BadRequestError } from '../../errors/appError.js';
 
 // firmas binarias (magic numbers)
 const FIRMAS = {
@@ -23,14 +24,24 @@ const FIRMAS = {
     [0x47, 0x49, 0x46, 0x38, 0x37, 0x61],
     [0x47, 0x49, 0x46, 0x38, 0x39, 0x61],
   ],
-  '.webp': [[0x52, 0x49, 0x46, 0x46]],
 };
 
-// únicas extensiones que se aceptan como texto plano 
+// únicas extensiones que se aceptan como texto plano
 const EXTENSIONES_TEXTO = ['.txt'];
 
 function coincideFirma(buffer, firmas) {
   return firmas.some((firma) => firma.every((byte, i) => buffer[i] === byte));
+}
+
+// .webp: "RIFF" al inicio y "WEBP" en los bytes 8-11 (si no, podría ser WAV/AVI)
+function esWebp(buffer) {
+  return (
+    coincideFirma(buffer, [[0x52, 0x49, 0x46, 0x46]]) &&
+    buffer[8] === 0x57 &&
+    buffer[9] === 0x45 &&
+    buffer[10] === 0x42 &&
+    buffer[11] === 0x50
+  );
 }
 
 function pareceBinario(buffer) {
@@ -52,23 +63,25 @@ function validarContenidoReal(req, res, next) {
     fs.readSync(fd, buffer, 0, 512, 0);
     fs.closeSync(fd);
   } catch {
-    return next();
+    // si no se puede leer el archivo, no se puede verificar: se rechaza
+    fs.unlink(req.file.path, () => {});
+    return next(new BadRequestError('No se pudo verificar el archivo subido'));
   }
 
   let valido = true;
-  if (FIRMAS[ext]) {
+  if (ext === '.webp') {
+    valido = esWebp(buffer);
+  } else if (FIRMAS[ext]) {
     valido = coincideFirma(buffer, FIRMAS[ext]);
   } else if (EXTENSIONES_TEXTO.includes(ext)) {
     valido = !pareceBinario(buffer);
   }
+
   if (!valido) {
     fs.unlink(req.file.path, () => {});
     return next(
-      Object.assign(
-        new Error(
-          `El contenido del archivo no coincide con la extensión "${ext}" (¿fue renombrado?)`,
-        ),
-        { statusCode: 400, code: 'BAD_REQUEST' },
+      new BadRequestError(
+        `El contenido del archivo no coincide con la extensión "${ext}" (¿fue renombrado?)`,
       ),
     );
   }

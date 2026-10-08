@@ -20,6 +20,7 @@ import VotePill from './VotePill';
 import CodeViewer from './CodeViewer';
 import { fueEditado } from '../../utils/fueEditado';
 import BookmarkIcon from '../icons/BookmarkIcon';
+import { esStaff } from '../../utils/roles';
 
 export default function MaterialCard({ apunte, onQuitarDeGuardados }) {
   const navigate = useNavigate();
@@ -55,10 +56,7 @@ export default function MaterialCard({ apunte, onQuitarDeGuardados }) {
   }, []);
 
   const esDueno =
-    usuario &&
-    (apunte.autor?.id === usuario.id ||
-      usuario.rol === 'admin' ||
-      usuario.rol === 'moderador');
+    usuario && (apunte.autor?.id === usuario.id || esStaff(usuario.rol));
 
   const ramoColor = colorPorRamo(apunte.ramo?.id);
 

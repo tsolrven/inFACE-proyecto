@@ -1,14 +1,16 @@
 import { votar } from './votes.service.js';
 import ApiResponse from '../../utils/apiResponse.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
-async function votarApunte(req, res, next) {
+async function votarContenido(req, res, next) {
   try {
+    const { tipo: tipo_contenido, id: contenido_id } = req.params;
     const { tipo } = req.body;
+
     const resultado = await votar({
       usuario_id: req.usuario.id,
-      contenido_id: req.params.apunte_id,
-      tipo_contenido: 'apunte',
-      tipo,
+      contenido_id,
+      tipo_contenido,
+      tipo, // up/down
     });
     return ApiResponse.success(res, resultado);
   } catch (err) {
@@ -16,19 +18,4 @@ async function votarApunte(req, res, next) {
   }
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-async function votarComentario(req, res, next) {
-  try {
-    const { tipo } = req.body;
-    const resultado = await votar({
-      usuario_id: req.usuario.id,
-      contenido_id: req.params.comentario_id,
-      tipo_contenido: 'comentario',
-      tipo,
-    });
-    return ApiResponse.success(res, resultado);
-  } catch (err) {
-    next(err);
-  }
-}
-// ────────────────────────────────────────────────────────────────────────────────────────
-export { votarApunte, votarComentario };
+export { votarContenido };

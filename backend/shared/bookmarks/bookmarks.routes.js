@@ -1,16 +1,10 @@
 import express from 'express';
-import {
-  guardarApunte,
-  guardarComentario,
-  listar,
-} from './bookmarks.controller.js';
+import { guardarContenido, listar } from './bookmarks.controller.js';
 import { autenticar } from '../../middlewares/auth.middleware.js';
 import validate from '../../middlewares/validate.js';
-import {
-  apunteIdParamSchema,
-  comentarioIdParamSchema,
-  listarGuardadosQuerySchema,
-} from './bookmarks.validation.js';
+import { listarGuardadosQuerySchema } from './bookmarks.validation.js';
+import { contenidoParamSchema } from '../validation/common.schemas.js';
+import { interaccionLimiter } from '../../middlewares/rateLimiter.js';
 
 const router = express.Router();
 
@@ -21,16 +15,11 @@ router.get(
   listar,
 );
 router.post(
-  '/apunte/:apunte_id',
+  '/:tipo/:id',
   autenticar,
-  validate(apunteIdParamSchema, 'params'),
-  guardarApunte,
-);
-router.post(
-  '/comentario/:comentario_id',
-  autenticar,
-  validate(comentarioIdParamSchema, 'params'),
-  guardarComentario,
+  interaccionLimiter,
+  validate(contenidoParamSchema, 'params'),
+  guardarContenido,
 );
 
 export default router;

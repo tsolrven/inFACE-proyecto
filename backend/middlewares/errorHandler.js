@@ -3,6 +3,7 @@
 import { Prisma } from '@prisma/client';
 import {
   AppError,
+  BadRequestError,
   ConflictError,
   NotFoundError,
   InternalError,
@@ -20,7 +21,9 @@ function handlePrismaError(err) {
     case 'P2025':
       return new NotFoundError(err.meta?.modelName || 'Recurso');
     case 'P2003':
-      return new InternalError('Referencia a un recurso inexistente');
+      return new ConflictError(
+        'No se pudo completar la operación porque otro registro depende de este. Intenta nuevamente.',
+      );
     default:
       return new InternalError('Error de base de datos');
   }
@@ -39,6 +42,26 @@ const errorHandler = (err, req, res, next) => {
 
     err = handlePrismaError(err);
   }
+
+  // errores de multer y body-parser: no son AppError, pero la falla es del cliente (4xx)
+  if (err.name === 'MulterError') {
+    const mensajes = {
+      LIMIT_FILE_SIZE: 'El archivo supera el tamaño máximo permitido (20 MB)',
+      LIMIT_UNEXPECTED_FILE: 'Campo de archivo inesperado',
+    };
+    err = new BadRequestError(
+      mensajes[err.code] || 'Error al subir el archivo',
+    );
+  } else if (err.type === 'entity.parse.failed') {
+    err = new BadRequestError('El cuerpo de la petición no es un JSON válido');
+  } else if (
+    !(err instanceof AppError) &&
+    err.statusCode >= 400 &&
+    err.statusCode < 500
+  ) {
+    err = new AppError(err.message, err.statusCode, err.code || 'BAD_REQUEST');
+  }
+
   // errores de aplicación
   if (err instanceof AppError) {
     if (err.statusCode >= 500) {

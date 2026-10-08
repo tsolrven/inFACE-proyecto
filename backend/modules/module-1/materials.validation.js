@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { MIME_MAP } from './fileType.helper.js';
+import { paginacionQuerySchema } from '../../shared/validation/common.schemas.js';
 // ─────────────────────────────────────────────────────────────────────────────
 const TIPOS_APUNTE = ['apunte', 'codigo', 'guia', 'ejercicio', 'otro'];
 const BADGES_VISUALES = [
@@ -146,8 +148,20 @@ const actualizarApunteSchema = z.object({
   etiquetas_visuales: etiquetasVisualesSchema,
 });
 // ─────────────────────────────────────────────────────────────────────────────
-const apunteIdParamSchema = z.object({
-  id: z.string().uuid('El id del apunte no es válido'),
+const listarApuntesQuerySchema = paginacionQuerySchema.extend({
+  ramo_id: z.string().uuid('El id del ramo no es válido').optional(),
+  tipo: z.enum(TIPOS_APUNTE, { error: 'Tipo de material inválido' }).optional(),
+  tipo_archivo: z
+    .enum(Object.keys(MIME_MAP), { error: 'Tipo de archivo inválido' })
+    .optional(),
+  hashtag: z
+    .string()
+    .trim()
+    .max(30, 'El hashtag es demasiado largo')
+    .optional(),
+  orden: z
+    .enum(['recientes', 'populares'], { error: 'Orden inválido' })
+    .optional(),
 });
 // ─────────────────────────────────────────────────────────────────────────────
-export { crearApunteSchema, actualizarApunteSchema, apunteIdParamSchema };
+export { crearApunteSchema, actualizarApunteSchema, listarApuntesQuerySchema };

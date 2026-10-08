@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { admiteComentarios } from '../content/contentRegistry.js';
 // ─────────────────────────────────────────────────────────────────────────────
 const ERROR_MESSAGES = {
   contenido: {
@@ -9,13 +10,16 @@ const ERROR_MESSAGES = {
   padre_id: {
     invalid: 'El id del comentario padre no es válido',
   },
-  apunte_id: {
-    invalid: 'El id del apunte no es válido',
-  },
-  comentario_id: {
-    invalid: 'El id del comentario no es válido',
+  tipo: {
+    invalid: 'Este tipo de contenido no admite comentarios',
   },
 };
+// ─────────────────────────────────────────────────────────────────────────────
+// Params de /:tipo/:id para listar o crear comentarios de un contenido
+const contenidoComentableParamSchema = z.object({
+  tipo: z.string().refine(admiteComentarios, ERROR_MESSAGES.tipo.invalid),
+  id: z.string().uuid('El id no es válido'),
+});
 // ─────────────────────────────────────────────────────────────────────────────
 const crearComentarioSchema = z.object({
   contenido: z
@@ -48,17 +52,8 @@ const editarComentarioSchema = z.object({
     .max(2000, ERROR_MESSAGES.contenido.max),
 });
 // ─────────────────────────────────────────────────────────────────────────────
-const apunteIdParamSchema = z.object({
-  apunte_id: z.string().uuid(ERROR_MESSAGES.apunte_id.invalid),
-});
-
-const comentarioIdParamSchema = z.object({
-  comentario_id: z.string().uuid(ERROR_MESSAGES.comentario_id.invalid),
-});
-// ─────────────────────────────────────────────────────────────────────────────
 export {
+  contenidoComentableParamSchema,
   crearComentarioSchema,
   editarComentarioSchema,
-  apunteIdParamSchema,
-  comentarioIdParamSchema,
 };

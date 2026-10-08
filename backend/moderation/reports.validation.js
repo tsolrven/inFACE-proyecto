@@ -28,12 +28,6 @@ const ERROR_MESSAGES = {
     invalid: 'El objetivo debe ser "propio" o "tercero"',
     required: 'Debes indicar hacia quién es el acoso',
   },
-  apunte_id: {
-    invalid: 'El id del apunte no es válido',
-  },
-  comentario_id: {
-    invalid: 'El id del comentario no es válido',
-  },
 };
 // ─────────────────────────────────────────────────────────────────────────────
 const crearReporteSchema = z
@@ -67,17 +61,4 @@ const crearReporteSchema = z
     },
   );
 // ─────────────────────────────────────────────────────────────────────────────
-const apunteIdParamSchema = z.object({
-  apunte_id: z.string().uuid(ERROR_MESSAGES.apunte_id.invalid),
-});
-
-const comentarioIdParamSchema = z.object({
-  comentario_id: z.string().uuid(ERROR_MESSAGES.comentario_id.invalid),
-});
-// ─────────────────────────────────────────────────────────────────────────────
-export {
-  crearReporteSchema,
-  apunteIdParamSchema,
-  comentarioIdParamSchema,
-  MOTIVOS_REPORTE,
-};
+export { crearReporteSchema, MOTIVOS_REPORTE };

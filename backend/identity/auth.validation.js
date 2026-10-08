@@ -30,23 +30,6 @@ const ERROR_MESSAGES = {
 };
 // ─────────────────────────────────────────────────────────────────────────────
 const DOMINIOS_PERMITIDOS = ['@alumnos.ubiobio.cl', '@ubiobio.cl'];
-
-const validarDominioInstitucional = (email) => {
-  const tieneDominioPermitido = DOMINIOS_PERMITIDOS.some((dominio) =>
-    email.endsWith(dominio),
-  );
-
-  if (!tieneDominioPermitido) {
-    throw new z.ZodError([
-      {
-        path: ['correo'],
-        message: ERROR_MESSAGES.email.domain,
-      },
-    ]);
-  }
-
-  return email;
-};
 // ─────────────────────────────────────────────────────────────────────────────
 // Confirma que el DOMINIO del correo tenga servidores de correo (MX) reales.
 // Esto NO confirma que la casilla específica exista (para eso hace falta mandar
@@ -58,7 +41,8 @@ const cacheDominiosVerificados = new Map(); // evita repetir la consulta DNS en 
 async function dominioTieneCorreo(email) {
   const dominio = email.split('@')[1];
   if (!dominio) return false;
-  if (cacheDominiosVerificados.has(dominio)) return cacheDominiosVerificados.get(dominio);
+  if (cacheDominiosVerificados.has(dominio))
+    return cacheDominiosVerificados.get(dominio);
 
   try {
     const registros = await dns.resolveMx(dominio);
@@ -73,8 +57,11 @@ async function dominioTieneCorreo(email) {
 }
 // ─────────────────────────────────────────────────────────────────────────────
 const registerSchema = z.object({
+  // trim + minúsculas: evita cuentas duplicadas por mayúsculas y fallos de login
   correo: z
-    .string({ required_error: ERROR_MESSAGES.email.required })
+    .string({ error: ERROR_MESSAGES.email.required })
+    .trim()
+    .toLowerCase()
     .email(ERROR_MESSAGES.email.invalid)
     .refine(
       (email) => {
@@ -89,19 +76,19 @@ const registerSchema = z.object({
     }),
 
   contrasena: z
-    .string({ required_error: ERROR_MESSAGES.password.required })
+    .string({ error: ERROR_MESSAGES.password.required })
     .min(8, ERROR_MESSAGES.password.min)
     .max(100, ERROR_MESSAGES.password.max)
     .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, ERROR_MESSAGES.password.pattern),
 
   nombre_usuario: z
-    .string({ required_error: ERROR_MESSAGES.username.required })
+    .string({ error: ERROR_MESSAGES.username.required })
     .min(3, ERROR_MESSAGES.username.min)
     .max(30, ERROR_MESSAGES.username.max)
     .regex(/^[a-zA-Z0-9_]+$/, ERROR_MESSAGES.username.pattern),
 
   carrera_id: z
-    .string({ required_error: ERROR_MESSAGES.carrera.required })
+    .string({ error: ERROR_MESSAGES.carrera.required })
     .uuid(ERROR_MESSAGES.carrera.invalid),
 
   etiqueta_ids: z
@@ -109,16 +96,18 @@ const registerSchema = z.object({
     .max(15, 'Puedes seleccionar como máximo 15 intereses')
     .optional()
     .default([]),
-
 });
 // ─────────────────────────────────────────────────────────────────────────────
 const loginSchema = z.object({
   correo: z
-    .string({ required_error: ERROR_MESSAGES.email.required })
+    .string({ error: ERROR_MESSAGES.email.required })
+    .trim()
+    .toLowerCase()
     .email(ERROR_MESSAGES.email.invalid),
 
+  // la contraseña no se recorta: los espacios pueden ser parte de ella
   contrasena: z
-    .string({ required_error: ERROR_MESSAGES.password.required })
+    .string({ error: ERROR_MESSAGES.password.required })
     .min(1, ERROR_MESSAGES.password.required),
 });
 // ─────────────────────────────────────────────────────────────────────────────

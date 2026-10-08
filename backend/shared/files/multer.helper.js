@@ -2,6 +2,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { UPLOADS_DIR } from './uploadsPath.js';
+import { BadRequestError } from '../../errors/appError.js';
 
 const EXTENSIONES_PERMITIDAS = [
   '.pdf',
@@ -39,12 +40,7 @@ function fileFilter(req, file, cb) {
   if (EXTENSIONES_PERMITIDAS.includes(ext)) {
     cb(null, true);
   } else {
-    cb(
-      Object.assign(new Error(`Extensión ${ext} no permitida`), {
-        statusCode: 400,
-        code: 'BAD_REQUEST',
-      }),
-    );
+    cb(new BadRequestError(`Extensión ${ext} no permitida`));
   }
 }
 

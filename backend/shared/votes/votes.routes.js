@@ -1,28 +1,20 @@
 import express from 'express';
-import { votarApunte, votarComentario } from './votes.controller.js';
+import { votarContenido } from './votes.controller.js';
 import { autenticar } from '../../middlewares/auth.middleware.js';
 import validate from '../../middlewares/validate.js';
-import {
-  votarSchema,
-  apunteIdParamSchema,
-  comentarioIdParamSchema,
-} from './votes.validation.js';
+import { votarSchema } from './votes.validation.js';
+import { contenidoParamSchema } from '../validation/common.schemas.js';
+import { interaccionLimiter } from '../../middlewares/rateLimiter.js';
 
 const router = express.Router();
 
 router.post(
-  '/apunte/:apunte_id',
+  '/:tipo/:id', // :tipo = tipo de contenido (apunte, comentario, etc) - :id = id del contenido
   autenticar,
-  validate(apunteIdParamSchema, 'params'),
+  interaccionLimiter,
+  validate(contenidoParamSchema, 'params'),
   validate(votarSchema),
-  votarApunte,
-);
-router.post(
-  '/comentario/:comentario_id',
-  autenticar,
-  validate(comentarioIdParamSchema, 'params'),
-  validate(votarSchema),
-  votarComentario,
+  votarContenido,
 );
 
 export default router;

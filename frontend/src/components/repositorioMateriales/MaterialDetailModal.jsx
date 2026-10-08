@@ -31,6 +31,7 @@ import VotePill from './VotePill';
 import CodeViewer from './CodeViewer';
 import { fueEditado } from '../../utils/fueEditado';
 import BookmarkIcon from '../icons/BookmarkIcon';
+import { esStaff } from '../../utils/roles';
 
 function insertarRespuesta(comentarios, padreId, nueva) {
   return comentarios.map((c) => {
@@ -75,7 +76,9 @@ function marcarComoEliminado(comentarios, comentarioId) {
 function contarComentarios(comentarios) {
   return comentarios.reduce(
     (acc, c) =>
-      acc + 1 + (c.respuestas?.length ? contarComentarios(c.respuestas) : 0),
+      acc +
+      (c.eliminado ? 0 : 1) +
+      (c.respuestas?.length ? contarComentarios(c.respuestas) : 0),
     0,
   );
 }
@@ -119,9 +122,7 @@ export default function MaterialDetailModal() {
   const esDueno =
     usuario &&
     apunte &&
-    (apunte.autor?.id === usuario.id ||
-      usuario.rol === 'admin' ||
-      usuario.rol === 'moderador');
+    (apunte.autor?.id === usuario.id || esStaff(usuario.rol));
 
   useEffect(() => {
     let cancelado = false;

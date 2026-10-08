@@ -4,7 +4,12 @@ import {
   ForbiddenError,
   NotFoundError,
 } from '../../errors/appError.js';
-import { verificarContenidoExiste } from '../content/contentRegistry.js';
+import {
+  verificarContenidoExiste,
+  registrarHidratadorGuardados,
+} from '../content/contentRegistry.js';
+import { eliminarInteracciones } from '../content/contentCleanup.js';
+import { esStaff } from '../auth/permissions.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function listarComentarios(tipo_contenido, contenido_id, usuario_id) {
   const comentarios = await prisma.comentario.findMany({
@@ -125,8 +130,13 @@ async function editarComentario(comentario_id, usuario_id, contenido) {
   });
   if (!comentario) throw new NotFoundError('Comentario');
 
+  // solo el autor edita (ni siquiera staff: moderar es borrar, no reescribir)
   if (comentario.autor_id !== usuario_id) {
     throw new ForbiddenError('No tienes permiso para editar este comentario');
+  }
+
+  if (comentario.eliminado) {
+    throw new BadRequestError('No puedes editar un comentario eliminado');
   }
 
   const actualizado = await prisma.comentario.update({
@@ -140,13 +150,14 @@ async function editarComentario(comentario_id, usuario_id, contenido) {
   return formatearComentario(actualizado);
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-async function eliminarComentario(comentario_id, usuario_id) {
+async function eliminarComentario(comentario_id, usuario_id, rol) {
   const comentario = await prisma.comentario.findUnique({
     where: { id: comentario_id },
   });
   if (!comentario) throw new NotFoundError('Comentario');
 
-  if (comentario.autor_id !== usuario_id) {
+  // el autor o staff pueden eliminar
+  if (comentario.autor_id !== usuario_id && !esStaff(rol)) {
     throw new ForbiddenError('No tienes permiso para eliminar este comentario');
   }
 
@@ -154,28 +165,77 @@ async function eliminarComentario(comentario_id, usuario_id) {
     where: { padre_id: comentario_id },
   });
 
+  // sin respuestas: se borra de verdad, con todo lo que cuelga de él
   if (cantidadRespuestas === 0) {
-    await prisma.$transaction([
-      prisma.voto.deleteMany({
-        where: { tipo_contenido: 'comentario', contenido_id: comentario_id },
-      }),
-      prisma.comentario.delete({ where: { id: comentario_id } }),
-    ]);
+    await prisma.$transaction(async (tx) => {
+      await eliminarInteracciones(tx, 'comentario', [comentario_id]);
+      await tx.comentario.delete({ where: { id: comentario_id } });
+    });
     return { eliminado_permanente: true, comentario: null };
   }
 
-  const actualizado = await prisma.comentario.update({
-    where: { id: comentario_id },
-    data: { eliminado: true },
-    include: {
-      autor: { include: { perfil: { select: { nombre_usuario: true } } } },
-    },
+  // con respuestas: queda como "[eliminado]" para no romper el hilo,
+  // pero nadie debe seguir teniéndolo guardado
+  const actualizado = await prisma.$transaction(async (tx) => {
+    await tx.guardado.deleteMany({
+      where: { tipo_contenido: 'comentario', contenido_id: comentario_id },
+    });
+    return tx.comentario.update({
+      where: { id: comentario_id },
+      data: { eliminado: true },
+      include: {
+        autor: { include: { perfil: { select: { nombre_usuario: true } } } },
+      },
+    });
   });
 
   return {
     eliminado_permanente: false,
     comentario: formatearComentario(actualizado),
   };
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+async function hidratarComentariosGuardados(ids, usuario_id) {
+  const comentarios = await prisma.comentario.findMany({
+    where: { id: { in: ids } },
+    include: {
+      autor: { include: { perfil: { select: { nombre_usuario: true } } } },
+    },
+  });
+
+  const mapComentarios = Object.fromEntries(comentarios.map((c) => [c.id, c]));
+  const misVotos = await prisma.voto.findMany({
+    where: {
+      usuario_id,
+      tipo_contenido: 'comentario',
+      contenido_id: { in: ids },
+    },
+  });
+  const mapVotos = Object.fromEntries(
+    misVotos.map((v) => [v.contenido_id, v.tipo]),
+  );
+
+  const apunteIds = [...new Set(comentarios.map((c) => c.contenido_id))];
+  const apuntesRelacionados = await prisma.apunte.findMany({
+    where: { id: { in: apunteIds } },
+    select: { id: true, titulo: true },
+  });
+  const mapApuntesRelacionados = Object.fromEntries(
+    apuntesRelacionados.map((a) => [a.id, a]),
+  );
+
+  return ids
+    .filter((id) => mapComentarios[id])
+    .map((id) => {
+      const comentario = mapComentarios[id];
+      return {
+        ...formatearComentario(comentario, {
+          mi_voto: mapVotos[id] || null,
+          esta_guardado: true,
+        }),
+        apunte: mapApuntesRelacionados[comentario.contenido_id] || null,
+      };
+    });
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 function formatearComentario(
@@ -213,6 +273,8 @@ function formatearComentario(
     },
   };
 }
+// ────────────────────────────────────────────────────────────────────────────────────────
+registrarHidratadorGuardados('comentario', hidratarComentariosGuardados);
 // ────────────────────────────────────────────────────────────────────────────────────────
 export {
   listarComentarios,

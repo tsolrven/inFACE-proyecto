@@ -8,14 +8,14 @@ import {
 import logger from '../../lib/logger.js';
 import { obtenerPropietarioContenido } from '../content/contentRegistry.js';
 import { resolverRutaFisica } from './uploadsPath.js';
+import { esStaff } from '../auth/permissions.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 const MAX_ARCHIVOS_POR_APUNTE = 10;
-const ROLES_STAFF = ['admin', 'moderador'];
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function subirArchivo({ apunte_id, file, usuario_id, rol }) {
   const autor_id = await obtenerPropietarioContenido('apunte', apunte_id);
 
-  if (autor_id !== usuario_id && !ROLES_STAFF.includes(rol)) {
+  if (autor_id !== usuario_id && !esStaff(rol)) {
     throw new ForbiddenError(
       'No tienes permiso para subir archivos a este apunte',
     );
@@ -52,13 +52,7 @@ async function subirArchivo({ apunte_id, file, usuario_id, rol }) {
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function descargarArchivo(id) {
-  const archivo = await prisma.archivo
-    .update({
-      where: { id },
-      data: { contador_descargas: { increment: 1 } },
-    })
-    .catch(() => null);
-
+  const archivo = await prisma.archivo.findUnique({ where: { id } });
   if (!archivo) throw new NotFoundError('Archivo');
 
   const rutaFisica = resolverRutaFisica(archivo.ruta_url);
@@ -69,6 +63,12 @@ async function descargarArchivo(id) {
     });
     throw new NotFoundError('Archivo');
   }
+
+  // recién ahora, con el archivo confirmado, se cuenta la descarga
+  await prisma.archivo.update({
+    where: { id },
+    data: { contador_descargas: { increment: 1 } },
+  });
 
   return {
     rutaFisica,
@@ -86,7 +86,7 @@ async function eliminarArchivo(id, usuario_id, rol) {
     archivo.contenido_id,
   );
 
-  if (autor_id !== usuario_id && !ROLES_STAFF.includes(rol)) {
+  if (autor_id !== usuario_id && !esStaff(rol)) {
     throw new ForbiddenError('No tienes permiso para eliminar este archivo');
   }
 

@@ -105,12 +105,13 @@ async function iniciarSesion({ correo, contrasena }) {
       usuario_etiquetas: true,
     },
   });
-
   if (!usuario) throw new UnauthorizedError('Credenciales inválidas');
-  if (!usuario.esta_activo) throw new ForbiddenError('Cuenta desactivada');
 
   const passwordValido = await bcrypt.compare(contrasena, usuario.contrasena);
   if (!passwordValido) throw new UnauthorizedError('Credenciales inválidas');
+
+  // recién con la contraseña correcta se revela el estado de la cuenta
+  if (!usuario.esta_activo) throw new ForbiddenError('Cuenta desactivada');
 
   const carrera_id = usuario.usuario_carrera[0]?.carrera_id ?? null;
   const payload = { id: usuario.id, rol: usuario.rol, carrera_id };

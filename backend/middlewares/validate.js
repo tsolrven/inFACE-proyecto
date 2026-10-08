@@ -14,8 +14,14 @@ const validate = (schema, source = 'body') => {
     }
 
     if (source === 'query') {
-      Object.keys(req.query).forEach((key) => delete req.query[key]);
-      Object.assign(req.query, result.data);
+      // Express 5: req.query se recalcula en cada acceso, así que mutarlo no persiste.
+      // Se reemplaza por el resultado validado (números ya convertidos, defaults aplicados).
+      Object.defineProperty(req, 'query', {
+        value: result.data,
+        writable: true,
+        configurable: true,
+        enumerable: true,
+      });
     } else {
       req[source] = result.data;
     }

@@ -5,7 +5,6 @@ import {
   obtenerUsuarioActual,
 } from './auth.service.js';
 import ApiResponse from '../utils/apiResponse.js';
-import logger from '../lib/logger.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 const REFRESH_COOKIE_OPTS = {
   httpOnly: true,

@@ -1,31 +1,9 @@
 import { prisma } from '../config/configDb.js';
+import { BadRequestError, ConflictError } from '../errors/appError.js';
 import {
-  BadRequestError,
-  NotFoundError,
-  ConflictError,
-} from '../errors/appError.js';
-// ────────────────────────────────────────────────────────────────────────────────────────
-async function obtenerAutorDelContenido(tipo_contenido, contenido_id) {
-  if (tipo_contenido === 'apunte') {
-    const apunte = await prisma.apunte.findUnique({
-      where: { id: contenido_id },
-      select: { autor_id: true },
-    });
-    if (!apunte) throw new NotFoundError('Apunte');
-    return apunte.autor_id;
-  }
-
-  if (tipo_contenido === 'comentario') {
-    const comentario = await prisma.comentario.findUnique({
-      where: { id: contenido_id },
-      select: { autor_id: true },
-    });
-    if (!comentario) throw new NotFoundError('Comentario');
-    return comentario.autor_id;
-  }
-
-  throw new BadRequestError(`Tipo de contenido "${tipo_contenido}" inválido`);
-}
+  obtenerPropietarioContenido,
+  obtenerPreviewsContenido,
+} from '../shared/content/contentRegistry.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 function construirDetalle({ objetivo, detalle }) {
   const partes = [];
@@ -43,7 +21,10 @@ async function crearReporte({
   detalle,
   objetivo,
 }) {
-  const autor_id = await obtenerAutorDelContenido(tipo_contenido, contenido_id);
+  const autor_id = await obtenerPropietarioContenido(
+    tipo_contenido,
+    contenido_id,
+  );
 
   if (autor_id === usuario_id) {
     throw new BadRequestError('No puedes reportar tu propio contenido');
@@ -87,44 +68,22 @@ async function listarReportesPropios(usuario_id) {
     orderBy: { creado_en: 'desc' },
   });
 
-  const idsApuntes = reportes
-    .filter((r) => r.tipo_contenido === 'apunte')
-    .map((r) => r.contenido_id);
-  const idsComentarios = reportes
-    .filter((r) => r.tipo_contenido === 'comentario')
-    .map((r) => r.contenido_id);
+  // agrupa los ids por tipo y pide las vistas previas de cada tipo al registry
+  const idsPorTipo = {};
+  for (const r of reportes) {
+    (idsPorTipo[r.tipo_contenido] ??= []).push(r.contenido_id);
+  }
 
-  const [apuntes, comentarios] = await Promise.all([
-    idsApuntes.length
-      ? prisma.apunte.findMany({
-          where: { id: { in: idsApuntes } },
-          select: { id: true, titulo: true },
-        })
-      : [],
-    idsComentarios.length
-      ? prisma.comentario.findMany({
-          where: { id: { in: idsComentarios } },
-          select: { id: true, contenido: true },
-        })
-      : [],
-  ]);
-
-  const mapaApuntes = new Map(apuntes.map((a) => [a.id, a]));
-  const mapaComentarios = new Map(comentarios.map((c) => [c.id, c]));
+  const previewsPorTipo = {};
+  await Promise.all(
+    Object.entries(idsPorTipo).map(async ([tipo, ids]) => {
+      previewsPorTipo[tipo] = await obtenerPreviewsContenido(tipo, ids);
+    }),
+  );
 
   return reportes.map((r) => {
-    let contenido_preview = null;
-    let contenido_existe = true;
-
-    if (r.tipo_contenido === 'apunte') {
-      const apunte = mapaApuntes.get(r.contenido_id);
-      contenido_existe = !!apunte;
-      contenido_preview = apunte?.titulo ?? null;
-    } else if (r.tipo_contenido === 'comentario') {
-      const comentario = mapaComentarios.get(r.contenido_id);
-      contenido_existe = !!comentario;
-      contenido_preview = comentario?.contenido ?? null;
-    }
+    const previews = previewsPorTipo[r.tipo_contenido];
+    const contenido_existe = previews?.has(r.contenido_id) ?? false;
 
     return {
       id: r.id,
@@ -134,7 +93,9 @@ async function listarReportesPropios(usuario_id) {
       estado: r.estado,
       creado_en: r.creado_en,
       contenido_existe,
-      contenido_preview,
+      contenido_preview: contenido_existe
+        ? (previews.get(r.contenido_id) ?? null)
+        : null,
     };
   });
 }

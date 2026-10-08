@@ -197,6 +197,7 @@ model Comentario {
 
   @@index([tipo_contenido, contenido_id])
   @@index([padre_id])
+  @@index([autor_id])
   @@map("comentarios")
 }
 
@@ -272,6 +273,7 @@ model Apunte {
   hashtags ApunteHashtag[]
 
   @@index([ramo_id])
+  @@index([autor_id])
   @@index([tipo])
   @@map("apuntes")
 }
@@ -412,5 +414,6 @@ model Reporte {
 
   @@index([tipo_contenido, contenido_id])
   @@index([estado])
+  @@index([reportado_por])
   @@map("reportes")
 }
