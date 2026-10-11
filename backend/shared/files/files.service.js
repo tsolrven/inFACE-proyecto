@@ -6,34 +6,54 @@ import {
   ForbiddenError,
 } from '../../errors/appError.js';
 import logger from '../../lib/logger.js';
-import { obtenerPropietarioContenido } from '../content/contentRegistry.js';
+import {
+  obtenerPropietarioContenido,
+  obtenerConfigAdjuntos,
+} from '../content/contentRegistry.js';
 import { resolverRutaFisica } from './uploadsPath.js';
 import { esStaff } from '../auth/permissions.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
-const MAX_ARCHIVOS_POR_APUNTE = 10;
+// solo lo que el cliente necesita: la ruta física y el vínculo polimórfico
+// (tipo_contenido / contenido_id) se quedan en el servidor
+function formatearArchivo(archivo) {
+  return {
+    id: archivo.id,
+    nombre_archivo: archivo.nombre_archivo,
+    tipo_mime: archivo.tipo_mime,
+    tamanio: archivo.tamanio,
+    contador_descargas: archivo.contador_descargas,
+  };
+}
 // ────────────────────────────────────────────────────────────────────────────────────────
-async function subirArchivo({ apunte_id, file, usuario_id, rol }) {
-  const autor_id = await obtenerPropietarioContenido('apunte', apunte_id);
+async function subirArchivo({
+  tipo_contenido,
+  contenido_id,
+  file,
+  usuario_id,
+}) {
+  const { max } = obtenerConfigAdjuntos(tipo_contenido);
+  const autor_id = await obtenerPropietarioContenido(
+    tipo_contenido,
+    contenido_id,
+  );
 
-  if (autor_id !== usuario_id && !esStaff(rol)) {
+  if (autor_id !== usuario_id) {
     throw new ForbiddenError(
-      'No tienes permiso para subir archivos a este apunte',
+      'Solo el autor puede subir archivos a este contenido',
     );
   }
 
   const cantidadActual = await prisma.archivo.count({
-    where: { tipo_contenido: 'apunte', contenido_id: apunte_id },
+    where: { tipo_contenido, contenido_id },
   });
-  if (cantidadActual >= MAX_ARCHIVOS_POR_APUNTE) {
-    throw new BadRequestError(
-      `No puedes subir más de ${MAX_ARCHIVOS_POR_APUNTE} archivos por apunte`,
-    );
+  if (cantidadActual >= max) {
+    throw new BadRequestError(`No puedes subir más de ${max} archivos`);
   }
 
   const archivo = await prisma.archivo.create({
     data: {
-      tipo_contenido: 'apunte',
-      contenido_id: apunte_id,
+      tipo_contenido,
+      contenido_id,
       nombre_archivo: file.originalname,
       ruta_url: `/uploads/${file.filename}`,
       tipo_mime: file.mimetype,
@@ -43,12 +63,13 @@ async function subirArchivo({ apunte_id, file, usuario_id, rol }) {
 
   logger.info('Archivo subido', {
     archivo_id: archivo.id,
-    apunte_id,
+    tipo_contenido,
+    contenido_id,
     nombre: file.originalname,
     tamanio: file.size,
   });
 
-  return archivo;
+  return formatearArchivo(archivo);
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function descargarArchivo(id) {
@@ -118,4 +139,5 @@ export {
   eliminarArchivo,
   descargarArchivo,
   borrarArchivosFisicos,
+  formatearArchivo,
 };

@@ -59,7 +59,6 @@ async function actualizar(req, res, next) {
     const apunte = await actualizarApunte(
       req.params.id,
       req.usuario.id,
-      req.usuario.rol,
       req.body,
     );
     return ApiResponse.success(res, apunte);

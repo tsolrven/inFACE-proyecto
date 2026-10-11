@@ -74,11 +74,15 @@ const hashtagsSchema = z
   .array(
     z
       .string()
+      .trim()
+      .toLowerCase()
       .min(1)
       .max(30, ERROR_MESSAGES.hashtags.max_largo)
       .regex(/^[a-zA-Z0-9_]+$/, ERROR_MESSAGES.hashtags.pattern),
   )
   .max(10, ERROR_MESSAGES.hashtags.max_cantidad)
+  // `Set` elimina repetidos y conserva el orden en que llegaron
+  .transform((tags) => [...new Set(tags)])
   .optional();
 
 const tituloSchema = z
@@ -157,6 +161,7 @@ const listarApuntesQuerySchema = paginacionQuerySchema.extend({
   hashtag: z
     .string()
     .trim()
+    .toLowerCase()
     .max(30, 'El hashtag es demasiado largo')
     .optional(),
   orden: z

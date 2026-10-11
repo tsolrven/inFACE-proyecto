@@ -9,6 +9,7 @@ import {
   registrarHidratadorGuardados,
 } from '../content/contentRegistry.js';
 import { eliminarInteracciones } from '../content/contentCleanup.js';
+import { obtenerMisInteracciones } from '../content/contentEnrichment.js';
 import { esStaff } from '../auth/permissions.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function listarComentarios(tipo_contenido, contenido_id, usuario_id) {
@@ -20,36 +21,18 @@ async function listarComentarios(tipo_contenido, contenido_id, usuario_id) {
     },
   });
 
-  const misVotos = usuario_id
-    ? await prisma.voto.findMany({
-        where: {
-          usuario_id,
-          tipo_contenido: 'comentario',
-          contenido_id: { in: comentarios.map((c) => c.id) },
-        },
-      })
-    : [];
-  const mapVotos = Object.fromEntries(
-    misVotos.map((v) => [v.contenido_id, v.tipo]),
+  const { mapVotos, setGuardados } = await obtenerMisInteracciones(
+    'comentario',
+    comentarios.map((c) => c.id),
+    usuario_id,
   );
-
-  const misGuardados = usuario_id
-    ? await prisma.guardado.findMany({
-        where: {
-          usuario_id,
-          tipo_contenido: 'comentario',
-          contenido_id: { in: comentarios.map((c) => c.id) },
-        },
-      })
-    : [];
-  const setGuardados = new Set(misGuardados.map((g) => g.contenido_id));
 
   return construirArbolComentarios(comentarios, mapVotos, setGuardados);
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 function construirArbolComentarios(
   comentarios,
-  mapVotos = {},
+  mapVotos = new Map(),
   setGuardados = new Set(),
 ) {
   const nodosPorId = new Map();
@@ -58,7 +41,7 @@ function construirArbolComentarios(
   for (const c of comentarios) {
     nodosPorId.set(c.id, {
       ...formatearComentario(c, {
-        mi_voto: mapVotos[c.id] || null,
+        mi_voto: mapVotos.get(c.id) ?? null,
         esta_guardado: setGuardados.has(c.id),
       }),
       respuestas: [],
@@ -93,6 +76,11 @@ async function crearComentario({
       where: { id: padre_id },
     });
     if (!padre) throw new NotFoundError('Comentario padre');
+    if (padre.eliminado) {
+      throw new BadRequestError(
+        'No puedes responder a un comentario eliminado',
+      );
+    }
     if (
       padre.tipo_contenido !== tipo_contenido ||
       padre.contenido_id !== contenido_id
@@ -204,15 +192,11 @@ async function hidratarComentariosGuardados(ids, usuario_id) {
   });
 
   const mapComentarios = Object.fromEntries(comentarios.map((c) => [c.id, c]));
-  const misVotos = await prisma.voto.findMany({
-    where: {
-      usuario_id,
-      tipo_contenido: 'comentario',
-      contenido_id: { in: ids },
-    },
-  });
-  const mapVotos = Object.fromEntries(
-    misVotos.map((v) => [v.contenido_id, v.tipo]),
+
+  const { mapVotos } = await obtenerMisInteracciones(
+    'comentario',
+    ids,
+    usuario_id,
   );
 
   const apunteIds = [...new Set(comentarios.map((c) => c.contenido_id))];
@@ -230,7 +214,7 @@ async function hidratarComentariosGuardados(ids, usuario_id) {
       const comentario = mapComentarios[id];
       return {
         ...formatearComentario(comentario, {
-          mi_voto: mapVotos[id] || null,
+          mi_voto: mapVotos.get(id) ?? null,
           esta_guardado: true,
         }),
         apunte: mapApuntesRelacionados[comentario.contenido_id] || null,
@@ -245,6 +229,7 @@ function formatearComentario(
   if (comentario.eliminado) {
     return {
       id: comentario.id,
+      tipo_contenido: 'comentario',
       contenido: null,
       votos_neto: comentario.votos_neto,
       mi_voto: null,
@@ -259,6 +244,7 @@ function formatearComentario(
 
   return {
     id: comentario.id,
+    tipo_contenido: 'comentario',
     contenido: comentario.contenido,
     votos_neto: comentario.votos_neto,
     mi_voto,

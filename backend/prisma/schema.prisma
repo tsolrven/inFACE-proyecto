@@ -16,6 +16,7 @@ model Usuario {
   contrasena     String
   rol            String   @default("estudiante") 
   esta_activo    Boolean  @default(true)
+  version_token  Int      @default(0)
   creado_en      DateTime @default(now())
   actualizado_en DateTime @updatedAt
 

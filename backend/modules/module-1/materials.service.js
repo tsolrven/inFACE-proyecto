@@ -2,10 +2,38 @@ import { prisma } from '../../config/configDb.js';
 import { NotFoundError, ForbiddenError } from '../../errors/appError.js';
 import logger from '../../lib/logger.js';
 import { MIME_MAP } from './fileType.helper.js';
-import { borrarArchivosFisicos } from '../../shared/files/files.service.js';
-import { eliminarInteracciones } from '../../shared/content/contentCleanup.js';
+import {
+  borrarArchivosFisicos,
+  formatearArchivo,
+} from '../../shared/files/files.service.js';
+import { eliminarContenido } from '../../shared/content/contentCleanup.js';
 import { registrarHidratadorGuardados } from '../../shared/content/contentRegistry.js';
+import { obtenerEnriquecimiento } from '../../shared/content/contentEnrichment.js';
 import { esStaff } from '../../shared/auth/permissions.js';
+// ────────────────────────────────────────────────────────────────────────────────────────
+// relaciones que siempre se piden junto con un apunte
+const INCLUDE_APUNTE = {
+  autor: { include: { perfil: { select: { nombre_usuario: true } } } },
+  ramo: { select: { id: true, nombre: true, codigo: true, semestre: true } },
+  hashtags: { include: { hashtag: { select: { nombre: true } } } },
+};
+// ────────────────────────────────────────────────────────────────────────────────────────
+// Único lugar donde se arma el apunte "completo" para un usuario
+// (feed, detalle, guardados y edición pasan todos por acá).
+async function formatearApuntes(apuntes, usuario_id) {
+  const ids = apuntes.map((a) => a.id);
+  const { mapVotos, setGuardados, mapComentarios, mapArchivos } =
+    await obtenerEnriquecimiento('apunte', ids, usuario_id);
+
+  return apuntes.map((a) =>
+    formatearApunte(a, {
+      comentarios: mapComentarios.get(a.id) ?? 0,
+      archivos: mapArchivos.get(a.id) ?? [],
+      mi_voto: mapVotos.get(a.id) ?? null,
+      esta_guardado: setGuardados.has(a.id),
+    }),
+  );
+}
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function listarApuntes({
   ramo_id,
@@ -49,8 +77,11 @@ async function listarApuntes({
     where.id = { in: idsConEseTipo };
   }
 
+  // `id` como último criterio: garantiza un orden total y estable entre páginas
   const orderBy =
-    orden === 'populares' ? { votos_neto: 'desc' } : { creado_en: 'desc' };
+    orden === 'populares'
+      ? [{ votos_neto: 'desc' }, { creado_en: 'desc' }, { id: 'desc' }]
+      : [{ creado_en: 'desc' }, { id: 'desc' }];
 
   const [apuntes, total] = await Promise.all([
     prisma.apunte.findMany({
@@ -58,75 +89,13 @@ async function listarApuntes({
       orderBy,
       skip: (pagina - 1) * limite,
       take: limite,
-      include: {
-        autor: { include: { perfil: { select: { nombre_usuario: true } } } },
-        ramo: {
-          select: { id: true, nombre: true, codigo: true, semestre: true },
-        },
-        hashtags: { include: { hashtag: { select: { nombre: true } } } },
-      },
+      include: INCLUDE_APUNTE,
     }),
     prisma.apunte.count({ where }),
   ]);
 
-  const ids = apuntes.map((a) => a.id);
-
-  const [conteoComentarios, archivos, misVotos, misGuardados] =
-    await Promise.all([
-      prisma.comentario.groupBy({
-        by: ['contenido_id'],
-        where: {
-          tipo_contenido: 'apunte',
-          contenido_id: { in: ids },
-          eliminado: false,
-        },
-        _count: { _all: true },
-      }),
-      prisma.archivo.findMany({
-        where: { tipo_contenido: 'apunte', contenido_id: { in: ids } },
-      }),
-      usuario_id
-        ? prisma.voto.findMany({
-            where: {
-              usuario_id,
-              tipo_contenido: 'apunte',
-              contenido_id: { in: ids },
-            },
-          })
-        : Promise.resolve([]),
-      usuario_id
-        ? prisma.guardado.findMany({
-            where: {
-              usuario_id,
-              tipo_contenido: 'apunte',
-              contenido_id: { in: ids },
-            },
-          })
-        : Promise.resolve([]),
-    ]);
-
-  const mapComentarios = Object.fromEntries(
-    conteoComentarios.map((c) => [c.contenido_id, c._count._all]),
-  );
-  const mapArchivos = {};
-  for (const arch of archivos) {
-    if (!mapArchivos[arch.contenido_id]) mapArchivos[arch.contenido_id] = [];
-    mapArchivos[arch.contenido_id].push(arch);
-  }
-  const mapVotos = Object.fromEntries(
-    misVotos.map((v) => [v.contenido_id, v.tipo]),
-  );
-  const setGuardados = new Set(misGuardados.map((g) => g.contenido_id));
-
   return {
-    apuntes: apuntes.map((a) =>
-      formatearApunte(a, {
-        comentarios: mapComentarios[a.id] || 0,
-        archivos: mapArchivos[a.id] || [],
-        mi_voto: mapVotos[a.id] || null,
-        esta_guardado: setGuardados.has(a.id),
-      }),
-    ),
+    apuntes: await formatearApuntes(apuntes, usuario_id),
     total,
     pagina,
     paginas: Math.ceil(total / limite),
@@ -159,43 +128,8 @@ async function obtenerApunte(id, usuario_id, carrera_id) {
     throw new NotFoundError('Apunte');
   }
 
-  const [archivos, comentariosCount, miVoto, miGuardado] = await Promise.all([
-    prisma.archivo.findMany({
-      where: { tipo_contenido: 'apunte', contenido_id: id },
-    }),
-    prisma.comentario.count({
-      where: { tipo_contenido: 'apunte', contenido_id: id, eliminado: false },
-    }),
-    usuario_id
-      ? prisma.voto.findUnique({
-          where: {
-            usuario_id_tipo_contenido_contenido_id: {
-              usuario_id,
-              tipo_contenido: 'apunte',
-              contenido_id: id,
-            },
-          },
-        })
-      : Promise.resolve(null),
-    usuario_id
-      ? prisma.guardado.findUnique({
-          where: {
-            usuario_id_tipo_contenido_contenido_id: {
-              usuario_id,
-              tipo_contenido: 'apunte',
-              contenido_id: id,
-            },
-          },
-        })
-      : Promise.resolve(null),
-  ]);
-
-  return formatearApunte(apunte, {
-    comentarios: comentariosCount,
-    archivos,
-    mi_voto: miVoto?.tipo || null,
-    esta_guardado: !!miGuardado,
-  });
+  const [apunteFormateado] = await formatearApuntes([apunte], usuario_id);
+  return apunteFormateado;
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function crearApunte({
@@ -239,26 +173,19 @@ async function crearApunte({
         create: await resolverHashtags(hashtags),
       },
     },
-    include: {
-      autor: { include: { perfil: { select: { nombre_usuario: true } } } },
-      ramo: {
-        select: { id: true, nombre: true, codigo: true, semestre: true },
-      },
-      hashtags: { include: { hashtag: { select: { nombre: true } } } },
-    },
+    include: INCLUDE_APUNTE,
   });
 
   return formatearApunte(apunte);
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-async function actualizarApunte(id, usuario_id, rol, datos) {
+async function actualizarApunte(id, usuario_id, datos) {
   const apunte = await prisma.apunte.findUnique({ where: { id } });
   if (!apunte) throw new NotFoundError('Apunte');
 
-  if (apunte.autor_id !== usuario_id && !esStaff(rol)) {
-    throw new ForbiddenError('No tienes permiso para editar este apunte');
+  if (apunte.autor_id !== usuario_id) {
+    throw new ForbiddenError('Solo el autor puede editar este apunte');
   }
-
   const {
     ramo_id,
     titulo,
@@ -317,16 +244,14 @@ async function actualizarApunte(id, usuario_id, rol, datos) {
         },
       }),
     },
-    include: {
-      autor: { include: { perfil: { select: { nombre_usuario: true } } } },
-      ramo: {
-        select: { id: true, nombre: true, codigo: true, semestre: true },
-      },
-      hashtags: { include: { hashtag: { select: { nombre: true } } } },
-    },
+    include: INCLUDE_APUNTE,
   });
 
-  return formatearApunte(apunteActualizado);
+  const [apunteFormateado] = await formatearApuntes(
+    [apunteActualizado],
+    usuario_id,
+  );
+  return apunteFormateado;
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function eliminarApunte(id, usuario_id, rol) {
@@ -337,31 +262,10 @@ async function eliminarApunte(id, usuario_id, rol) {
     throw new ForbiddenError('No tienes permiso para eliminar este apunte');
   }
 
-  const archivos = await prisma.archivo.findMany({
-    where: { tipo_contenido: 'apunte', contenido_id: id },
-  });
-
-  await prisma.$transaction(async (tx) => {
-    // ids de los comentarios del apunte, para limpiar también lo que cuelga de ellos
-    const comentarios = await tx.comentario.findMany({
-      where: { tipo_contenido: 'apunte', contenido_id: id },
-      select: { id: true },
-    });
-
-    await eliminarInteracciones(
-      tx,
-      'comentario',
-      comentarios.map((c) => c.id),
-    );
-    await eliminarInteracciones(tx, 'apunte', [id]);
-
-    await tx.comentario.deleteMany({
-      where: { tipo_contenido: 'apunte', contenido_id: id },
-    });
-    await tx.archivo.deleteMany({
-      where: { tipo_contenido: 'apunte', contenido_id: id },
-    });
+  const archivos = await prisma.$transaction(async (tx) => {
+    const { archivos } = await eliminarContenido(tx, 'apunte', id);
     await tx.apunte.delete({ where: { id } });
+    return archivos;
   });
 
   // después del commit: si el disco falla, la BD ya quedó consistente
@@ -371,61 +275,17 @@ async function eliminarApunte(id, usuario_id, rol) {
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function hidratarApuntesGuardados(ids, usuario_id) {
-  const [apuntes, conteoComentarios, archivos, misVotos] = await Promise.all([
-    prisma.apunte.findMany({
-      where: { id: { in: ids } },
-      include: {
-        autor: { include: { perfil: { select: { nombre_usuario: true } } } },
-        ramo: {
-          select: { id: true, nombre: true, codigo: true, semestre: true },
-        },
-        hashtags: { include: { hashtag: { select: { nombre: true } } } },
-      },
-    }),
-    prisma.comentario.groupBy({
-      by: ['contenido_id'],
-      where: {
-        tipo_contenido: 'apunte',
-        contenido_id: { in: ids },
-        eliminado: false,
-      },
-      _count: { _all: true },
-    }),
-    prisma.archivo.findMany({
-      where: { tipo_contenido: 'apunte', contenido_id: { in: ids } },
-    }),
-    prisma.voto.findMany({
-      where: {
-        usuario_id,
-        tipo_contenido: 'apunte',
-        contenido_id: { in: ids },
-      },
-    }),
-  ]);
+  const apuntes = await prisma.apunte.findMany({
+    where: { id: { in: ids } },
+    include: INCLUDE_APUNTE,
+  });
 
-  const mapApuntes = Object.fromEntries(apuntes.map((a) => [a.id, a]));
-  const mapComentarios = Object.fromEntries(
-    conteoComentarios.map((c) => [c.contenido_id, c._count._all]),
-  );
-  const mapArchivos = {};
-  for (const arch of archivos) {
-    if (!mapArchivos[arch.contenido_id]) mapArchivos[arch.contenido_id] = [];
-    mapArchivos[arch.contenido_id].push(arch);
-  }
-  const mapVotos = Object.fromEntries(
-    misVotos.map((v) => [v.contenido_id, v.tipo]),
-  );
+  // se respeta el orden de `ids` (el guardado más reciente primero) y se omiten
+  // los apuntes que ya no existen
+  const mapApuntes = new Map(apuntes.map((a) => [a.id, a]));
+  const ordenados = ids.map((id) => mapApuntes.get(id)).filter(Boolean);
 
-  return ids
-    .filter((id) => mapApuntes[id])
-    .map((id) =>
-      formatearApunte(mapApuntes[id], {
-        comentarios: mapComentarios[id] || 0,
-        archivos: mapArchivos[id] || [],
-        mi_voto: mapVotos[id] || null,
-        esta_guardado: true,
-      }),
-    );
+  return formatearApuntes(ordenados, usuario_id);
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function resolverHashtags(hashtags) {
@@ -452,9 +312,10 @@ function formatearApunte(
 ) {
   return {
     id: apunte.id,
+    tipo_contenido: 'apunte',
     titulo: apunte.titulo,
     descripcion: apunte.descripcion,
-    tipo: apunte.tipo,
+    tipo: apunte.tipo, // apunte, código, guía, etc
     votos_neto: apunte.votos_neto,
     mi_voto,
     esta_guardado,
@@ -475,7 +336,7 @@ function formatearApunte(
       semestre: apunte.ramo.semestre,
     },
     hashtags: apunte.hashtags.map((h) => h.hashtag.nombre),
-    archivos,
+    archivos: archivos.map(formatearArchivo),
     comentarios_count: comentarios,
     descargas: archivos.reduce(
       (acc, a) => acc + (a.contador_descargas ?? 0),

@@ -2,6 +2,7 @@ import {
   registrar,
   iniciarSesion,
   refrescarToken,
+  cerrarSesion,
   obtenerUsuarioActual,
 } from './auth.service.js';
 import ApiResponse from '../utils/apiResponse.js';
@@ -44,10 +45,16 @@ async function refresh(req, res, next) {
   }
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-async function logout(req, res) {
-  const { maxAge, ...opcionesLimpieza } = REFRESH_COOKIE_OPTS;
-  res.clearCookie('refreshToken', opcionesLimpieza);
-  return ApiResponse.success(res, { mensaje: 'Sesión cerrada' });
+async function logout(req, res, next) {
+  try {
+    await cerrarSesion(req.cookies?.refreshToken);
+
+    const { maxAge, ...opcionesLimpieza } = REFRESH_COOKIE_OPTS;
+    res.clearCookie('refreshToken', opcionesLimpieza);
+    return ApiResponse.success(res, { mensaje: 'Sesión cerrada' });
+  } catch (err) {
+    next(err);
+  }
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function me(req, res, next) {

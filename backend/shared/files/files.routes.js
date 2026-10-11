@@ -5,13 +5,29 @@ import { upload } from './multer.helper.js';
 import { validarContenidoReal } from './fileSignature.helper.js';
 import { subidaLimiter } from '../../middlewares/rateLimiter.js';
 import validate from '../../middlewares/validate.js';
-import { idParamSchema } from '../validation/common.schemas.js';
+import {
+  idParamSchema,
+  contenidoParamSchema,
+} from '../validation/common.schemas.js';
+import { obtenerConfigAdjuntos } from '../content/contentRegistry.js';
 
 const router = express.Router();
 
+// rechaza antes de que multer escriba nada en disco si el tipo no admite adjuntos
+function exigirAdjuntos(req, res, next) {
+  try {
+    obtenerConfigAdjuntos(req.params.tipo);
+    next();
+  } catch (err) {
+    next(err);
+  }
+}
+
 router.post(
-  '/:apunte_id',
+  '/:tipo/:id',
   autenticar,
+  validate(contenidoParamSchema, 'params'),
+  exigirAdjuntos,
   subidaLimiter,
   upload.single('archivo'),
   validarContenidoReal,

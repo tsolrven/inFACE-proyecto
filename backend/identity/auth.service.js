@@ -118,7 +118,10 @@ async function iniciarSesion({ correo, contrasena }) {
 
   return {
     accessToken: generarAccessToken(payload),
-    refreshToken: generarRefreshToken(payload),
+    refreshToken: generarRefreshToken({
+      ...payload,
+      vt: usuario.version_token,
+    }),
     usuario: formatearUsuario(usuario),
   };
 }
@@ -141,6 +144,11 @@ async function refrescarToken(token) {
     throw new ForbiddenError('Usuario no válido');
   }
 
+  // sesión revocada (logout) o token emitido antes de existir version_token
+  if (payload.vt !== usuario.version_token) {
+    throw new UnauthorizedError('Sesión cerrada, inicia sesión nuevamente');
+  }
+
   const carrera_id = usuario.usuario_carrera[0]?.carrera_id ?? null;
 
   return {
@@ -150,6 +158,26 @@ async function refrescarToken(token) {
       carrera_id,
     }),
   };
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+async function cerrarSesion(token) {
+  // sin token, o con token inválido/expirado, no hay nada que revocar:
+  // el controller igual borra la cookie
+  if (!token) return;
+
+  let payload;
+  try {
+    payload = verificarRefreshToken(token);
+  } catch {
+    return;
+  }
+
+  // solo se incrementa si el token todavía es el vigente. Si ya estaba
+  // revocado, no se suma de nuevo (evita incrementos por tokens viejos)
+  await prisma.usuario.updateMany({
+    where: { id: payload.id, version_token: payload.vt },
+    data: { version_token: { increment: 1 } },
+  });
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function obtenerUsuarioActual(id) {
@@ -172,6 +200,7 @@ export {
   registrar,
   iniciarSesion,
   refrescarToken,
+  cerrarSesion,
   obtenerUsuarioActual,
   determinarRolPorCorreo,
 };

@@ -24,7 +24,7 @@ export async function descargarArchivo(archivo) {
 export async function subirArchivo(apunteId, file, { onProgress } = {}) {
   const formData = new FormData();
   formData.append('archivo', file);
-  const res = await apiFetch(`/archivos/${apunteId}`, {
+  const res = await apiFetch(`/archivos/apunte/${apunteId}`, {
     method: 'POST',
     body: formData,
   });

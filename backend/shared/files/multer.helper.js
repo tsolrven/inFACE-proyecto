@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import { UPLOADS_DIR } from './uploadsPath.js';
 import { BadRequestError } from '../../errors/appError.js';
+import { obtenerConfigAdjuntos } from '../content/contentRegistry.js';
 
 const EXTENSIONES_PERMITIDAS = [
   '.pdf',
@@ -37,7 +38,14 @@ const storage = multer.diskStorage({
 function fileFilter(req, file, cb) {
   const ext = path.extname(file.originalname).toLowerCase();
 
-  if (EXTENSIONES_PERMITIDAS.includes(ext)) {
+  // si el tipo restringe extensiones, se aplica sobre la lista general
+  // (nunca puede ampliarla)
+  const { extensiones } = obtenerConfigAdjuntos(req.params.tipo);
+  const permitidas = extensiones
+    ? EXTENSIONES_PERMITIDAS.filter((e) => extensiones.includes(e))
+    : EXTENSIONES_PERMITIDAS;
+
+  if (permitidas.includes(ext)) {
     cb(null, true);
   } else {
     cb(new BadRequestError(`Extensión ${ext} no permitida`));

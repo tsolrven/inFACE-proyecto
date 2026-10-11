@@ -18,6 +18,8 @@ const CONTENT_REGISTRY = {
     votesField: 'votos_neto',
     previewField: 'titulo',
     allowsComments: true,
+    // sin `adjuntos`, el tipo no admite archivos (ej: comentario)
+    adjuntos: { max: 10 },
   },
   comentario: {
     modelName: 'comentario',
@@ -142,6 +144,15 @@ function admiteComentarios(tipo_contenido) {
   return CONTENT_REGISTRY[tipo_contenido]?.allowsComments === true;
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
+// Config de adjuntos del tipo. Si el tipo no admite archivos, rechaza.
+function obtenerConfigAdjuntos(tipo_contenido) {
+  const entrada = obtenerEntradaRegistro(tipo_contenido);
+  if (!entrada.adjuntos) {
+    throw new BadRequestError(`${entrada.label} no admite archivos adjuntos`);
+  }
+  return entrada.adjuntos;
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
 export {
   verificarContenidoExiste,
   obtenerPropietarioContenido,
@@ -152,4 +163,5 @@ export {
   hidratarGuardados,
   tiposContenidoValidos,
   admiteComentarios,
+  obtenerConfigAdjuntos,
 };
