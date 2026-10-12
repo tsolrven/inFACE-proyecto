@@ -1,18 +1,19 @@
-import { getAccessToken, refreshAccessToken, clearAccessToken } from './auth';
-
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
-let refreshPromise = null;
+// ── token de acceso (vive solo en memoria) ──────────────────────────────────
+let accessToken = null;
 
-function getRefreshPromise() {
-  if (!refreshPromise) {
-    refreshPromise = refreshAccessToken().finally(() => {
-      refreshPromise = null;
-    });
-  }
-  return refreshPromise;
+export function setAccessToken(token) {
+  accessToken = token;
+}
+export function getAccessToken() {
+  return accessToken;
+}
+export function clearAccessToken() {
+  accessToken = null;
 }
 
+// ── utilidades ──────────────────────────────────────────────────────────────
 async function parseBody(res) {
   const texto = await res.text();
   if (!texto) return null;
@@ -25,56 +26,88 @@ async function parseBody(res) {
 
 function buildError(data, status) {
   const err = data?.error ?? {};
-  const error = new Error(err.message || 'Error desconocido');
-  error.code = err.code || 'UNKNOWN_ERROR';
-  error.details = err.details ?? null;
+  const error = new Error(err.message || data?.mensaje || 'Error desconocido');
+  error.code = err.code || data?.codigo || 'UNKNOWN_ERROR';
+  error.details = err.details ?? data?.detalles ?? null;
   error.status = status;
   return error;
 }
 
-export async function apiFetch(path, options = {}) {
-  const { method = 'GET', body, _isRetry = false, ...rest } = options;
+// Una petición a la API. No sabe nada de reintentos ni de sesión.
+// `auth: false` omite el header Authorization (login, registro, refresh, logout).
+async function request(path, options = {}) {
+  const {
+    method = 'GET',
+    body,
+    headers = {},
+    auth = true,
+    responseType,
+    ...rest
+  } = options;
 
   const isFormData = body instanceof FormData;
-  const headers = { ...(rest.headers || {}) };
+  const finalHeaders = { ...headers };
 
   if (!isFormData && body !== undefined) {
-    headers['Content-Type'] = 'application/json';
+    finalHeaders['Content-Type'] = 'application/json';
+  }
+  if (auth && accessToken) {
+    finalHeaders['Authorization'] = `Bearer ${accessToken}`;
   }
 
-  const token = getAccessToken();
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
+  // `...rest` va primero: así nada de lo que venga en options puede pisar
+  // el método, los headers, las cookies ni el cuerpo ya preparados
   const res = await fetch(`${API_URL}${path}`, {
+    ...rest,
     method,
-    headers,
+    headers: finalHeaders,
     credentials: 'include',
     body: isFormData
       ? body
       : body !== undefined
         ? JSON.stringify(body)
         : undefined,
-    ...rest,
   });
 
-  if (res.status === 204) return null;
+  if (res.ok) {
+    if (res.status === 204) return null;
+    return responseType === 'blob' ? res.blob() : parseBody(res);
+  }
+  throw buildError(await parseBody(res), res.status);
+}
 
-  const data = await parseBody(res);
+// ── refresco de sesión ──────────────────────────────────────────────────────
+// Si varias peticiones fallan con 401 a la vez, comparten un único refresh.
+let refreshPromise = null;
 
-  if (res.ok) return data;
+export function refrescarSesion() {
+  if (!refreshPromise) {
+    refreshPromise = request('/auth/refresh', { method: 'POST', auth: false })
+      .then((data) => {
+        accessToken = data.data.accessToken;
+        return accessToken;
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+  return refreshPromise;
+}
 
-  if (res.status === 401 && !_isRetry) {
+// ── petición con sesión: si el token venció, refresca y reintenta una vez ───
+export async function apiFetch(path, options = {}) {
+  try {
+    return await request(path, options);
+  } catch (error) {
+    if (error.status !== 401 || options.auth === false) throw error;
+
     try {
-      await getRefreshPromise();
-      return apiFetch(path, { ...options, _isRetry: true });
+      await refrescarSesion();
     } catch {
       clearAccessToken();
       window.dispatchEvent(new CustomEvent('auth:session-expired'));
-      throw buildError(data, res.status);
+      throw error;
     }
+    return request(path, options);
   }
-
-  throw buildError(data, res.status);
 }

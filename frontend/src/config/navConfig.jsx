@@ -1,30 +1,47 @@
-import Inicio from '../pages/Inicio';
-import Populares from '../pages/Populares';
-import Explorar from '../pages/Explorar';
+import { lazy } from 'react';
 
-import ForoPorRamos from '../pages/academico/ForoPorRamos';
-import RepositorioMateriales from '../pages/academico/RepositorioMateriales';
-import AnunciosOficiales from '../pages/academico/AnunciosOficiales';
+//! cada página se descarga recién cuando el usuario entra a ella
+const Inicio = lazy(() => import('../pages/Inicio'));
+const Populares = lazy(() => import('../pages/Populares'));
+const Explorar = lazy(() => import('../pages/Explorar'));
 
-import MatchProyectos from '../pages/cultural/MatchProyectos';
-import EspacioCreativo from '../pages/cultural/EspacioCreativo';
-import Marketplace from '../pages/cultural/Marketplace';
+const ForoPorRamos = lazy(() => import('../pages/academico/ForoPorRamos'));
+const RepositorioMateriales = lazy(
+  () => import('../pages/academico/RepositorioMateriales'),
+);
+const AnunciosOficiales = lazy(
+  () => import('../pages/academico/AnunciosOficiales'),
+);
 
-import ContPublicoAuditor from '../pages/comunidades/ContPublicoAuditor';
-import Derecho from '../pages/comunidades/Derecho';
-import IngCivilInformatica from '../pages/comunidades/IngCivilInformatica';
-import IngComercial from '../pages/comunidades/IngComercial';
-import IngEjecComputacion from '../pages/comunidades/IngEjecComputacion';
+const MatchProyectos = lazy(() => import('../pages/cultural/MatchProyectos'));
+const EspacioCreativo = lazy(() => import('../pages/cultural/EspacioCreativo'));
+const Marketplace = lazy(() => import('../pages/cultural/Marketplace'));
 
-import Ayuda from '../pages/recursos/Ayuda';
-import Reportes from '../pages/recursos/Reportes';
-import AcercaDeInFace from '../pages/recursos/AcercaDeInFace';
+const ContPublicoAuditor = lazy(
+  () => import('../pages/comunidades/ContPublicoAuditor'),
+);
+const Derecho = lazy(() => import('../pages/comunidades/Derecho'));
+const IngCivilInformatica = lazy(
+  () => import('../pages/comunidades/IngCivilInformatica'),
+);
+const IngComercial = lazy(() => import('../pages/comunidades/IngComercial'));
+const IngEjecComputacion = lazy(
+  () => import('../pages/comunidades/IngEjecComputacion'),
+);
 
-import ReglasInFace from '../pages/legal/ReglasInFace';
-import PoliticasPrivacidad from '../pages/legal/PoliticasPrivacidad';
-import AcuerdosUsuario from '../pages/legal/AcuerdosUsuario';
+const Ayuda = lazy(() => import('../pages/recursos/Ayuda'));
+const Reportes = lazy(() => import('../pages/recursos/Reportes'));
+const AcercaDeInFace = lazy(() => import('../pages/recursos/AcercaDeInFace'));
 
-import MaterialDetailModal from '../components/repositorioMateriales/MaterialDetailModal';
+const ReglasInFace = lazy(() => import('../pages/legal/ReglasInFace'));
+const PoliticasPrivacidad = lazy(
+  () => import('../pages/legal/PoliticasPrivacidad'),
+);
+const AcuerdosUsuario = lazy(() => import('../pages/legal/AcuerdosUsuario'));
+
+const MaterialDetailModal = lazy(
+  () => import('../components/repositorioMateriales/MaterialDetailModal'),
+);
 // ──────────────────────────────────────────────────────────────────────────
 export const topNavItems = [
   { path: '/', label: 'Inicio', icon: 'ti-home', element: <Inicio /> },

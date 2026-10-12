@@ -1,84 +1,33 @@
-//! capa de acceso a la API de autenticación
+//! endpoints de autenticación (la mecánica de red y de token vive en api.js)
+import { apiFetch, setAccessToken, clearAccessToken } from './api';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-let _accessToken = null;
-
-export function setAccessToken(token) {
-  _accessToken = token;
-}
-
-export function getAccessToken() {
-  return _accessToken;
-}
-
-export function clearAccessToken() {
-  _accessToken = null;
-}
-// ─────────────────────────────────────────────────────────────────────────────
-async function handleResponse(res) {
-  const data = await res.json();
-  if (!res.ok) {
-    const err = data?.error ?? {};
-    const error = new Error(err.message || 'Error desconocido');
-    error.code = err.code;
-    error.details = err.details ?? null;
-    error.status = res.status;
-    throw error;
-  }
-  return data;
-}
-// ─────────────────────────────────────────────────────────────────────────────
-export async function register({
-  correo,
-  contrasena,
-  nombre_usuario,
-  carrera_id,
-}) {
-  const res = await fetch(`${API_URL}/auth/register`, {
+export function register({ correo, contrasena, nombre_usuario, carrera_id }) {
+  return apiFetch('/auth/register', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ correo, contrasena, nombre_usuario, carrera_id }),
-    credentials: 'include',
+    auth: false,
+    body: { correo, contrasena, nombre_usuario, carrera_id },
   });
-  return handleResponse(res);
 }
 
 export async function login({ correo, contrasena }) {
-  const res = await fetch(`${API_URL}/auth/login`, {
+  const data = await apiFetch('/auth/login', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ correo, contrasena }),
-    credentials: 'include',
+    auth: false,
+    body: { correo, contrasena },
   });
-  const data = await handleResponse(res);
   setAccessToken(data.data.accessToken);
   return data.data;
 }
 
 export async function logout() {
-  await fetch(`${API_URL}/auth/logout`, {
-    method: 'POST',
-    credentials: 'include',
-  });
-  clearAccessToken();
+  try {
+    await apiFetch('/auth/logout', { method: 'POST', auth: false });
+  } finally {
+    clearAccessToken();
+  }
 }
-// ─────────────────────────────────────────────────────────────────────────────
-export async function refreshAccessToken() {
-  const res = await fetch(`${API_URL}/auth/refresh`, {
-    method: 'POST',
-    credentials: 'include',
-  });
-  const data = await handleResponse(res);
-  setAccessToken(data.data.accessToken);
-  return data.data.accessToken;
-}
-// ─────────────────────────────────────────────────────────────────────────────
+
 export async function obtenerPerfilActual() {
-  const res = await fetch(`${API_URL}/auth/me`, {
-    method: 'GET',
-    headers: { Authorization: `Bearer ${getAccessToken()}` },
-    credentials: 'include',
-  });
-  const data = await handleResponse(res);
+  const data = await apiFetch('/auth/me');
   return data.data;
 }

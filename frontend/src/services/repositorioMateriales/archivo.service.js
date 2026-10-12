@@ -1,16 +1,10 @@
 import { apiFetch } from '../api';
-import { getAccessToken } from '../auth';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 export async function descargarArchivo(archivo) {
-  const res = await fetch(`${API_URL}/archivos/${archivo.id}/descargar`, {
-    headers: { Authorization: `Bearer ${getAccessToken()}` },
-    credentials: 'include',
+  const blob = await apiFetch(`/archivos/${archivo.id}/descargar`, {
+    responseType: 'blob',
   });
-  if (!res.ok) throw new Error('No se pudo descargar el archivo');
 
-  const blob = await res.blob();
   const url = window.URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -21,7 +15,7 @@ export async function descargarArchivo(archivo) {
   window.URL.revokeObjectURL(url);
 }
 
-export async function subirArchivo(apunteId, file, { onProgress } = {}) {
+export async function subirArchivo(apunteId, file) {
   const formData = new FormData();
   formData.append('archivo', file);
   const res = await apiFetch(`/archivos/apunte/${apunteId}`, {

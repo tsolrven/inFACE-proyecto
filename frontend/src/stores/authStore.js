@@ -3,10 +3,9 @@ import {
   login as apiLogin,
   logout as apiLogout,
   register as apiRegister,
-  refreshAccessToken,
   obtenerPerfilActual,
-  clearAccessToken,
 } from '../services/auth';
+import { refrescarSesion, clearAccessToken } from '../services/api';
 
 export const useAuthStore = create((set) => ({
   usuario: null,
@@ -23,13 +22,18 @@ export const useAuthStore = create((set) => ({
   },
 
   logout: async () => {
-    await apiLogout();
-    set({ usuario: null });
+    try {
+      await apiLogout();
+    } catch {
+      // sin conexión: igual se cierra la sesión localmente
+    } finally {
+      set({ usuario: null });
+    }
   },
 
   init: async () => {
     try {
-      await refreshAccessToken();
+      await refrescarSesion();
       const usuario = await obtenerPerfilActual();
       set({ usuario });
     } catch {

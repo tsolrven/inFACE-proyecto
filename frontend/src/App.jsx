@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import {
   BrowserRouter,
   Routes,
@@ -13,13 +13,15 @@ import Onboarding from './pages/Onboarding';
 import Landing from './pages/Landing';
 import Layout from './components/Layout';
 import ToastContainer from './components/ui/Toast';
-import Perfil from './pages/Perfil';
-import PerfilPublico from './pages/PerfilPublico';
 import {
   allProtectedRoutes,
   extraRoutes,
   modalRoutes,
 } from './config/navConfig';
+import NotFound from './pages/NotFound';
+
+const Perfil = lazy(() => import('./pages/Perfil'));
+const PerfilPublico = lazy(() => import('./pages/PerfilPublico'));
 
 function ProtectedRoute({ children }) {
   const usuario = useAuthStore((s) => s.usuario);
@@ -158,25 +160,22 @@ function AppRoutes() {
 
         <Route
           path='*'
-          element={
-            <Navigate
-              to='/login'
-              replace
-            />
-          }
+          element={<NotFound />}
         />
       </Routes>
 
       {backgroundLocation && (
-        <Routes>
-          {modalRoutes.map(({ path, element }) => (
-            <Route
-              key={path}
-              path={path}
-              element={<ProtectedRoute>{element}</ProtectedRoute>}
-            />
-          ))}
-        </Routes>
+        <Suspense fallback={null}>
+          <Routes>
+            {modalRoutes.map(({ path, element }) => (
+              <Route
+                key={path}
+                path={path}
+                element={<ProtectedRoute>{element}</ProtectedRoute>}
+              />
+            ))}
+          </Routes>
+        </Suspense>
       )}
     </>
   );
