@@ -50,7 +50,8 @@ const ERROR_MESSAGES = {
     invalid: `El tipo debe ser uno de: ${TIPOS_APUNTE.join(', ')}`,
   },
   links: {
-    invalid: 'Cada link debe ser una URL válida',
+    invalid:
+      'Cada link debe ser una URL válida que empiece con http:// o https://',
     max_cantidad: 'No puedes agregar más de 5 links',
   },
   codigo_snippet: {
@@ -103,7 +104,17 @@ const descripcionSchema = z
 const tipoSchema = z.enum(TIPOS_APUNTE, { error: ERROR_MESSAGES.tipo.invalid });
 
 const linksSchema = z
-  .array(z.string().trim().url(ERROR_MESSAGES.links.invalid))
+  .array(
+    z
+      .string()
+      .trim()
+      .pipe(
+        z.url({
+          protocol: /^https?$/,
+          error: ERROR_MESSAGES.links.invalid,
+        }),
+      ),
+  )
   .max(5, ERROR_MESSAGES.links.max_cantidad)
   .optional();
 
