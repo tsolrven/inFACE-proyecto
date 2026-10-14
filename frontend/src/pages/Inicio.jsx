@@ -12,7 +12,7 @@ import {
   ModalidadChip,
   EstadoChip,
 } from '../helpers/matchHelpers';
-import { colorPorRamo } from '../shared/lib/ramoColors';
+import { colorPorRamo } from '../shared/lib/courseColors';
 import { formatearTiempoRelativo } from '../shared/lib/formatRelativeTime';
 import { navSections } from '../config/navConfig';
 

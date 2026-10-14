@@ -7,7 +7,7 @@ import {
   listarComentarios,
   crearComentario,
 } from '../../services/repositorioMateriales/comentario.service';
-import { colorPorRamo } from '../../shared/lib/ramoColors';
+import { colorPorRamo } from '../../shared/lib/courseColors';
 import {
   metaDeArchivo,
   metaDeBadge,
@@ -16,7 +16,7 @@ import {
 } from '../../utils/fileMeta';
 import { formatearTiempoRelativo } from '../../shared/lib/formatRelativeTime';
 import { useRepositorioStore } from '../../stores/repositorioStore';
-import { predecirVoto } from '../../shared/post/votes/votos';
+import { predecirVoto } from '../../shared/post/votes/votes';
 import { useAuthStore } from '../../stores/authStore';
 import { descargarArchivo } from '../../services/repositorioMateriales/archivo.service';
 import { votarApunte } from '../../services/repositorioMateriales/voto.service';

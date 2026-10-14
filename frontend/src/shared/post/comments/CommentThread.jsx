@@ -10,7 +10,7 @@ import {
   eliminarComentario,
 } from '../../../services/repositorioMateriales/comentario.service';
 import { formatearTiempoRelativo } from '../../lib/formatRelativeTime';
-import { predecirVoto } from '../votes/votos';
+import { predecirVoto } from '../votes/votes';
 import { useAuthStore } from '../../stores/authStore';
 import ReportModal from '../../moderation/ReportModal';
 import ConfirmDialog from '../../shared/ui/ConfirmDialog';

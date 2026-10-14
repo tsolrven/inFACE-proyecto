@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Modal, { ModalHeader } from '../ui/Modal';
 import Button from '../ui/Button';
-import { MOTIVOS_REPORTE, obtenerMotivo } from './reportMotivos';
-import { reportar } from './reporte.service';
+import { MOTIVOS_REPORTE, obtenerMotivo } from './reportReasons';
+import { reportar } from './reports.api';
 
 export default function ReportModal({
   open,

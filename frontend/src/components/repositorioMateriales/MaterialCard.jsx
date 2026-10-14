@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useRepositorioStore } from '../../stores/repositorioStore';
 import { useAuthStore } from '../../stores/authStore';
-import { colorPorRamo } from '../../shared/lib/ramoColors';
+import { colorPorRamo } from '../../shared/lib/courseColors';
 import {
   metaDeBadge,
   metaDeArchivo,

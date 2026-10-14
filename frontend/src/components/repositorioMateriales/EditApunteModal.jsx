@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import Modal, { ModalHeader } from '../../shared/ui/Modal';
 import Button from '../../shared/ui/Button';
-import { listarRamosPorCarrera } from '../../shared/api/catalog.service';
+import { listarRamosPorCarrera } from '../../shared/api/catalog.api';
 import {
   subirArchivos,
   eliminarArchivo,
