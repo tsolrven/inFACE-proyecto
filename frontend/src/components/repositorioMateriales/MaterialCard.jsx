@@ -18,7 +18,6 @@ import ConfirmDialog from '../ui/ConfirmDialog';
 import ReportModal from '../reportes/ReportModal';
 import VotePill from './VotePill';
 import CodeViewer from './CodeViewer';
-import { fueEditado } from '../../utils/fueEditado';
 import BookmarkIcon from '../icons/BookmarkIcon';
 import { esStaff } from '../../utils/roles';
 
@@ -201,9 +200,9 @@ export default function MaterialCard({ apunte, onQuitarDeGuardados }) {
           <span className='text-[11px] text-neutral-600'>
             · {formatearTiempoRelativo(apunte.creado_en)}
           </span>
-          {fueEditado(apunte.creado_en, apunte.actualizado_en) && (
+          {apunte.editado_en && (
             <span className='text-[11px] text-neutral-700'>
-              · editado {formatearTiempoRelativo(apunte.actualizado_en)}
+              · editado {formatearTiempoRelativo(apunte.editado_en)}
             </span>
           )}
         </div>

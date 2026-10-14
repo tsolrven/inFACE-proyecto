@@ -4,14 +4,22 @@ import { formatearTiempoRelativo } from '../../utils/formatRelativeTime';
 import { alternarGuardadoComentario } from '../../services/repositorioMateriales/guardado.service';
 import { mostrarToast } from '../../stores/toastStore';
 
+// Tipo de contenido -> ruta. Cuando exista el foro o los anuncios, se agrega una línea acá.
+const RUTAS_CONTENIDO = {
+  apunte: (id) => `/repositorio-materiales/${id}`,
+};
+
 export default function SavedCommentCard({ comentario, onQuitarDeGuardados }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [quitando, setQuitando] = useState(false);
 
+  const padre = comentario.contenido_padre;
+
   function irAlPost() {
-    if (!comentario.apunte) return;
-    navigate(`/repositorio-materiales/${comentario.apunte.id}`, {
+    const ruta = padre && RUTAS_CONTENIDO[padre.tipo_contenido];
+    if (!ruta) return;
+    navigate(ruta(padre.id), {
       state: { backgroundLocation: location },
     });
   }
@@ -32,14 +40,14 @@ export default function SavedCommentCard({ comentario, onQuitarDeGuardados }) {
     <div
       onClick={irAlPost}
       className={`mb-2 flex flex-col gap-1.5 rounded-[14px] border border-white/[0.06] bg-[#1E1E24] p-3 transition-colors hover:border-white/[0.12] ${
-        comentario.apunte ? 'cursor-pointer' : 'cursor-default opacity-70'
+        padre ? 'cursor-pointer' : 'cursor-default opacity-70'
       }`}
     >
       <div className='flex items-center justify-between gap-2'>
         <span className='truncate text-[11.5px] text-neutral-600'>
           en{' '}
           <b className='text-neutral-400'>
-            {comentario.apunte?.titulo ?? 'una publicación eliminada'}
+            {padre?.titulo ?? 'una publicación eliminada'}
           </b>
         </span>
         <button

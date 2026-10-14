@@ -6,6 +6,7 @@ import {
 } from '../services/repositorioMateriales/apunte.service';
 import { votarApunte } from '../services/repositorioMateriales/voto.service';
 import { alternarGuardadoApunte } from '../services/repositorioMateriales/guardado.service';
+import { predecirVoto } from '../utils/votos';
 
 const FILTROS_INICIALES = {
   ramo_id: null,
@@ -67,25 +68,36 @@ export const useRepositorioStore = create((set, get) => ({
   },
 
   votar: async (apunteId, tipo) => {
-    const anterior = get().apuntes;
+    const previo = get().apuntes.find((a) => a.id === apunteId);
+    if (!previo) return;
 
+    // 1) predicción instantánea
     set((state) => ({
       apuntes: state.apuntes.map((a) => {
         if (a.id !== apunteId) return a;
-        const mismoVoto = a.mi_voto === tipo;
-        const delta = calcularDeltaVoto(a.mi_voto, tipo);
-        return {
-          ...a,
-          mi_voto: mismoVoto ? null : tipo,
-          votos_neto: a.votos_neto + delta,
-        };
+        const { mi_voto, delta } = predecirVoto(a.mi_voto, tipo);
+        return { ...a, mi_voto, votos_neto: a.votos_neto + delta };
       }),
     }));
 
     try {
-      await votarApunte(apunteId, tipo);
+      // 2) el servidor manda la verdad y reemplaza la predicción
+      const { votos_neto, mi_voto } = await votarApunte(apunteId, tipo);
+      set((state) => ({
+        apuntes: state.apuntes.map((a) =>
+          a.id === apunteId ? { ...a, votos_neto, mi_voto } : a,
+        ),
+      }));
     } catch (err) {
-      set({ apuntes: anterior, error: err.message });
+      // 3) si falla, vuelve solo este apunte a como estaba
+      set((state) => ({
+        apuntes: state.apuntes.map((a) =>
+          a.id === apunteId
+            ? { ...a, mi_voto: previo.mi_voto, votos_neto: previo.votos_neto }
+            : a,
+        ),
+        error: err.message,
+      }));
     }
   },
 
@@ -125,7 +137,7 @@ export const useRepositorioStore = create((set, get) => ({
       codigo_snippet,
       lenguaje_snippet,
       etiquetas_visuales,
-      actualizado_en,
+      editado_en,
     } = actualizado;
     get().actualizarApunteEnFeed(apunteId, {
       titulo,
@@ -136,7 +148,7 @@ export const useRepositorioStore = create((set, get) => ({
       codigo_snippet,
       lenguaje_snippet,
       etiquetas_visuales,
-      actualizado_en,
+      editado_en,
     });
     return actualizado;
   },
@@ -148,13 +160,3 @@ export const useRepositorioStore = create((set, get) => ({
     }));
   },
 }));
-
-export function calcularDeltaVoto(votoActual, tipoNuevo) {
-  if (votoActual === tipoNuevo) {
-    return tipoNuevo === 'up' ? -1 : 1;
-  }
-  if (votoActual === null) {
-    return tipoNuevo === 'up' ? 1 : -1;
-  }
-  return tipoNuevo === 'up' ? 2 : -2;
-}

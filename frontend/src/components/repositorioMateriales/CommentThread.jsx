@@ -10,7 +10,7 @@ import {
   eliminarComentario,
 } from '../../services/repositorioMateriales/comentario.service';
 import { formatearTiempoRelativo } from '../../utils/formatRelativeTime';
-import { fueEditado } from '../../utils/fueEditado';
+import { predecirVoto } from '../../utils/votos';
 import { useAuthStore } from '../../stores/authStore';
 import ReportModal from '../reportes/ReportModal';
 import ConfirmDialog from '../ui/ConfirmDialog';
@@ -33,9 +33,7 @@ export default function CommentThread({
   const [reportando, setReportando] = useState(false);
 
   const [contenidoLocal, setContenidoLocal] = useState(comentario.contenido);
-  const [actualizadoEnLocal, setActualizadoEnLocal] = useState(
-    comentario.actualizado_en,
-  );
+  const [editadoEnLocal, setEditadoEnLocal] = useState(comentario.editado_en);
   const [editando, setEditando] = useState(false);
   const [textoEditado, setTextoEditado] = useState(comentario.contenido);
   const [guardandoEdicion, setGuardandoEdicion] = useState(false);
@@ -95,25 +93,19 @@ export default function CommentThread({
 
   async function handleVotar(tipo) {
     const anterior = { votoLocal, votosNeto };
-    const mismoVoto = votoLocal === tipo;
-    const delta = mismoVoto
-      ? tipo === 'up'
-        ? -1
-        : 1
-      : votoLocal === null
-        ? tipo === 'up'
-          ? 1
-          : -1
-        : tipo === 'up'
-          ? 2
-          : -2;
 
-    setVotoLocal(mismoVoto ? null : tipo);
+    // 1) predicción instantánea
+    const { mi_voto, delta } = predecirVoto(votoLocal, tipo);
+    setVotoLocal(mi_voto);
     setVotosNeto((v) => v + delta);
 
     try {
-      await votarComentario(comentario.id, tipo);
+      // 2) la verdad del servidor reemplaza la predicción
+      const real = await votarComentario(comentario.id, tipo);
+      setVotoLocal(real.mi_voto);
+      setVotosNeto(real.votos_neto);
     } catch {
+      // 3) si falla, vuelve atrás
       setVotoLocal(anterior.votoLocal);
       setVotosNeto(anterior.votosNeto);
     }
@@ -159,7 +151,7 @@ export default function CommentThread({
     try {
       const actualizado = await editarComentario(comentario.id, textoEditado);
       setContenidoLocal(actualizado.contenido);
-      setActualizadoEnLocal(actualizado.actualizado_en);
+      setEditadoEnLocal(actualizado.editado_en);
       setEditando(false);
     } finally {
       setGuardandoEdicion(false);
@@ -232,9 +224,9 @@ export default function CommentThread({
           <span className='text-neutral-600'>
             {formatearTiempoRelativo(comentario.creado_en)}
           </span>
-          {fueEditado(comentario.creado_en, actualizadoEnLocal) && (
+          {editadoEnLocal && (
             <span className='text-neutral-700'>
-              · editado {formatearTiempoRelativo(actualizadoEnLocal)}
+              · editado {formatearTiempoRelativo(editadoEnLocal)}
             </span>
           )}
         </div>

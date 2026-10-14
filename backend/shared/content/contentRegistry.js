@@ -76,18 +76,9 @@ async function actualizarVotosNetoContenido(
   client = prisma,
 ) {
   const entrada = obtenerEntradaRegistro(tipo_contenido);
-  // @updatedAt se actualiza solo en cada update; se conserva el valor actual para
-  // que votar no cuente como "editar" (el frontend usa actualizado_en para el "(editado)")
-  const actual = await client[entrada.modelName].findUnique({
-    where: { id: contenido_id },
-    select: { actualizado_en: true },
-  });
   await client[entrada.modelName].update({
     where: { id: contenido_id },
-    data: {
-      [entrada.votesField]: neto,
-      actualizado_en: actual.actualizado_en,
-    },
+    data: { [entrada.votesField]: neto },
   });
 }
 // ────────────────────────────────────────────────────────────────────────────────────────

@@ -191,6 +191,7 @@ model Comentario {
   eliminado        Boolean  @default(false)   
   creado_en        DateTime @default(now())
   actualizado_en   DateTime @updatedAt
+  editado_en       DateTime?   // null = nunca editado por su autor
 
   autor      Usuario      @relation(fields: [autor_id], references: [id])
   padre      Comentario?  @relation("ComentarioRespuesta", fields: [padre_id], references: [id])
@@ -267,6 +268,7 @@ model Apunte {
   votos_neto        Int      @default(0)
   creado_en         DateTime @default(now())
   actualizado_en    DateTime @updatedAt
+  editado_en        DateTime?   // null = nunca editado por su autor
 
   // RELACIONES
   autor    Usuario       @relation(fields: [autor_id], references: [id])

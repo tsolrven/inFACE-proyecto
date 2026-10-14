@@ -7,6 +7,7 @@ import {
 import {
   verificarContenidoExiste,
   registrarHidratadorGuardados,
+  obtenerPreviewsContenido,
 } from '../content/contentRegistry.js';
 import { eliminarInteracciones } from '../content/contentCleanup.js';
 import { obtenerMisInteracciones } from '../content/contentEnrichment.js';
@@ -129,7 +130,7 @@ async function editarComentario(comentario_id, usuario_id, contenido) {
 
   const actualizado = await prisma.comentario.update({
     where: { id: comentario_id },
-    data: { contenido },
+    data: { contenido, editado_en: new Date() },
     include: {
       autor: { include: { perfil: { select: { nombre_usuario: true } } } },
     },
@@ -199,25 +200,39 @@ async function hidratarComentariosGuardados(ids, usuario_id) {
     usuario_id,
   );
 
-  const apunteIds = [...new Set(comentarios.map((c) => c.contenido_id))];
-  const apuntesRelacionados = await prisma.apunte.findMany({
-    where: { id: { in: apunteIds } },
-    select: { id: true, titulo: true },
-  });
-  const mapApuntesRelacionados = Object.fromEntries(
-    apuntesRelacionados.map((a) => [a.id, a]),
-  );
+  // agrupa los ids por el tipo de contenido al que pertenece cada comentario
+  const idsPorTipo = new Map();
+  for (const c of comentarios) {
+    if (!idsPorTipo.has(c.tipo_contenido)) {
+      idsPorTipo.set(c.tipo_contenido, new Set());
+    }
+    idsPorTipo.get(c.tipo_contenido).add(c.contenido_id);
+  }
+
+  // "tipo:id" -> título (o el campo previewField que defina el registro)
+  const previews = new Map();
+  for (const [tipo, setIds] of idsPorTipo) {
+    const mapa = await obtenerPreviewsContenido(tipo, [...setIds]);
+    for (const [id, titulo] of mapa) previews.set(`${tipo}:${id}`, titulo);
+  }
 
   return ids
     .filter((id) => mapComentarios[id])
     .map((id) => {
-      const comentario = mapComentarios[id];
+      const c = mapComentarios[id];
+      const clave = `${c.tipo_contenido}:${c.contenido_id}`;
       return {
-        ...formatearComentario(comentario, {
+        ...formatearComentario(c, {
           mi_voto: mapVotos.get(id) ?? null,
           esta_guardado: true,
         }),
-        apunte: mapApuntesRelacionados[comentario.contenido_id] || null,
+        contenido_padre: previews.has(clave)
+          ? {
+              tipo_contenido: c.tipo_contenido,
+              id: c.contenido_id,
+              titulo: previews.get(clave),
+            }
+          : null,
       };
     });
 }
@@ -236,7 +251,7 @@ function formatearComentario(
       esta_guardado,
       nivel: comentario.nivel,
       creado_en: comentario.creado_en,
-      actualizado_en: comentario.actualizado_en,
+      editado_en: null, // un comentario eliminado no muestra "(editado)"
       eliminado: true,
       autor: null,
     };
@@ -251,7 +266,7 @@ function formatearComentario(
     esta_guardado,
     nivel: comentario.nivel,
     creado_en: comentario.creado_en,
-    actualizado_en: comentario.actualizado_en,
+    editado_en: comentario.editado_en,
     eliminado: false,
     autor: {
       id: comentario.autor.id,

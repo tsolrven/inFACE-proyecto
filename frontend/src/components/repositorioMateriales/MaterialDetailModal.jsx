@@ -15,10 +15,8 @@ import {
   formatearTamanio,
 } from '../../utils/fileMeta';
 import { formatearTiempoRelativo } from '../../utils/formatRelativeTime';
-import {
-  useRepositorioStore,
-  calcularDeltaVoto,
-} from '../../stores/repositorioStore';
+import { useRepositorioStore } from '../../stores/repositorioStore';
+import { predecirVoto } from '../../utils/votos';
 import { useAuthStore } from '../../stores/authStore';
 import { descargarArchivo } from '../../services/repositorioMateriales/archivo.service';
 import { votarApunte } from '../../services/repositorioMateriales/voto.service';
@@ -29,7 +27,6 @@ import ConfirmDialog from '../ui/ConfirmDialog';
 import ReportModal from '../reportes/ReportModal';
 import VotePill from './VotePill';
 import CodeViewer from './CodeViewer';
-import { fueEditado } from '../../utils/fueEditado';
 import BookmarkIcon from '../icons/BookmarkIcon';
 import { esStaff } from '../../utils/roles';
 
@@ -142,27 +139,24 @@ export default function MaterialDetailModal() {
 
   async function handleVotar(e, tipo) {
     e?.stopPropagation?.();
-    const anterior = apunte;
-    const mismoVoto = apunte.mi_voto === tipo;
-    const delta = calcularDeltaVoto(apunte.mi_voto, tipo);
-    const actualizado = {
-      ...apunte,
-      mi_voto: mismoVoto ? null : tipo,
-      votos_neto: apunte.votos_neto + delta,
-    };
-    setApunte(actualizado);
-    actualizarApunteEnFeed(id, {
-      mi_voto: actualizado.mi_voto,
-      votos_neto: actualizado.votos_neto,
-    });
+    const anterior = { mi_voto: apunte.mi_voto, votos_neto: apunte.votos_neto };
+
+    // 1) predicción instantánea
+    const { mi_voto, delta } = predecirVoto(apunte.mi_voto, tipo);
+    const prediccion = { mi_voto, votos_neto: apunte.votos_neto + delta };
+    setApunte((prev) => ({ ...prev, ...prediccion }));
+    actualizarApunteEnFeed(id, prediccion);
+
     try {
-      await votarApunte(id, tipo);
-    } catch (err) {
-      setApunte(anterior);
-      actualizarApunteEnFeed(id, {
-        mi_voto: anterior.mi_voto,
-        votos_neto: anterior.votos_neto,
-      });
+      // 2) la verdad del servidor reemplaza la predicción
+      const real = await votarApunte(id, tipo);
+      const estadoReal = { mi_voto: real.mi_voto, votos_neto: real.votos_neto };
+      setApunte((prev) => ({ ...prev, ...estadoReal }));
+      actualizarApunteEnFeed(id, estadoReal);
+    } catch {
+      // 3) si falla, vuelve atrás
+      setApunte((prev) => ({ ...prev, ...anterior }));
+      actualizarApunteEnFeed(id, anterior);
     }
   }
 
@@ -227,7 +221,7 @@ export default function MaterialDetailModal() {
       links,
       codigo_snippet,
       etiquetas_visuales,
-      actualizado_en,
+      editado_en,
       archivos,
       descargas,
     } = actualizado;
@@ -240,7 +234,7 @@ export default function MaterialDetailModal() {
       hashtags,
       links,
       codigo_snippet,
-      actualizado_en,
+      editado_en,
       archivos,
       descargas,
     }));
@@ -390,9 +384,9 @@ export default function MaterialDetailModal() {
               </Link>
               <span>·</span>
               <span>{formatearTiempoRelativo(apunte.creado_en)}</span>
-              {fueEditado(apunte.creado_en, apunte.actualizado_en) && (
+              {apunte.editado_en && (
                 <span className='text-neutral-700'>
-                  · editado {formatearTiempoRelativo(apunte.actualizado_en)}
+                  · editado {formatearTiempoRelativo(apunte.editado_en)}
                 </span>
               )}
             </div>
