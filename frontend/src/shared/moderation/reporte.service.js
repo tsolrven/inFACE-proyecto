@@ -1,9 +1,9 @@
-import { apiFetch } from '../../services/api';
+import { apiFetch } from '../api/client';
 
 export async function reportarApunte(apunteId, payload) {
   const res = await apiFetch(`/reportes/apunte/${apunteId}`, {
     method: 'POST',
-    body: payload, 
+    body: payload,
   });
   return res.data;
 }
@@ -23,7 +23,10 @@ const REPORTAR_POR_TIPO = {
 
 export async function reportar(tipoContenido, contenidoId, payload) {
   const fn = REPORTAR_POR_TIPO[tipoContenido];
-  if (!fn) throw new Error(`Tipo de contenido "${tipoContenido}" no soporta reportes aún`);
+  if (!fn)
+    throw new Error(
+      `Tipo de contenido "${tipoContenido}" no soporta reportes aún`,
+    );
   return fn(contenidoId, payload);
 }
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import Modal, { ModalHeader } from '../../shared/ui/Modal';
 import Button from '../../shared/ui/Button';
-import { listarRamosPorCarrera } from '../../services/repositorioMateriales/ramo.service';
+import { listarRamosPorCarrera } from '../../shared/api/catalog.service';
 import { crearApunte } from '../../services/repositorioMateriales/apunte.service';
 import { subirArchivos } from '../../services/repositorioMateriales/archivo.service';
 import { useRepositorioStore } from '../../stores/repositorioStore';

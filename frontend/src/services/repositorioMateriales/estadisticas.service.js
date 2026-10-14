@@ -1,4 +1,4 @@
-import { apiFetch } from '../api';
+import { apiFetch } from '../../shared/api/client';
 
 export async function listarTopColaboradores() {
   const res = await apiFetch('/repositorio/top-colaboradores');

@@ -1,5 +1,9 @@
 //! endpoints de autenticación (la mecánica de red y de token vive en api.js)
-import { apiFetch, setAccessToken, clearAccessToken } from './api';
+import {
+  apiFetch,
+  setAccessToken,
+  clearAccessToken,
+} from '../shared/api/client';
 
 export function register({ correo, contrasena, nombre_usuario, carrera_id }) {
   return apiFetch('/auth/register', {

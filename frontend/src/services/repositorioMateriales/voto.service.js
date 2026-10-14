@@ -1,9 +1,9 @@
-import { apiFetch } from '../api';
+import { apiFetch } from '../../shared/api/client';
 
 export async function votarApunte(apunteId, tipo) {
   const res = await apiFetch(`/votos/apunte/${apunteId}`, {
     method: 'POST',
-    body: { tipo }, 
+    body: { tipo },
   });
   return res.data;
 }

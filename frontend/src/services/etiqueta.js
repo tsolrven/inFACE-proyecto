@@ -1,5 +1,5 @@
 //! capa de acceso a la API de etiquetas (genérica, usada por match de proyectos)
-import { apiFetch } from './api';
+import { apiFetch } from '../shared/api/client';
 
 export async function listarEtiquetas({ q } = {}) {
   const params = new URLSearchParams();

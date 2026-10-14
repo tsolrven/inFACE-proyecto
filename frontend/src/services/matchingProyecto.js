@@ -1,6 +1,6 @@
 //! capa de acceso a la API del módulo de match de proyectos
 
-import { apiFetch } from './api';
+import { apiFetch } from '../shared/api/client';
 
 // ─────────────────────────────────────────────────────────────────────────────
 function request(path, { method = 'GET', body } = {}) {

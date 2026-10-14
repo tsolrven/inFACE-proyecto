@@ -5,7 +5,7 @@ import {
   register as apiRegister,
   obtenerPerfilActual,
 } from '../services/auth';
-import { refrescarSesion, clearAccessToken } from '../services/api';
+import { refrescarSesion, clearAccessToken } from '../shared/api/client';
 
 export const useAuthStore = create((set) => ({
   usuario: null,

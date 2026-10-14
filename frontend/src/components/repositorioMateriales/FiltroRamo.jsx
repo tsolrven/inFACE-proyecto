@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { listarRamosPorCarrera } from '../../services/repositorioMateriales/ramo.service';
+import { listarRamosPorCarrera } from '../../shared/api/catalog.service';
 import { useRepositorioStore } from '../../stores/repositorioStore';
 import { colorPorRamo } from '../../utils/ramoColors';
 
@@ -58,7 +58,10 @@ export default function FiltroRamo({ carreraId }) {
   }
 
   return (
-    <div className='relative' ref={ref}>
+    <div
+      className='relative'
+      ref={ref}
+    >
       <button
         type='button'
         onClick={() => setOpen((o) => !o)}
@@ -73,7 +76,9 @@ export default function FiltroRamo({ carreraId }) {
           <i className='ti ti-adjustments-horizontal text-sm' />
         )}
         {ramoSeleccionado?.nombre ?? 'Filtrar ramo'}
-        <i className={`ti ti-chevron-down text-xs transition-transform ${open ? 'rotate-180' : ''}`} />
+        <i
+          className={`ti ti-chevron-down text-xs transition-transform ${open ? 'rotate-180' : ''}`}
+        />
       </button>
 
       {open && (
@@ -89,16 +94,23 @@ export default function FiltroRamo({ carreraId }) {
           )}
 
           {cargando && (
-            <div className='px-3.5 py-3 text-[12px] text-neutral-500'>Cargando ramos...</div>
+            <div className='px-3.5 py-3 text-[12px] text-neutral-500'>
+              Cargando ramos...
+            </div>
           )}
 
           {Object.entries(ramosPorAnio)
             .sort(([a], [b]) => a - b)
             .map(([anio, semestres]) => (
-              <div key={anio} className='border-b border-white/[0.06] last:border-b-0'>
+              <div
+                key={anio}
+                className='border-b border-white/[0.06] last:border-b-0'
+              >
                 <button
                   type='button'
-                  onClick={() => setAnioAbierto((a) => (a === anio ? null : anio))}
+                  onClick={() =>
+                    setAnioAbierto((a) => (a === anio ? null : anio))
+                  }
                   className='flex w-full items-center justify-between px-3.5 py-2.5 text-left text-[12.5px] font-bold text-neutral-300 hover:bg-white/[0.04]'
                 >
                   <span>{NUMEROS_ROMANOS[anio - 1] ?? anio} Año</span>
@@ -118,10 +130,16 @@ export default function FiltroRamo({ carreraId }) {
                         <div key={semKey}>
                           <button
                             type='button'
-                            onClick={() => setSemAbierto((s) => (s === semKey ? null : semKey))}
+                            onClick={() =>
+                              setSemAbierto((s) =>
+                                s === semKey ? null : semKey,
+                              )
+                            }
                             className='flex w-full items-center justify-between py-1.5 pl-[22px] pr-3.5 text-left text-[11.5px] font-semibold text-neutral-500 hover:text-neutral-300'
                           >
-                            <span>{NUMEROS_ROMANOS[sem - 1] ?? sem} Semestre</span>
+                            <span>
+                              {NUMEROS_ROMANOS[sem - 1] ?? sem} Semestre
+                            </span>
                             <i
                               className={`ti ti-chevron-right text-xs transition-transform ${
                                 semAbierto === semKey ? 'rotate-90' : ''
@@ -136,7 +154,9 @@ export default function FiltroRamo({ carreraId }) {
                                 type='button'
                                 onClick={() => elegirRamo(ramo)}
                                 className={`flex w-full items-center gap-2 py-1.5 pl-[30px] pr-3.5 text-left text-[12px] transition-colors hover:bg-white/[0.04] ${
-                                  ramoId === ramo.id ? 'font-semibold text-pink-500' : 'text-neutral-400'
+                                  ramoId === ramo.id
+                                    ? 'font-semibold text-pink-500'
+                                    : 'text-neutral-400'
                                 }`}
                               >
                                 <span

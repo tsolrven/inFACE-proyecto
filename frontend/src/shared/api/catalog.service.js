@@ -1,4 +1,4 @@
-import { apiFetch } from '../api';
+import { apiFetch } from './client';
 
 export async function listarCarreras() {
   const res = await apiFetch('/repositorio/carreras');
