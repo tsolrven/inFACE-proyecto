@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { formatearTiempoRelativo } from '../../utils/formatRelativeTime';
+import { formatearTiempoRelativo } from '../../shared/lib/formatRelativeTime';
 import { alternarGuardadoComentario } from '../../services/repositorioMateriales/guardado.service';
 import { mostrarToast } from '../../shared/stores/toastStore';
 

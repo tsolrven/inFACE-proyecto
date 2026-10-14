@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { listarRamosPorCarrera } from '../../shared/api/catalog.service';
 import { useRepositorioStore } from '../../stores/repositorioStore';
-import { colorPorRamo } from '../../utils/ramoColors';
+import { colorPorRamo } from '../../shared/lib/ramoColors';
 
 function agruparPorAnio(ramosPorSemestre) {
   const anios = {};

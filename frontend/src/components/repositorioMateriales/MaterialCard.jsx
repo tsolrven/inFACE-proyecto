@@ -2,14 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useRepositorioStore } from '../../stores/repositorioStore';
 import { useAuthStore } from '../../stores/authStore';
-import { colorPorRamo } from '../../utils/ramoColors';
+import { colorPorRamo } from '../../shared/lib/ramoColors';
 import {
   metaDeBadge,
   metaDeArchivo,
   metaDeLink,
   formatearTamanio,
 } from '../../utils/fileMeta';
-import { formatearTiempoRelativo } from '../../utils/formatRelativeTime';
+import { formatearTiempoRelativo } from '../../shared/lib/formatRelativeTime';
 import { descargarArchivo } from '../../services/repositorioMateriales/archivo.service';
 import { alternarGuardadoApunte } from '../../services/repositorioMateriales/guardado.service';
 import { mostrarToast } from '../../shared/stores/toastStore';

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { listarMisReportes } from '../../shared/moderation/reporte.service';
 import { obtenerMotivo } from '../../shared/moderation/reportMotivos';
-import { formatearTiempoRelativo } from '../../utils/formatRelativeTime';
+import { formatearTiempoRelativo } from '../../shared/lib/formatRelativeTime';
 
 const ICONO_POR_TIPO = {
   apunte: 'ti-file-text',

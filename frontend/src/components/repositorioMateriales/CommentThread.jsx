@@ -9,7 +9,7 @@ import {
   editarComentario,
   eliminarComentario,
 } from '../../services/repositorioMateriales/comentario.service';
-import { formatearTiempoRelativo } from '../../utils/formatRelativeTime';
+import { formatearTiempoRelativo } from '../../shared/lib/formatRelativeTime';
 import { predecirVoto } from '../../utils/votos';
 import { useAuthStore } from '../../stores/authStore';
 import ReportModal from '../../shared/moderation/ReportModal';

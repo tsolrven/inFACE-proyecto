@@ -7,14 +7,14 @@ import {
   listarComentarios,
   crearComentario,
 } from '../../services/repositorioMateriales/comentario.service';
-import { colorPorRamo } from '../../utils/ramoColors';
+import { colorPorRamo } from '../../shared/lib/ramoColors';
 import {
   metaDeArchivo,
   metaDeBadge,
   metaDeLink,
   formatearTamanio,
 } from '../../utils/fileMeta';
-import { formatearTiempoRelativo } from '../../utils/formatRelativeTime';
+import { formatearTiempoRelativo } from '../../shared/lib/formatRelativeTime';
 import { useRepositorioStore } from '../../stores/repositorioStore';
 import { predecirVoto } from '../../utils/votos';
 import { useAuthStore } from '../../stores/authStore';
