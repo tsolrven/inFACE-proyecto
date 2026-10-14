@@ -12,14 +12,14 @@ import {
 import { formatearTiempoRelativo } from '../../utils/formatRelativeTime';
 import { descargarArchivo } from '../../services/repositorioMateriales/archivo.service';
 import { alternarGuardadoApunte } from '../../services/repositorioMateriales/guardado.service';
-import { mostrarToast } from '../../stores/toastStore';
+import { mostrarToast } from '../../shared/stores/toastStore';
 import EditApunteModal from './EditApunteModal';
 import ConfirmDialog from '../../shared/ui/ConfirmDialog';
 import ReportModal from '../../shared/moderation/ReportModal';
 import VotePill from '../../shared/post/VotePill';
 import CodeViewer from './CodeViewer';
 import BookmarkIcon from '../../shared/ui/BookmarkIcon';
-import { esStaff } from '../../utils/roles';
+import { esStaff } from '../../shared/auth/roles';
 
 export default function MaterialCard({ apunte, onQuitarDeGuardados }) {
   const navigate = useNavigate();

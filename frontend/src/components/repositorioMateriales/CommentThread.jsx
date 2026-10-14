@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { votarComentario } from '../../services/repositorioMateriales/voto.service';
 import { alternarGuardadoComentario } from '../../services/repositorioMateriales/guardado.service';
-import { mostrarToast } from '../../stores/toastStore';
+import { mostrarToast } from '../../shared/stores/toastStore';
 import {
   crearComentario,
   editarComentario,
