@@ -1,6 +1,6 @@
 import FiltroTipoArchivo from './FiltroTipoArchivo';
 import FiltroRamo from './FiltroRamo';
-import Button from '../ui/Button';
+import Button from '../../shared/ui/Button';
 import { useRepositorioStore } from '../../stores/repositorioStore';
 
 export default function FeedTopbar({ carreraId, onAbrirSubida }) {

@@ -12,7 +12,7 @@ import Register from './pages/auth/Register';
 import Onboarding from './pages/Onboarding';
 import Landing from './pages/Landing';
 import Layout from './components/Layout';
-import ToastContainer from './components/ui/Toast';
+import ToastContainer from './shared/ui/Toast';
 import {
   allProtectedRoutes,
   extraRoutes,

@@ -1,4 +1,4 @@
-import { apiFetch } from '../api';
+import { apiFetch } from '../../services/api';
 
 export async function reportarApunte(apunteId, payload) {
   const res = await apiFetch(`/reportes/apunte/${apunteId}`, {

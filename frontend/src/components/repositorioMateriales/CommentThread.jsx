@@ -12,9 +12,9 @@ import {
 import { formatearTiempoRelativo } from '../../utils/formatRelativeTime';
 import { predecirVoto } from '../../utils/votos';
 import { useAuthStore } from '../../stores/authStore';
-import ReportModal from '../reportes/ReportModal';
-import ConfirmDialog from '../ui/ConfirmDialog';
-import BookmarkIcon from '../icons/BookmarkIcon';
+import ReportModal from '../../shared/moderation/ReportModal';
+import ConfirmDialog from '../../shared/ui/ConfirmDialog';
+import BookmarkIcon from '../../shared/ui/BookmarkIcon';
 
 const MAX_NIVEL_INDENTADO = 6;
 const ANCHO_MENU = 150;

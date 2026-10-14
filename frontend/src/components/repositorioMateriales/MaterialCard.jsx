@@ -14,11 +14,11 @@ import { descargarArchivo } from '../../services/repositorioMateriales/archivo.s
 import { alternarGuardadoApunte } from '../../services/repositorioMateriales/guardado.service';
 import { mostrarToast } from '../../stores/toastStore';
 import EditApunteModal from './EditApunteModal';
-import ConfirmDialog from '../ui/ConfirmDialog';
-import ReportModal from '../reportes/ReportModal';
-import VotePill from './VotePill';
+import ConfirmDialog from '../../shared/ui/ConfirmDialog';
+import ReportModal from '../../shared/moderation/ReportModal';
+import VotePill from '../../shared/post/VotePill';
 import CodeViewer from './CodeViewer';
-import BookmarkIcon from '../icons/BookmarkIcon';
+import BookmarkIcon from '../../shared/ui/BookmarkIcon';
 import { esStaff } from '../../utils/roles';
 
 export default function MaterialCard({ apunte, onQuitarDeGuardados }) {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { listarMisReportes } from '../../services/reportes/reporte.service';
-import { obtenerMotivo } from '../../constants/reportMotivos';
+import { listarMisReportes } from '../../shared/moderation/reporte.service';
+import { obtenerMotivo } from '../../shared/moderation/reportMotivos';
 import { formatearTiempoRelativo } from '../../utils/formatRelativeTime';
 
 const ICONO_POR_TIPO = {

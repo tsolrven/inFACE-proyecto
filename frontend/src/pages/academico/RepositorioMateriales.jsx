@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import RightPanel from '../../components/rightPanel/RightPanel';
-import RpCard from '../../components/rightPanel/RpCard';
-import RpRules from '../../components/rightPanel/RpRules';
-import PageBanner from '../../components/banner/PageBanner';
+import RightPanel from '../../shared/layout/RightPanel';
+import RpCard from '../../shared/layout/RpCard';
+import RpRules from '../../shared/layout/RpRules';
+import PageBanner from '../../shared/layout/PageBanner';
 import MaterialFeed from '../../components/repositorioMateriales/MaterialFeed';
 import GuardadosFeed from '../../components/repositorioMateriales/GuardadosFeed';
 import UploadModal from '../../components/repositorioMateriales/UploadModal';
