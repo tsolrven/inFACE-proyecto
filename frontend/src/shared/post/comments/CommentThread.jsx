@@ -1,20 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { votarComentario } from '../../services/repositorioMateriales/voto.service';
-import { alternarGuardadoComentario } from '../../services/repositorioMateriales/guardado.service';
+import { votarComentario } from '../votes/votes.api';
+import { alternarGuardadoComentario } from '../bookmarks/bookmarks.api';
 import { mostrarToast } from '../../stores/toastStore';
 import {
   crearComentario,
   editarComentario,
   eliminarComentario,
-} from '../../../services/repositorioMateriales/comentario.service';
+} from './comments.api';
 import { formatearTiempoRelativo } from '../../lib/formatRelativeTime';
 import { predecirVoto } from '../votes/votes';
-import { useAuthStore } from '../../stores/authStore';
+import { useAuthStore } from '../../auth/authStore';
 import ReportModal from '../../moderation/ReportModal';
-import ConfirmDialog from '../../shared/ui/ConfirmDialog';
-import BookmarkIcon from '../../shared/ui/BookmarkIcon';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import BookmarkIcon from '../bookmarks/BookmarkIcon';
 
 const MAX_NIVEL_INDENTADO = 6;
 const ANCHO_MENU = 150;

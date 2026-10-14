@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import RightPanel from '../../shared/layout/RightPanel';
-import RpCard from '../../shared/layout/RpCard';
-import RpRules from '../../shared/layout/RpRules';
-import PageBanner from '../../shared/layout/PageBanner';
+import RightPanel from '../../shared/components/layout/RightPanel';
+import RpCard from '../../shared/components/layout/RpCard';
+import RpRules from '../../shared/components/layout/RpRules';
+import PageBanner from '../../shared/components/layout/PageBanner';
 import MaterialFeed from '../../components/repositorioMateriales/MaterialFeed';
 import GuardadosFeed from '../../components/repositorioMateriales/GuardadosFeed';
 import UploadModal from '../../components/repositorioMateriales/UploadModal';
-import { useAuthStore } from '../../stores/authStore';
+import { useAuthStore } from '../../shared/auth/authStore';
 import { useRepositorioStore } from '../../stores/repositorioStore';
 import {
   listarTopColaboradores,

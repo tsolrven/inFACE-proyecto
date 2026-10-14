@@ -4,8 +4,8 @@ import {
   actualizarApunte,
   eliminarApunte,
 } from '../services/repositorioMateriales/apunte.service';
-import { votarApunte } from '../services/repositorioMateriales/voto.service';
-import { alternarGuardadoApunte } from '../services/repositorioMateriales/guardado.service';
+import { votarApunte } from '../shared/post/votes/votes.api';
+import { alternarGuardadoApunte } from '../shared/post/bookmarks/bookmarks.api';
 import { predecirVoto } from '../shared/post/votes/votes';
 
 const FILTROS_INICIALES = {

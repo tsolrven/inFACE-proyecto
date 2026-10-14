@@ -6,13 +6,13 @@ import {
   Navigate,
   useLocation,
 } from 'react-router-dom';
-import { useAuthStore } from './stores/authStore';
+import { useAuthStore } from './shared/auth/authStore';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import Onboarding from './pages/Onboarding';
 import Landing from './pages/Landing';
 import Layout from './components/Layout';
-import ToastContainer from './shared/ui/Toast';
+import ToastContainer from './shared/components/ui/Toast';
 import {
   allProtectedRoutes,
   extraRoutes,

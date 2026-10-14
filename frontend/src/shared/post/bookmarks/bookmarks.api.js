@@ -1,4 +1,4 @@
-import { apiFetch } from '../../shared/api/client';
+import { apiFetch } from '../../api/client';
 
 export async function alternarGuardadoApunte(apunteId) {
   const res = await apiFetch(`/guardados/apunte/${apunteId}`, {

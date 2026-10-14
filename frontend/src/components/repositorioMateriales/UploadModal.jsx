@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import Modal, { ModalHeader } from '../../shared/ui/Modal';
-import Button from '../../shared/ui/Button';
+import Modal, { ModalHeader } from '../../shared/components/ui/Modal';
+import Button from '../../shared/components/ui/Button';
 import { listarRamosPorCarrera } from '../../shared/api/catalog.api';
 import { crearApunte } from '../../services/repositorioMateriales/apunte.service';
 import { subirArchivos } from '../../services/repositorioMateriales/archivo.service';

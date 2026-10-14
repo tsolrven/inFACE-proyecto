@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { listarGuardados } from '../services/repositorioMateriales/guardado.service';
+import { listarGuardados } from '../shared/post/bookmarks/bookmarks.api';
 
 export const useGuardadosStore = create((set, get) => ({
   tipo: 'apunte', //apunte o comentaerio

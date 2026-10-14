@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../../stores/authStore';
+import { useAuthStore } from '../../shared/auth/authStore';
 import { listarCarreras } from '../../shared/api/catalog.api';
 
 function parseApiError(err) {

@@ -1,4 +1,4 @@
-import { apiFetch } from '../../shared/api/client';
+import { apiFetch } from '../../api/client';
 
 export async function votarApunte(apunteId, tipo) {
   const res = await apiFetch(`/votos/apunte/${apunteId}`, {

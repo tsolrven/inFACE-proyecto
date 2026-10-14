@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../stores/authStore';
+import { useAuthStore } from '../shared/auth/authStore';
 import {
     obtenerPerfilPublico
 } from '../services/perfil';

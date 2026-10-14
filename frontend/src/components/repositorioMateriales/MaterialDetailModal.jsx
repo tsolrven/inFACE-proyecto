@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import Modal, { ModalHeader } from '../../shared/ui/Modal';
+import Modal, { ModalHeader } from '../../shared/components/ui/Modal';
 import CommentThread from '../../shared/post/comments/CommentThread';
 import { obtenerApunte } from '../../services/repositorioMateriales/apunte.service';
 import {
   listarComentarios,
   crearComentario,
-} from '../../services/repositorioMateriales/comentario.service';
+} from '../../shared/post/comments/comments.api';
 import { colorPorRamo } from '../../shared/lib/courseColors';
 import {
   metaDeArchivo,
@@ -17,17 +17,17 @@ import {
 import { formatearTiempoRelativo } from '../../shared/lib/formatRelativeTime';
 import { useRepositorioStore } from '../../stores/repositorioStore';
 import { predecirVoto } from '../../shared/post/votes/votes';
-import { useAuthStore } from '../../stores/authStore';
+import { useAuthStore } from '../../shared/auth/authStore';
 import { descargarArchivo } from '../../services/repositorioMateriales/archivo.service';
-import { votarApunte } from '../../services/repositorioMateriales/voto.service';
-import { alternarGuardadoApunte } from '../../services/repositorioMateriales/guardado.service';
+import { votarApunte } from '../../shared/post/votes/votes.api';
+import { alternarGuardadoApunte } from '../../shared/post/bookmarks/bookmarks.api';
 import { mostrarToast } from '../../shared/stores/toastStore';
 import EditApunteModal from './EditApunteModal';
-import ConfirmDialog from '../../shared/ui/ConfirmDialog';
+import ConfirmDialog from '../../shared/components/ui/ConfirmDialog';
 import ReportModal from '../../shared/moderation/ReportModal';
 import VotePill from '../../shared/post/votes/VotePill';
 import CodeViewer from './CodeViewer';
-import BookmarkIcon from '../../shared/ui/BookmarkIcon';
+import BookmarkIcon from '../../shared/post/bookmarks/BookmarkIcon';
 import { esStaff } from '../../shared/auth/roles';
 
 function insertarRespuesta(comentarios, padreId, nueva) {
