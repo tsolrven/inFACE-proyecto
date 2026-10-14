@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import Modal, { ModalHeader } from '../../shared/ui/Modal';
-import CommentThread from './CommentThread';
+import CommentThread from '../../shared/post/comments/CommentThread';
 import { obtenerApunte } from '../../services/repositorioMateriales/apunte.service';
 import {
   listarComentarios,
@@ -16,7 +16,7 @@ import {
 } from '../../utils/fileMeta';
 import { formatearTiempoRelativo } from '../../shared/lib/formatRelativeTime';
 import { useRepositorioStore } from '../../stores/repositorioStore';
-import { predecirVoto } from '../../utils/votos';
+import { predecirVoto } from '../../shared/post/votes/votos';
 import { useAuthStore } from '../../stores/authStore';
 import { descargarArchivo } from '../../services/repositorioMateriales/archivo.service';
 import { votarApunte } from '../../services/repositorioMateriales/voto.service';
@@ -25,7 +25,7 @@ import { mostrarToast } from '../../shared/stores/toastStore';
 import EditApunteModal from './EditApunteModal';
 import ConfirmDialog from '../../shared/ui/ConfirmDialog';
 import ReportModal from '../../shared/moderation/ReportModal';
-import VotePill from '../../shared/post/VotePill';
+import VotePill from '../../shared/post/votes/VotePill';
 import CodeViewer from './CodeViewer';
 import BookmarkIcon from '../../shared/ui/BookmarkIcon';
 import { esStaff } from '../../shared/auth/roles';

@@ -3,16 +3,16 @@ import { Link } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { votarComentario } from '../../services/repositorioMateriales/voto.service';
 import { alternarGuardadoComentario } from '../../services/repositorioMateriales/guardado.service';
-import { mostrarToast } from '../../shared/stores/toastStore';
+import { mostrarToast } from '../../stores/toastStore';
 import {
   crearComentario,
   editarComentario,
   eliminarComentario,
-} from '../../services/repositorioMateriales/comentario.service';
-import { formatearTiempoRelativo } from '../../shared/lib/formatRelativeTime';
-import { predecirVoto } from '../../utils/votos';
+} from '../../../services/repositorioMateriales/comentario.service';
+import { formatearTiempoRelativo } from '../../lib/formatRelativeTime';
+import { predecirVoto } from '../votes/votos';
 import { useAuthStore } from '../../stores/authStore';
-import ReportModal from '../../shared/moderation/ReportModal';
+import ReportModal from '../../moderation/ReportModal';
 import ConfirmDialog from '../../shared/ui/ConfirmDialog';
 import BookmarkIcon from '../../shared/ui/BookmarkIcon';
 

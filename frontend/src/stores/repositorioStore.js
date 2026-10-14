@@ -6,7 +6,7 @@ import {
 } from '../services/repositorioMateriales/apunte.service';
 import { votarApunte } from '../services/repositorioMateriales/voto.service';
 import { alternarGuardadoApunte } from '../services/repositorioMateriales/guardado.service';
-import { predecirVoto } from '../utils/votos';
+import { predecirVoto } from '../shared/post/votes/votos';
 
 const FILTROS_INICIALES = {
   ramo_id: null,
