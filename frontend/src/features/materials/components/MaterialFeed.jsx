@@ -1,8 +1,8 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useRepositorioStore } from '@/features/materials/store/materialsStore';
-import FeedTopbar from '@/components/repositorioMateriales/FeedTopbar';
-import QuickUploadBox from '@/components/repositorioMateriales/QuickUploadBox';
-import MaterialCard from '@/components/repositorioMateriales/MaterialCard';
+import FeedTopbar from '@/features/materials/components/FeedTopbar';
+import QuickUploadBox from '@/features/materials/components/QuickUploadBox';
+import MaterialCard from '@/features/materials/components/MaterialCard';
 
 export default function MaterialFeed({ carreraId, onAbrirSubida }) {
   const apuntes = useRepositorioStore((s) => s.apuntes);

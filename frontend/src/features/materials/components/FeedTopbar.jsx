@@ -1,5 +1,5 @@
-import FiltroTipoArchivo from '@/components/repositorioMateriales/FiltroTipoArchivo';
-import FiltroRamo from '@/components/repositorioMateriales/FiltroRamo';
+import FiltroTipoArchivo from '@/features/materials/components/FiltroTipoArchivo';
+import FiltroRamo from '@/features/materials/components/FiltroRamo';
 import Button from '@/shared/components/ui/Button';
 import { useRepositorioStore } from '@/features/materials/store/materialsStore';
 

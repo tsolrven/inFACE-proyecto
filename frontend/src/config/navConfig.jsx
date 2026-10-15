@@ -40,7 +40,7 @@ const PoliticasPrivacidad = lazy(
 const AcuerdosUsuario = lazy(() => import('../pages/legal/AcuerdosUsuario'));
 
 const MaterialDetailModal = lazy(
-  () => import('../components/repositorioMateriales/MaterialDetailModal'),
+  () => import('../features/materials/components/MaterialDetailModal'),
 );
 // ──────────────────────────────────────────────────────────────────────────
 export const topNavItems = [

@@ -13,7 +13,7 @@ import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
 import { descargarArchivo } from '@/features/materials/api/files.api';
 import { alternarGuardadoApunte } from '@/shared/post/bookmarks/bookmarks.api';
 import { mostrarToast } from '@/shared/stores/toastStore';
-import EditApunteModal from '@/components/repositorioMateriales/EditApunteModal';
+import EditApunteModal from '@/features/materials/components/EditApunteModal';
 import ConfirmDialog from '@/shared/components/ui/ConfirmDialog';
 import ReportModal from '@/shared/moderation/ReportModal';
 import VotePill from '@/shared/post/votes/VotePill';

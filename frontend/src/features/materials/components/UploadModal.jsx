@@ -8,7 +8,7 @@ import { useRepositorioStore } from '@/features/materials/store/materialsStore';
 import CodeEditor from '@/components/repositorioMateriales/CodeEditor';
 import BadgeSelector, {
   InfoTooltip,
-} from '@/components/repositorioMateriales/BadgeSelector';
+} from '@/features/materials/components/BadgeSelector';
 
 const TIPOS = [
   { value: 'file', icon: 'ti-upload', label: 'Archivo' },

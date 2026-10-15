@@ -4,9 +4,9 @@ import RightPanel from '../../shared/components/layout/RightPanel';
 import RpCard from '../../shared/components/layout/RpCard';
 import RpRules from '../../shared/components/layout/RpRules';
 import PageBanner from '../../shared/components/layout/PageBanner';
-import MaterialFeed from '../../components/repositorioMateriales/MaterialFeed';
-import GuardadosFeed from '../../components/repositorioMateriales/GuardadosFeed';
-import UploadModal from '../../components/repositorioMateriales/UploadModal';
+import MaterialFeed from '../../features/materials/components/MaterialFeed';
+import GuardadosFeed from '../../features/materials/components/GuardadosFeed';
+import UploadModal from '../../features/materials/components/UploadModal';
 import { useAuthStore } from '../../shared/auth/authStore';
 import { useRepositorioStore } from '../../features/materials/store/materialsStore';
 import {
