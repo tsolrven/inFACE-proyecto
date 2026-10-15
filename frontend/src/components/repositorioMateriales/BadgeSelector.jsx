@@ -1,4 +1,4 @@
-import { BADGES_SELECCIONABLES } from '@/utils/fileMeta';
+import { BADGES_SELECCIONABLES } from '@/features/materials/utils/fileMeta';
 
 // selector tipo "chips" para que el usuario marque manualmente uno o varios badges que representan el contenido del apunte
 export default function BadgeSelector({ value = [], onChange, disabled }) {
@@ -49,7 +49,7 @@ export default function BadgeSelector({ value = [], onChange, disabled }) {
   );
 }
 
-// ícono de información 
+// ícono de información
 export function InfoTooltip({ texto }) {
   return (
     <span

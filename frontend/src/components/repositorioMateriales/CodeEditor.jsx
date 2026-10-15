@@ -4,8 +4,8 @@ import { EditorView } from '@codemirror/view';
 import {
   LENGUAJES_SNIPPET,
   extensionParaLenguaje,
-} from '../../utils/codeLanguages';
-import { codeEditorTheme } from '@/utils/codeEditorTheme';
+} from '../../features/materials/utils/codeLanguages';
+import { codeEditorTheme } from '@/features/materials/utils/codeEditorTheme';
 
 export default function CodeEditor({
   value,

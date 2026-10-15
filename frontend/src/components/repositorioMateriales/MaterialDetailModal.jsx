@@ -13,7 +13,7 @@ import {
   metaDeBadge,
   metaDeLink,
   formatearTamanio,
-} from '@/utils/fileMeta';
+} from '@/features/materials/utils/fileMeta';
 import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
 import { useRepositorioStore } from '@/stores/repositorioStore';
 import { predecirVoto } from '@/shared/post/votes/votes';

@@ -6,10 +6,15 @@ import {
   subirArchivos,
   eliminarArchivo,
 } from '@/services/repositorioMateriales/archivo.service';
-import { metaDeArchivo, formatearTamanio } from '@/utils/fileMeta';
+import {
+  metaDeArchivo,
+  formatearTamanio,
+} from '@/features/materials/utils/fileMeta';
 import { useRepositorioStore } from '@/stores/repositorioStore';
 import CodeEditor from '@/components/repositorioMateriales/CodeEditor';
-import BadgeSelector, { InfoTooltip } from '@/components/repositorioMateriales/BadgeSelector';
+import BadgeSelector, {
+  InfoTooltip,
+} from '@/components/repositorioMateriales/BadgeSelector';
 
 const TIPOS = [
   { value: 'file', icon: 'ti-upload', label: 'Archivo' },

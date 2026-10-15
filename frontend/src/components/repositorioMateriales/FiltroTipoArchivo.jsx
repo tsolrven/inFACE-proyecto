@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { TIPOS_ARCHIVO_FILTRO } from '@/utils/fileMeta';
+import { TIPOS_ARCHIVO_FILTRO } from '@/features/materials/utils/fileMeta';
 import { useRepositorioStore } from '@/stores/repositorioStore';
 
 export default function FiltroTipoArchivo() {
@@ -16,18 +16,28 @@ export default function FiltroTipoArchivo() {
     return () => document.removeEventListener('mousedown', onClickOutside);
   }, []);
 
-  const actual = TIPOS_ARCHIVO_FILTRO.find((t) => t.value === tipoArchivo) ?? TIPOS_ARCHIVO_FILTRO[0];
+  const actual =
+    TIPOS_ARCHIVO_FILTRO.find((t) => t.value === tipoArchivo) ??
+    TIPOS_ARCHIVO_FILTRO[0];
 
   return (
-    <div className='relative' ref={ref}>
+    <div
+      className='relative'
+      ref={ref}
+    >
       <button
         type='button'
         onClick={() => setOpen((o) => !o)}
         className='flex h-[34px] items-center gap-1.5 whitespace-nowrap rounded-[10px] border border-white/[0.07] bg-white/[0.04] px-3 text-[12.5px] font-medium text-neutral-400 transition-colors hover:border-white/[0.18] hover:text-neutral-100'
       >
-        <i className={`ti ${actual.icon} text-sm`} style={{ color: tipoArchivo ? actual.color : undefined }} />
+        <i
+          className={`ti ${actual.icon} text-sm`}
+          style={{ color: tipoArchivo ? actual.color : undefined }}
+        />
         {actual.label}
-        <i className={`ti ti-chevron-down text-xs transition-transform ${open ? 'rotate-180' : ''}`} />
+        <i
+          className={`ti ti-chevron-down text-xs transition-transform ${open ? 'rotate-180' : ''}`}
+        />
       </button>
 
       {open && (
@@ -41,10 +51,15 @@ export default function FiltroTipoArchivo() {
                 setOpen(false);
               }}
               className={`flex w-full items-center gap-2 px-3.5 py-2 text-left text-[12.5px] transition-colors hover:bg-white/[0.04] ${
-                tipoArchivo === tipo.value ? 'text-pink-500' : 'text-neutral-300'
+                tipoArchivo === tipo.value
+                  ? 'text-pink-500'
+                  : 'text-neutral-300'
               }`}
             >
-              <i className={`ti ${tipo.icon} text-[15px]`} style={{ color: tipo.value ? tipo.color : undefined }} />
+              <i
+                className={`ti ${tipo.icon} text-[15px]`}
+                style={{ color: tipo.value ? tipo.color : undefined }}
+              />
               {tipo.label}
             </button>
           ))}

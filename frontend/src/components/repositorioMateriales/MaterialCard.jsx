@@ -8,7 +8,7 @@ import {
   metaDeArchivo,
   metaDeLink,
   formatearTamanio,
-} from '@/utils/fileMeta';
+} from '@/features/materials/utils/fileMeta';
 import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
 import { descargarArchivo } from '@/services/repositorioMateriales/archivo.service';
 import { alternarGuardadoApunte } from '@/shared/post/bookmarks/bookmarks.api';
