@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useRepositorioStore } from '@/stores/repositorioStore';
+import { useRepositorioStore } from '@/features/materials/store/materialsStore';
 import { useAuthStore } from '@/shared/auth/authStore';
 import { colorPorRamo } from '@/shared/lib/courseColors';
 import {
@@ -10,7 +10,7 @@ import {
   formatearTamanio,
 } from '@/features/materials/utils/fileMeta';
 import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
-import { descargarArchivo } from '@/services/repositorioMateriales/archivo.service';
+import { descargarArchivo } from '@/features/materials/api/files.api';
 import { alternarGuardadoApunte } from '@/shared/post/bookmarks/bookmarks.api';
 import { mostrarToast } from '@/shared/stores/toastStore';
 import EditApunteModal from '@/components/repositorioMateriales/EditApunteModal';

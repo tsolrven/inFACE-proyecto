@@ -5,12 +5,12 @@ import { listarRamosPorCarrera } from '@/shared/api/catalog.api';
 import {
   subirArchivos,
   eliminarArchivo,
-} from '@/services/repositorioMateriales/archivo.service';
+} from '@/features/materials/api/files.api';
 import {
   metaDeArchivo,
   formatearTamanio,
 } from '@/features/materials/utils/fileMeta';
-import { useRepositorioStore } from '@/stores/repositorioStore';
+import { useRepositorioStore } from '@/features/materials/store/materialsStore';
 import CodeEditor from '@/components/repositorioMateriales/CodeEditor';
 import BadgeSelector, {
   InfoTooltip,

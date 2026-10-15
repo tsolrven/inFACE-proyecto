@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { useGuardadosStore } from '@/stores/guardadosStore';
+import { useGuardadosStore } from '@/features/materials/store/savedStore';
 import MaterialCard from '@/components/repositorioMateriales/MaterialCard';
 import SavedCommentCard from '@/components/repositorioMateriales/SavedCommentCard';
 

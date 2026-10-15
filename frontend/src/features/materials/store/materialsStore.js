@@ -3,10 +3,10 @@ import {
   listarApuntes,
   actualizarApunte,
   eliminarApunte,
-} from '../services/repositorioMateriales/apunte.service';
-import { votarApunte } from '../shared/post/votes/votes.api';
-import { alternarGuardadoApunte } from '../shared/post/bookmarks/bookmarks.api';
-import { predecirVoto } from '../shared/post/votes/votes';
+} from '../api/materials.api';
+import { votarApunte } from '../../../shared/post/votes/votes.api';
+import { alternarGuardadoApunte } from '../../../shared/post/bookmarks/bookmarks.api';
+import { predecirVoto } from '../../../shared/post/votes/votes';
 
 const FILTROS_INICIALES = {
   ramo_id: null,

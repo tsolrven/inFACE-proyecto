@@ -8,11 +8,11 @@ import MaterialFeed from '../../components/repositorioMateriales/MaterialFeed';
 import GuardadosFeed from '../../components/repositorioMateriales/GuardadosFeed';
 import UploadModal from '../../components/repositorioMateriales/UploadModal';
 import { useAuthStore } from '../../shared/auth/authStore';
-import { useRepositorioStore } from '../../stores/repositorioStore';
+import { useRepositorioStore } from '../../features/materials/store/materialsStore';
 import {
   listarTopColaboradores,
   listarHashtagsPopulares,
-} from '../../services/repositorioMateriales/estadisticas.service';
+} from '../../features/materials/api/statistics.api';
 import armadilloRepositorio from '../../assets/armadillo-repositorio-materiales.png';
 
 const COLORES_COLABORADOR = [

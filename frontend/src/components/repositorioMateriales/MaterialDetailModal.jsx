@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import Modal, { ModalHeader } from '@/shared/components/ui/Modal';
 import CommentThread from '@/shared/post/comments/CommentThread';
-import { obtenerApunte } from '@/services/repositorioMateriales/apunte.service';
+import { obtenerApunte } from '@/features/materials/api/materials.api';
 import {
   listarComentarios,
   crearComentario,
@@ -15,10 +15,10 @@ import {
   formatearTamanio,
 } from '@/features/materials/utils/fileMeta';
 import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
-import { useRepositorioStore } from '@/stores/repositorioStore';
+import { useRepositorioStore } from '@/features/materials/store/materialsStore';
 import { predecirVoto } from '@/shared/post/votes/votes';
 import { useAuthStore } from '@/shared/auth/authStore';
-import { descargarArchivo } from '@/services/repositorioMateriales/archivo.service';
+import { descargarArchivo } from '@/features/materials/api/files.api';
 import { votarApunte } from '@/shared/post/votes/votes.api';
 import { alternarGuardadoApunte } from '@/shared/post/bookmarks/bookmarks.api';
 import { mostrarToast } from '@/shared/stores/toastStore';

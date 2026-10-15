@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { useRepositorioStore } from '@/stores/repositorioStore';
+import { useRepositorioStore } from '@/features/materials/store/materialsStore';
 import FeedTopbar from '@/components/repositorioMateriales/FeedTopbar';
 import QuickUploadBox from '@/components/repositorioMateriales/QuickUploadBox';
 import MaterialCard from '@/components/repositorioMateriales/MaterialCard';

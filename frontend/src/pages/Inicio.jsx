@@ -5,7 +5,7 @@ import {
   listarProyectosRecomendados,
   listarProyectos,
 } from '../services/matchingProyecto';
-import { listarApuntes } from '../services/repositorioMateriales/apunte.service';
+import { listarApuntes } from '../features/materials/api/materials.api';
 import {
   getInitials,
   avatarColor,

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { listarRamosPorCarrera } from '@/shared/api/catalog.api';
-import { useRepositorioStore } from '@/stores/repositorioStore';
+import { useRepositorioStore } from '@/features/materials/store/materialsStore';
 import { colorPorRamo } from '@/shared/lib/courseColors';
 
 function agruparPorAnio(ramosPorSemestre) {

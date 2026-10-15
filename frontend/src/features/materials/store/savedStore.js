@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { listarGuardados } from '../shared/post/bookmarks/bookmarks.api';
+import { listarGuardados } from '../../../shared/post/bookmarks/bookmarks.api';
 
 export const useGuardadosStore = create((set, get) => ({
   tipo: 'apunte', //apunte o comentaerio
@@ -53,7 +53,9 @@ export const useGuardadosStore = create((set, get) => ({
   quitarDeGuardados: (id) => {
     set((state) => ({
       items: state.items.filter((i) => i.id !== id),
-      meta: state.meta ? { ...state.meta, total: state.meta.total - 1 } : state.meta,
+      meta: state.meta
+        ? { ...state.meta, total: state.meta.total - 1 }
+        : state.meta,
     }));
   },
 }));

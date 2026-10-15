@@ -1,7 +1,7 @@
 import FiltroTipoArchivo from '@/components/repositorioMateriales/FiltroTipoArchivo';
 import FiltroRamo from '@/components/repositorioMateriales/FiltroRamo';
 import Button from '@/shared/components/ui/Button';
-import { useRepositorioStore } from '@/stores/repositorioStore';
+import { useRepositorioStore } from '@/features/materials/store/materialsStore';
 
 export default function FeedTopbar({ carreraId, onAbrirSubida }) {
   const orden = useRepositorioStore((s) => s.filtros.orden);
@@ -37,7 +37,11 @@ export default function FeedTopbar({ carreraId, onAbrirSubida }) {
         </button>
       </div>
 
-      <Button variant='primary' icon='ti-upload' onClick={onAbrirSubida}>
+      <Button
+        variant='primary'
+        icon='ti-upload'
+        onClick={onAbrirSubida}
+      >
         Subir material
       </Button>
     </div>
