@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { TIPOS_ARCHIVO_FILTRO } from '../../utils/fileMeta';
-import { useRepositorioStore } from '../../stores/repositorioStore';
+import { TIPOS_ARCHIVO_FILTRO } from '@/utils/fileMeta';
+import { useRepositorioStore } from '@/stores/repositorioStore';
 
 export default function FiltroTipoArchivo() {
   const [open, setOpen] = useState(false);

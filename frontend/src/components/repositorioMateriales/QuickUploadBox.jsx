@@ -1,4 +1,4 @@
-import { useAuthStore } from '../../shared/auth/authStore';
+import { useAuthStore } from '@/shared/auth/authStore';
 
 function getInitials(nombreUsuario) {
   if (!nombreUsuario) return '?';

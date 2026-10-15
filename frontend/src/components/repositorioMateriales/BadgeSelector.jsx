@@ -1,4 +1,4 @@
-import { BADGES_SELECCIONABLES } from '../../utils/fileMeta';
+import { BADGES_SELECCIONABLES } from '@/utils/fileMeta';
 
 // selector tipo "chips" para que el usuario marque manualmente uno o varios badges que representan el contenido del apunte
 export default function BadgeSelector({ value = [], onChange, disabled }) {

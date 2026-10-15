@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
-import Modal, { ModalHeader } from '../../shared/components/ui/Modal';
-import Button from '../../shared/components/ui/Button';
-import { listarRamosPorCarrera } from '../../shared/api/catalog.api';
-import { crearApunte } from '../../services/repositorioMateriales/apunte.service';
-import { subirArchivos } from '../../services/repositorioMateriales/archivo.service';
-import { useRepositorioStore } from '../../stores/repositorioStore';
-import CodeEditor from './CodeEditor';
-import BadgeSelector, { InfoTooltip } from './BadgeSelector';
+import Modal, { ModalHeader } from '@/shared/components/ui/Modal';
+import Button from '@/shared/components/ui/Button';
+import { listarRamosPorCarrera } from '@/shared/api/catalog.api';
+import { crearApunte } from '@/services/repositorioMateriales/apunte.service';
+import { subirArchivos } from '@/services/repositorioMateriales/archivo.service';
+import { useRepositorioStore } from '@/stores/repositorioStore';
+import CodeEditor from '@/components/repositorioMateriales/CodeEditor';
+import BadgeSelector, { InfoTooltip } from '@/components/repositorioMateriales/BadgeSelector';
 
 const TIPOS = [
   { value: 'file', icon: 'ti-upload', label: 'Archivo' },

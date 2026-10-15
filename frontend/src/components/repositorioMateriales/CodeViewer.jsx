@@ -6,7 +6,7 @@ import {
   obtenerLenguaje,
   extensionParaLenguaje,
 } from '../../utils/codeLanguages';
-import { codeEditorTheme } from '../../utils/codeEditorTheme';
+import { codeEditorTheme } from '@/utils/codeEditorTheme';
 
 export default function CodeViewer({
   codigo,

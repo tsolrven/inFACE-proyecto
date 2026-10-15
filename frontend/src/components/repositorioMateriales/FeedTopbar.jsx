@@ -1,7 +1,7 @@
-import FiltroTipoArchivo from './FiltroTipoArchivo';
-import FiltroRamo from './FiltroRamo';
-import Button from '../../shared/components/ui/Button';
-import { useRepositorioStore } from '../../stores/repositorioStore';
+import FiltroTipoArchivo from '@/components/repositorioMateriales/FiltroTipoArchivo';
+import FiltroRamo from '@/components/repositorioMateriales/FiltroRamo';
+import Button from '@/shared/components/ui/Button';
+import { useRepositorioStore } from '@/stores/repositorioStore';
 
 export default function FeedTopbar({ carreraId, onAbrirSubida }) {
   const orden = useRepositorioStore((s) => s.filtros.orden);

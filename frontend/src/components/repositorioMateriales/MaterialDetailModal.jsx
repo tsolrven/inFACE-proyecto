@@ -1,34 +1,34 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import Modal, { ModalHeader } from '../../shared/components/ui/Modal';
-import CommentThread from '../../shared/post/comments/CommentThread';
-import { obtenerApunte } from '../../services/repositorioMateriales/apunte.service';
+import Modal, { ModalHeader } from '@/shared/components/ui/Modal';
+import CommentThread from '@/shared/post/comments/CommentThread';
+import { obtenerApunte } from '@/services/repositorioMateriales/apunte.service';
 import {
   listarComentarios,
   crearComentario,
-} from '../../shared/post/comments/comments.api';
-import { colorPorRamo } from '../../shared/lib/courseColors';
+} from '@/shared/post/comments/comments.api';
+import { colorPorRamo } from '@/shared/lib/courseColors';
 import {
   metaDeArchivo,
   metaDeBadge,
   metaDeLink,
   formatearTamanio,
-} from '../../utils/fileMeta';
-import { formatearTiempoRelativo } from '../../shared/lib/formatRelativeTime';
-import { useRepositorioStore } from '../../stores/repositorioStore';
-import { predecirVoto } from '../../shared/post/votes/votes';
-import { useAuthStore } from '../../shared/auth/authStore';
-import { descargarArchivo } from '../../services/repositorioMateriales/archivo.service';
-import { votarApunte } from '../../shared/post/votes/votes.api';
-import { alternarGuardadoApunte } from '../../shared/post/bookmarks/bookmarks.api';
-import { mostrarToast } from '../../shared/stores/toastStore';
-import EditApunteModal from './EditApunteModal';
-import ConfirmDialog from '../../shared/components/ui/ConfirmDialog';
-import ReportModal from '../../shared/moderation/ReportModal';
-import VotePill from '../../shared/post/votes/VotePill';
-import CodeViewer from './CodeViewer';
-import BookmarkIcon from '../../shared/post/bookmarks/BookmarkIcon';
-import { esStaff } from '../../shared/auth/roles';
+} from '@/utils/fileMeta';
+import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
+import { useRepositorioStore } from '@/stores/repositorioStore';
+import { predecirVoto } from '@/shared/post/votes/votes';
+import { useAuthStore } from '@/shared/auth/authStore';
+import { descargarArchivo } from '@/services/repositorioMateriales/archivo.service';
+import { votarApunte } from '@/shared/post/votes/votes.api';
+import { alternarGuardadoApunte } from '@/shared/post/bookmarks/bookmarks.api';
+import { mostrarToast } from '@/shared/stores/toastStore';
+import EditApunteModal from '@/components/repositorioMateriales/EditApunteModal';
+import ConfirmDialog from '@/shared/components/ui/ConfirmDialog';
+import ReportModal from '@/shared/moderation/ReportModal';
+import VotePill from '@/shared/post/votes/VotePill';
+import CodeViewer from '@/components/repositorioMateriales/CodeViewer';
+import BookmarkIcon from '@/shared/post/bookmarks/BookmarkIcon';
+import { esStaff } from '@/shared/auth/roles';
 
 function insertarRespuesta(comentarios, padreId, nueva) {
   return comentarios.map((c) => {

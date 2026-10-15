@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { useGuardadosStore } from '../../stores/guardadosStore';
-import MaterialCard from './MaterialCard';
-import SavedCommentCard from './SavedCommentCard';
+import { useGuardadosStore } from '@/stores/guardadosStore';
+import MaterialCard from '@/components/repositorioMateriales/MaterialCard';
+import SavedCommentCard from '@/components/repositorioMateriales/SavedCommentCard';
 
 export default function GuardadosFeed() {
   const tipo = useGuardadosStore((s) => s.tipo);

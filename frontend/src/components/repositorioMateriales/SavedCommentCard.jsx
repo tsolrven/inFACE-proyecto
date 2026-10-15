@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { formatearTiempoRelativo } from '../../shared/lib/formatRelativeTime';
-import { alternarGuardadoComentario } from '../../shared/post/bookmarks/bookmarks.api';
-import { mostrarToast } from '../../shared/stores/toastStore';
+import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
+import { alternarGuardadoComentario } from '@/shared/post/bookmarks/bookmarks.api';
+import { mostrarToast } from '@/shared/stores/toastStore';
 
 // Tipo de contenido -> ruta. Cuando exista el foro o los anuncios, se agrega una línea acá.
 const RUTAS_CONTENIDO = {
