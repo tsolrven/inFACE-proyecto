@@ -5,7 +5,7 @@ import { EditorState } from '@codemirror/state';
 import {
   obtenerLenguaje,
   extensionParaLenguaje,
-} from '../../features/materials/utils/codeLanguages';
+} from '@/features/materials/utils/codeLanguages';
 import { codeEditorTheme } from '@/features/materials/utils/codeEditorTheme';
 
 export default function CodeViewer({

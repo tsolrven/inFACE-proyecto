@@ -26,7 +26,7 @@ import EditApunteModal from '@/features/materials/components/EditApunteModal';
 import ConfirmDialog from '@/shared/components/ui/ConfirmDialog';
 import ReportModal from '@/shared/moderation/ReportModal';
 import VotePill from '@/shared/post/votes/VotePill';
-import CodeViewer from '@/components/repositorioMateriales/CodeViewer';
+import CodeViewer from '@/features/materials/components/CodeViewer';
 import BookmarkIcon from '@/shared/post/bookmarks/BookmarkIcon';
 import { esStaff } from '@/shared/auth/roles';
 

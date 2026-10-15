@@ -11,7 +11,7 @@ import {
   formatearTamanio,
 } from '@/features/materials/utils/fileMeta';
 import { useRepositorioStore } from '@/features/materials/store/materialsStore';
-import CodeEditor from '@/components/repositorioMateriales/CodeEditor';
+import CodeEditor from '@/features/materials/components/CodeEditor';
 import BadgeSelector, {
   InfoTooltip,
 } from '@/features/materials/components/BadgeSelector';

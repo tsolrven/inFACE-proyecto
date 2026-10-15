@@ -7,7 +7,7 @@ const Explorar = lazy(() => import('../pages/Explorar'));
 
 const ForoPorRamos = lazy(() => import('../pages/academico/ForoPorRamos'));
 const RepositorioMateriales = lazy(
-  () => import('../pages/academico/RepositorioMateriales'),
+  () => import('../features/materials/pages/MaterialsPage'),
 );
 const AnunciosOficiales = lazy(
   () => import('../pages/academico/AnunciosOficiales'),

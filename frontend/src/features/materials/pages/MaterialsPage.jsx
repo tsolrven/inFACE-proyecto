@@ -1,19 +1,19 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import RightPanel from '../../shared/components/layout/RightPanel';
-import RpCard from '../../shared/components/layout/RpCard';
-import RpRules from '../../shared/components/layout/RpRules';
-import PageBanner from '../../shared/components/layout/PageBanner';
-import MaterialFeed from '../../features/materials/components/MaterialFeed';
-import GuardadosFeed from '../../features/materials/components/GuardadosFeed';
-import UploadModal from '../../features/materials/components/UploadModal';
-import { useAuthStore } from '../../shared/auth/authStore';
-import { useRepositorioStore } from '../../features/materials/store/materialsStore';
+import RightPanel from '@/shared/components/layout/RightPanel';
+import RpCard from '@/shared/components/layout/RpCard';
+import RpRules from '@/shared/components/layout/RpRules';
+import PageBanner from '@/shared/components/layout/PageBanner';
+import MaterialFeed from '@/features/materials/components/MaterialFeed';
+import GuardadosFeed from '@/features/materials/components/GuardadosFeed';
+import UploadModal from '@/features/materials/components/UploadModal';
+import { useAuthStore } from '@/shared/auth/authStore';
+import { useRepositorioStore } from '@/features/materials/store/materialsStore';
 import {
   listarTopColaboradores,
   listarHashtagsPopulares,
-} from '../../features/materials/api/statistics.api';
-import armadilloRepositorio from '../../assets/armadillo-repositorio-materiales.png';
+} from '@/features/materials/api/statistics.api';
+import armadilloRepositorio from '@/assets/armadillo-repositorio-materiales.png';
 
 const COLORES_COLABORADOR = [
   'bg-amber-400/10 text-amber-400',

@@ -5,7 +5,7 @@ import { listarRamosPorCarrera } from '@/shared/api/catalog.api';
 import { crearApunte } from '@/features/materials/api/materials.api';
 import { subirArchivos } from '@/features/materials/api/files.api';
 import { useRepositorioStore } from '@/features/materials/store/materialsStore';
-import CodeEditor from '@/components/repositorioMateriales/CodeEditor';
+import CodeEditor from '@/features/materials/components/CodeEditor';
 import BadgeSelector, {
   InfoTooltip,
 } from '@/features/materials/components/BadgeSelector';
