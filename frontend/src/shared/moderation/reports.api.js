@@ -1,4 +1,4 @@
-import { apiFetch } from '../api/client';
+import { apiFetch } from '@/shared/api/client';
 
 export async function reportarApunte(apunteId, payload) {
   const res = await apiFetch(`/reportes/apunte/${apunteId}`, {

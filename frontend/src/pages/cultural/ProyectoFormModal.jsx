@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import ModalShell from './ModalShell';
-import { listarEtiquetas } from '../../services/etiqueta';
-import { etiquetaColor } from '../../helpers/matchHelpers';
+import { listarEtiquetas } from '@/services/etiqueta';
+import { etiquetaColor } from '@/helpers/matchHelpers';
 
 const MODALIDAD_COLORES = {
     presencial: 'border-sky-400/25 bg-sky-400/10 text-sky-400',

@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../shared/auth/authStore';
+import { useAuthStore } from '@/shared/auth/authStore';
 import {
     obtenerPerfilPublico
-} from '../services/perfil';
-import { listarProyectos } from '../services/matchingProyecto';
-import { getInitials, avatarColor, etiquetaColor } from '../helpers/matchHelpers';
-import PerfilTabs from '../components/PerfilTabs'
+} from '@/services/perfil';
+import { listarProyectos } from '@/services/matchingProyecto';
+import { getInitials, avatarColor, etiquetaColor } from '@/helpers/matchHelpers';
+import PerfilTabs from '@/components/PerfilTabs'
 // TODO(Silvana): importar aquí su servicio, ej:
 // import { listarApuntesDeUsuario, listarRespuestasDeUsuario } from '../services/apunte';;
 

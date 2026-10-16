@@ -1,4 +1,4 @@
-import { apiFetch } from '../../api/client';
+import { apiFetch } from '@/shared/api/client';
 
 export async function listarComentarios(apunteId) {
   const res = await apiFetch(`/comentarios/apunte/${apunteId}`);

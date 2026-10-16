@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import ModalShell from './ModalShell';
 import ConfirmDialog from './ConfirmDialog';
-import { getInitials, avatarColor, etiquetaColor, carreraColor, formatFecha } from '../../helpers/matchHelpers';
-import { listarIntegrantes, expulsarIntegrante } from '../../services/matchingProyecto';
+import { getInitials, avatarColor, etiquetaColor, carreraColor, formatFecha } from '@/helpers/matchHelpers';
+import { listarIntegrantes, expulsarIntegrante } from '@/services/matchingProyecto';
 
 export default function IntegrantesModal({ proyecto, esCreador, onClose, onCambio, esVistaExterna = false }) {
     const [integrantes, setIntegrantes] = useState([]);

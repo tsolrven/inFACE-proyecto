@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
-import { navSections, footerLinks } from '../config/navConfig';
-import { useUiStore } from '../shared/stores/uiStore';
+import { navSections, footerLinks } from '@/config/navConfig';
+import { useUiStore } from '@/shared/stores/uiStore';
 
 const baseItemClasses =
   'flex items-center gap-2.5 border-l-2 border-transparent px-4 py-2 text-[13px] text-neutral-400 transition-colors hover:bg-white/5 hover:text-neutral-100';

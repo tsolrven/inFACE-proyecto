@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../shared/auth/authStore';
-import { useUiStore } from '../shared/stores/uiStore';
-import logoWhite from '../assets/logo_white.png';
+import { useAuthStore } from '@/shared/auth/authStore';
+import { useUiStore } from '@/shared/stores/uiStore';
+import logoWhite from '@/assets/logo_white.png';
 
 function getInitials(nombreUsuario) {
   if (!nombreUsuario) return '?';

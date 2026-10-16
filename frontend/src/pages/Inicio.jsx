@@ -1,20 +1,20 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuthStore } from '../shared/auth/authStore';
+import { useAuthStore } from '@/shared/auth/authStore';
 import {
   listarProyectosRecomendados,
   listarProyectos,
-} from '../services/matchingProyecto';
+} from '@/services/matchingProyecto';
 import { listarApuntes } from '@/features/materials';
 import {
   getInitials,
   avatarColor,
   ModalidadChip,
   EstadoChip,
-} from '../helpers/matchHelpers';
-import { colorPorRamo } from '../shared/lib/courseColors';
-import { formatearTiempoRelativo } from '../shared/lib/formatRelativeTime';
-import { navSections } from '../config/navConfig';
+} from '@/helpers/matchHelpers';
+import { colorPorRamo } from '@/shared/lib/courseColors';
+import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
+import { navSections } from '@/config/navConfig';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HOME — vista general con preview de los módulos ya implementados

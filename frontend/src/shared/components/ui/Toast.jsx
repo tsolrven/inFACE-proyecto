@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useToastStore } from '../../stores/toastStore';
+import { useToastStore } from '@/shared/stores/toastStore';
 
 const DURACION_MS = 3000;
 

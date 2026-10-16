@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../shared/auth/authStore';
-import { actualizarMisIntereses } from '../services/perfil';
-import EtiquetasPicker from '../components/EtiquetasPicker';
+import { useAuthStore } from '@/shared/auth/authStore';
+import { actualizarMisIntereses } from '@/services/perfil';
+import EtiquetasPicker from '@/components/EtiquetasPicker';
 
 export default function Onboarding() {
     const navigate = useNavigate();

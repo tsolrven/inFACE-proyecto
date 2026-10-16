@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../../shared/auth/authStore';
-import { listarCarreras } from '../../shared/api/catalog.api';
+import { useAuthStore } from '@/shared/auth/authStore';
+import { listarCarreras } from '@/shared/api/catalog.api';
 
 function parseApiError(err) {
   if (err.details && Array.isArray(err.details)) {

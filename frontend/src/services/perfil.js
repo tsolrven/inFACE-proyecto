@@ -1,5 +1,5 @@
 //! capa de acceso a la API de perfil (datos básicos + intereses del usuario)
-import { apiFetch } from '../shared/api/client';
+import { apiFetch } from '@/shared/api/client';
 
 function request(path, { method = 'GET', body } = {}) {
   return apiFetch(path, { method, body });

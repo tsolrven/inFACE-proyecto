@@ -7,7 +7,7 @@ import {
     EstadoChip,
     ModalidadChip,
     formatFecha,
-} from '../../helpers/matchHelpers';
+} from '@/helpers/matchHelpers';
 
 // las etiquetas vienen con el nombre real del tipo (tal como está en la BD);
 // acá se traducen a las etiquetas que se le muestran al usuario y se fija el orden.

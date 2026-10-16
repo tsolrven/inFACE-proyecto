@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import Modal, { ModalHeader } from '../components/ui/Modal';
-import Button from '../components/ui/Button';
+import Modal, { ModalHeader } from '@/shared/components/ui/Modal';
+import Button from '@/shared/components/ui/Button';
 import { MOTIVOS_REPORTE, obtenerMotivo } from './reportReasons';
 import { reportar } from './reports.api';
 

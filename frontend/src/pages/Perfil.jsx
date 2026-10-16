@@ -3,12 +3,12 @@ import {
     obtenerMiPerfil,
     actualizarMiPerfil,
     actualizarMisIntereses,
-} from '../services/perfil';
-import { listarProyectos } from '../services/matchingProyecto';
-import { getInitials, avatarColor, etiquetaColor } from '../helpers/matchHelpers';
+} from '@/services/perfil';
+import { listarProyectos } from '@/services/matchingProyecto';
+import { getInitials, avatarColor, etiquetaColor } from '@/helpers/matchHelpers';
 import ModalShell from './cultural/ModalShell';
-import EtiquetasPicker from '../components/EtiquetasPicker';
-import PerfilTabs from '../components/PerfilTabs';
+import EtiquetasPicker from '@/components/EtiquetasPicker';
+import PerfilTabs from '@/components/PerfilTabs';
 // TODO(Silvana): importar aquí tu servicio de apuntes, ej:
 // import { listarMisApuntes, listarMisRespuestas } from '../services/apunte';
 
@@ -79,7 +79,7 @@ export default function Perfil() {
 
     useEffect(() => {
         if (perfil?.id) cargarTabs(perfil.id);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+         
     }, [perfil?.id]);
 
     if (cargando) {

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import armadillo from '../assets/armadillo.png';
-import logoWhite from '../assets/logo_white.png';
+import armadillo from '@/assets/armadillo.png';
+import logoWhite from '@/assets/logo_white.png';
 
 /*
  * Envuelve una sección para que aparezca suavemente al entrar en el viewport.

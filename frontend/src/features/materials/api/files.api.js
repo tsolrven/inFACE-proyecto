@@ -1,4 +1,4 @@
-import { apiFetch } from '../../../shared/api/client';
+import { apiFetch } from '@/shared/api/client';
 
 export async function descargarArchivo(archivo) {
   const blob = await apiFetch(`/archivos/${archivo.id}/descargar`, {

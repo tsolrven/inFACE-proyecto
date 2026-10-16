@@ -1,7 +1,7 @@
 //! contenedor del panel derecho (ancho, scroll, padding), colapsable igual que el sidebar
 //! izquierdo. En mobile no compite por espacio con el contenido principal: se oculta.
 
-import { useUiStore } from '../../stores/uiStore';
+import { useUiStore } from '@/shared/stores/uiStore';
 
 export default function RightPanel({ children }) {
   const colapsado = useUiStore((s) => s.panelDerechoColapsado);

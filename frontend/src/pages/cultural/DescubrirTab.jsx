@@ -5,11 +5,11 @@ import {
     descartarProyecto,
     listarHabilidadesEnDemanda,
     listarUsuariosSimilares,
-} from '../../services/matchingProyecto';
-import { obtenerMiPerfil } from '../../services/perfil';
-import { getInitials, avatarColor, etiquetaColor, EstadoChip, ModalidadChip, formatFecha } from '../../helpers/matchHelpers';
+} from '@/services/matchingProyecto';
+import { obtenerMiPerfil } from '@/services/perfil';
+import { getInitials, avatarColor, etiquetaColor, EstadoChip, ModalidadChip, formatFecha } from '@/helpers/matchHelpers';
 import ModalShell from './ModalShell';
-import armadilloArma from '../../assets/armadillo.png';
+import armadilloArma from '@/assets/armadillo.png';
 
 const UMBRAL_SWIPE = 110; // px de arrastre necesarios para confirmar un swipe
 

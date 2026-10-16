@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { useAuthStore } from '../../shared/auth/authStore';
+import { useAuthStore } from '@/shared/auth/authStore';
 import {
   listarProyectos,
   listarMisProyectos,
@@ -14,8 +14,8 @@ import {
   toggleFavorito,
   listarFavoritos,
   obtenerProyecto,
-} from '../../services/matchingProyecto';
-import { listarEtiquetas } from '../../services/etiqueta';
+} from '@/services/matchingProyecto';
+import { listarEtiquetas } from '@/services/etiqueta';
 import {
   getInitials,
   avatarColor,
@@ -24,7 +24,7 @@ import {
   EstadoPostulacionChip,
   formatFecha,
   tiempoRelativo,
-} from '../../helpers/matchHelpers';
+} from '@/helpers/matchHelpers';
 import ProyectoFormModal from './ProyectoFormModal';
 import DetalleProyecto from './DetalleProyecto';
 import PostularModal from './PostularModal';
@@ -223,7 +223,7 @@ export default function MatchProyectos() {
       setModalIntegrantes(panel === 'integrantes' && detalle ? detalle : null);
       setResolviendoDetalleInicial(false);
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [searchParams]);
 
   return (

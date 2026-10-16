@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { listarGuardados } from '../../../shared/post/bookmarks/bookmarks.api';
+import { listarGuardados } from '@/shared/post/bookmarks/bookmarks.api';
 
 export const useGuardadosStore = create((set, get) => ({
   tipo: 'apunte', //apunte o comentaerio

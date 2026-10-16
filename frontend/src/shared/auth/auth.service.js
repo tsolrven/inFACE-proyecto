@@ -3,7 +3,7 @@ import {
   apiFetch,
   setAccessToken,
   clearAccessToken,
-} from '../api/client';
+} from '@/shared/api/client';
 
 export function register({ correo, contrasena, nombre_usuario, carrera_id }) {
   return apiFetch('/auth/register', {

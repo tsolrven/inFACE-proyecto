@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { listarEtiquetas } from '../services/etiqueta';
-import { etiquetaColor } from '../helpers/matchHelpers';
+import { listarEtiquetas } from '@/services/etiqueta';
+import { etiquetaColor } from '@/helpers/matchHelpers';
 
 export default function EtiquetasPicker({ selectedIds = [], onChange, max = 15, emptyHint }) {
     const [disponibles, setDisponibles] = useState([]);

@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import ModalShell from './ModalShell';
-import { getInitials, avatarColor, carreraColor, tiempoRelativo } from '../../helpers/matchHelpers';
+import { getInitials, avatarColor, carreraColor, tiempoRelativo } from '@/helpers/matchHelpers';
 import {
     listarPostulacionesProyecto,
     responderPostulacion,
     eliminarPostulacionRechazada,
-} from '../../services/matchingProyecto';
+} from '@/services/matchingProyecto';
 
 export default function PostulacionesModal({ proyecto, onClose, onCambio, verTodas = false, onIrAVerPendientes }) {
     const [postulaciones, setPostulaciones] = useState([]);
