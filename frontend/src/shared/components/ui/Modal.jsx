@@ -1,24 +1,10 @@
 //! MODAL GENÉRICO, SE USA EN CUALQUIER MÓDULO
 
-import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import useModalBehavior from '@/shared/hooks/useModalBehavior';
 
 export default function Modal({ open, onClose, children, maxWidth = '520px' }) {
-  useEffect(() => {
-    if (!open) return;
-
-    function handleKeyDown(e) {
-      if (e.key === 'Escape') onClose();
-    }
-
-    document.addEventListener('keydown', handleKeyDown);
-    document.body.style.overflow = 'hidden';
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = '';
-    };
-  }, [open, onClose]);
+  useModalBehavior(open, onClose);
 
   if (!open) return null;
 

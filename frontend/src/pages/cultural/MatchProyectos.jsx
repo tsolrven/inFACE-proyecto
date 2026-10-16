@@ -31,7 +31,7 @@ import PostularModal from './PostularModal';
 import PostulacionesModal from './PostulacionesModal';
 import IntegrantesModal from './IntegrantesModal';
 import DescubrirTab from './DescubrirTab';
-import ConfirmDialog from './ConfirmDialog';
+import ConfirmDialog from '@/shared/components/ui/ConfirmDialog';
 
 const TABS = [
   { id: 'descubrir', label: 'Descubrir', icon: 'ti-flame' },

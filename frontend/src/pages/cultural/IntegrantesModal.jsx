@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import ModalShell from './ModalShell';
-import ConfirmDialog from './ConfirmDialog';
+import ConfirmDialog from '@/shared/components/ui/ConfirmDialog';
 import { getInitials, avatarColor, etiquetaColor, carreraColor, formatFecha } from '@/helpers/matchHelpers';
 import { listarIntegrantes, expulsarIntegrante } from '@/services/matchingProyecto';
 

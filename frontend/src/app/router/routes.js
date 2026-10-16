@@ -39,7 +39,9 @@ export const protectedRoutes = [
 
   {
     path: '/comunidad/contador-publico-auditor',
-    component: lazy(() => import('@/features/communities/pages/ContPublicoAuditor')),
+    component: lazy(
+      () => import('@/features/communities/pages/ContPublicoAuditor'),
+    ),
   },
   {
     path: '/comunidad/derecho',
@@ -47,7 +49,9 @@ export const protectedRoutes = [
   },
   {
     path: '/comunidad/ingenieria-civil-informatica',
-    component: lazy(() => import('@/features/communities/pages/IngCivilInformatica')),
+    component: lazy(
+      () => import('@/features/communities/pages/IngCivilInformatica'),
+    ),
   },
   {
     path: '/comunidad/ingenieria-comercial',
@@ -55,10 +59,15 @@ export const protectedRoutes = [
   },
   {
     path: '/comunidad/ingenieria-ejecucion-computacion',
-    component: lazy(() => import('@/features/communities/pages/IngEjecComputacion')),
+    component: lazy(
+      () => import('@/features/communities/pages/IngEjecComputacion'),
+    ),
   },
 
-  { path: '/ayuda', component: lazy(() => import('@/pages/resources/HelpPage')) },
+  {
+    path: '/ayuda',
+    component: lazy(() => import('@/pages/resources/HelpPage')),
+  },
   {
     path: '/reportes',
     component: lazy(() => import('@/features/reports/pages/ReportsPage')),
