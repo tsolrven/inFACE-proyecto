@@ -5,12 +5,12 @@ const Inicio = lazy(() => import('../pages/Inicio'));
 const Populares = lazy(() => import('../pages/Populares'));
 const Explorar = lazy(() => import('../pages/Explorar'));
 
-const ForoPorRamos = lazy(() => import('../pages/academico/ForoPorRamos'));
+const ForoPorRamos = lazy(() => import('../features/forum/pages/ForumPage'));
 const RepositorioMateriales = lazy(
   () => import('../features/materials/pages/MaterialsPage'),
 );
 const AnunciosOficiales = lazy(
-  () => import('../pages/academico/AnunciosOficiales'),
+  () => import('../features/announcements/pages/AnnouncementsPage'),
 );
 
 const MatchProyectos = lazy(() => import('../pages/cultural/MatchProyectos'));
