@@ -11,7 +11,7 @@ import {
   avatarColor,
   ModalidadChip,
   EstadoChip,
-} from '@/helpers/matchHelpers';
+} from '@/shared/lib/matchHelpers';
 import { colorPorRamo } from '@/shared/lib/courseColors';
 import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
 import { navSections } from '@/shared/config/navigation';

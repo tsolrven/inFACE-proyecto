@@ -8,7 +8,7 @@ import {
   etiquetaColor,
   carreraColor,
   formatFecha,
-} from '@/helpers/matchHelpers';
+} from '@/shared/lib/matchHelpers';
 import {
   listarIntegrantes,
   expulsarIntegrante,

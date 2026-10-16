@@ -6,7 +6,7 @@ import {
   avatarColor,
   carreraColor,
   tiempoRelativo,
-} from '@/helpers/matchHelpers';
+} from '@/shared/lib/matchHelpers';
 import {
   listarPostulacionesProyecto,
   responderPostulacion,

@@ -5,7 +5,7 @@ import {
   EstadoChip,
   ModalidadChip,
   tiempoRelativo,
-} from '@/helpers/matchHelpers';
+} from '@/shared/lib/matchHelpers';
 
 const TABS = [
   { id: 'proyectos', label: 'Proyectos', icon: 'ti-puzzle' },

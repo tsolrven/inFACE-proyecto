@@ -24,7 +24,7 @@ import {
   EstadoPostulacionChip,
   formatFecha,
   tiempoRelativo,
-} from '@/helpers/matchHelpers';
+} from '@/shared/lib/matchHelpers';
 import ProyectoFormModal from './ProyectoFormModal';
 import DetalleProyecto from './DetalleProyecto';
 import PostularModal from './PostularModal';
@@ -47,11 +47,15 @@ export default function MatchProyectos() {
   const [searchParams, setSearchParams] = useSearchParams();
   // se inicializa desde la URL para que sobreviva a un remount (ej. volver de ver
   // el perfil de alguien), en vez de resetearse siempre a 'descubrir'.
-  const [tab, setTabState] = useState(() => searchParams.get('tab') || 'descubrir');
+  const [tab, setTabState] = useState(
+    () => searchParams.get('tab') || 'descubrir',
+  );
   const [search, setSearch] = useState('');
   // mientras esto es true no se muestra nada (ni tabs ni detalle), para evitar el "flash"
   // de Descubrir antes de resolver un ?proyecto=ID que venga en la URL al montar.
-  const [resolviendoDetalleInicial, setResolviendoDetalleInicial] = useState(() => !!searchParams.get('proyecto'));
+  const [resolviendoDetalleInicial, setResolviendoDetalleInicial] = useState(
+    () => !!searchParams.get('proyecto'),
+  );
 
   // datos globales usados por varias pestañas
   const [favoritos, setFavoritos] = useState([]);
@@ -68,7 +72,10 @@ export default function MatchProyectos() {
   const [confirmEliminarDetalle, setConfirmEliminarDetalle] = useState(null);
   const [avisoError, setAvisoError] = useState(null);
 
-  const favoritosIds = useMemo(() => new Set(favoritos.map((p) => p.id)), [favoritos]);
+  const favoritosIds = useMemo(
+    () => new Set(favoritos.map((p) => p.id)),
+    [favoritos],
+  );
 
   const recargarFavoritos = useCallback(async () => {
     try {
@@ -101,7 +108,8 @@ export default function MatchProyectos() {
     const set = new Set();
     misPostulaciones.forEach((p) => {
       if (p.estado === 'pendiente') set.add(p.proyecto_id);
-      if (p.estado === 'aceptada' && p.sigue_siendo_integrante) set.add(p.proyecto_id);
+      if (p.estado === 'aceptada' && p.sigue_siendo_integrante)
+        set.add(p.proyecto_id);
     });
     return set;
   }, [misPostulaciones]);
@@ -206,7 +214,8 @@ export default function MatchProyectos() {
     (async () => {
       let detalle = null;
       setProyectoDetalle((actual) => {
-        detalle = actual?.id === proyectoId && actual?._completo ? actual : null;
+        detalle =
+          actual?.id === proyectoId && actual?._completo ? actual : null;
         return actual;
       });
 
@@ -223,7 +232,6 @@ export default function MatchProyectos() {
       setModalIntegrantes(panel === 'integrantes' && detalle ? detalle : null);
       setResolviendoDetalleInicial(false);
     })();
-     
   }, [searchParams]);
 
   return (
@@ -244,9 +252,12 @@ export default function MatchProyectos() {
               <i className='ti ti-puzzle text-[22px] text-pink-400' />
             </div>
             <div>
-              <h1 className='text-[19px] font-bold text-neutral-50'>Match de proyectos</h1>
+              <h1 className='text-[19px] font-bold text-neutral-50'>
+                Match de proyectos
+              </h1>
               <p className='hidden text-[12.5px] text-neutral-500 sm:block'>
-                Encuentra o forma equipos para proyectos académicos y de emprendimiento
+                Encuentra o forma equipos para proyectos académicos y de
+                emprendimiento
               </p>
             </div>
           </div>
@@ -271,10 +282,11 @@ export default function MatchProyectos() {
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`-mb-px flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-[12.5px] font-medium transition sm:px-4 sm:py-3 sm:text-[13px] ${tab === t.id
-                ? 'border-pink-500 font-semibold text-pink-500'
-                : 'border-transparent text-neutral-500 hover:text-neutral-300'
-                }`}
+              className={`-mb-px flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-[12.5px] font-medium transition sm:px-4 sm:py-3 sm:text-[13px] ${
+                tab === t.id
+                  ? 'border-pink-500 font-semibold text-pink-500'
+                  : 'border-transparent text-neutral-500 hover:text-neutral-300'
+              }`}
             >
               <i className={`ti ${t.icon} text-[15px]`} />
               {t.label}
@@ -285,14 +297,18 @@ export default function MatchProyectos() {
 
       <div className='px-4 pb-10 pt-[22px] sm:px-[26px]'>
         {resolviendoDetalleInicial && (
-          <p className='py-16 text-center text-[13px] text-neutral-500'>Cargando…</p>
+          <p className='py-16 text-center text-[13px] text-neutral-500'>
+            Cargando…
+          </p>
         )}
 
         {!resolviendoDetalleInicial && proyectoDetalle && (
           <DetalleProyecto
             proyecto={proyectoDetalle}
             esCreador={proyectoDetalle.creador?.id === usuario?.id}
-            esIntegrante={proyectoDetalle.integrantes?.some((i) => i.usuario_id === usuario?.id)}
+            esIntegrante={proyectoDetalle.integrantes?.some(
+              (i) => i.usuario_id === usuario?.id,
+            )}
             yaPostulado={postuladosActivos.has(proyectoDetalle.id)}
             puedePostular={proyectoDetalle.estado === 'abierto'}
             onVolver={handleVolverDetalle}
@@ -312,7 +328,12 @@ export default function MatchProyectos() {
             y sus datos ya cargados no se pierdan/reinicien al cambiar de pestaña, ver el detalle
             de un proyecto, o volver a Descubrir — antes esta sección se desmontaba por completo
             cada vez que se abría un detalle, reiniciando la cola de swipes de Descubrir */}
-        <div style={{ display: resolviendoDetalleInicial || proyectoDetalle ? 'none' : 'block' }}>
+        <div
+          style={{
+            display:
+              resolviendoDetalleInicial || proyectoDetalle ? 'none' : 'block',
+          }}
+        >
           <div style={{ display: tab === 'descubrir' ? 'block' : 'none' }}>
             <DescubrirTab
               usuario={usuario}
@@ -354,7 +375,9 @@ export default function MatchProyectos() {
               onCrear={() => setModalCrear('crear')}
               onEditar={(p) => setModalCrear(p)}
               onVerPostulaciones={(p) => setModalPostulaciones(p)}
-              onVerIntegrantes={(p) => abrirDetalle(p.id, { conIntegrantes: true })}
+              onVerIntegrantes={(p) =>
+                abrirDetalle(p.id, { conIntegrantes: true })
+              }
               onVerDetalle={handleVerDetalle}
               search={search}
             />
@@ -380,10 +403,13 @@ export default function MatchProyectos() {
               await crearProyecto(payload);
             } else {
               await actualizarProyecto(modalCrear.id, payload);
-              if (proyectoDetalle?.id === modalCrear.id) refrescarDetalle(modalCrear.id);
+              if (proyectoDetalle?.id === modalCrear.id)
+                refrescarDetalle(modalCrear.id);
             }
             setModalCrear(null);
-            window.dispatchEvent(new Event('inface:mis-proyectos-actualizados'));
+            window.dispatchEvent(
+              new Event('inface:mis-proyectos-actualizados'),
+            );
           }}
         />
       )}
@@ -406,8 +432,11 @@ export default function MatchProyectos() {
             setVerTodasPostulaciones(false);
           }}
           onCambio={() => {
-            window.dispatchEvent(new Event('inface:mis-proyectos-actualizados'));
-            if (proyectoDetalle?.id === modalPostulaciones.id) refrescarDetalle(modalPostulaciones.id);
+            window.dispatchEvent(
+              new Event('inface:mis-proyectos-actualizados'),
+            );
+            if (proyectoDetalle?.id === modalPostulaciones.id)
+              refrescarDetalle(modalPostulaciones.id);
           }}
         />
       )}
@@ -418,7 +447,9 @@ export default function MatchProyectos() {
           esCreador={modalIntegrantes.creador?.id === usuario?.id}
           onClose={handleCerrarIntegrantes}
           onCambio={() => {
-            window.dispatchEvent(new Event('inface:mis-proyectos-actualizados'));
+            window.dispatchEvent(
+              new Event('inface:mis-proyectos-actualizados'),
+            );
             refrescarDetalle(modalIntegrantes.id);
           }}
         />
@@ -427,7 +458,11 @@ export default function MatchProyectos() {
       <ConfirmDialog
         open={!!confirmEliminarDetalle}
         title='Eliminar proyecto'
-        message={confirmEliminarDetalle ? `¿Eliminar el proyecto "${confirmEliminarDetalle.titulo}"? Esta acción no se puede deshacer.` : ''}
+        message={
+          confirmEliminarDetalle
+            ? `¿Eliminar el proyecto "${confirmEliminarDetalle.titulo}"? Esta acción no se puede deshacer.`
+            : ''
+        }
         confirmLabel='Eliminar'
         danger
         onConfirm={ejecutarEliminarDesdeDetalle}
@@ -455,7 +490,11 @@ function FilterRow({ children }) {
   return <div className='mb-4 flex flex-wrap gap-2.5'>{children}</div>;
 }
 
-function FilterDropdown({ label, icon = 'ti-adjustments-horizontal', sections }) {
+function FilterDropdown({
+  label,
+  icon = 'ti-adjustments-horizontal',
+  sections,
+}) {
   const [open, setOpen] = useState(false);
   const [coords, setCoords] = useState({ top: 0, left: 0 });
   const btnRef = useRef(null);
@@ -470,7 +509,8 @@ function FilterDropdown({ label, icon = 'ti-adjustments-horizontal', sections })
     let left = rect.right - MENU_WIDTH;
     if (left < 8) left = rect.left;
     // tampoco debe salirse por la derecha de la ventana
-    if (left + MENU_WIDTH > window.innerWidth - 8) left = window.innerWidth - MENU_WIDTH - 8;
+    if (left + MENU_WIDTH > window.innerWidth - 8)
+      left = window.innerWidth - MENU_WIDTH - 8;
     return { top: rect.bottom + 6, left };
   }
 
@@ -483,8 +523,10 @@ function FilterDropdown({ label, icon = 'ti-adjustments-horizontal', sections })
     if (!open) return;
     function onClick(e) {
       if (
-        btnRef.current && !btnRef.current.contains(e.target) &&
-        menuRef.current && !menuRef.current.contains(e.target)
+        btnRef.current &&
+        !btnRef.current.contains(e.target) &&
+        menuRef.current &&
+        !menuRef.current.contains(e.target)
       ) {
         setOpen(false);
       }
@@ -535,14 +577,21 @@ function FilterDropdown({ label, icon = 'ti-adjustments-horizontal', sections })
                       sec.onSelect(opt.value);
                       setOpen(false);
                     }}
-                    className={`flex cursor-pointer items-center gap-2 px-3.5 py-2 text-[13px] transition hover:bg-white/[0.04] ${sec.selected === opt.value ? 'text-pink-500' : 'text-neutral-400'
-                      }`}
+                    className={`flex cursor-pointer items-center gap-2 px-3.5 py-2 text-[13px] transition hover:bg-white/[0.04] ${
+                      sec.selected === opt.value
+                        ? 'text-pink-500'
+                        : 'text-neutral-400'
+                    }`}
                   >
                     {opt.label}
-                    {sec.selected === opt.value && <i className='ti ti-check ml-auto text-[14px]' />}
+                    {sec.selected === opt.value && (
+                      <i className='ti ti-check ml-auto text-[14px]' />
+                    )}
                   </div>
                 ))}
-                {i < sections.length - 1 && <div className='my-1 h-px bg-white/[0.07]' />}
+                {i < sections.length - 1 && (
+                  <div className='my-1 h-px bg-white/[0.07]' />
+                )}
               </div>
             ))}
           </div>,
@@ -562,14 +611,17 @@ function EtiquetaFilterDropdown({ selectedIds, onChange }) {
   const MENU_WIDTH = 260;
 
   useEffect(() => {
-    listarEtiquetas().then(setEtiquetas).catch(() => setEtiquetas([]));
+    listarEtiquetas()
+      .then(setEtiquetas)
+      .catch(() => setEtiquetas([]));
   }, []);
 
   function calcularPosicion() {
     const rect = btnRef.current.getBoundingClientRect();
     let left = rect.right - MENU_WIDTH;
     if (left < 8) left = rect.left;
-    if (left + MENU_WIDTH > window.innerWidth - 8) left = window.innerWidth - MENU_WIDTH - 8;
+    if (left + MENU_WIDTH > window.innerWidth - 8)
+      left = window.innerWidth - MENU_WIDTH - 8;
     return { top: rect.bottom + 6, left };
   }
 
@@ -582,8 +634,10 @@ function EtiquetaFilterDropdown({ selectedIds, onChange }) {
     if (!open) return;
     function onClick(e) {
       if (
-        btnRef.current && !btnRef.current.contains(e.target) &&
-        menuRef.current && !menuRef.current.contains(e.target)
+        btnRef.current &&
+        !btnRef.current.contains(e.target) &&
+        menuRef.current &&
+        !menuRef.current.contains(e.target)
       ) {
         setOpen(false);
       }
@@ -607,7 +661,9 @@ function EtiquetaFilterDropdown({ selectedIds, onChange }) {
     else onChange([...selectedIds, id]);
   }
 
-  const filtradas = etiquetas.filter((et) => et.nombre.toLowerCase().includes(busqueda.trim().toLowerCase()));
+  const filtradas = etiquetas.filter((et) =>
+    et.nombre.toLowerCase().includes(busqueda.trim().toLowerCase()),
+  );
   const porTipo = filtradas.reduce((acc, et) => {
     const tipo = et.tipo || 'Otras';
     (acc[tipo] ||= []).push(et);
@@ -653,7 +709,9 @@ function EtiquetaFilterDropdown({ selectedIds, onChange }) {
 
             <div className='flex-1 overflow-y-auto px-3 pb-2'>
               {filtradas.length === 0 && (
-                <p className='py-3 text-center text-[12px] text-neutral-600'>Sin resultados</p>
+                <p className='py-3 text-center text-[12px] text-neutral-600'>
+                  Sin resultados
+                </p>
               )}
               {Object.entries(porTipo).map(([tipo, ets]) => (
                 <div
@@ -671,12 +729,15 @@ function EtiquetaFilterDropdown({ selectedIds, onChange }) {
                         <button
                           key={et.id}
                           onClick={() => toggle(et.id)}
-                          className={`rounded-full border px-2 py-1 text-[11px] font-medium transition ${seleccionada
-                            ? `${c.bg} ${c.text} ${c.border}`
-                            : 'border-white/[0.07] text-neutral-400 hover:border-white/[0.16] hover:text-neutral-100'
-                            }`}
+                          className={`rounded-full border px-2 py-1 text-[11px] font-medium transition ${
+                            seleccionada
+                              ? `${c.bg} ${c.text} ${c.border}`
+                              : 'border-white/[0.07] text-neutral-400 hover:border-white/[0.16] hover:text-neutral-100'
+                          }`}
                         >
-                          {seleccionada && <i className='ti ti-check mr-1 text-[10px]' />}
+                          {seleccionada && (
+                            <i className='ti ti-check mr-1 text-[10px]' />
+                          )}
                           {et.nombre}
                         </button>
                       );
@@ -706,7 +767,9 @@ function EmptyState({ icon, title, subtitle }) {
     <div className='flex flex-col items-center px-5 py-14 text-center'>
       <i className={`ti ${icon} mb-3 text-5xl text-neutral-700`} />
       <h3 className='mb-1 text-[15px] font-bold text-neutral-400'>{title}</h3>
-      <p className='max-w-[280px] text-[13px] leading-relaxed text-neutral-600'>{subtitle}</p>
+      <p className='max-w-[280px] text-[13px] leading-relaxed text-neutral-600'>
+        {subtitle}
+      </p>
     </div>
   );
 }
@@ -715,7 +778,15 @@ function EmptyState({ icon, title, subtitle }) {
 // PESTAÑA: EXPLORAR
 // ─────────────────────────────────────────────────────────────────────────────
 
-function ExplorarTab({ usuario, favoritosIds, postuladosActivos, onToggleFavorito, onVerDetalle, onPostularClick, search }) {
+function ExplorarTab({
+  usuario,
+  favoritosIds,
+  postuladosActivos,
+  onToggleFavorito,
+  onVerDetalle,
+  onPostularClick,
+  search,
+}) {
   const [proyectos, setProyectos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -748,7 +819,8 @@ function ExplorarTab({ usuario, favoritosIds, postuladosActivos, onToggleFavorit
 
   useEffect(() => {
     window.addEventListener('inface:mis-proyectos-actualizados', cargar);
-    return () => window.removeEventListener('inface:mis-proyectos-actualizados', cargar);
+    return () =>
+      window.removeEventListener('inface:mis-proyectos-actualizados', cargar);
   }, [cargar]);
 
   const proyectosFiltrados = useMemo(() => {
@@ -766,7 +838,9 @@ function ExplorarTab({ usuario, favoritosIds, postuladosActivos, onToggleFavorit
     if (orden === 'integrantes') {
       lista.sort((a, b) => b.total_integrantes - a.total_integrantes);
     } else {
-      lista.sort((a, b) => new Date(b.fecha_creacion) - new Date(a.fecha_creacion));
+      lista.sort(
+        (a, b) => new Date(b.fecha_creacion) - new Date(a.fecha_creacion),
+      );
     }
     return lista;
   }, [proyectos, search, orden]);
@@ -816,7 +890,11 @@ function ExplorarTab({ usuario, favoritosIds, postuladosActivos, onToggleFavorit
         />
       </FilterRow>
 
-      {loading && <p className='py-10 text-center text-[13px] text-neutral-500'>Cargando proyectos…</p>}
+      {loading && (
+        <p className='py-10 text-center text-[13px] text-neutral-500'>
+          Cargando proyectos…
+        </p>
+      )}
 
       {error && (
         <div className='rounded-[10px] border border-red-500/30 bg-red-500/10 px-4 py-3 text-[13px] text-red-400'>
@@ -824,11 +902,18 @@ function ExplorarTab({ usuario, favoritosIds, postuladosActivos, onToggleFavorit
         </div>
       )}
 
-      {!loading && !error && (search.trim() || filtroEstado || filtroModalidad || filtroEtiquetas.length > 0) && (
-        <p className='mb-3 text-[12.5px] text-neutral-500'>
-          {proyectosFiltrados.length} coincidencia{proyectosFiltrados.length === 1 ? '' : 's'} encontrada{proyectosFiltrados.length === 1 ? '' : 's'}
-        </p>
-      )}
+      {!loading &&
+        !error &&
+        (search.trim() ||
+          filtroEstado ||
+          filtroModalidad ||
+          filtroEtiquetas.length > 0) && (
+          <p className='mb-3 text-[12.5px] text-neutral-500'>
+            {proyectosFiltrados.length} coincidencia
+            {proyectosFiltrados.length === 1 ? '' : 's'} encontrada
+            {proyectosFiltrados.length === 1 ? '' : 's'}
+          </p>
+        )}
 
       {!loading && !error && proyectosFiltrados.length === 0 && (
         <EmptyState
@@ -857,9 +942,23 @@ function ExplorarTab({ usuario, favoritosIds, postuladosActivos, onToggleFavorit
 }
 
 function iconoYColorEstado(estado) {
-  if (estado === 'abierto') return { icono: 'ti-lock-open', clase: 'bg-emerald-400/10 text-emerald-400', titulo: 'Abierto' };
-  if (estado === 'en_progreso') return { icono: 'ti-progress', clase: 'bg-sky-400/10 text-sky-400', titulo: 'En progreso' };
-  return { icono: 'ti-lock', clase: 'bg-white/[0.06] text-neutral-500', titulo: 'Cerrado' };
+  if (estado === 'abierto')
+    return {
+      icono: 'ti-lock-open',
+      clase: 'bg-emerald-400/10 text-emerald-400',
+      titulo: 'Abierto',
+    };
+  if (estado === 'en_progreso')
+    return {
+      icono: 'ti-progress',
+      clase: 'bg-sky-400/10 text-sky-400',
+      titulo: 'En progreso',
+    };
+  return {
+    icono: 'ti-lock',
+    clase: 'bg-white/[0.06] text-neutral-500',
+    titulo: 'Cerrado',
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -869,7 +968,9 @@ function iconoYColorEstado(estado) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function TarjetaProyectoBase({ proyecto: p, extra, accionesDerecha }) {
-  const cupos = p.maximo_integrantes ? p.maximo_integrantes - p.total_integrantes : null;
+  const cupos = p.maximo_integrantes
+    ? p.maximo_integrantes - p.total_integrantes
+    : null;
   const { icono, clase, titulo } = iconoYColorEstado(p.estado);
 
   return (
@@ -899,9 +1000,13 @@ function TarjetaProyectoBase({ proyecto: p, extra, accionesDerecha }) {
           <span>· {tiempoRelativo(p.fecha_creacion)}</span>
         </div>
 
-        <div className='mb-1 text-[15px] font-bold leading-snug text-neutral-100'>{p.titulo}</div>
+        <div className='mb-1 text-[15px] font-bold leading-snug text-neutral-100'>
+          {p.titulo}
+        </div>
 
-        <p className='mb-2.5 line-clamp-2 text-[12.5px] leading-relaxed text-neutral-400'>{p.descripcion}</p>
+        <p className='mb-2.5 line-clamp-2 text-[12.5px] leading-relaxed text-neutral-400'>
+          {p.descripcion}
+        </p>
 
         {p.etiquetas?.length > 0 && (
           <div className='mb-3 flex flex-wrap gap-1.5'>
@@ -931,7 +1036,9 @@ function TarjetaProyectoBase({ proyecto: p, extra, accionesDerecha }) {
             </span>
             <span className='inline-flex items-center gap-1'>
               <i className='ti ti-users text-[14px]' />
-              {p.maximo_integrantes ? `${cupos > 0 ? cupos : 0}/${p.maximo_integrantes} cupos` : `${p.total_integrantes} integrantes`}
+              {p.maximo_integrantes
+                ? `${cupos > 0 ? cupos : 0}/${p.maximo_integrantes} cupos`
+                : `${p.total_integrantes} integrantes`}
             </span>
             {p.integrantes?.length > 0 && (
               <div className='flex items-center'>
@@ -941,7 +1048,10 @@ function TarjetaProyectoBase({ proyecto: p, extra, accionesDerecha }) {
                     <div
                       key={i.usuario_id}
                       title={i.nombre_usuario}
-                      style={{ marginLeft: idx === 0 ? 0 : -6, zIndex: 5 - idx }}
+                      style={{
+                        marginLeft: idx === 0 ? 0 : -6,
+                        zIndex: 5 - idx,
+                      }}
                       className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-2 border-[#1E1E24] text-[7.5px] font-bold ${iav.bg} ${iav.text}`}
                     >
                       {getInitials(i.nombre_usuario)}
@@ -951,14 +1061,25 @@ function TarjetaProyectoBase({ proyecto: p, extra, accionesDerecha }) {
               </div>
             )}
           </div>
-          <div className='flex flex-wrap items-center gap-2'>{accionesDerecha}</div>
+          <div className='flex flex-wrap items-center gap-2'>
+            {accionesDerecha}
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-function ProyectoCard({ proyecto: p, esCreador, esIntegrante = false, esFavorito, yaPostulado, onToggleFavorito, onVerDetalle, onPostularClick }) {
+function ProyectoCard({
+  proyecto: p,
+  esCreador,
+  esIntegrante = false,
+  esFavorito,
+  yaPostulado,
+  onToggleFavorito,
+  onVerDetalle,
+  onPostularClick,
+}) {
   const puedePostular = p.estado === 'abierto' && !esCreador && !esIntegrante;
 
   return (
@@ -988,10 +1109,11 @@ function ProyectoCard({ proyecto: p, esCreador, esIntegrante = false, esFavorito
           )}
           <button
             onClick={onToggleFavorito}
-            className={`inline-flex items-center gap-1.5 rounded-[10px] border px-3.5 py-1.5 text-[12px] font-medium transition ${esFavorito
-              ? 'border-pink-500/40 bg-pink-500/10 text-pink-500'
-              : 'border-white/[0.07] text-neutral-400 hover:text-neutral-100'
-              }`}
+            className={`inline-flex items-center gap-1.5 rounded-[10px] border px-3.5 py-1.5 text-[12px] font-medium transition ${
+              esFavorito
+                ? 'border-pink-500/40 bg-pink-500/10 text-pink-500'
+                : 'border-white/[0.07] text-neutral-400 hover:text-neutral-100'
+            }`}
           >
             <i className='ti ti-bookmark text-[13px]' />
             {esFavorito ? 'Guardado' : 'Guardar'}
@@ -1012,7 +1134,16 @@ function ProyectoCard({ proyecto: p, esCreador, esIntegrante = false, esFavorito
 // PESTAÑA: GUARDADOS
 // ─────────────────────────────────────────────────────────────────────────────
 
-function GuardadosTab({ usuario, favoritos, loaded, postuladosActivos, onToggleFavorito, onVerDetalle, onPostularClick, search }) {
+function GuardadosTab({
+  usuario,
+  favoritos,
+  loaded,
+  postuladosActivos,
+  onToggleFavorito,
+  onVerDetalle,
+  onPostularClick,
+  search,
+}) {
   const filtrados = useMemo(() => {
     if (!search.trim()) return favoritos;
     const q = search.trim().toLowerCase();
@@ -1029,7 +1160,11 @@ function GuardadosTab({ usuario, favoritos, loaded, postuladosActivos, onToggleF
         </div>
       )}
 
-      {!loaded && <p className='py-10 text-center text-[13px] text-neutral-500'>Cargando…</p>}
+      {!loaded && (
+        <p className='py-10 text-center text-[13px] text-neutral-500'>
+          Cargando…
+        </p>
+      )}
 
       {loaded && filtrados.length === 0 && (
         <EmptyState
@@ -1061,7 +1196,15 @@ function GuardadosTab({ usuario, favoritos, loaded, postuladosActivos, onToggleF
 // PESTAÑA: MIS PROYECTOS
 // ─────────────────────────────────────────────────────────────────────────────
 
-function MisProyectosTab({ usuario, onCrear, onEditar, onVerPostulaciones, onVerIntegrantes, onVerDetalle, search }) {
+function MisProyectosTab({
+  usuario,
+  onCrear,
+  onEditar,
+  onVerPostulaciones,
+  onVerIntegrantes,
+  onVerDetalle,
+  search,
+}) {
   const [sub, setSub] = useState('creados');
   const [creados, setCreados] = useState([]);
   const [participa, setParticipa] = useState([]);
@@ -1078,7 +1221,9 @@ function MisProyectosTab({ usuario, onCrear, onEditar, onVerPostulaciones, onVer
         listarProyectos({ integrante_id: usuario.id, limite: 50 }),
       ]);
       setCreados(misCreados.datos);
-      setParticipa(misParticipaciones.datos.filter((p) => p.creador?.id !== usuario.id));
+      setParticipa(
+        misParticipaciones.datos.filter((p) => p.creador?.id !== usuario.id),
+      );
     } catch (err) {
       setError(err.message);
     } finally {
@@ -1092,7 +1237,8 @@ function MisProyectosTab({ usuario, onCrear, onEditar, onVerPostulaciones, onVer
 
   useEffect(() => {
     window.addEventListener('inface:mis-proyectos-actualizados', cargar);
-    return () => window.removeEventListener('inface:mis-proyectos-actualizados', cargar);
+    return () =>
+      window.removeEventListener('inface:mis-proyectos-actualizados', cargar);
   }, [cargar]);
 
   const [confirmEliminar, setConfirmEliminar] = useState(null);
@@ -1127,15 +1273,21 @@ function MisProyectosTab({ usuario, onCrear, onEditar, onVerPostulaciones, onVer
         <div className='flex gap-1 rounded-[10px] border border-white/[0.07] bg-[#1E1E24] p-1'>
           <button
             onClick={() => setSub('creados')}
-            className={`rounded-[8px] px-3.5 py-1.5 text-[12.5px] font-medium transition ${sub === 'creados' ? 'bg-pink-500 text-white' : 'text-neutral-400 hover:text-neutral-100'
-              }`}
+            className={`rounded-[8px] px-3.5 py-1.5 text-[12.5px] font-medium transition ${
+              sub === 'creados'
+                ? 'bg-pink-500 text-white'
+                : 'text-neutral-400 hover:text-neutral-100'
+            }`}
           >
             Creados <span className='opacity-70'>({creados.length})</span>
           </button>
           <button
             onClick={() => setSub('participa')}
-            className={`rounded-[8px] px-3.5 py-1.5 text-[12.5px] font-medium transition ${sub === 'participa' ? 'bg-pink-500 text-white' : 'text-neutral-400 hover:text-neutral-100'
-              }`}
+            className={`rounded-[8px] px-3.5 py-1.5 text-[12.5px] font-medium transition ${
+              sub === 'participa'
+                ? 'bg-pink-500 text-white'
+                : 'text-neutral-400 hover:text-neutral-100'
+            }`}
           >
             Participo <span className='opacity-70'>({participa.length})</span>
           </button>
@@ -1148,7 +1300,11 @@ function MisProyectosTab({ usuario, onCrear, onEditar, onVerPostulaciones, onVer
         </button>
       </div>
 
-      {loading && <p className='py-10 text-center text-[13px] text-neutral-500'>Cargando…</p>}
+      {loading && (
+        <p className='py-10 text-center text-[13px] text-neutral-500'>
+          Cargando…
+        </p>
+      )}
 
       {error && (
         <div className='rounded-[10px] border border-red-500/30 bg-red-500/10 px-4 py-3 text-[13px] text-red-400'>
@@ -1198,9 +1354,9 @@ function MisProyectosTab({ usuario, onCrear, onEditar, onVerPostulaciones, onVer
               esIntegrante
               esFavorito={false}
               yaPostulado={false}
-              onToggleFavorito={() => { }}
+              onToggleFavorito={() => {}}
               onVerDetalle={() => onVerDetalle(p)}
-              onPostularClick={() => { }}
+              onPostularClick={() => {}}
             />
           ))}
         </div>
@@ -1209,7 +1365,11 @@ function MisProyectosTab({ usuario, onCrear, onEditar, onVerPostulaciones, onVer
       <ConfirmDialog
         open={!!confirmEliminar}
         title='Eliminar proyecto'
-        message={confirmEliminar ? `¿Eliminar el proyecto "${confirmEliminar.titulo}"? Esta acción no se puede deshacer.` : ''}
+        message={
+          confirmEliminar
+            ? `¿Eliminar el proyecto "${confirmEliminar.titulo}"? Esta acción no se puede deshacer.`
+            : ''
+        }
         confirmLabel='Eliminar'
         danger
         onConfirm={ejecutarEliminar}
@@ -1229,8 +1389,17 @@ function MisProyectosTab({ usuario, onCrear, onEditar, onVerPostulaciones, onVer
   );
 }
 
-function MiProyectoCard({ proyecto: p, onVerDetalle, onEditar, onEliminar, onVerPostulaciones, onVerIntegrantes }) {
-  const cupos = p.maximo_integrantes ? p.maximo_integrantes - p.total_integrantes : null;
+function MiProyectoCard({
+  proyecto: p,
+  onVerDetalle,
+  onEditar,
+  onEliminar,
+  onVerPostulaciones,
+  onVerIntegrantes,
+}) {
+  const cupos = p.maximo_integrantes
+    ? p.maximo_integrantes - p.total_integrantes
+    : null;
 
   return (
     <TarjetaProyectoBase
@@ -1243,21 +1412,31 @@ function MiProyectoCard({ proyecto: p, onVerDetalle, onEditar, onEliminar, onVer
               <div className='text-[16px] font-bold leading-none text-neutral-100'>
                 {cupos !== null ? Math.max(cupos, 0) : '∞'}
               </div>
-              <div className='mt-0.5 text-[10px] text-neutral-500'>Cupos disponibles</div>
+              <div className='mt-0.5 text-[10px] text-neutral-500'>
+                Cupos disponibles
+              </div>
             </div>
           </div>
           <div className='flex flex-1 items-center gap-2.5'>
             <i className='ti ti-inbox text-xl text-pink-500' />
             <div>
-              <div className='text-[16px] font-bold leading-none text-neutral-100'>{p.total_postulaciones}</div>
-              <div className='mt-0.5 text-[10px] text-neutral-500'>Pendientes</div>
+              <div className='text-[16px] font-bold leading-none text-neutral-100'>
+                {p.total_postulaciones}
+              </div>
+              <div className='mt-0.5 text-[10px] text-neutral-500'>
+                Pendientes
+              </div>
             </div>
           </div>
           <div className='flex flex-1 items-center gap-2.5'>
             <i className='ti ti-users text-xl text-pink-500' />
             <div>
-              <div className='text-[16px] font-bold leading-none text-neutral-100'>{p.total_integrantes}</div>
-              <div className='mt-0.5 text-[10px] text-neutral-500'>Integrantes</div>
+              <div className='text-[16px] font-bold leading-none text-neutral-100'>
+                {p.total_integrantes}
+              </div>
+              <div className='mt-0.5 text-[10px] text-neutral-500'>
+                Integrantes
+              </div>
             </div>
           </div>
         </div>
@@ -1294,7 +1473,9 @@ function MiProyectoCard({ proyecto: p, onVerDetalle, onEditar, onEliminar, onVer
           >
             <i className='ti ti-users text-[13px]' /> Ver postulaciones
             {p.total_postulaciones > 0 && (
-              <span className='rounded-full bg-white/20 px-1.5 py-px text-[10px]'>{p.total_postulaciones}</span>
+              <span className='rounded-full bg-white/20 px-1.5 py-px text-[10px]'>
+                {p.total_postulaciones}
+              </span>
             )}
           </button>
         </>
@@ -1307,7 +1488,12 @@ function MiProyectoCard({ proyecto: p, onVerDetalle, onEditar, onEliminar, onVer
 // PESTAÑA: MIS POSTULACIONES
 // ─────────────────────────────────────────────────────────────────────────────
 
-function MisPostulacionesTab({ postulaciones, loaded, onRecargar, onVerProyecto }) {
+function MisPostulacionesTab({
+  postulaciones,
+  loaded,
+  onRecargar,
+  onVerProyecto,
+}) {
   const [filtroEstado, setFiltroEstado] = useState('');
   const [procesando, setProcesando] = useState(null);
   const [confirmRetirar, setConfirmRetirar] = useState(null);
@@ -1359,7 +1545,11 @@ function MisPostulacionesTab({ postulaciones, loaded, onRecargar, onVerProyecto 
         />
       </div>
 
-      {!loaded && <p className='py-10 text-center text-[13px] text-neutral-500'>Cargando…</p>}
+      {!loaded && (
+        <p className='py-10 text-center text-[13px] text-neutral-500'>
+          Cargando…
+        </p>
+      )}
 
       {loaded && filtradas.length === 0 && (
         <EmptyState
@@ -1373,10 +1563,22 @@ function MisPostulacionesTab({ postulaciones, loaded, onRecargar, onVerProyecto 
         {filtradas.map((p) => {
           const { icono, clase, titulo } =
             p.estado === 'aceptada'
-              ? { icono: 'ti-circle-check', clase: 'bg-emerald-400/10 text-emerald-400', titulo: 'Aceptada' }
+              ? {
+                  icono: 'ti-circle-check',
+                  clase: 'bg-emerald-400/10 text-emerald-400',
+                  titulo: 'Aceptada',
+                }
               : p.estado === 'rechazada'
-                ? { icono: 'ti-x', clase: 'bg-red-500/10 text-red-400', titulo: 'Rechazada' }
-                : { icono: 'ti-clock', clase: 'bg-amber-400/10 text-amber-400', titulo: 'Pendiente' };
+                ? {
+                    icono: 'ti-x',
+                    clase: 'bg-red-500/10 text-red-400',
+                    titulo: 'Rechazada',
+                  }
+                : {
+                    icono: 'ti-clock',
+                    clase: 'bg-amber-400/10 text-amber-400',
+                    titulo: 'Pendiente',
+                  };
 
           return (
             <div
@@ -1394,7 +1596,9 @@ function MisPostulacionesTab({ postulaciones, loaded, onRecargar, onVerProyecto 
 
               <div className='min-w-0 flex-1 p-4'>
                 <div className='mb-1.5 flex items-start justify-between gap-3'>
-                  <div className='text-[15px] font-bold leading-snug text-neutral-100'>{p.titulo_proyecto}</div>
+                  <div className='text-[15px] font-bold leading-snug text-neutral-100'>
+                    {p.titulo_proyecto}
+                  </div>
                   <EstadoPostulacionChip estado={p.estado} />
                 </div>
 
@@ -1407,7 +1611,9 @@ function MisPostulacionesTab({ postulaciones, loaded, onRecargar, onVerProyecto 
                       >
                         u/{p.creador.nombre_usuario}
                       </Link>
-                      {p.creador.carrera && <span>· {p.creador.carrera.nombre}</span>}
+                      {p.creador.carrera && (
+                        <span>· {p.creador.carrera.nombre}</span>
+                      )}
                       <span>·</span>
                     </>
                   )}
@@ -1417,7 +1623,9 @@ function MisPostulacionesTab({ postulaciones, loaded, onRecargar, onVerProyecto 
                 <StatusBanner postulacion={p} />
 
                 {p.mensaje && (
-                  <p className='mt-2.5 text-[12.5px] leading-relaxed text-neutral-400'>{p.mensaje}</p>
+                  <p className='mt-2.5 text-[12.5px] leading-relaxed text-neutral-400'>
+                    {p.mensaje}
+                  </p>
                 )}
 
                 <div className='mt-3 flex flex-wrap gap-2 border-t border-white/[0.06] pt-3'>
@@ -1442,7 +1650,8 @@ function MisPostulacionesTab({ postulaciones, loaded, onRecargar, onVerProyecto 
                       disabled={procesando === p.id}
                       className='inline-flex items-center gap-1.5 rounded-[10px] border border-white/[0.07] px-3.5 py-1.5 text-[12px] font-medium text-neutral-400 transition hover:text-red-400 disabled:opacity-50'
                     >
-                      <i className='ti ti-trash text-[13px]' /> Quitar de la lista
+                      <i className='ti ti-trash text-[13px]' /> Quitar de la
+                      lista
                     </button>
                   )}
                 </div>
@@ -1454,13 +1663,19 @@ function MisPostulacionesTab({ postulaciones, loaded, onRecargar, onVerProyecto 
 
       <ConfirmDialog
         open={!!confirmRetirar}
-        title={confirmRetirar?.estado === 'pendiente' ? 'Retirar postulación' : 'Quitar de la lista'}
+        title={
+          confirmRetirar?.estado === 'pendiente'
+            ? 'Retirar postulación'
+            : 'Quitar de la lista'
+        }
         message={
           confirmRetirar?.estado === 'pendiente'
             ? '¿Retirar esta postulación?'
             : '¿Quitar esta postulación de tu lista?'
         }
-        confirmLabel={confirmRetirar?.estado === 'pendiente' ? 'Retirar' : 'Quitar'}
+        confirmLabel={
+          confirmRetirar?.estado === 'pendiente' ? 'Retirar' : 'Quitar'
+        }
         danger
         onConfirm={ejecutarRetirar}
         onCancel={() => setConfirmRetirar(null)}
@@ -1485,7 +1700,9 @@ function StatusBanner({ postulacion: p }) {
       <div className='flex items-center gap-2.5 rounded-[10px] bg-[#2A2A32] px-3 py-2'>
         <i className='ti ti-clock text-amber-400' />
         <div>
-          <div className='text-[12.5px] font-semibold text-neutral-100'>Esperando revisión del creador</div>
+          <div className='text-[12.5px] font-semibold text-neutral-100'>
+            Esperando revisión del creador
+          </div>
           <div className='mt-0.5 text-[11px] text-neutral-500'>
             Tu postulación fue enviada el {formatFecha(p.fecha_postulacion)}
           </div>
@@ -1498,8 +1715,12 @@ function StatusBanner({ postulacion: p }) {
       <div className='flex items-center gap-2.5 rounded-[10px] bg-emerald-400/[0.08] px-3 py-2'>
         <i className='ti ti-circle-check text-emerald-400' />
         <div>
-          <div className='text-[12.5px] font-semibold text-emerald-400'>¡Postulación aceptada!</div>
-          <div className='mt-0.5 text-[11px] text-neutral-500'>Ya eres parte del equipo.</div>
+          <div className='text-[12.5px] font-semibold text-emerald-400'>
+            ¡Postulación aceptada!
+          </div>
+          <div className='mt-0.5 text-[11px] text-neutral-500'>
+            Ya eres parte del equipo.
+          </div>
         </div>
       </div>
     );
@@ -1508,8 +1729,12 @@ function StatusBanner({ postulacion: p }) {
     <div className='flex items-center gap-2.5 rounded-[10px] bg-red-500/[0.06] px-3 py-2'>
       <i className='ti ti-x text-red-400' />
       <div>
-        <div className='text-[12.5px] font-semibold text-red-400'>Postulación no seleccionada</div>
-        <div className='mt-0.5 text-[11px] text-neutral-500'>Puedes explorar otros proyectos.</div>
+        <div className='text-[12.5px] font-semibold text-red-400'>
+          Postulación no seleccionada
+        </div>
+        <div className='mt-0.5 text-[11px] text-neutral-500'>
+          Puedes explorar otros proyectos.
+        </div>
       </div>
     </div>
   );

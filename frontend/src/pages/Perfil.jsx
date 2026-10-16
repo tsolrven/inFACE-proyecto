@@ -9,7 +9,7 @@ import {
   getInitials,
   avatarColor,
   etiquetaColor,
-} from '@/helpers/matchHelpers';
+} from '@/shared/lib/matchHelpers';
 import Modal, { ModalHeader, ModalBody } from '@/shared/components/ui/Modal';
 import EtiquetasPicker from '@/components/EtiquetasPicker';
 import PerfilTabs from '@/components/PerfilTabs';

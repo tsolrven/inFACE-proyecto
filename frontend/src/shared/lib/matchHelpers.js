@@ -1,5 +1,9 @@
 import React from 'react';
 
+// TODO: este archivo mezcla utilidades genéricas (avatar, colores, fechas) con
+// chips propios de project-match. Dividir en shared/lib/avatar.js, colors.js,
+// dates.js y features/project-match/components/StatusChips.jsx.
+
 /*
  * Genera las iniciales de un usuario a partir de su nombre.
  */
