@@ -39,46 +39,46 @@ export const protectedRoutes = [
 
   {
     path: '/comunidad/contador-publico-auditor',
-    component: lazy(() => import('@/pages/comunidades/ContPublicoAuditor')),
+    component: lazy(() => import('@/features/communities/pages/ContPublicoAuditor')),
   },
   {
     path: '/comunidad/derecho',
-    component: lazy(() => import('@/pages/comunidades/Derecho')),
+    component: lazy(() => import('@/features/communities/pages/Derecho')),
   },
   {
     path: '/comunidad/ingenieria-civil-informatica',
-    component: lazy(() => import('@/pages/comunidades/IngCivilInformatica')),
+    component: lazy(() => import('@/features/communities/pages/IngCivilInformatica')),
   },
   {
     path: '/comunidad/ingenieria-comercial',
-    component: lazy(() => import('@/pages/comunidades/IngComercial')),
+    component: lazy(() => import('@/features/communities/pages/IngComercial')),
   },
   {
     path: '/comunidad/ingenieria-ejecucion-computacion',
-    component: lazy(() => import('@/pages/comunidades/IngEjecComputacion')),
+    component: lazy(() => import('@/features/communities/pages/IngEjecComputacion')),
   },
 
-  { path: '/ayuda', component: lazy(() => import('@/pages/recursos/Ayuda')) },
+  { path: '/ayuda', component: lazy(() => import('@/pages/resources/HelpPage')) },
   {
     path: '/reportes',
-    component: lazy(() => import('@/pages/recursos/Reportes')),
+    component: lazy(() => import('@/features/reports/pages/ReportsPage')),
   },
   {
     path: '/acerca-de-inface',
-    component: lazy(() => import('@/pages/recursos/AcercaDeInFace')),
+    component: lazy(() => import('@/pages/resources/AboutPage')),
   },
 
   {
     path: '/reglas',
-    component: lazy(() => import('@/pages/legal/ReglasInFace')),
+    component: lazy(() => import('@/pages/legal/RulesPage')),
   },
   {
     path: '/privacidad',
-    component: lazy(() => import('@/pages/legal/PoliticasPrivacidad')),
+    component: lazy(() => import('@/pages/legal/PrivacyPolicyPage')),
   },
   {
     path: '/acuerdos-usuario',
-    component: lazy(() => import('@/pages/legal/AcuerdosUsuario')),
+    component: lazy(() => import('@/pages/legal/UserAgreementPage')),
   },
 ];
 
