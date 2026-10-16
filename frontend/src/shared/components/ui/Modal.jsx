@@ -10,13 +10,13 @@ export default function Modal({ open, onClose, children, maxWidth = '520px' }) {
 
   return createPortal(
     <div
-      className='fixed inset-0 z-[9999] flex items-start justify-center overflow-y-auto bg-[rgba(11,11,13,0.85)] p-5 pt-10 backdrop-blur-sm'
+      className='fixed inset-0 z-[9999] flex items-start justify-center overflow-y-auto bg-black/60 px-4 py-10 backdrop-blur-sm'
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
       <div
-        className='mb-10 w-full overflow-hidden rounded-[14px] border border-white/[0.08] bg-[#1E1E24] shadow-[0_24px_70px_rgba(0,0,0,0.7)]'
+        className='w-full overflow-hidden rounded-2xl border border-white/10 bg-[#1E1E24] shadow-[0_20px_60px_rgba(0,0,0,0.55)]'
         style={{ maxWidth }}
       >
         {children}
@@ -26,21 +26,48 @@ export default function Modal({ open, onClose, children, maxWidth = '520px' }) {
   );
 }
 
-export function ModalHeader({ children, onClose, rightContent }) {
+// encabezado: con `title` (y `subtitle` opcional) muestra el formato estándar;
+// sin `title` renderiza `children`, para encabezados personalizados
+export function ModalHeader({
+  title,
+  subtitle,
+  children,
+  onClose,
+  rightContent,
+}) {
   return (
-    <div className='flex items-center border-b border-white/[0.06] bg-white/[0.02] px-5 py-4'>
-      <div className='flex flex-1 items-center gap-2'>{children}</div>
-      <div className='ml-auto'>
+    <div
+      className={`flex justify-between gap-4 border-b border-white/[0.07] px-5 py-4 ${
+        title ? 'items-start' : 'items-center'
+      }`}
+    >
+      <div className='flex flex-1 items-center gap-2'>
+        {title ? (
+          <div>
+            <h2 className='text-[15px] font-bold text-neutral-100'>{title}</h2>
+            {subtitle && (
+              <p className='mt-0.5 text-[12px] text-neutral-500'>{subtitle}</p>
+            )}
+          </div>
+        ) : (
+          children
+        )}
+      </div>
+      <div className='ml-auto flex-shrink-0'>
         {rightContent ?? (
           <button
             type='button'
             onClick={onClose}
-            className='flex h-[30px] w-[30px] items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/[0.06] hover:text-neutral-100'
+            className='flex h-7 w-7 items-center justify-center rounded-full text-neutral-500 transition hover:bg-white/[0.06] hover:text-neutral-100'
           >
-            <i className='ti ti-x' />
+            <i className='ti ti-x text-base' />
           </button>
         )}
       </div>
     </div>
   );
+}
+
+export function ModalBody({ children, className = '' }) {
+  return <div className={`px-5 py-4 ${className}`}>{children}</div>;
 }
