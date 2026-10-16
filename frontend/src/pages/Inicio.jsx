@@ -14,7 +14,7 @@ import {
 } from '@/helpers/matchHelpers';
 import { colorPorRamo } from '@/shared/lib/courseColors';
 import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
-import { navSections } from '@/config/navConfig';
+import { navSections } from '@/app/navigation/navConfig';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HOME — vista general con preview de los módulos ya implementados

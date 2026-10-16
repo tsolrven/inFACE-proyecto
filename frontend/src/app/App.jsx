@@ -6,22 +6,22 @@ import {
   Navigate,
   useLocation,
 } from 'react-router-dom';
-import { useAuthStore } from './shared/auth/authStore';
-import Login from './pages/auth/Login';
-import Register from './pages/auth/Register';
-import Onboarding from './pages/Onboarding';
-import Landing from './pages/Landing';
-import Layout from './components/Layout';
-import ToastContainer from './shared/components/ui/Toast';
+import { useAuthStore } from '@/shared/auth/authStore';
+import Login from '@/features/auth/pages/Login';
+import Register from '@/features/auth/pages/Register';
+import Onboarding from '@/features/auth/pages/Onboarding';
+import Landing from '@/pages/Landing';
+import Layout from '@/app/layout/Layout';
+import ToastContainer from '@/shared/components/ui/Toast';
 import {
   allProtectedRoutes,
   extraRoutes,
   modalRoutes,
-} from './config/navConfig';
-import NotFound from './pages/NotFound';
+} from '@/app/navigation/navConfig';
+import NotFound from '@/pages/NotFound';
 
-const Perfil = lazy(() => import('./pages/Perfil'));
-const PerfilPublico = lazy(() => import('./pages/PerfilPublico'));
+const Perfil = lazy(() => import('@/pages/Perfil'));
+const PerfilPublico = lazy(() => import('@/pages/PerfilPublico'));
 
 function ProtectedRoute({ children }) {
   const usuario = useAuthStore((s) => s.usuario);
