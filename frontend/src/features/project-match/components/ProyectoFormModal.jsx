@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import Modal, { ModalHeader, ModalBody } from '@/shared/components/ui/Modal';
-import { listarEtiquetas } from '@/services/etiqueta';
+import { listarEtiquetas } from '@/shared/api/etiqueta.api';
 import { etiquetaColor } from '@/shared/lib/matchHelpers';
 
 const MODALIDAD_COLORES = {

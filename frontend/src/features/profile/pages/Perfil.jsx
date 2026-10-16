@@ -3,7 +3,7 @@ import {
   obtenerMiPerfil,
   actualizarMiPerfil,
   actualizarMisIntereses,
-} from '@/services/perfil';
+} from '@/shared/api/perfil.api';
 import { listarProyectos } from '@/features/project-match';
 import {
   getInitials,
@@ -11,8 +11,8 @@ import {
   etiquetaColor,
 } from '@/shared/lib/matchHelpers';
 import Modal, { ModalHeader, ModalBody } from '@/shared/components/ui/Modal';
-import EtiquetasPicker from '@/components/EtiquetasPicker';
-import PerfilTabs from '@/components/PerfilTabs';
+import EtiquetasPicker from '@/shared/components/EtiquetasPicker';
+import PerfilTabs from '@/features/profile/components/PerfilTabs';
 // TODO(Silvana): importar aquí tu servicio de apuntes, ej:
 // import { listarMisApuntes, listarMisRespuestas } from '../services/apunte';
 

@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/shared/auth/authStore';
-import { obtenerPerfilPublico } from '@/services/perfil';
+import { obtenerPerfilPublico } from '@/shared/api/perfil.api';
 import { listarProyectos } from '@/features/project-match';
 import {
   getInitials,
   avatarColor,
   etiquetaColor,
 } from '@/shared/lib/matchHelpers';
-import PerfilTabs from '@/components/PerfilTabs';
+import PerfilTabs from '@/features/profile/components/PerfilTabs';
 // TODO(Silvana): importar aquí su servicio, ej:
 // import { listarApuntesDeUsuario, listarRespuestasDeUsuario } from '../services/apunte';;
 

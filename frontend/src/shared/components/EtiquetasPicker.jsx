@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { listarEtiquetas } from '@/services/etiqueta';
+import { listarEtiquetas } from '@/shared/api/etiqueta.api';
 import { etiquetaColor } from '@/shared/lib/matchHelpers';
 
 export default function EtiquetasPicker({

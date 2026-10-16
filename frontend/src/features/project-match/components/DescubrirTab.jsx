@@ -6,7 +6,7 @@ import {
   listarHabilidadesEnDemanda,
   listarUsuariosSimilares,
 } from '@/features/project-match/api/matchingProyecto.api';
-import { obtenerMiPerfil } from '@/services/perfil';
+import { obtenerMiPerfil } from '@/shared/api/perfil.api';
 import {
   getInitials,
   avatarColor,

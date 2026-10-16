@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { Suspense } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { Login, Register, Onboarding } from '@/features/auth';
 import Layout from '@/app/layout/Layout';
@@ -9,9 +9,6 @@ import {
   OnboardingRoute,
   GuestRoute,
 } from '@/app/router/guards';
-
-const Perfil = lazy(() => import('@/pages/Perfil'));
-const PerfilPublico = lazy(() => import('@/pages/PerfilPublico'));
 
 export default function AppRoutes() {
   const location = useLocation();
@@ -67,15 +64,6 @@ export default function AppRoutes() {
                 />
               ),
           )}
-
-          <Route
-            path='/perfil'
-            element={<Perfil />}
-          />
-          <Route
-            path='/perfil/usuario/:nombreUsuario'
-            element={<PerfilPublico />}
-          />
         </Route>
 
         <Route
