@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { navSections, footerLinks } from '@/app/navigation/navConfig';
+import { navSections, footerLinks } from '@/shared/config/navigation';
 import { useUiStore } from '@/shared/stores/uiStore';
 
 const baseItemClasses =

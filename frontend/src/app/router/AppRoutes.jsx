@@ -2,11 +2,7 @@ import { lazy, Suspense } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { Login, Register, Onboarding } from '@/features/auth';
 import Layout from '@/app/layout/Layout';
-import {
-  allProtectedRoutes,
-  extraRoutes,
-  modalRoutes,
-} from '@/app/navigation/navConfig';
+import { protectedRoutes, extraRoutes, modalRoutes } from '@/app/router/routes';
 import NotFound from '@/pages/NotFound';
 import {
   ProtectedRoute,
@@ -55,20 +51,21 @@ export default function AppRoutes() {
             </ProtectedRoute>
           }
         >
-          {[...allProtectedRoutes, ...extraRoutes].map(({ path, element }) =>
-            path === '/' ? (
-              <Route
-                key={path}
-                index
-                element={element}
-              />
-            ) : (
-              <Route
-                key={path}
-                path={path}
-                element={element}
-              />
-            ),
+          {[...protectedRoutes, ...extraRoutes].map(
+            ({ path, component: Page }) =>
+              path === '/' ? (
+                <Route
+                  key={path}
+                  index
+                  element={<Page />}
+                />
+              ) : (
+                <Route
+                  key={path}
+                  path={path}
+                  element={<Page />}
+                />
+              ),
           )}
 
           <Route
@@ -90,11 +87,15 @@ export default function AppRoutes() {
       {backgroundLocation && (
         <Suspense fallback={null}>
           <Routes>
-            {modalRoutes.map(({ path, element }) => (
+            {modalRoutes.map(({ path, component: Modal }) => (
               <Route
                 key={path}
                 path={path}
-                element={<ProtectedRoute>{element}</ProtectedRoute>}
+                element={
+                  <ProtectedRoute>
+                    <Modal />
+                  </ProtectedRoute>
+                }
               />
             ))}
           </Routes>
