@@ -4,7 +4,7 @@ import {
   actualizarMiPerfil,
   actualizarMisIntereses,
 } from '@/services/perfil';
-import { listarProyectos } from '@/services/matchingProyecto';
+import { listarProyectos } from '@/features/project-match';
 import {
   getInitials,
   avatarColor,

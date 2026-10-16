@@ -26,15 +26,17 @@ export const protectedRoutes = [
 
   {
     path: '/match-proyectos',
-    component: lazy(() => import('@/pages/cultural/MatchProyectos')),
+    component: lazy(
+      () => import('@/features/project-match/pages/MatchProyectos'),
+    ),
   },
   {
     path: '/espacio-creativo',
-    component: lazy(() => import('@/pages/cultural/EspacioCreativo')),
+    component: lazy(() => import('@/features/creative-space/pages/EspacioCreativo')),
   },
   {
     path: '/marketplace',
-    component: lazy(() => import('@/pages/cultural/Marketplace')),
+    component: lazy(() => import('@/features/marketplace/pages/Marketplace')),
   },
 
   {

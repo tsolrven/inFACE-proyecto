@@ -11,7 +11,7 @@ import {
   listarPostulacionesProyecto,
   responderPostulacion,
   eliminarPostulacionRechazada,
-} from '@/services/matchingProyecto';
+} from '@/features/project-match/api/matchingProyecto.api';
 
 export default function PostulacionesModal({
   proyecto,

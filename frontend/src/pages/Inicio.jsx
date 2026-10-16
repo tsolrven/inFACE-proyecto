@@ -4,7 +4,7 @@ import { useAuthStore } from '@/shared/auth/authStore';
 import {
   listarProyectosRecomendados,
   listarProyectos,
-} from '@/services/matchingProyecto';
+} from '@/features/project-match';
 import { listarApuntes } from '@/features/materials';
 import {
   getInitials,

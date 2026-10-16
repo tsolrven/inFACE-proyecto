@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/shared/auth/authStore';
 import { obtenerPerfilPublico } from '@/services/perfil';
-import { listarProyectos } from '@/services/matchingProyecto';
+import { listarProyectos } from '@/features/project-match';
 import {
   getInitials,
   avatarColor,

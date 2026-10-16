@@ -14,7 +14,7 @@ import {
   toggleFavorito,
   listarFavoritos,
   obtenerProyecto,
-} from '@/services/matchingProyecto';
+} from '@/features/project-match/api/matchingProyecto.api';
 import { listarEtiquetas } from '@/services/etiqueta';
 import {
   getInitials,
@@ -25,12 +25,12 @@ import {
   formatFecha,
   tiempoRelativo,
 } from '@/shared/lib/matchHelpers';
-import ProyectoFormModal from './ProyectoFormModal';
-import DetalleProyecto from './DetalleProyecto';
-import PostularModal from './PostularModal';
-import PostulacionesModal from './PostulacionesModal';
-import IntegrantesModal from './IntegrantesModal';
-import DescubrirTab from './DescubrirTab';
+import ProyectoFormModal from '../components/ProyectoFormModal';
+import DetalleProyecto from '../components/DetalleProyecto';
+import PostularModal from '../components/PostularModal';
+import PostulacionesModal from '../components/PostulacionesModal';
+import IntegrantesModal from '../components/IntegrantesModal';
+import DescubrirTab from '../components/DescubrirTab';
 import ConfirmDialog from '@/shared/components/ui/ConfirmDialog';
 
 const TABS = [

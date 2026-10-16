@@ -12,7 +12,7 @@ import {
 import {
   listarIntegrantes,
   expulsarIntegrante,
-} from '@/services/matchingProyecto';
+} from '@/features/project-match/api/matchingProyecto.api';
 
 export default function IntegrantesModal({
   proyecto,

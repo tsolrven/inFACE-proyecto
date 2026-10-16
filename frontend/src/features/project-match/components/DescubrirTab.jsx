@@ -5,7 +5,7 @@ import {
   descartarProyecto,
   listarHabilidadesEnDemanda,
   listarUsuariosSimilares,
-} from '@/services/matchingProyecto';
+} from '@/features/project-match/api/matchingProyecto.api';
 import { obtenerMiPerfil } from '@/services/perfil';
 import {
   getInitials,
