@@ -9,8 +9,8 @@ const MaterialsPage = lazy(
 
 export const protectedRoutes = [
   { path: '/', component: lazy(() => import('@/features/home/pages/Inicio')) },
-  { path: '/populares', component: lazy(() => import('@/pages/Populares')) },
-  { path: '/explorar', component: lazy(() => import('@/pages/Explorar')) },
+  { path: '/populares', component: lazy(() => import('@/pages/PopularPage')) },
+  { path: '/explorar', component: lazy(() => import('@/pages/ExplorePage')) },
 
   {
     path: '/foro-por-ramos',

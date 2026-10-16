@@ -3,7 +3,7 @@ import { Routes, Route, useLocation } from 'react-router-dom';
 import { Login, Register, Onboarding } from '@/features/auth';
 import Layout from '@/app/layout/Layout';
 import { protectedRoutes, extraRoutes, modalRoutes } from '@/app/router/routes';
-import NotFound from '@/pages/NotFound';
+import NotFound from '@/pages/NotFoundPage';
 import {
   ProtectedRoute,
   OnboardingRoute,

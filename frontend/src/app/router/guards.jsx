@@ -1,6 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/shared/auth/authStore';
-import Landing from '@/pages/Landing';
+import Landing from '@/pages/LandingPage';
 
 export function ProtectedRoute({ children }) {
   const usuario = useAuthStore((s) => s.usuario);
