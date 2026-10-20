@@ -9,9 +9,18 @@ import ApiResponse from '../../utils/apiResponse.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function listar(req, res, next) {
   try {
-    const { ramo_id, tipo, tipo_archivo, hashtag, orden, pagina, limite } =
-      req.query;
+    const {
+      carrera_id,
+      ramo_id,
+      tipo,
+      tipo_archivo,
+      hashtag,
+      orden,
+      pagina,
+      limite,
+    } = req.query;
     const { apuntes, total } = await listarApuntes({
+      carrera_id: carrera_id ?? req.usuario.carrera_id,
       ramo_id,
       tipo,
       tipo_archivo,
@@ -20,7 +29,6 @@ async function listar(req, res, next) {
       pagina,
       limite,
       usuario_id: req.usuario.id,
-      carrera_id: req.usuario.carrera_id,
     });
     return ApiResponse.paginated(res, apuntes, total, pagina, limite);
   } catch (err) {
@@ -30,11 +38,7 @@ async function listar(req, res, next) {
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function detalle(req, res, next) {
   try {
-    const apunte = await obtenerApunte(
-      req.params.id,
-      req.usuario.id,
-      req.usuario.carrera_id,
-    );
+    const apunte = await obtenerApunte(req.params.id, req.usuario.id);
     return ApiResponse.success(res, apunte);
   } catch (err) {
     next(err);

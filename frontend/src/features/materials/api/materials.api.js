@@ -8,6 +8,7 @@ function buildQuery(params = {}) {
 }
 
 export async function listarApuntes({
+  carrera_id,
   ramo_id,
   tipo,
   tipo_archivo,
@@ -17,6 +18,7 @@ export async function listarApuntes({
   limite = 20,
 } = {}) {
   const qs = buildQuery({
+    carrera_id,
     ramo_id,
     tipo,
     tipo_archivo,

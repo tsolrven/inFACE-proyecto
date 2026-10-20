@@ -102,34 +102,15 @@ async function listarApuntes({
   };
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-async function obtenerApunte(id, usuario_id, carrera_id) {
+async function obtenerApunte(id, usuario_id) {
   const apunte = await prisma.apunte.findUnique({
     where: { id },
-    include: {
-      autor: { include: { perfil: { select: { nombre_usuario: true } } } },
-      ramo: {
-        select: {
-          id: true,
-          nombre: true,
-          codigo: true,
-          semestre: true,
-          ramo_carrera: { select: { carrera_id: true } },
-        },
-      },
-      hashtags: { include: { hashtag: { select: { nombre: true } } } },
-    },
+    include: INCLUDE_APUNTE,
   });
   if (!apunte) throw new NotFoundError('Apunte');
 
-  const perteneceASuCarrera = apunte.ramo.ramo_carrera.some(
-    (rc) => rc.carrera_id === carrera_id,
-  );
-  if (!perteneceASuCarrera) {
-    throw new NotFoundError('Apunte');
-  }
-
-  const [apunteFormateado] = await formatearApuntes([apunte], usuario_id);
-  return apunteFormateado;
+  const [formateado] = await formatearApuntes([apunte], usuario_id);
+  return formateado;
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function crearApunte({
