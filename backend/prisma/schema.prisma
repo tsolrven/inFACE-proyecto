@@ -309,6 +309,7 @@ model Proyecto {
   fecha_inicio         DateTime?
   fecha_fin            DateTime?
   fecha_creacion       DateTime @default(now())
+  votos_neto Int @default(0)
 
   creador              Usuario               @relation(fields: [creador_id], references: [id])
   postulaciones        PostulacionProyecto[]

@@ -30,6 +30,15 @@ const CONTENT_REGISTRY = {
     previewField: 'contenido',
     allowsComments: false,
   },
+  proyecto: {
+    modelName: 'proyecto',
+    tableName: 'proyectos',
+    label: 'Proyecto',
+    ownerField: 'creador_id',
+    votesField: 'votos_neto',
+    previewField: 'titulo_proyecto',
+    allowsComments: true,
+  },
 };
 // ────────────────────────────────────────────────────────────────────────────────────────
 function obtenerEntradaRegistro(tipo_contenido) {

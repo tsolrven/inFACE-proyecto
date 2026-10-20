@@ -56,6 +56,7 @@ async function listarController(req, res) {
     integrante_id,
     pagina: Number(pagina) || 1,
     limite: Number(limite) || 10,
+    usuario_id: req.usuario?.id,
   });
 
   res.json({
@@ -74,6 +75,7 @@ async function listarMisProyectosController(req, res) {
     creador_id: req.usuario.id,
     pagina: 1,
     limite: 100,
+    usuario_id: req.usuario.id,
   });
 
   res.json({

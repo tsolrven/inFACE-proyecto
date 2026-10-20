@@ -17,6 +17,10 @@ import {
 } from '@/shared/lib/matchHelpers';
 import Modal, { ModalHeader, ModalBody } from '@/shared/components/ui/Modal';
 import armadilloArma from '@/assets/armadillo.png';
+import {
+  useInteraccionesProyecto,
+  valoresEfectivos,
+} from '@/features/project-match/store/interaccionesStore';
 
 const UMBRAL_SWIPE = 110; // px de arrastre necesarios para confirmar un swipe
 
@@ -35,6 +39,7 @@ export default function DescubrirTab({
   search = '',
 }) {
   const navigate = useNavigate();
+  const votarProyecto = useInteraccionesProyecto((s) => s.votar);
 
   const [cola, setCola] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -170,9 +175,12 @@ export default function DescubrirTab({
     if (!actual || salida) return;
     setSalida(direccion);
     if (direccion === 'derecha') {
-      // "me interesa" = guardarlo en favoritos (si no lo estaba ya) para revisarlo con calma;
-      // el proyecto no vuelve a aparecer aquí porque el backend excluye los ya favoritos
-      if (!favoritosIds.has(actual.id)) onToggleFavorito(actual.id);
+      // "me gusta" = voto positivo (si no lo tenía ya). El proyecto no vuelve a aparecer
+      // en Descubrir porque el backend excluye los proyectos que el usuario ya votó.
+      // Guardar es aparte: botón de marcador en la esquina de la tarjeta.
+      const cambios = useInteraccionesProyecto.getState().porId[actual.id];
+      const { mi_voto, votos_neto } = valoresEfectivos(actual, cambios);
+      if (mi_voto !== 'up') votarProyecto(actual.id, 'up', { mi_voto, votos_neto });
     } else {
       // "no me interesa" = se descarta de forma permanente, no vuelve a mostrarse en Descubrir
       descartarProyecto(actual.id).catch((err) => {
@@ -362,6 +370,30 @@ export default function DescubrirTab({
                   proyecto={actual}
                   interesesIds={interesesIds}
                 />
+
+                {/* guardar (favorito): en la esquina, sin sacar la tarjeta del mazo */}
+                <button
+                  type='button'
+                  title={
+                    favoritosIds.has(actual.id)
+                      ? 'Quitar de guardados'
+                      : 'Guardar para después'
+                  }
+                  aria-label={
+                    favoritosIds.has(actual.id)
+                      ? 'Quitar de guardados'
+                      : 'Guardar para después'
+                  }
+                  aria-pressed={favoritosIds.has(actual.id)}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={() => onToggleFavorito(actual.id)}
+                  className={`absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full border transition ${favoritosIds.has(actual.id)
+                      ? 'border-pink-500 bg-pink-500 text-white'
+                      : 'border-white/[0.1] bg-[#17171B]/80 text-neutral-400 hover:text-neutral-100'
+                    }`}
+                >
+                  <i className='ti ti-bookmark text-[17px]' />
+                </button>
               </div>
             </div>
 
@@ -393,11 +425,11 @@ export default function DescubrirTab({
                   </button>
                 )}
               <button
-                title='Guardar'
+                title='Me gusta'
                 onClick={() => handleSwipe('derecha')}
                 className='flex h-12 w-12 items-center justify-center rounded-full border border-pink-400/30 bg-pink-500/10 text-pink-400 transition hover:bg-pink-500/20'
               >
-                <i className='ti ti-bookmark text-[20px]' />
+                <i className='ti ti-heart text-[20px]' />
               </button>
             </div>
 
@@ -428,7 +460,7 @@ export default function DescubrirTab({
               ¡Viste todas las recomendaciones!
             </h3>
             <p className='mb-5 max-w-[280px] text-[13px] leading-relaxed text-neutral-600'>
-              Puedes revisar los que te interesaron en "Guardados" o explorar
+              Puedes revisar los que guardaste en "Guardados" o explorar
               todos los proyectos abiertos.
             </p>
             <div className='flex gap-2'>
@@ -771,7 +803,7 @@ function TarjetaProyecto({ proyecto: p, interesesIds }) {
       <div className='grid min-h-0 flex-1 grid-cols-1 items-center gap-6 md:grid-cols-[minmax(0,1fr)_200px_200px]'>
         {/* INFO */}
         <div className='flex min-w-0 flex-col justify-center gap-2.5'>
-          <div className='line-clamp-2 text-[19px] font-bold leading-tight text-neutral-100 md:text-[21px]'>
+          <div className='line-clamp-2 pr-10 text-[19px] font-bold leading-tight text-neutral-100 md:pr-0 md:text-[21px]'>
             {p.titulo}
           </div>
 
@@ -792,11 +824,10 @@ function TarjetaProyecto({ proyecto: p, interesesIds }) {
                 return (
                   <span
                     key={et.id}
-                    className={`rounded-full border px-2.5 py-1 text-[10.5px] font-semibold ${c.bg} ${c.text} ${
-                      coincide
+                    className={`rounded-full border px-2.5 py-1 text-[10.5px] font-semibold ${c.bg} ${c.text} ${coincide
                         ? `${c.border} ring-1 ring-inset ring-current`
                         : 'border-transparent'
-                    }`}
+                      }`}
                   >
                     {coincide && <i className='ti ti-check mr-1 text-[9px]' />}
                     {et.nombre}

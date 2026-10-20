@@ -8,6 +8,14 @@ export async function votarApunte(apunteId, tipo) {
   return res.data;
 }
 
+export async function votarProyecto(proyectoId, tipo) {
+  const res = await apiFetch(`/votos/proyecto/${proyectoId}`, {
+    method: 'POST',
+    body: { tipo },
+  });
+  return res.data;
+}
+
 export async function votarComentario(comentarioId, tipo) {
   const res = await apiFetch(`/votos/comentario/${comentarioId}`, {
     method: 'POST',

@@ -22,6 +22,7 @@ const ANCHO_MENU = 150;
 export default function CommentThread({
   comentario,
   apunteId,
+  tipoContenido = 'apunte',
   onNuevaRespuesta,
   onComentarioEliminado,
 }) {
@@ -115,10 +116,11 @@ export default function CommentThread({
     if (!textoRespuesta.trim()) return;
     setEnviando(true);
     try {
-      const nueva = await crearComentario(apunteId, {
-        contenido: textoRespuesta,
-        padre_id: comentario.id,
-      });
+      const nueva = await crearComentario(
+        apunteId,
+        { contenido: textoRespuesta, padre_id: comentario.id },
+        tipoContenido,
+      );
       onNuevaRespuesta(comentario.id, nueva);
       setTextoRespuesta('');
       setRespondiendo(false);
@@ -182,17 +184,17 @@ export default function CommentThread({
 
           {comentario.respuestas?.length > 0 && (
             <div
-              className={`mt-1 flex flex-col gap-3 ${
-                comentario.nivel < MAX_NIVEL_INDENTADO
+              className={`mt-1 flex flex-col gap-3 ${comentario.nivel < MAX_NIVEL_INDENTADO
                   ? 'border-l border-dashed border-white/[0.08] pl-4'
                   : ''
-              }`}
+                }`}
             >
               {comentario.respuestas.map((respuesta) => (
                 <CommentThread
                   key={respuesta.id}
                   comentario={respuesta}
                   apunteId={apunteId}
+                  tipoContenido={tipoContenido}
                   onNuevaRespuesta={onNuevaRespuesta}
                   onComentarioEliminado={onComentarioEliminado}
                 />
@@ -268,9 +270,8 @@ export default function CommentThread({
             <button
               type='button'
               onClick={() => handleVotar('up')}
-              className={`flex items-center transition-colors hover:text-[#FF6B35] ${
-                votoLocal === 'up' ? 'text-[#FF6B35]' : 'text-neutral-600'
-              }`}
+              className={`flex items-center transition-colors hover:text-[#FF6B35] ${votoLocal === 'up' ? 'text-[#FF6B35]' : 'text-neutral-600'
+                }`}
             >
               <i className='ti ti-arrow-big-up text-[13px]' />
             </button>
@@ -280,9 +281,8 @@ export default function CommentThread({
             <button
               type='button'
               onClick={() => handleVotar('down')}
-              className={`flex items-center transition-colors hover:text-[#7B8CDE] ${
-                votoLocal === 'down' ? 'text-[#7B8CDE]' : 'text-neutral-600'
-              }`}
+              className={`flex items-center transition-colors hover:text-[#7B8CDE] ${votoLocal === 'down' ? 'text-[#7B8CDE]' : 'text-neutral-600'
+                }`}
             >
               <i className='ti ti-arrow-big-down text-[13px]' />
             </button>
@@ -339,17 +339,17 @@ export default function CommentThread({
 
         {comentario.respuestas?.length > 0 && (
           <div
-            className={`mt-3 flex flex-col gap-3 ${
-              comentario.nivel < MAX_NIVEL_INDENTADO
+            className={`mt-3 flex flex-col gap-3 ${comentario.nivel < MAX_NIVEL_INDENTADO
                 ? 'border-l border-dashed border-white/[0.08] pl-4'
                 : ''
-            }`}
+              }`}
           >
             {comentario.respuestas.map((respuesta) => (
               <CommentThread
                 key={respuesta.id}
                 comentario={respuesta}
                 apunteId={apunteId}
+                tipoContenido={tipoContenido}
                 onNuevaRespuesta={onNuevaRespuesta}
                 onComentarioEliminado={onComentarioEliminado}
               />

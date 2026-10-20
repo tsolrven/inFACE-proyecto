@@ -1,5 +1,7 @@
 import { prisma } from '../../config/configDb.js';
 import logger from '../../lib/logger.js';
+import { obtenerEnriquecimiento } from '../../shared/content/contentEnrichment.js';
+import { eliminarContenido } from '../../shared/content/contentCleanup.js';
 import {
   NotFoundError,
   ForbiddenError,
@@ -24,6 +26,27 @@ import {
   calcularPorcentajeMatchPerfiles,
   formatearUsuarioSimilar,
 } from '../../helpers/matchingProyecto.helper.js';
+
+//──────────────────────────────────────────────────────────────────────────────
+// VOTOS Y COMENTARIOS (módulo compartido: shared/votes y shared/comments)
+//──────────────────────────────────────────────────────────────────────────────
+
+//* agrega a cada proyecto ya formateado: mi_voto y comentarios_count
+//* (votos_neto ya viene en formatearProyecto). Una sola consulta por lista.
+async function agregarInteracciones(proyectosFormateados, usuario_id) {
+  if (proyectosFormateados.length === 0) return proyectosFormateados;
+  const ids = proyectosFormateados.map((p) => p.id);
+  const { mapVotos, mapComentarios } = await obtenerEnriquecimiento(
+    'proyecto',
+    ids,
+    usuario_id,
+  );
+  for (const p of proyectosFormateados) {
+    p.mi_voto = mapVotos.get(p.id) ?? null;
+    p.comentarios_count = mapComentarios.get(p.id) ?? 0;
+  }
+  return proyectosFormateados;
+}
 
 //──────────────────────────────────────────────────────────────────────────────
 // PROYECTOS
@@ -71,6 +94,7 @@ async function obtenerProyectos({
   integrante_id,
   pagina = 1,
   limite = 10,
+  usuario_id,
 }) {
   const skip = (pagina - 1) * limite;
   const hoy = new Date();
@@ -127,8 +151,13 @@ async function obtenerProyectos({
     prisma.proyecto.count({ where }),
   ]);
 
+  const datos = await agregarInteracciones(
+    proyectos.map(formatearProyecto),
+    usuario_id,
+  );
+
   return {
-    datos: proyectos.map(formatearProyecto),
+    datos,
     total,
     pagina,
     total_paginas: Math.ceil(total / limite),
@@ -146,6 +175,7 @@ async function obtenerProyectoPorId(id, usuario_id) {
   if (!proyecto) throw new NotFoundError('Proyecto');
 
   const formateado = formatearProyecto(proyecto);
+  await agregarInteracciones([formateado], usuario_id);
 
   //* total histórico de PERSONAS distintas que se han postulado (no de filas: alguien
   //* rechazado antes puede volver a postularse, y eso no debería contarse dos veces),
@@ -208,11 +238,18 @@ async function eliminarProyecto(id, usuario_id, rol) {
   if (proyecto.creador_id !== usuario_id && rol !== 'superadmin')
     throw new ForbiddenError('No tienes permiso para eliminar este proyecto');
 
-  await prisma.proyectoEtiqueta.deleteMany({ where: { proyecto_id: id } });
-  await prisma.postulacionProyecto.deleteMany({ where: { proyecto_id: id } });
-  await prisma.integranteProyecto.deleteMany({ where: { proyecto_id: id } });
-  await prisma.favoritoProyecto.deleteMany({ where: { proyecto_id: id } });
-  await prisma.proyecto.delete({ where: { id } });
+  //* todo en una transacción: si algo falla no queda el proyecto a medias.
+  //* eliminarContenido borra comentarios, votos y reportes del proyecto
+  //* (tablas polimórficas sin FK, no se borran solas).
+  await prisma.$transaction(async (tx) => {
+    await eliminarContenido(tx, 'proyecto', id);
+    await tx.proyectoEtiqueta.deleteMany({ where: { proyecto_id: id } });
+    await tx.postulacionProyecto.deleteMany({ where: { proyecto_id: id } });
+    await tx.integranteProyecto.deleteMany({ where: { proyecto_id: id } });
+    await tx.favoritoProyecto.deleteMany({ where: { proyecto_id: id } });
+    await tx.descarteProyecto.deleteMany({ where: { proyecto_id: id } });
+    await tx.proyecto.delete({ where: { id } });
+  });
 
   logger.info('Proyecto eliminado', {
     proyecto_id: id,
@@ -372,13 +409,13 @@ async function obtenerPostulacionesUsuario(usuario_id) {
 
   const integracionesActivas = proyectosAceptados.length
     ? await prisma.integranteProyecto.findMany({
-        where: {
-          usuario_id,
-          proyecto_id: { in: proyectosAceptados },
-          fue_expulsado: false,
-        },
-        select: { proyecto_id: true },
-      })
+      where: {
+        usuario_id,
+        proyecto_id: { in: proyectosAceptados },
+        fue_expulsado: false,
+      },
+      select: { proyecto_id: true },
+    })
     : [];
   const proyectosDondeSigoActivo = new Set(
     integracionesActivas.map((i) => i.proyecto_id),
@@ -652,7 +689,10 @@ async function obtenerFavoritos(usuario_id) {
     orderBy: { fecha_creacion: 'desc' },
   });
 
-  return favoritos.map((f) => formatearProyecto(f.proyecto));
+  return agregarInteracciones(
+    favoritos.map((f) => formatearProyecto(f.proyecto)),
+    usuario_id,
+  );
 }
 
 //──────────────────────────────────────────────────────────────────────────────
@@ -694,7 +734,7 @@ async function obtenerProyectosRecomendados(
   });
   const etiquetasUsuarioIds = intereses.map((i) => i.etiqueta_id);
 
-  const [postulacionesActivas, integraciones, descartes, favoritos] =
+  const [postulacionesActivas, integraciones, descartes, favoritos, votados] =
     await Promise.all([
       prisma.postulacionProyecto.findMany({
         where: {
@@ -716,6 +756,12 @@ async function obtenerProyectosRecomendados(
         where: { usuario_id },
         select: { proyecto_id: true },
       }),
+      //* "me gusta" en Descubrir (o cualquier voto, a favor o en contra, en otro lugar):
+      //* ya se pronunció sobre este proyecto, no se le vuelve a mostrar en el mazo
+      prisma.voto.findMany({
+        where: { usuario_id, tipo_contenido: 'proyecto' },
+        select: { contenido_id: true },
+      }),
     ]);
 
   const idsExcluidos = [
@@ -723,6 +769,7 @@ async function obtenerProyectosRecomendados(
     ...integraciones.map((i) => i.proyecto_id),
     ...descartes.map((d) => d.proyecto_id),
     ...favoritos.map((f) => f.proyecto_id),
+    ...votados.map((v) => v.contenido_id),
   ];
 
   const proyectos = await prisma.proyecto.findMany({
@@ -742,7 +789,10 @@ async function obtenerProyectosRecomendados(
 
   const total = formateados.length;
   const skip = (pagina - 1) * limite;
-  const datos = formateados.slice(skip, skip + limite);
+  const datos = await agregarInteracciones(
+    formateados.slice(skip, skip + limite),
+    usuario_id,
+  );
 
   return {
     datos,
