@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import Modal, { ModalHeader } from '@/shared/components/ui/Modal';
 import CommentThread from '@/shared/post/comments/CommentThread';
 import { obtenerApunte } from '@/features/materials/api/materials.api';
@@ -28,6 +28,7 @@ import ReportModal from '@/shared/moderation/ReportModal';
 import VotePill from '@/shared/post/votes/VotePill';
 import CodeViewer from '@/features/materials/components/CodeViewer';
 import BookmarkIcon from '@/shared/post/bookmarks/BookmarkIcon';
+import ShareButton from '@/shared/post/share/ShareButton';
 import { esStaff } from '@/shared/auth/roles';
 
 function insertarRespuesta(comentarios, padreId, nueva) {
@@ -160,8 +161,11 @@ export default function MaterialDetailModal() {
     }
   }
 
+  const location = useLocation();
+
   function handleClose() {
-    navigate(-1);
+    if (location.state?.backgroundLocation) navigate(-1);
+    else navigate('/repositorio-materiales', { replace: true });
   }
 
   async function handleGuardar() {
@@ -245,7 +249,7 @@ export default function MaterialDetailModal() {
     setErrorEliminar(null);
     try {
       await eliminarApunteDelFeed(id);
-      navigate(-1);
+      handleClose();
     } catch (err) {
       setErrorEliminar(err.message || 'No se pudo eliminar el material.');
       setEliminando(false);
@@ -433,12 +437,10 @@ export default function MaterialDetailModal() {
                 {contarComentarios(comentarios)}
               </button>
 
-              <button
-                type='button'
-                className='flex items-center gap-1.5 rounded-full bg-white/[0.06] px-3 py-1.5 transition-colors hover:bg-white/[0.1] hover:text-neutral-200'
-              >
-                <i className='ti ti-share-3 text-[13px]' /> Compartir
-              </button>
+              <ShareButton
+                path={`/repositorio-materiales/${apunte.id}`}
+                titulo={apunte.titulo}
+              />
 
               <span className='ml-auto flex items-center gap-1'>
                 <i className='ti ti-download text-[13px]' />{' '}

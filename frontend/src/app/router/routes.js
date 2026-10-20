@@ -104,6 +104,12 @@ export const extraRoutes = [
     path: '/perfil/usuario/:nombreUsuario',
     component: lazy(() => import('@/features/profile/pages/PerfilPublico')),
   },
+  {
+    path: '/repositorio-materiales/:id',
+    component: lazy(
+      () => import('@/features/materials/pages/MaterialDetailPage'),
+    ),
+  },
 ];
 
 // rutas que se renderizan COMO MODAL, pero que también funcionan como página normal si alguien entra directo al link.

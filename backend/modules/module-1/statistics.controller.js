@@ -1,3 +1,9 @@
+import {
+  obtenerTopColaboradores,
+  obtenerHashtagsPopulares,
+} from './statistics.service.js';
+import ApiResponse from '../../utils/apiResponse.js';
+
 async function topColaboradores(req, res, next) {
   try {
     const carrera_id = req.query.carrera_id ?? req.usuario.carrera_id;
@@ -17,3 +23,5 @@ async function hashtagsPopulares(req, res, next) {
     next(err);
   }
 }
+
+export { topColaboradores, hashtagsPopulares };

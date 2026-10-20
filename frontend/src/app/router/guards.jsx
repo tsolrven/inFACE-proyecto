@@ -11,12 +11,13 @@ export function ProtectedRoute({ children }) {
     if (location.pathname === '/') {
       return <Landing />;
     }
-    return (
-      <Navigate
-        to='/login'
-        replace
-      />
-    );
+  return (
+    <Navigate
+      to='/login'
+      replace
+      state={{ from: location }}
+    />
+  );
   }
 
   // mientras no configure sus intereses, no puede entrar al resto de la app
@@ -55,11 +56,12 @@ export function OnboardingRoute({ children }) {
 
 export function GuestRoute({ children }) {
   const usuario = useAuthStore((s) => s.usuario);
-  return !usuario ? (
-    children
-  ) : (
+  const location = useLocation();
+  if (!usuario) return children;
+  const from = location.state?.from;
+  return (
     <Navigate
-      to='/'
+      to={from ? `${from.pathname}${from.search}` : '/'}
       replace
     />
   );

@@ -19,6 +19,7 @@ import ReportModal from '@/shared/moderation/ReportModal';
 import VotePill from '@/shared/post/votes/VotePill';
 import CodeViewer from '@/features/materials/components/CodeViewer';
 import BookmarkIcon from '@/shared/post/bookmarks/BookmarkIcon';
+import ShareButton from '@/shared/post/share/ShareButton';
 import { esStaff } from '@/shared/auth/roles';
 
 export default function MaterialCard({ apunte, onQuitarDeGuardados }) {
@@ -257,13 +258,10 @@ export default function MaterialCard({ apunte, onQuitarDeGuardados }) {
             {apunte.comentarios_count}
           </button>
 
-          <button
-            type='button'
-            onClick={(e) => e.stopPropagation()}
-            className='flex items-center gap-1.5 rounded-full bg-white/[0.06] px-3 py-1.5 transition-colors hover:bg-white/[0.1] hover:text-neutral-200'
-          >
-            <i className='ti ti-share-3 text-[13px]' /> Compartir
-          </button>
+          <ShareButton
+            path={`/repositorio-materiales/${apunte.id}`}
+            titulo={apunte.titulo}
+          />
 
           <span
             onClick={(e) => e.stopPropagation()}
