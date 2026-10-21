@@ -47,7 +47,8 @@ const errorHandler = (err, req, res, next) => {
   if (err.name === 'MulterError') {
     const mensajes = {
       LIMIT_FILE_SIZE: 'El archivo supera el tamaño máximo permitido (20 MB)',
-      LIMIT_UNEXPECTED_FILE: 'Campo de archivo inesperado',
+      LIMIT_UNEXPECTED_FILE:
+        'Enviaste demasiados archivos o un campo de archivo inesperado',
     };
     err = new BadRequestError(
       mensajes[err.code] || 'Error al subir el archivo',

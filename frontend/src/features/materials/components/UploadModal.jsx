@@ -3,7 +3,6 @@ import Modal, { ModalHeader } from '@/shared/components/ui/Modal';
 import Button from '@/shared/components/ui/Button';
 import { listarRamosPorCarrera } from '@/shared/api/catalog.api';
 import { crearApunte } from '@/features/materials/api/materials.api';
-import { subirArchivos } from '@/features/materials/api/files.api';
 import { useQueryClient } from '@tanstack/react-query';
 import CodeEditor from '@/features/materials/components/CodeEditor';
 import BadgeSelector, {
@@ -159,35 +158,23 @@ export default function UploadModal({ open, onClose, carreraId }) {
 
     setEnviando(true);
     try {
-      const hashtags = normalizarHashtags(hashtagsTexto);
-
-      const apunte = await crearApunte({
-        titulo,
-        descripcion,
-        ramo_id: ramoId,
-        hashtags,
-        links: fuentes.link ? normalizarLinks(links) : undefined,
-        codigo_snippet: fuentes.snippet ? codigoSnippet : undefined,
-        lenguaje_snippet: fuentes.snippet ? lenguajeSnippet : undefined,
-        etiquetas_visuales: etiquetasVisuales,
-      });
-
-      let huboFallidos = false;
-      if (fuentes.file && archivos.length > 0) {
-        const { fallidos } = await subirArchivos(apunte.id, archivos);
-        if (fallidos.length > 0) {
-          huboFallidos = true;
-          setError(
-            `El material se creó, pero ${fallidos.length} archivo(s) no se pudieron subir. Puedes agregarlos después.`,
-          );
-        }
-      }
+      await crearApunte(
+        {
+          titulo,
+          descripcion,
+          ramo_id: ramoId,
+          hashtags: normalizarHashtags(hashtagsTexto),
+          links: fuentes.link ? normalizarLinks(links) : undefined,
+          codigo_snippet: fuentes.snippet ? codigoSnippet : undefined,
+          lenguaje_snippet: fuentes.snippet ? lenguajeSnippet : undefined,
+          etiquetas_visuales: etiquetasVisuales,
+        },
+        fuentes.file ? archivos : [],
+      );
 
       await qc.invalidateQueries({ queryKey: ['apunte', 'list'] });
-      if (!huboFallidos) {
-        resetForm();
-        onClose();
-      }
+      resetForm();
+      onClose();
     } catch (err) {
       setError(err.message || 'Ocurrió un error al publicar el material.');
     } finally {

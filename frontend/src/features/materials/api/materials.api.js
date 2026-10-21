@@ -37,8 +37,11 @@ export async function obtenerApunte(id, { signal } = {}) {
   return res.data;
 }
 
-export async function crearApunte(payload) {
-  const res = await apiFetch('/apuntes', { method: 'POST', body: payload });
+export async function crearApunte(payload, archivos = []) {
+  const formData = new FormData();
+  formData.append('datos', JSON.stringify(payload));
+  archivos.forEach((f) => formData.append('archivos', f));
+  const res = await apiFetch('/apuntes', { method: 'POST', body: formData });
   return res.data;
 }
 

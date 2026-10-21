@@ -51,6 +51,7 @@ async function crear(req, res, next) {
       autor_id: req.usuario.id,
       carrera_id: req.usuario.carrera_id,
       ...req.body,
+      archivos: req.files ?? [],
     });
     return ApiResponse.created(res, apunte);
   } catch (err) {

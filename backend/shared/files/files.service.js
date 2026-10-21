@@ -26,6 +26,18 @@ function formatearArchivo(archivo) {
   };
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
+// datos de la fila Archivo a partir de lo que dejó multer
+function datosArchivo(file) {
+  const tipo_mime = obtenerMimePorExtension(file.originalname);
+  if (!tipo_mime) throw new BadRequestError('No se reconoce el tipo de archivo');
+  return {
+    nombre_archivo: file.originalname,
+    ruta_url: `/uploads/${file.filename}`,
+    tipo_mime,
+    tamanio: file.size,
+  };
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
 async function subirArchivo({
   tipo_contenido,
   contenido_id,
@@ -51,21 +63,8 @@ async function subirArchivo({
     throw new BadRequestError(`No puedes subir más de ${max} archivos`);
   }
 
-  const tipo_mime = obtenerMimePorExtension(file.originalname);
-
-  if (!tipo_mime) {
-    throw new BadRequestError('No se reconoce el tipo de archivo');
-  }
-
   const archivo = await prisma.archivo.create({
-    data: {
-      tipo_contenido,
-      contenido_id,
-      nombre_archivo: file.originalname,
-      ruta_url: `/uploads/${file.filename}`,
-      tipo_mime,
-      tamanio: file.size,
-    },
+    data: { tipo_contenido, contenido_id, ...datosArchivo(file) },
   });
 
   logger.info('Archivo subido', {
@@ -147,4 +146,5 @@ export {
   descargarArchivo,
   borrarArchivosFisicos,
   formatearArchivo,
+  datosArchivo,
 };

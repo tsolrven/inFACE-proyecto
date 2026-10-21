@@ -1,10 +1,15 @@
 import { prisma } from '../../config/configDb.js';
-import { NotFoundError, ForbiddenError } from '../../errors/appError.js';
+import {
+  NotFoundError,
+  ForbiddenError,
+  BadRequestError,
+} from '../../errors/appError.js'; 
 import logger from '../../lib/logger.js';
 import { MIME_MAP } from './fileType.helper.js';
 import {
   borrarArchivosFisicos,
   formatearArchivo,
+  datosArchivo, 
 } from '../../shared/files/files.service.js';
 import { eliminarContenido } from '../../shared/content/contentCleanup.js';
 import { registrarHidratadorGuardados } from '../../shared/content/contentRegistry.js';
@@ -125,7 +130,16 @@ async function crearApunte({
   lenguaje_snippet,
   hashtags = [],
   etiquetas_visuales = [],
+  archivos = [],
 }) {
+  const tieneContenido =
+    archivos.length > 0 || links.length > 0 || !!codigo_snippet?.trim();
+  if (!tieneContenido) {
+    throw new BadRequestError(
+      'El material debe incluir al menos un archivo, un link o un snippet de código',
+    );
+  }
+
   const ramo = await prisma.ramo.findUnique({
     where: { id: ramo_id },
     include: { ramo_carrera: { select: { carrera_id: true } } },
@@ -139,25 +153,39 @@ async function crearApunte({
     throw new ForbiddenError('No puedes publicar en un ramo de otra carrera');
   }
 
-  const apunte = await prisma.apunte.create({
-    data: {
-      autor_id,
-      ramo_id,
-      titulo,
-      descripcion,
-      tipo: tipo || 'apunte',
-      links,
-      codigo_snippet,
-      lenguaje_snippet: codigo_snippet ? lenguaje_snippet : null,
-      etiquetas_visuales,
-      hashtags: {
-        create: await resolverHashtags(hashtags),
+  // todo lo que puede fallar por datos inválidos, antes de abrir la transacción
+  const hashtagsCreate = await resolverHashtags(hashtags);
+  const datosArchivos = archivos.map(datosArchivo);
+
+  const { apunte, archivosCreados } = await prisma.$transaction(async (tx) => {
+    const apunte = await tx.apunte.create({
+      data: {
+        autor_id,
+        ramo_id,
+        titulo,
+        descripcion,
+        tipo: tipo || 'apunte',
+        links,
+        codigo_snippet,
+        lenguaje_snippet: codigo_snippet ? lenguaje_snippet : null,
+        etiquetas_visuales,
+        hashtags: { create: hashtagsCreate },
       },
-    },
-    include: INCLUDE_APUNTE,
+      include: INCLUDE_APUNTE,
+    });
+
+    const archivosCreados = [];
+    for (const data of datosArchivos) {
+      archivosCreados.push(
+        await tx.archivo.create({
+          data: { tipo_contenido: 'apunte', contenido_id: apunte.id, ...data },
+        }),
+      );
+    }
+    return { apunte, archivosCreados };
   });
 
-  return formatearApunte(apunte);
+  return formatearApunte(apunte, { archivos: archivosCreados });
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function actualizarApunte(id, usuario_id, datos) {

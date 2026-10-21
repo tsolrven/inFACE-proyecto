@@ -24,7 +24,8 @@ function fileFilter(req, file, cb) {
 
   // si el tipo restringe extensiones, se aplica sobre la lista general
   // (nunca puede ampliarla)
-  const { extensiones } = obtenerConfigAdjuntos(req.params.tipo);
+  const tipo = req.tipoContenido ?? req.params.tipo; 
+  const { extensiones } = obtenerConfigAdjuntos(tipo); 
   const permitidas = extensiones
     ? EXTENSIONES_PERMITIDAS.filter((e) => extensiones.includes(e))
     : EXTENSIONES_PERMITIDAS;
@@ -40,6 +41,7 @@ const upload = multer({
   storage,
   fileFilter,
   limits: { fileSize: 20 * 1024 * 1024 },
+  defParamCharset: 'utf8',
 });
 
 export { upload };

@@ -1,6 +1,7 @@
 //! validación de contenido real de archivos subidos (después de multer)
 
 import fs from 'fs';
+import path from 'path'; // ← NUEVO import
 import { BadRequestError } from '../../errors/appError.js';
 
 // firmas binarias (magic numbers)
@@ -44,48 +45,58 @@ function esWebp(buffer) {
   );
 }
 
-function pareceBinario(buffer) {
-  return buffer.subarray(0, 512).includes(0x00);
+// ─── A PARTIR DE AQUÍ SE REEMPLAZA TODO HASTA EL FINAL ───────────────────
+
+function leerCabecera(ruta) {
+  const fd = fs.openSync(ruta, 'r');
+  try {
+    const buffer = Buffer.alloc(512);
+    const leidos = fs.readSync(fd, buffer, 0, 512, 0);
+    return buffer.subarray(0, leidos); // solo lo realmente leído
+  } finally {
+    fs.closeSync(fd);
+  }
 }
 
-// middleware - se ejecuta después de multer
+function pareceBinario(cabecera) {
+  return cabecera.includes(0x00);
+}
+
+function descartar(archivos) {
+  archivos.forEach((f) => fs.unlink(f.path, () => {}));
+}
+
+// middleware: se ejecuta después de multer (sirve para .single y .array)
 function validarContenidoReal(req, res, next) {
-  if (!req.file) return next();
+  const archivos = req.files ?? (req.file ? [req.file] : []);
 
-  const ext = req.file.originalname
-    .slice(req.file.originalname.lastIndexOf('.'))
-    .toLowerCase();
+  for (const file of archivos) {
+    const ext = path.extname(file.originalname).toLowerCase();
 
-  let buffer;
-  try {
-    const fd = fs.openSync(req.file.path, 'r');
-    buffer = Buffer.alloc(512);
-    fs.readSync(fd, buffer, 0, 512, 0);
-    fs.closeSync(fd);
-  } catch {
-    // si no se puede leer el archivo, no se puede verificar: se rechaza
-    fs.unlink(req.file.path, () => {});
-    return next(new BadRequestError('No se pudo verificar el archivo subido'));
+    let cabecera;
+    try {
+      cabecera = leerCabecera(file.path);
+    } catch {
+      descartar(archivos);
+      return next(
+        new BadRequestError('No se pudo verificar el archivo subido'),
+      );
+    }
+
+    let valido = true;
+    if (ext === '.webp') valido = esWebp(cabecera);
+    else if (FIRMAS[ext]) valido = coincideFirma(cabecera, FIRMAS[ext]);
+    else if (EXTENSIONES_TEXTO.includes(ext)) valido = !pareceBinario(cabecera);
+
+    if (!valido) {
+      descartar(archivos); // la petición falla completa: se descartan todos
+      return next(
+        new BadRequestError(
+          `El contenido de "${file.originalname}" no coincide con la extensión "${ext}" (¿fue renombrado?)`,
+        ),
+      );
+    }
   }
-
-  let valido = true;
-  if (ext === '.webp') {
-    valido = esWebp(buffer);
-  } else if (FIRMAS[ext]) {
-    valido = coincideFirma(buffer, FIRMAS[ext]);
-  } else if (EXTENSIONES_TEXTO.includes(ext)) {
-    valido = !pareceBinario(buffer);
-  }
-
-  if (!valido) {
-    fs.unlink(req.file.path, () => {});
-    return next(
-      new BadRequestError(
-        `El contenido del archivo no coincide con la extensión "${ext}" (¿fue renombrado?)`,
-      ),
-    );
-  }
-
   next();
 }
 

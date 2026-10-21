@@ -15,9 +15,23 @@ import {
 } from './materials.validation.js';
 import { idParamSchema } from '../../shared/validation/common.schemas.js';
 import { publicacionLimiter } from '../../middlewares/rateLimiter.js';
-
+import { upload } from '../../shared/files/multer.helper.js';
+import { validarContenidoReal } from '../../shared/files/fileSignature.helper.js';
+import {
+  limpiarArchivosSiFalla,
+  parsearDatosMultipart,
+} from '../../shared/files/multipart.helper.js';
+import { obtenerConfigAdjuntos } from '../../shared/content/contentRegistry.js';
+// ────────────────────────────────────────────────────────────────────────────────────────
 const router = express.Router();
 
+const MAX_ARCHIVOS = obtenerConfigAdjuntos('apunte').max;
+
+const comoApunte = (req, _res, next) => {
+  req.tipoContenido = 'apunte'; // lo lee fileFilter de multer
+  next();
+};
+// ────────────────────────────────────────────────────────────────────────────────────────
 router.get(
   '/',
   autenticar,
@@ -29,6 +43,11 @@ router.post(
   '/',
   autenticar,
   publicacionLimiter,
+  comoApunte,
+  limpiarArchivosSiFalla,
+  upload.array('archivos', MAX_ARCHIVOS),
+  validarContenidoReal,
+  parsearDatosMultipart,
   validate(crearApunteSchema),
   crear,
 );
@@ -40,5 +59,5 @@ router.patch(
   actualizar,
 );
 router.delete('/:id', autenticar, validate(idParamSchema, 'params'), eliminar);
-
+// ────────────────────────────────────────────────────────────────────────────────────────
 export default router;
