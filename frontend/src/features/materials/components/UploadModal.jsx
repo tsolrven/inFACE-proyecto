@@ -65,6 +65,10 @@ export default function UploadModal({ open, onClose, carreraId }) {
     );
   }
 
+  function quitarArchivo(index) {
+    setArchivos((prev) => prev.filter((_, i) => i !== index));
+  }
+
   function resetForm() {
     setFuentes(FUENTES_INICIALES);
     setTitulo('');
@@ -271,7 +275,18 @@ export default function UploadModal({ open, onClose, carreraId }) {
             <input
               type='file'
               multiple
-              onChange={(e) => setArchivos(Array.from(e.target.files))}
+              onChange={(e) => {
+                const nuevos = Array.from(e.target.files);
+                const clave = (f) => `${f.name}-${f.size}-${f.lastModified}`;
+                setArchivos((prev) => {
+                  const existentes = new Set(prev.map(clave));
+                  return [
+                    ...prev,
+                    ...nuevos.filter((f) => !existentes.has(clave(f))),
+                  ];
+                });
+                e.target.value = ''; // permite volver a elegir el mismo archivo
+              }}
               className='text-[12.5px] text-neutral-400 file:mr-3 file:rounded-md file:border-0 file:bg-pink-500/10 file:px-3 file:py-1.5 file:text-[11.5px] file:font-semibold file:text-pink-500'
             />
             <p className='mt-1 text-[11px] text-neutral-600'>
@@ -279,9 +294,30 @@ export default function UploadModal({ open, onClose, carreraId }) {
               seleccionar varios archivos a la vez.
             </p>
             {archivos.length > 0 && (
-              <p className='mt-1 text-[11px] text-neutral-500'>
-                {archivos.length} archivo(s) seleccionado(s)
-              </p>
+              <div className='mt-2 flex flex-col gap-1.5'>
+                <p className='text-[11px] text-neutral-500'>
+                  {archivos.length} archivo(s) seleccionado(s)
+                </p>
+                {archivos.map((archivo, i) => (
+                  <div
+                    key={`${archivo.name}-${archivo.size}-${archivo.lastModified}`}
+                    className='flex items-center gap-2 rounded-md border border-white/[0.07] bg-white/[0.03] px-2.5 py-1.5'
+                  >
+                    <i className='ti ti-file text-[13px] text-neutral-500' />
+                    <span className='flex-1 truncate text-[11.5px] text-neutral-300'>
+                      {archivo.name}
+                    </span>
+                    <button
+                      type='button'
+                      onClick={() => quitarArchivo(i)}
+                      className='flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-neutral-500 hover:bg-white/[0.06] hover:text-red-400'
+                      title='Quitar archivo'
+                    >
+                      <i className='ti ti-x text-[13px]' />
+                    </button>
+                  </div>
+                ))}
+              </div>
             )}
           </Campo>
         )}
