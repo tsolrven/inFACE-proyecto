@@ -1,6 +1,6 @@
-import { prisma } from '../config/configDb.js';
-import logger from '../lib/logger.js';
-import { NotFoundError, ConflictError, BadRequestError } from '../errors/appError.js';
+import { prisma } from '../../config/configDb.js';
+import logger from '../../lib/logger.js';
+import { NotFoundError, ConflictError, BadRequestError } from '../../errors/appError.js';
 import { validarEtiquetasExisten } from './etiqueta.service.js';
 
 const MAX_INTERESES = 15;

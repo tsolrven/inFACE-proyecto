@@ -1,9 +1,9 @@
-import { prisma } from '../config/configDb.js';
-import { BadRequestError, ConflictError } from '../errors/appError.js';
+import { prisma } from '../../config/configDb.js';
+import { BadRequestError, ConflictError } from '../../errors/appError.js';
 import {
   obtenerPropietarioContenido,
   obtenerPreviewsContenido,
-} from '../shared/content/contentRegistry.js';
+} from '../content/contentRegistry.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 function construirDetalle({ objetivo, detalle }) {
   const partes = [];

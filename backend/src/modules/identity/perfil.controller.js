@@ -4,7 +4,7 @@ import {
   actualizarPerfil,
   actualizarMisEtiquetas,
 } from './perfil.service.js';
-import { manejarController } from '../helpers/matchingProyecto.helper.js';
+import { manejarController } from '../project-match/matchingProyecto.helper.js';
 
 async function obtenerMiPerfilController(req, res) {
   const perfil = await obtenerPerfilPropio(req.usuario.id);

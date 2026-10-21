@@ -1,5 +1,5 @@
 import { obtenerEtiquetas } from './etiqueta.service.js';
-import { manejarController } from '../helpers/matchingProyecto.helper.js';
+import { manejarController } from '../project-match/matchingProyecto.helper.js';
 
 async function listarController(req, res) {
   const { q } = req.query;

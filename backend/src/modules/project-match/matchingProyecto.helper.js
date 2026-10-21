@@ -1,5 +1,5 @@
-import { ValidationError } from '../errors/appError.js';
-import logger from '../lib/logger.js';
+import { ValidationError } from '../../errors/appError.js';
+import logger from '../../lib/logger.js';
 
 //──────────────────────────────────────────────────────────────────────────────
 // 1. HELPERS DE VALIDACIÓN
@@ -398,7 +398,7 @@ function esEstadoPostulacionValido(estado) {
 // 7. HELPERS DE CONTROLLER (Manejo de errores)
 //──────────────────────────────────────────────────────────────────────────────
 
-import { AppError } from '../errors/appError.js';
+import { AppError } from '../../errors/appError.js';
 
 /*
  * Manejo centralizado de errores del módulo matching

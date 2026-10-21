@@ -1,6 +1,6 @@
 //! middleware de autenticación y autorización (protege rutas de la api)
 
-import { verificarAccessToken } from '../helpers/jwt.helper.js';
+import { verificarAccessToken } from '../shared/auth/jwt.helper.js';
 import { UnauthorizedError, ForbiddenError } from '../errors/appError.js';
 
 // verifica que el usuario tenga un token válido

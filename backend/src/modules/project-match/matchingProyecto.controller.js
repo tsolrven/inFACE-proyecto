@@ -20,7 +20,7 @@ import {
   obtenerHabilidadesEnDemanda,
   obtenerUsuariosSimilares,
 } from './matchingProyecto.service.js';
-import { manejarController } from '../../helpers/matchingProyecto.helper.js';
+import { manejarController } from './matchingProyecto.helper.js';
 
 //──────────────────────────────────────────────────────────────────────────────
 // PROYECTOS

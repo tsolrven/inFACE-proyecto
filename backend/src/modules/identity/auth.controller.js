@@ -5,7 +5,7 @@ import {
   cerrarSesion,
   obtenerUsuarioActual,
 } from './auth.service.js';
-import ApiResponse from '../utils/apiResponse.js';
+import ApiResponse from '../../utils/apiResponse.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 const REFRESH_COOKIE_OPTS = {
   httpOnly: true,

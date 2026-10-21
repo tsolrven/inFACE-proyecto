@@ -1,5 +1,5 @@
 import { crearReporte, listarReportesPropios } from './reports.service.js';
-import ApiResponse from '../utils/apiResponse.js';
+import ApiResponse from '../../utils/apiResponse.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function reportarContenido(req, res, next) {
   try {

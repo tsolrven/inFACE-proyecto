@@ -1,6 +1,6 @@
 import express from 'express';
 import { listar } from './etiqueta.controller.js';
-import { autenticar } from '../middlewares/auth.middleware.js';
+import { autenticar } from '../../middlewares/auth.middleware.js';
 
 const router = express.Router();
 

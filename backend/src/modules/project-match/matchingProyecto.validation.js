@@ -1,4 +1,4 @@
-import { validar } from '../helpers/matchingProyecto.helper.js';
+import { validar } from './matchingProyecto.helper.js';
 //──────────────────────────────────────────────────────────────────────────────
 // ESQUEMAS
 //──────────────────────────────────────────────────────────────────────────────

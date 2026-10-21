@@ -5,8 +5,8 @@ import {
   actualizarMiPerfil,
   actualizarMisEtiquetasExport,
 } from './perfil.controller.js';
-import { autenticar } from '../middlewares/auth.middleware.js';
-import validate from '../middlewares/validate.js';
+import { autenticar } from '../../middlewares/auth.middleware.js';
+import validate from '../../middlewares/validate.js';
 import {
   actualizarPerfilSchema,
   actualizarEtiquetasSchema,

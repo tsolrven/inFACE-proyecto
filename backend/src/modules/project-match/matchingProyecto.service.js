@@ -23,7 +23,7 @@ import {
   esEstadoPostulacionValido,
   calcularPorcentajeMatchPerfiles,
   formatearUsuarioSimilar,
-} from '../../helpers/matchingProyecto.helper.js';
+} from './matchingProyecto.helper.js';
 
 //──────────────────────────────────────────────────────────────────────────────
 // PROYECTOS

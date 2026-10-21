@@ -1,17 +1,17 @@
 import bcrypt from 'bcryptjs';
-import { prisma } from '../config/configDb.js';
+import { prisma } from '../../config/configDb.js';
 import {
   generarAccessToken,
   generarRefreshToken,
   verificarRefreshToken,
-} from '../helpers/jwt.helper.js';
+} from '../../shared/auth/jwt.helper.js';
 import {
   ConflictError,
   UnauthorizedError,
   ForbiddenError,
   ValidationError,
   NotFoundError,
-} from '../errors/appError.js';
+} from '../../errors/appError.js';
 import { derivarNombreDesdeCorreo } from './nombre.helper.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 function determinarRolPorCorreo(correo) {
