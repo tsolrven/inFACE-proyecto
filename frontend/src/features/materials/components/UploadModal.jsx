@@ -5,9 +5,7 @@ import { listarRamosPorCarrera } from '@/shared/api/catalog.api';
 import { crearApunte } from '@/features/materials/api/materials.api';
 import { useQueryClient } from '@tanstack/react-query';
 import CodeEditor from '@/features/materials/components/CodeEditor';
-import BadgeSelector, {
-  InfoTooltip,
-} from '@/features/materials/components/BadgeSelector';
+import InfoTooltip from '@/shared/components/ui/InfoTooltip';
 import { normalizarHashtags } from '@/features/materials/utils/normalizarHashtags';
 import CharCounter from '@/shared/components/ui/CharCounter';
 import {
@@ -46,7 +44,6 @@ export default function UploadModal({ open, onClose, carreraId }) {
   const [codigoSnippet, setCodigoSnippet] = useState('');
   const [lenguajeSnippet, setLenguajeSnippet] = useState('texto');
   const [archivos, setArchivos] = useState([]);
-  const [etiquetasVisuales, setEtiquetasVisuales] = useState([]);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(null);
 
@@ -98,7 +95,6 @@ export default function UploadModal({ open, onClose, carreraId }) {
     setCodigoSnippet('');
     setLenguajeSnippet('texto');
     setArchivos([]);
-    setEtiquetasVisuales([]);
     setError(null);
   }
 
@@ -167,7 +163,6 @@ export default function UploadModal({ open, onClose, carreraId }) {
           links: fuentes.link ? normalizarLinks(links) : undefined,
           codigo_snippet: fuentes.snippet ? codigoSnippet : undefined,
           lenguaje_snippet: fuentes.snippet ? lenguajeSnippet : undefined,
-          etiquetas_visuales: etiquetasVisuales,
         },
         fuentes.file ? archivos : [],
       );
@@ -284,12 +279,6 @@ export default function UploadModal({ open, onClose, carreraId }) {
             className={inputClasses}
           />
         </Campo>
-
-        <BadgeSelector
-          value={etiquetasVisuales}
-          onChange={setEtiquetasVisuales}
-          disabled={enviando}
-        />
 
         {fuentes.file && (
           <Campo

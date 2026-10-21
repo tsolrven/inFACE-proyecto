@@ -7,6 +7,7 @@ import {
   metaDeArchivo,
   metaDeLink,
   formatearTamanio,
+  badgesDeApunte,
 } from '@/features/materials/utils/fileMeta';
 import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
 import { descargarArchivo } from '@/features/materials/api/files.api';
@@ -200,7 +201,7 @@ export default function MaterialCard({ apunte, onQuitarDeGuardados }) {
           {apunte.titulo}
         </div>
 
-        <BadgesPrincipales etiquetas={apunte.etiquetas_visuales} />
+        <BadgesPrincipales etiquetas={badgesDeApunte(apunte)} />
 
         {apunte.descripcion && (
           <p className='mb-1.5 line-clamp-2 text-xs leading-relaxed text-neutral-400'>

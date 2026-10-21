@@ -79,17 +79,6 @@ export const TIPOS_ARCHIVO_FILTRO = [
   { value: 'excel', ...DEFS.excel },
 ];
 
-export const BADGES_SELECCIONABLES = [
-  { value: 'pdf', ...DEFS.pdf },
-  { value: 'doc', ...DEFS.doc },
-  { value: 'ppt', ...DEFS.ppt },
-  { value: 'excel', ...DEFS.excel },
-  { value: 'zip', ...DEFS.zip },
-  { value: 'imagen', ...DEFS.imagen },
-  { value: 'codigo', ...DEFS.codigo },
-  { value: 'github', ...DEFS.github },
-];
-
 function categoriaDeMime(mime = '') {
   if (mime.startsWith('application/pdf')) return 'pdf';
   if (mime.startsWith('image/')) return 'imagen';
@@ -175,6 +164,41 @@ export function metaPrincipal(apunte) {
   if (apunte.codigo_snippet) return DEFS.codigo;
   if (apunte.archivos?.[0]) return metaDeArchivo(apunte.archivos[0]);
   return DEFS.default;
+}
+
+const ORDEN_BADGES = [
+  'pdf',
+  'doc',
+  'ppt',
+  'excel',
+  'zip',
+  'imagen',
+  'codigo',
+  'github',
+];
+
+function esLinkGithub(url) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '') === 'github.com';
+  } catch {
+    return false;
+  }
+}
+
+// badges que se muestran sobre el post: siempre derivados del contenido real
+export function badgesDeApunte({
+  archivos = [],
+  links = [],
+  codigo_snippet,
+} = {}) {
+  const presentes = new Set();
+  for (const a of archivos) {
+    const categoria = categoriaDeMime(a.tipo_mime);
+    if (categoria !== 'default') presentes.add(categoria);
+  }
+  if (codigo_snippet?.trim()) presentes.add('codigo');
+  if (links.some(esLinkGithub)) presentes.add('github');
+  return ORDEN_BADGES.filter((b) => presentes.has(b)); // orden estable
 }
 
 export function formatearTamanio(bytes) {

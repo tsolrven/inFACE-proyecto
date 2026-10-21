@@ -264,7 +264,6 @@ model Apunte {
   links             String[] @default([])
   codigo_snippet    String?   
   lenguaje_snippet  String?   
-  etiquetas_visuales String[] @default([])
   votos_neto        Int      @default(0)
   creado_en         DateTime @default(now())
   actualizado_en    DateTime @updatedAt

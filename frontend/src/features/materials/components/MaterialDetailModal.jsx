@@ -14,6 +14,7 @@ import {
   metaDeBadge,
   metaDeLink,
   formatearTamanio,
+  badgesDeApunte,
 } from '@/features/materials/utils/fileMeta';
 import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
 import { useAuthStore } from '@/shared/auth/authStore';
@@ -305,7 +306,7 @@ export default function MaterialDetailModal() {
               {apunte.titulo}
             </h2>
 
-            <BadgesPrincipales etiquetas={apunte.etiquetas_visuales} />
+            <BadgesPrincipales etiquetas={badgesDeApunte(apunte)} />
 
             <div className='mb-4 flex items-center gap-2 text-[12.5px] text-neutral-600'>
               <Link

@@ -3,16 +3,6 @@ import { MIME_MAP } from './fileType.helper.js';
 import { paginacionQuerySchema } from '../../shared/validation/common.schemas.js';
 // ─────────────────────────────────────────────────────────────────────────────
 const TIPOS_APUNTE = ['apunte', 'codigo', 'guia', 'ejercicio', 'otro'];
-const BADGES_VISUALES = [
-  'pdf',
-  'doc',
-  'ppt',
-  'excel',
-  'zip',
-  'imagen',
-  'codigo',
-  'github',
-];
 const LENGUAJES_SNIPPET = [
   'texto',
   'javascript',
@@ -65,10 +55,6 @@ const ERROR_MESSAGES = {
     max_cantidad: 'No puedes agregar más de 10 hashtags',
     pattern: 'Los hashtags solo pueden tener letras, números y guiones bajos',
     max_largo: 'Cada hashtag no puede superar 30 caracteres',
-  },
-  etiquetas_visuales: {
-    invalid: `Cada badge debe ser uno de: ${BADGES_VISUALES.join(', ')}`,
-    max_cantidad: 'No puedes marcar más de 8 badges',
   },
 };
 // ─────────────────────────────────────────────────────────────────────────────
@@ -138,10 +124,6 @@ const lenguajeSnippetSchema = z
   .optional()
   .nullable();
 
-const etiquetasVisualesSchema = z
-  .array(z.enum(BADGES_VISUALES, ERROR_MESSAGES.etiquetas_visuales.invalid))
-  .max(8, ERROR_MESSAGES.etiquetas_visuales.max_cantidad)
-  .optional();
 // ─────────────────────────────────────────────────────────────────────────────
 const crearApunteSchema = z.object({
   ramo_id: z
@@ -157,7 +139,6 @@ const crearApunteSchema = z.object({
   codigo_snippet: codigoSnippetSchema,
   lenguaje_snippet: lenguajeSnippetSchema,
   hashtags: hashtagsSchema,
-  etiquetas_visuales: etiquetasVisualesSchema,
 });
 // ─────────────────────────────────────────────────────────────────────────────
 const actualizarApunteSchema = z.object({
@@ -169,7 +150,6 @@ const actualizarApunteSchema = z.object({
   codigo_snippet: codigoSnippetSchema,
   lenguaje_snippet: lenguajeSnippetSchema,
   hashtags: hashtagsSchema,
-  etiquetas_visuales: etiquetasVisualesSchema,
 });
 // ─────────────────────────────────────────────────────────────────────────────
 const listarApuntesQuerySchema = paginacionQuerySchema.extend({

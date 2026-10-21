@@ -14,9 +14,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useEditarApunte } from '@/features/materials/hooks/useApuntes';
 import { parchearContenido } from '@/shared/post/cache';
 import CodeEditor from '@/features/materials/components/CodeEditor';
-import BadgeSelector, {
-  InfoTooltip,
-} from '@/features/materials/components/BadgeSelector';
+import InfoTooltip from '@/shared/components/ui/InfoTooltip';
 import { normalizarHashtags } from '@/features/materials/utils/normalizarHashtags';
 import CharCounter from '@/shared/components/ui/CharCounter';
 import {
@@ -76,9 +74,6 @@ function EditApunteForm({ onClose, apunte, carreraId, onSaved }) {
   );
   const [lenguajeSnippet, setLenguajeSnippet] = useState(
     apunte.lenguaje_snippet ?? 'texto',
-  );
-  const [etiquetasVisuales, setEtiquetasVisuales] = useState(
-    apunte.etiquetas_visuales ?? [],
   );
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(null);
@@ -219,7 +214,6 @@ function EditApunteForm({ onClose, apunte, carreraId, onSaved }) {
           links: fuentes.link ? normalizarLinks(links) : [],
           codigo_snippet: fuentes.snippet ? codigoSnippet : null,
           lenguaje_snippet: fuentes.snippet ? lenguajeSnippet : null,
-          etiquetas_visuales: etiquetasVisuales,
         },
       });
 
@@ -380,12 +374,6 @@ function EditApunteForm({ onClose, apunte, carreraId, onSaved }) {
             className={inputClasses}
           />
         </Campo>
-
-        <BadgeSelector
-          value={etiquetasVisuales}
-          onChange={setEtiquetasVisuales}
-          disabled={enviando}
-        />
 
         {fuentes.link && (
           <Campo label='Links'>

@@ -3,13 +3,13 @@ import {
   NotFoundError,
   ForbiddenError,
   BadRequestError,
-} from '../../errors/appError.js'; 
+} from '../../errors/appError.js';
 import logger from '../../lib/logger.js';
 import { MIME_MAP } from './fileType.helper.js';
 import {
   borrarArchivosFisicos,
   formatearArchivo,
-  datosArchivo, 
+  datosArchivo,
 } from '../../shared/files/files.service.js';
 import { eliminarContenido } from '../../shared/content/contentCleanup.js';
 import { registrarHidratadorGuardados } from '../../shared/content/contentRegistry.js';
@@ -129,7 +129,6 @@ async function crearApunte({
   codigo_snippet,
   lenguaje_snippet,
   hashtags = [],
-  etiquetas_visuales = [],
   archivos = [],
 }) {
   const tieneContenido =
@@ -168,7 +167,6 @@ async function crearApunte({
         links,
         codigo_snippet,
         lenguaje_snippet: codigo_snippet ? lenguaje_snippet : null,
-        etiquetas_visuales,
         hashtags: { create: hashtagsCreate },
       },
       include: INCLUDE_APUNTE,
@@ -204,7 +202,6 @@ async function actualizarApunte(id, usuario_id, datos) {
     codigo_snippet,
     lenguaje_snippet,
     hashtags,
-    etiquetas_visuales,
   } = datos;
 
   if (ramo_id && ramo_id !== apunte.ramo_id) {
@@ -246,7 +243,6 @@ async function actualizarApunte(id, usuario_id, datos) {
         codigo_snippet,
         lenguaje_snippet: codigo_snippet ? lenguaje_snippet : null,
       }),
-      ...(etiquetas_visuales !== undefined && { etiquetas_visuales }),
       ...(hashtags && {
         hashtags: {
           deleteMany: {},
@@ -325,14 +321,13 @@ function formatearApunte(
     tipo_contenido: 'apunte',
     titulo: apunte.titulo,
     descripcion: apunte.descripcion,
-    tipo: apunte.tipo, // apunte, código, guía, etc
+    tipo: apunte.tipo,
     votos_neto: apunte.votos_neto,
     mi_voto,
     esta_guardado,
     links: apunte.links ?? [],
     codigo_snippet: apunte.codigo_snippet,
     lenguaje_snippet: apunte.lenguaje_snippet,
-    etiquetas_visuales: apunte.etiquetas_visuales ?? [],
     creado_en: apunte.creado_en,
     editado_en: apunte.editado_en,
     autor: {
