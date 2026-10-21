@@ -12,6 +12,7 @@ import {
 } from '../content/contentRegistry.js';
 import { resolverRutaFisica } from './uploadsPath.js';
 import { esStaff } from '../auth/permissions.js';
+import { obtenerMimePorExtension } from './fileMime.helper.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 // solo lo que el cliente necesita: la ruta física y el vínculo polimórfico
 // (tipo_contenido / contenido_id) se quedan en el servidor
@@ -50,13 +51,19 @@ async function subirArchivo({
     throw new BadRequestError(`No puedes subir más de ${max} archivos`);
   }
 
+  const tipo_mime = obtenerMimePorExtension(file.originalname);
+
+  if (!tipo_mime) {
+    throw new BadRequestError('No se reconoce el tipo de archivo');
+  }
+
   const archivo = await prisma.archivo.create({
     data: {
       tipo_contenido,
       contenido_id,
       nombre_archivo: file.originalname,
       ruta_url: `/uploads/${file.filename}`,
-      tipo_mime: file.mimetype,
+      tipo_mime,
       tamanio: file.size,
     },
   });

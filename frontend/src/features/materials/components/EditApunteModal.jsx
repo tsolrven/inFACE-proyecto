@@ -18,16 +18,29 @@ import BadgeSelector, {
   InfoTooltip,
 } from '@/features/materials/components/BadgeSelector';
 import { normalizarHashtags } from '@/features/materials/utils/normalizarHashtags';
+import CharCounter from '@/shared/components/ui/CharCounter';
+import {
+  TITULO_MIN,
+  TITULO_MAX,
+  DESCRIPCION_MAX,
+  SNIPPET_MAX,
+  LINKS_MAX,
+  LINK_MAX,
+  MAX_ARCHIVOS,
+  MAX_TAMANIO_MB,
+  MAX_TAMANIO_BYTES,
+} from '@/features/materials/utils/limites';
+import {
+  agregarArchivosSinDuplicar,
+  claveArchivo,
+} from '@/features/materials/utils/archivos';
+import { normalizarLinks } from '@/features/materials/utils/normalizarLinks';
 
 const TIPOS = [
   { value: 'file', icon: 'ti-upload', label: 'Archivo' },
   { value: 'link', icon: 'ti-link', label: 'Link' },
   { value: 'snippet', icon: 'ti-code', label: 'Snippet de código' },
 ];
-
-const MAX_ARCHIVOS = 10; //debe coincidir con MAX_ARCHIVOS_POR_APUNTE en el backend
-const MAX_TAMANIO_MB = 20; //debe coincidir con el límite de multer.helper.js
-const MAX_TAMANIO_BYTES = MAX_TAMANIO_MB * 1024 * 1024;
 
 // Envoltorio: el formulario solo existe mientras el modal está abierto.
 // Así sus useState toman los datos del apunte al abrirse, y los cambios
@@ -102,7 +115,7 @@ function EditApunteForm({ onClose, apunte, carreraId, onSaved }) {
   }
 
   function agregarLink() {
-    setLinks((prev) => (prev.length >= 5 ? prev : [...prev, '']));
+    setLinks((prev) => (prev.length >= LINKS_MAX ? prev : [...prev, '']));
   }
 
   function quitarLink(index) {
@@ -125,8 +138,9 @@ function EditApunteForm({ onClose, apunte, carreraId, onSaved }) {
   }
 
   function handleAgregarArchivos(e) {
-    setArchivosNuevos((prev) => [...prev, ...Array.from(e.target.files)]);
-    e.target.value = '';
+    const nuevos = Array.from(e.target.files); // primero capturar, después vaciar
+    setArchivosNuevos((prev) => agregarArchivosSinDuplicar(prev, nuevos));
+    e.target.value = ''; // permite volver a elegir el mismo archivo
   }
 
   function handleQuitarArchivoNuevo(index) {
@@ -140,8 +154,12 @@ function EditApunteForm({ onClose, apunte, carreraId, onSaved }) {
     e.preventDefault();
     setError(null);
 
-    if (!titulo.trim() || !ramoId) {
-      setError('Título y ramo son obligatorios.');
+    if (!ramoId) {
+      setError('Debes seleccionar un ramo.');
+      return;
+    }
+    if (titulo.trim().length < TITULO_MIN) {
+      setError(`El título debe tener al menos ${TITULO_MIN} caracteres.`);
       return;
     }
     if (!fuentes.file && !fuentes.link && !fuentes.snippet) {
@@ -156,6 +174,10 @@ function EditApunteForm({ onClose, apunte, carreraId, onSaved }) {
     }
     if (fuentes.snippet && !codigoSnippet.trim()) {
       setError('Pega el código del snippet.');
+      return;
+    }
+    if (fuentes.snippet && codigoSnippet.length > SNIPPET_MAX) {
+      setError(`El snippet no puede superar ${SNIPPET_MAX} caracteres.`);
       return;
     }
     if (
@@ -182,6 +204,7 @@ function EditApunteForm({ onClose, apunte, carreraId, onSaved }) {
       );
       return;
     }
+
     setEnviando(true);
     try {
       const hashtags = normalizarHashtags(hashtagsTexto);
@@ -193,7 +216,7 @@ function EditApunteForm({ onClose, apunte, carreraId, onSaved }) {
           descripcion,
           ramo_id: ramoId,
           hashtags,
-          links: fuentes.link ? links.map((l) => l.trim()).filter(Boolean) : [],
+          links: fuentes.link ? normalizarLinks(links) : [],
           codigo_snippet: fuentes.snippet ? codigoSnippet : null,
           lenguaje_snippet: fuentes.snippet ? lenguajeSnippet : null,
           etiquetas_visuales: etiquetasVisuales,
@@ -294,21 +317,39 @@ function EditApunteForm({ onClose, apunte, carreraId, onSaved }) {
           </p>
         )}
 
-        <Campo label='Título'>
+        <Campo
+          label='Título'
+          extra={
+            <CharCounter
+              value={titulo}
+              max={TITULO_MAX}
+            />
+          }
+        >
           <input
             value={titulo}
             onChange={(e) => setTitulo(e.target.value)}
             placeholder='Ej: Resumen completo Certamen 1...'
+            maxLength={TITULO_MAX}
             className={inputClasses}
           />
         </Campo>
 
-        <Campo label='Descripción (opcional)'>
+        <Campo
+          label='Descripción (opcional)'
+          extra={
+            <CharCounter
+              value={descripcion}
+              max={DESCRIPCION_MAX}
+            />
+          }
+        >
           <textarea
             value={descripcion}
             onChange={(e) => setDescripcion(e.target.value)}
             rows={3}
             placeholder='Cuenta de qué se trata este material...'
+            maxLength={DESCRIPCION_MAX}
             className={`${inputClasses} resize-none`}
           />
         </Campo>
@@ -358,6 +399,7 @@ function EditApunteForm({ onClose, apunte, carreraId, onSaved }) {
                     value={link}
                     onChange={(e) => actualizarLink(i, e.target.value)}
                     placeholder='https://...'
+                    maxLength={LINK_MAX}
                     className={inputClasses}
                   />
                   {links.length > 1 && (
@@ -371,7 +413,7 @@ function EditApunteForm({ onClose, apunte, carreraId, onSaved }) {
                   )}
                 </div>
               ))}
-              {links.length < 5 && (
+              {links.length < LINKS_MAX && (
                 <button
                   type='button'
                   onClick={agregarLink}
@@ -385,7 +427,15 @@ function EditApunteForm({ onClose, apunte, carreraId, onSaved }) {
         )}
 
         {fuentes.snippet && (
-          <Campo label='Código'>
+          <Campo
+            label='Código'
+            extra={
+              <CharCounter
+                value={codigoSnippet}
+                max={SNIPPET_MAX}
+              />
+            }
+          >
             <CodeEditor
               value={codigoSnippet}
               onChange={setCodigoSnippet}
@@ -401,6 +451,11 @@ function EditApunteForm({ onClose, apunte, carreraId, onSaved }) {
               <span className='flex items-center gap-1.5'>
                 Archivos adjuntos
                 <InfoTooltip texto='¿No ves tu tipo de archivo? Comprímelo en .zip y súbelo.' />
+              </span>
+            }
+            extra={
+              <span className='text-[10.5px] tabular-nums text-neutral-600'>
+                {archivosActuales.length + archivosNuevos.length}/{MAX_ARCHIVOS}
               </span>
             }
           >
@@ -446,7 +501,7 @@ function EditApunteForm({ onClose, apunte, carreraId, onSaved }) {
 
               {archivosNuevos.map((file, i) => (
                 <div
-                  key={`${file.name}-${i}`}
+                  key={claveArchivo(file)}
                   className='flex items-center gap-2.5 rounded-md border border-pink-500/20 bg-pink-500/[0.04] px-2.5 py-2'
                 >
                   <i className='ti ti-file-upload flex-shrink-0 text-sm text-pink-500' />
@@ -513,12 +568,15 @@ function EditApunteForm({ onClose, apunte, carreraId, onSaved }) {
 const inputClasses =
   'w-full rounded-[10px] border border-white/[0.07] bg-[#111114] px-3 py-2 text-[13px] text-neutral-100 outline-none transition-colors placeholder-neutral-600 focus:border-pink-500/40';
 
-function Campo({ label, children }) {
+function Campo({ label, extra, children }) {
   return (
     <div className='flex flex-col gap-1.5'>
-      <span className='text-[11.5px] font-semibold text-neutral-500'>
-        {label}
-      </span>
+      <div className='flex items-center justify-between'>
+        <span className='text-[11.5px] font-semibold text-neutral-500'>
+          {label}
+        </span>
+        {extra}
+      </div>
       {children}
     </div>
   );

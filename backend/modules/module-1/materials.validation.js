@@ -53,6 +53,7 @@ const ERROR_MESSAGES = {
     invalid:
       'Cada link debe ser una URL válida que empiece con http:// o https://',
     max_cantidad: 'No puedes agregar más de 5 links',
+    max_largo: 'Cada link no puede superar 2048 caracteres',
   },
   codigo_snippet: {
     max: 'El snippet no puede superar 20000 caracteres',
@@ -101,7 +102,9 @@ const tituloSchema = z
 
 const descripcionSchema = z
   .string()
+  .trim()
   .max(2000, ERROR_MESSAGES.descripcion.max)
+  .transform((d) => (d === '' ? null : d))
   .optional()
   .nullable();
 
@@ -112,6 +115,7 @@ const linksSchema = z
     z
       .string()
       .trim()
+      .max(2048, ERROR_MESSAGES.links.max_largo)
       .pipe(
         z.url({
           protocol: /^https?$/,
@@ -120,6 +124,7 @@ const linksSchema = z
       ),
   )
   .max(5, ERROR_MESSAGES.links.max_cantidad)
+  .transform((links) => [...new Set(links)])
   .optional();
 
 const codigoSnippetSchema = z

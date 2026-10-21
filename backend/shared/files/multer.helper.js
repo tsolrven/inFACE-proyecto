@@ -4,23 +4,7 @@ import fs from 'fs';
 import { UPLOADS_DIR } from './uploadsPath.js';
 import { BadRequestError } from '../../errors/appError.js';
 import { obtenerConfigAdjuntos } from '../content/contentRegistry.js';
-
-const EXTENSIONES_PERMITIDAS = [
-  '.pdf',
-  '.doc',
-  '.docx',
-  '.ppt',
-  '.pptx',
-  '.xls',
-  '.xlsx',
-  '.txt',
-  '.zip',
-  '.jpg',
-  '.jpeg',
-  '.png',
-  '.webp',
-  '.gif',
-];
+import { EXTENSIONES_PERMITIDAS } from './fileMime.helper.js';
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
