@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 let contadorId = 0;
 
-export const useToastStore = create((set, get) => ({
+export const useToastStore = create((set) => ({
   toasts: [],
 
   mostrarToast: (mensaje) => {
