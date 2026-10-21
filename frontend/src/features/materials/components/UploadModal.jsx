@@ -4,7 +4,7 @@ import Button from '@/shared/components/ui/Button';
 import { listarRamosPorCarrera } from '@/shared/api/catalog.api';
 import { crearApunte } from '@/features/materials/api/materials.api';
 import { subirArchivos } from '@/features/materials/api/files.api';
-import { useRepositorioStore } from '@/features/materials/store/materialsStore';
+import { useQueryClient } from '@tanstack/react-query';
 import CodeEditor from '@/features/materials/components/CodeEditor';
 import BadgeSelector, {
   InfoTooltip,
@@ -37,7 +37,7 @@ export default function UploadModal({ open, onClose, carreraId }) {
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(null);
 
-  const fetchApuntes = useRepositorioStore((s) => s.fetchApuntes);
+  const qc = useQueryClient();
 
   useEffect(() => {
     if (!open || !carreraId) return;
@@ -156,7 +156,7 @@ export default function UploadModal({ open, onClose, carreraId }) {
         }
       }
 
-      await fetchApuntes();
+      await qc.invalidateQueries({ queryKey: ['apunte', 'list'] });
       if (!huboFallidos) {
         resetForm();
         onClose();

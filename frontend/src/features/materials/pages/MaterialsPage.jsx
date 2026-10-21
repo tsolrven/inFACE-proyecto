@@ -8,7 +8,6 @@ import MaterialFeed from '@/features/materials/components/MaterialFeed';
 import GuardadosFeed from '@/features/materials/components/GuardadosFeed';
 import UploadModal from '@/features/materials/components/UploadModal';
 import { useAuthStore } from '@/shared/auth/authStore';
-import { useRepositorioStore } from '@/features/materials/store/materialsStore';
 import {
   listarTopColaboradores,
   listarHashtagsPopulares,
@@ -52,12 +51,6 @@ export default function RepositorioMateriales() {
   const [tagsPopulares, setTagsPopulares] = useState([]);
 
   const { hashtag } = useParams();
-  const setFiltro = useRepositorioStore((s) => s.setFiltro);
-
-  useEffect(() => {
-    setFiltro('hashtag', hashtag ?? null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hashtag]);
 
   useEffect(() => {
     if (!carreraId) return;

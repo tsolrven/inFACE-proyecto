@@ -1,11 +1,11 @@
 import FiltroTipoArchivo from '@/features/materials/components/FiltroTipoArchivo';
 import FiltroRamo from '@/features/materials/components/FiltroRamo';
 import Button from '@/shared/components/ui/Button';
-import { useRepositorioStore } from '@/features/materials/store/materialsStore';
+import { useFiltrosStore } from '@/features/materials/store/filtrosStore';
 
 export default function FeedTopbar({ carreraId, onAbrirSubida }) {
-  const orden = useRepositorioStore((s) => s.filtros.orden);
-  const setFiltro = useRepositorioStore((s) => s.setFiltro);
+  const orden = useFiltrosStore((s) => s.filtros.orden);
+  const setFiltro = useFiltrosStore((s) => s.setFiltro);
 
   return (
     <div className='mb-3 flex flex-wrap items-center gap-2'>

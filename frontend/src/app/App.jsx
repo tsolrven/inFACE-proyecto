@@ -3,6 +3,9 @@ import { BrowserRouter } from 'react-router-dom';
 import { useAuthStore } from '@/shared/auth/authStore';
 import ToastContainer from '@/shared/components/ui/Toast';
 import AppRoutes from '@/app/router/AppRoutes';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { queryClient } from '@/shared/api/queryClient';
 
 function SplashScreen() {
   return (
@@ -23,9 +26,12 @@ export default function App() {
   if (cargando) return <SplashScreen />;
 
   return (
-    <BrowserRouter>
-      <AppRoutes />
-      <ToastContainer />
-    </BrowserRouter>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <AppRoutes />
+        <ToastContainer />
+      </BrowserRouter>
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
   );
 }

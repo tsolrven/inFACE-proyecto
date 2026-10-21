@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
-import { alternarGuardadoComentario } from '@/shared/post/bookmarks/bookmarks.api';
+import { alternarGuardado } from '@/shared/post/bookmarks/bookmarks.api';
 import { mostrarToast } from '@/shared/stores/toastStore';
 
 // Tipo de contenido -> ruta. Cuando exista el foro o los anuncios, se agrega una línea acá.
@@ -28,11 +28,12 @@ export default function SavedCommentCard({ comentario, onQuitarDeGuardados }) {
     e.stopPropagation();
     setQuitando(true);
     try {
-      await alternarGuardadoComentario(comentario.id);
+      await alternarGuardado('comentario', comentario.id);
       mostrarToast('Quitado de guardados');
       onQuitarDeGuardados?.(comentario.id);
-    } catch {
+    } catch (err) {
       setQuitando(false);
+      mostrarToast(err.message || 'No se pudo quitar de guardados');
     }
   }
 

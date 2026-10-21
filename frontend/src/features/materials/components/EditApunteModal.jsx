@@ -10,7 +10,9 @@ import {
   metaDeArchivo,
   formatearTamanio,
 } from '@/features/materials/utils/fileMeta';
-import { useRepositorioStore } from '@/features/materials/store/materialsStore';
+import { useQueryClient } from '@tanstack/react-query';
+import { useEditarApunte } from '@/features/materials/hooks/useApuntes';
+import { parchearContenido } from '@/shared/post/cache';
 import CodeEditor from '@/features/materials/components/CodeEditor';
 import BadgeSelector, {
   InfoTooltip,
@@ -26,68 +28,63 @@ const MAX_ARCHIVOS = 10; //debe coincidir con MAX_ARCHIVOS_POR_APUNTE en el back
 const MAX_TAMANIO_MB = 20; //debe coincidir con el límite de multer.helper.js
 const MAX_TAMANIO_BYTES = MAX_TAMANIO_MB * 1024 * 1024;
 
-export default function EditApunteModal({
-  open,
-  onClose,
-  apunte,
-  carreraId,
-  onSaved,
-}) {
-  const fuentesIniciales = (a) => ({
-    file: (a?.archivos?.length ?? 0) > 0,
-    link: (a?.links?.length ?? 0) > 0,
-    snippet: !!a?.codigo_snippet,
-  });
+// Envoltorio: el formulario solo existe mientras el modal está abierto.
+// Así sus useState toman los datos del apunte al abrirse, y los cambios
+// posteriores del caché (votos, guardados, el propio guardado) no pisan lo escrito.
+export default function EditApunteModal({ open, apunte, ...props }) {
+  if (!open || !apunte) return null;
+  return (
+    <EditApunteForm
+      apunte={apunte}
+      {...props}
+    />
+  );
+}
 
-  const [fuentes, setFuentes] = useState({
-    file: false,
-    link: false,
-    snippet: false,
-  });
-  const [titulo, setTitulo] = useState('');
-  const [descripcion, setDescripcion] = useState('');
-  const [ramoId, setRamoId] = useState('');
+function EditApunteForm({ onClose, apunte, carreraId, onSaved }) {
+  const [fuentes, setFuentes] = useState(() => ({
+    file: (apunte.archivos?.length ?? 0) > 0,
+    link: (apunte.links?.length ?? 0) > 0,
+    snippet: !!apunte.codigo_snippet,
+  }));
+  const [titulo, setTitulo] = useState(apunte.titulo ?? '');
+  const [descripcion, setDescripcion] = useState(apunte.descripcion ?? '');
+  const [ramoId, setRamoId] = useState(apunte.ramo?.id ?? '');
   const [ramosOpciones, setRamosOpciones] = useState([]);
-  const [hashtagsTexto, setHashtagsTexto] = useState('');
-  const [links, setLinks] = useState(['']);
-  const [codigoSnippet, setCodigoSnippet] = useState('');
-  const [lenguajeSnippet, setLenguajeSnippet] = useState('texto');
-  const [etiquetasVisuales, setEtiquetasVisuales] = useState([]);
+  const [hashtagsTexto, setHashtagsTexto] = useState(
+    (apunte.hashtags ?? []).join(' '),
+  );
+  const [links, setLinks] = useState(
+    apunte.links?.length ? apunte.links : [''],
+  );
+  const [codigoSnippet, setCodigoSnippet] = useState(
+    apunte.codigo_snippet ?? '',
+  );
+  const [lenguajeSnippet, setLenguajeSnippet] = useState(
+    apunte.lenguaje_snippet ?? 'texto',
+  );
+  const [etiquetasVisuales, setEtiquetasVisuales] = useState(
+    apunte.etiquetas_visuales ?? [],
+  );
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(null);
 
-  const [archivosActuales, setArchivosActuales] = useState([]);
+  const [archivosActuales, setArchivosActuales] = useState(
+    apunte.archivos ?? [],
+  );
   const [archivosNuevos, setArchivosNuevos] = useState([]);
   const [eliminandoId, setEliminandoId] = useState(null);
 
-  const editarApunte = useRepositorioStore((s) => s.editarApunte);
-  const actualizarApunteEnFeed = useRepositorioStore(
-    (s) => s.actualizarApunteEnFeed,
-  );
+  const qc = useQueryClient();
+  const editar = useEditarApunte();
 
   useEffect(() => {
-    if (!open || !apunte) return;
-    setFuentes(fuentesIniciales(apunte));
-    setTitulo(apunte.titulo ?? '');
-    setDescripcion(apunte.descripcion ?? '');
-    setRamoId(apunte.ramo?.id ?? '');
-    setHashtagsTexto((apunte.hashtags ?? []).join(' '));
-    setLinks(apunte.links?.length ? apunte.links : ['']);
-    setCodigoSnippet(apunte.codigo_snippet ?? '');
-    setLenguajeSnippet(apunte.lenguaje_snippet ?? 'texto');
-    setEtiquetasVisuales(apunte.etiquetas_visuales ?? []);
-    setArchivosActuales(apunte.archivos ?? []);
-    setArchivosNuevos([]);
-    setError(null);
-  }, [open, apunte]);
-
-  useEffect(() => {
-    if (!open || !carreraId) return;
+    if (!carreraId) return;
     listarRamosPorCarrera(carreraId).then((porSemestre) => {
       const flatten = Object.values(porSemestre).flat();
       setRamosOpciones(flatten);
     });
-  }, [open, carreraId]);
+  }, [carreraId]);
 
   function handleClose() {
     if (enviando) return;
@@ -191,15 +188,18 @@ export default function EditApunteModal({
         .map((t) => t.replace('#', '').trim())
         .filter(Boolean);
 
-      const actualizado = await editarApunte(apunte.id, {
-        titulo,
-        descripcion,
-        ramo_id: ramoId,
-        hashtags,
-        links: fuentes.link ? links.map((l) => l.trim()).filter(Boolean) : [],
-        codigo_snippet: fuentes.snippet ? codigoSnippet : null,
-        lenguaje_snippet: fuentes.snippet ? lenguajeSnippet : null,
-        etiquetas_visuales: etiquetasVisuales,
+      const actualizado = await editar.mutateAsync({
+        id: apunte.id,
+        payload: {
+          titulo,
+          descripcion,
+          ramo_id: ramoId,
+          hashtags,
+          links: fuentes.link ? links.map((l) => l.trim()).filter(Boolean) : [],
+          codigo_snippet: fuentes.snippet ? codigoSnippet : null,
+          lenguaje_snippet: fuentes.snippet ? lenguajeSnippet : null,
+          etiquetas_visuales: etiquetasVisuales,
+        },
       });
 
       let archivosFinales = archivosActuales;
@@ -233,7 +233,7 @@ export default function EditApunteModal({
         0,
       );
 
-      actualizarApunteEnFeed(apunte.id, {
+      parchearContenido(qc, 'apunte', apunte.id, {
         archivos: archivosFinales,
         descargas,
       });
@@ -247,11 +247,9 @@ export default function EditApunteModal({
     }
   }
 
-  if (!apunte) return null;
-
   return (
     <Modal
-      open={open}
+      open
       onClose={handleClose}
       maxWidth='560px'
     >

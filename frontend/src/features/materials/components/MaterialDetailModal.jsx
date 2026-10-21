@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Modal, { ModalHeader } from '@/shared/components/ui/Modal';
 import CommentThread from '@/shared/post/comments/CommentThread';
-import { obtenerApunte } from '@/features/materials/api/materials.api';
 import {
   listarComentarios,
   crearComentario,
 } from '@/shared/post/comments/comments.api';
+import { COMENTARIO_MAX } from '@/shared/post/comments/constants';
 import { colorPorRamo } from '@/shared/lib/courseColors';
 import {
   metaDeArchivo,
@@ -15,21 +16,26 @@ import {
   formatearTamanio,
 } from '@/features/materials/utils/fileMeta';
 import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
-import { useRepositorioStore } from '@/features/materials/store/materialsStore';
-import { predecirVoto } from '@/shared/post/votes/votes';
 import { useAuthStore } from '@/shared/auth/authStore';
 import { descargarArchivo } from '@/features/materials/api/files.api';
-import { votarApunte } from '@/shared/post/votes/votes.api';
-import { alternarGuardadoApunte } from '@/shared/post/bookmarks/bookmarks.api';
+import {
+  useApunte,
+  useEliminarApunte,
+} from '@/features/materials/hooks/useApuntes';
+import { useVotar } from '@/shared/post/votes/useVotar';
+import { useGuardar } from '@/shared/post/bookmarks/useGuardar';
+import { parchearContenido } from '@/shared/post/cache';
 import { mostrarToast } from '@/shared/stores/toastStore';
 import EditApunteModal from '@/features/materials/components/EditApunteModal';
 import ConfirmDialog from '@/shared/components/ui/ConfirmDialog';
 import ReportModal from '@/shared/moderation/ReportModal';
 import VotePill from '@/shared/post/votes/VotePill';
+import ShareButton from '@/shared/post/share/ShareButton';
 import CodeViewer from '@/features/materials/components/CodeViewer';
 import BookmarkIcon from '@/shared/post/bookmarks/BookmarkIcon';
-import ShareButton from '@/shared/post/share/ShareButton';
-import { esStaff } from '@/shared/auth/roles';
+import { esStaff, puedeEditar, puedeEliminar } from '@/shared/auth/roles';
+
+const comentariosKey = (id) => ['comentario', 'list', 'apunte', id];
 
 function insertarRespuesta(comentarios, padreId, nueva) {
   return comentarios.map((c) => {
@@ -84,23 +90,23 @@ function contarComentarios(comentarios) {
 export default function MaterialDetailModal() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const actualizarApunteEnFeed = useRepositorioStore(
-    (s) => s.actualizarApunteEnFeed,
-  );
-  const eliminarApunteDelFeed = useRepositorioStore(
-    (s) => s.eliminarApunteDelFeed,
-  );
+  const location = useLocation();
+  const qc = useQueryClient();
   const usuario = useAuthStore((s) => s.usuario);
 
-  const [apunte, setApunte] = useState(null);
-  const [comentarios, setComentarios] = useState([]);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState(null);
+  const { data: apunte, isPending: cargando, error } = useApunte(id);
+  const { data: comentarios = [] } = useQuery({
+    queryKey: comentariosKey(id),
+    queryFn: () => listarComentarios('apunte', id),
+  });
+  const votarMut = useVotar('apunte');
+  const guardarMut = useGuardar('apunte');
+  const eliminarMut = useEliminarApunte();
+
   const [textoNuevo, setTextoNuevo] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [editando, setEditando] = useState(false);
   const [confirmandoEliminar, setConfirmandoEliminar] = useState(false);
-  const [eliminando, setEliminando] = useState(false);
   const [errorEliminar, setErrorEliminar] = useState(null);
   const [reportando, setReportando] = useState(false);
   const [menuAbierto, setMenuAbierto] = useState(false);
@@ -117,142 +123,68 @@ export default function MaterialDetailModal() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const esDueno =
-    usuario &&
-    apunte &&
-    (apunte.autor?.id === usuario.id || esStaff(usuario.rol));
-
-  useEffect(() => {
-    let cancelado = false;
-    setCargando(true);
-    Promise.all([obtenerApunte(id), listarComentarios(id)])
-      .then(([apunteData, comentariosData]) => {
-        if (cancelado) return;
-        setApunte(apunteData);
-        setComentarios(comentariosData);
-      })
-      .catch((err) => !cancelado && setError(err.message))
-      .finally(() => !cancelado && setCargando(false));
-    return () => {
-      cancelado = true;
-    };
-  }, [id]);
-
-  async function handleVotar(e, tipo) {
-    e?.stopPropagation?.();
-    const anterior = { mi_voto: apunte.mi_voto, votos_neto: apunte.votos_neto };
-
-    // 1) predicción instantánea
-    const { mi_voto, delta } = predecirVoto(apunte.mi_voto, tipo);
-    const prediccion = { mi_voto, votos_neto: apunte.votos_neto + delta };
-    setApunte((prev) => ({ ...prev, ...prediccion }));
-    actualizarApunteEnFeed(id, prediccion);
-
-    try {
-      // 2) la verdad del servidor reemplaza la predicción
-      const real = await votarApunte(id, tipo);
-      const estadoReal = { mi_voto: real.mi_voto, votos_neto: real.votos_neto };
-      setApunte((prev) => ({ ...prev, ...estadoReal }));
-      actualizarApunteEnFeed(id, estadoReal);
-    } catch {
-      // 3) si falla, vuelve atrás
-      setApunte((prev) => ({ ...prev, ...anterior }));
-      actualizarApunteEnFeed(id, anterior);
-    }
-  }
-
-  const location = useLocation();
+  const esAutor = puedeEditar(usuario, apunte?.autor?.id);
+  const puedeBorrar = puedeEliminar(usuario, apunte?.autor?.id);
+  const esModerador = esStaff(usuario?.rol);
 
   function handleClose() {
     if (location.state?.backgroundLocation) navigate(-1);
     else navigate('/repositorio-materiales', { replace: true });
   }
 
-  async function handleGuardar() {
+  function handleVotar(e, tipo) {
+    e?.stopPropagation?.();
+    votarMut.mutate({ id, tipo });
+  }
+
+  function handleGuardar() {
     setMenuAbierto(false);
-    const anterior = apunte.esta_guardado;
-    setApunte((prev) => ({ ...prev, esta_guardado: !anterior }));
-    actualizarApunteEnFeed(id, { esta_guardado: !anterior });
-    try {
-      const { guardado } = await alternarGuardadoApunte(id);
-      setApunte((prev) => ({ ...prev, esta_guardado: guardado }));
-      actualizarApunteEnFeed(id, { esta_guardado: guardado });
-      mostrarToast(guardado ? 'Publicación guardada' : 'Quitado de guardados');
-    } catch {
-      setApunte((prev) => ({ ...prev, esta_guardado: anterior }));
-      actualizarApunteEnFeed(id, { esta_guardado: anterior });
-    }
+    guardarMut.mutate({ id });
   }
 
-  function handleNuevaRespuesta(padreId, nueva) {
-    setComentarios((prev) => insertarRespuesta(prev, padreId, nueva));
-  }
-
-  function handleComentarioEliminado(comentarioId, eliminadoPermanente) {
-    setComentarios((prev) => {
-      const actualizados = eliminadoPermanente
-        ? eliminarNodoDelArbol(prev, comentarioId)
-        : marcarComoEliminado(prev, comentarioId);
-      actualizarApunteEnFeed(id, {
-        comentarios_count: contarComentarios(actualizados),
-      });
-      return actualizados;
+  // un solo lugar para tocar el árbol de comentarios y mantener el contador
+  function actualizarComentarios(fn) {
+    const nuevos = fn(qc.getQueryData(comentariosKey(id)) ?? []);
+    qc.setQueryData(comentariosKey(id), nuevos);
+    parchearContenido(qc, 'apunte', id, {
+      comentarios_count: contarComentarios(nuevos),
     });
   }
 
+  function handleNuevaRespuesta(padreId, nueva) {
+    actualizarComentarios((prev) => insertarRespuesta(prev, padreId, nueva));
+  }
+
+  function handleComentarioEliminado(comentarioId, eliminadoPermanente) {
+    actualizarComentarios((prev) =>
+      eliminadoPermanente
+        ? eliminarNodoDelArbol(prev, comentarioId)
+        : marcarComoEliminado(prev, comentarioId),
+    );
+  }
+
   async function handleEnviarComentario() {
-    if (!textoNuevo.trim()) return;
+    const texto = textoNuevo.trim();
+    if (!texto) return;
     setEnviando(true);
     try {
-      const nuevo = await crearComentario(id, { contenido: textoNuevo });
-      const actualizados = [...comentarios, nuevo];
-      setComentarios(actualizados);
-      actualizarApunteEnFeed(id, {
-        comentarios_count: contarComentarios(actualizados),
-      });
+      const nuevo = await crearComentario('apunte', id, { contenido: texto });
+      actualizarComentarios((prev) => [...prev, nuevo]);
       setTextoNuevo('');
+    } catch (err) {
+      mostrarToast(err.message || 'No se pudo publicar el comentario');
     } finally {
       setEnviando(false);
     }
   }
 
-  function handleEdicionGuardada(actualizado) {
-    const {
-      titulo,
-      descripcion,
-      ramo,
-      hashtags,
-      links,
-      codigo_snippet,
-      etiquetas_visuales,
-      editado_en,
-      archivos,
-      descargas,
-    } = actualizado;
-    setApunte((prev) => ({
-      ...prev,
-      titulo,
-      descripcion,
-      etiquetas_visuales,
-      ramo,
-      hashtags,
-      links,
-      codigo_snippet,
-      editado_en,
-      archivos,
-      descargas,
-    }));
-  }
-
   async function handleEliminar() {
-    setEliminando(true);
     setErrorEliminar(null);
     try {
-      await eliminarApunteDelFeed(id);
+      await eliminarMut.mutateAsync(id);
       handleClose();
     } catch (err) {
       setErrorEliminar(err.message || 'No se pudo eliminar el material.');
-      setEliminando(false);
     }
   }
 
@@ -269,7 +201,9 @@ export default function MaterialDetailModal() {
       )}
 
       {error && !cargando && (
-        <div className='p-8 text-center text-sm text-red-400'>{error}</div>
+        <div className='p-8 text-center text-sm text-red-400'>
+          {error.message}
+        </div>
       )}
 
       {apunte && !cargando && (
@@ -302,43 +236,45 @@ export default function MaterialDetailModal() {
                       />{' '}
                       {apunte.esta_guardado ? 'Quitar de guardados' : 'Guardar'}
                     </button>
-                    {esDueno ? (
-                      <>
-                        <button
-                          type='button'
-                          onClick={() => {
-                            setMenuAbierto(false);
-                            setEditando(true);
-                          }}
-                          className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-neutral-300 transition-colors hover:bg-white/[0.05] hover:text-neutral-100'
-                        >
-                          <i className='ti ti-edit text-[14px]' /> Editar
-                        </button>
-                        <button
-                          type='button'
-                          onClick={() => {
-                            setMenuAbierto(false);
-                            setConfirmandoEliminar(true);
-                          }}
-                          className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-red-400 transition-colors hover:bg-red-500/[0.08]'
-                        >
-                          <i className='ti ti-trash text-[14px]' /> Eliminar
-                        </button>
-                      </>
-                    ) : (
-                      !esDueno &&
-                      usuario && (
-                        <button
-                          type='button'
-                          onClick={() => {
-                            setMenuAbierto(false);
-                            setReportando(true);
-                          }}
-                          className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-red-400 transition-colors hover:bg-red-500/[0.08]'
-                        >
-                          <i className='ti ti-flag text-[14px]' /> Reportar
-                        </button>
-                      )
+
+                    {esAutor && (
+                      <button
+                        type='button'
+                        onClick={() => {
+                          setMenuAbierto(false);
+                          setEditando(true);
+                        }}
+                        className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-neutral-300 transition-colors hover:bg-white/[0.05] hover:text-neutral-100'
+                      >
+                        <i className='ti ti-edit text-[14px]' /> Editar
+                      </button>
+                    )}
+
+                    {puedeBorrar && (
+                      <button
+                        type='button'
+                        onClick={() => {
+                          setMenuAbierto(false);
+                          setConfirmandoEliminar(true);
+                        }}
+                        className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-red-400 transition-colors hover:bg-red-500/[0.08]'
+                      >
+                        <i className='ti ti-trash text-[14px]' />{' '}
+                        {esAutor ? 'Eliminar' : 'Eliminar (moderación)'}
+                      </button>
+                    )}
+
+                    {usuario && !esAutor && !esModerador && (
+                      <button
+                        type='button'
+                        onClick={() => {
+                          setMenuAbierto(false);
+                          setReportando(true);
+                        }}
+                        className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-red-400 transition-colors hover:bg-red-500/[0.08]'
+                      >
+                        <i className='ti ti-flag text-[14px]' /> Reportar
+                      </button>
                     )}
                   </div>
                 )}
@@ -462,15 +398,19 @@ export default function MaterialDetailModal() {
               <textarea
                 value={textoNuevo}
                 onChange={(e) => setTextoNuevo(e.target.value)}
+                maxLength={COMENTARIO_MAX}
                 rows={3}
                 placeholder='Escribe un comentario o duda sobre este material...'
                 className='w-full resize-none bg-transparent text-[13px] text-neutral-100 outline-none placeholder-neutral-600'
               />
-              <div className='flex justify-end'>
+              <div className='flex items-center justify-between'>
+                <span className='text-[11px] text-neutral-600'>
+                  {textoNuevo.length}/{COMENTARIO_MAX}
+                </span>
                 <button
                   type='button'
                   onClick={handleEnviarComentario}
-                  disabled={enviando}
+                  disabled={enviando || !textoNuevo.trim()}
                   className='rounded-md bg-pink-500 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#D43E56] disabled:opacity-50'
                 >
                   {enviando ? 'Enviando...' : 'Comentar'}
@@ -489,7 +429,8 @@ export default function MaterialDetailModal() {
                 <CommentThread
                   key={comentario.id}
                   comentario={comentario}
-                  apunteId={id}
+                  tipoContenido='apunte'
+                  contenidoId={id}
                   onNuevaRespuesta={handleNuevaRespuesta}
                   onComentarioEliminado={handleComentarioEliminado}
                 />
@@ -497,40 +438,42 @@ export default function MaterialDetailModal() {
             </div>
           </div>
 
-          {esDueno && (
-            <>
-              <EditApunteModal
-                open={editando}
-                onClose={() => setEditando(false)}
-                apunte={apunte}
-                carreraId={usuario?.carrera_id}
-                onSaved={handleEdicionGuardada}
-              />
-              <ConfirmDialog
-                open={confirmandoEliminar}
-                title='Eliminar material'
-                message={
-                  errorEliminar ||
-                  'Esta acción no se puede deshacer. Se eliminarán también sus archivos, comentarios y votos.'
-                }
-                confirmLabel='Eliminar'
-                danger
-                loading={eliminando}
-                onConfirm={handleEliminar}
-                onCancel={() => {
-                  setConfirmandoEliminar(false);
-                  setErrorEliminar(null);
-                }}
-              />
-            </>
+          {esAutor && (
+            <EditApunteModal
+              open={editando}
+              onClose={() => setEditando(false)}
+              apunte={apunte}
+              carreraId={usuario?.carrera_id}
+            />
           )}
 
-          <ReportModal
-            open={reportando}
-            onClose={() => setReportando(false)}
-            tipoContenido='apunte'
-            contenidoId={id}
-          />
+          {puedeBorrar && (
+            <ConfirmDialog
+              open={confirmandoEliminar}
+              title='Eliminar material'
+              message={
+                errorEliminar ||
+                'Esta acción no se puede deshacer. Se eliminarán también sus archivos, comentarios y votos.'
+              }
+              confirmLabel='Eliminar'
+              danger
+              loading={eliminarMut.isPending}
+              onConfirm={handleEliminar}
+              onCancel={() => {
+                setConfirmandoEliminar(false);
+                setErrorEliminar(null);
+              }}
+            />
+          )}
+
+          {!esAutor && !esModerador && (
+            <ReportModal
+              open={reportando}
+              onClose={() => setReportando(false)}
+              tipoContenido='apunte'
+              contenidoId={id}
+            />
+          )}
         </>
       )}
     </Modal>

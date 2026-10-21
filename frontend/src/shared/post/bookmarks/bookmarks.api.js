@@ -1,14 +1,7 @@
 import { apiFetch } from '@/shared/api/client';
 
-export async function alternarGuardadoApunte(apunteId) {
-  const res = await apiFetch(`/guardados/apunte/${apunteId}`, {
-    method: 'POST',
-  });
-  return res.data;
-}
-
-export async function alternarGuardadoComentario(comentarioId) {
-  const res = await apiFetch(`/guardados/comentario/${comentarioId}`, {
+export async function alternarGuardado(tipoContenido, id) {
+  const res = await apiFetch(`/guardados/${tipoContenido}/${id}`, {
     method: 'POST',
   });
   return res.data;

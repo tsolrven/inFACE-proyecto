@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { votarComentario } from '@/shared/post/votes/votes.api';
-import { alternarGuardadoComentario } from '@/shared/post/bookmarks/bookmarks.api';
+import { votar } from '@/shared/post/votes/votes.api';
+import { alternarGuardado } from '@/shared/post/bookmarks/bookmarks.api';
+import { esStaff, puedeEditar, puedeEliminar } from '@/shared/auth/roles';
+import { COMENTARIO_MAX } from '@/shared/post/comments/constants';
 import { mostrarToast } from '@/shared/stores/toastStore';
 import {
   crearComentario,
@@ -21,7 +23,8 @@ const ANCHO_MENU = 150;
 
 export default function CommentThread({
   comentario,
-  apunteId,
+  tipoContenido,
+  contenidoId,
   onNuevaRespuesta,
   onComentarioEliminado,
 }) {
@@ -50,7 +53,9 @@ export default function CommentThread({
   const dropdownRef = useRef(null);
 
   const usuario = useAuthStore((s) => s.usuario);
-  const esDueno = usuario && comentario.autor?.id === usuario.id;
+  const esAutor = puedeEditar(usuario, comentario.autor?.id);
+  const puedeBorrar = puedeEliminar(usuario, comentario.autor?.id);
+  const esModerador = esStaff(usuario?.rol);
 
   useEffect(() => {
     if (!menuAbierto) return;
@@ -93,35 +98,35 @@ export default function CommentThread({
 
   async function handleVotar(tipo) {
     const anterior = { votoLocal, votosNeto };
-
-    // 1) predicción instantánea
     const { mi_voto, delta } = predecirVoto(votoLocal, tipo);
     setVotoLocal(mi_voto);
     setVotosNeto((v) => v + delta);
 
     try {
-      // 2) la verdad del servidor reemplaza la predicción
-      const real = await votarComentario(comentario.id, tipo);
+      const real = await votar('comentario', comentario.id, tipo);
       setVotoLocal(real.mi_voto);
       setVotosNeto(real.votos_neto);
-    } catch {
-      // 3) si falla, vuelve atrás
+    } catch (err) {
       setVotoLocal(anterior.votoLocal);
       setVotosNeto(anterior.votosNeto);
+      mostrarToast(err.message || 'No se pudo registrar tu voto');
     }
   }
 
   async function handleEnviarRespuesta() {
-    if (!textoRespuesta.trim()) return;
+    const texto = textoRespuesta.trim();
+    if (!texto) return;
     setEnviando(true);
     try {
-      const nueva = await crearComentario(apunteId, {
-        contenido: textoRespuesta,
+      const nueva = await crearComentario(tipoContenido, contenidoId, {
+        contenido: texto,
         padre_id: comentario.id,
       });
       onNuevaRespuesta(comentario.id, nueva);
       setTextoRespuesta('');
       setRespondiendo(false);
+    } catch (err) {
+      mostrarToast(err.message || 'No se pudo enviar la respuesta');
     } finally {
       setEnviando(false);
     }
@@ -137,22 +142,26 @@ export default function CommentThread({
     const anterior = estaGuardado;
     setEstaGuardado(!anterior);
     try {
-      const { guardado } = await alternarGuardadoComentario(comentario.id);
+      const { guardado } = await alternarGuardado('comentario', comentario.id);
       setEstaGuardado(guardado);
       mostrarToast(guardado ? 'Comentario guardado' : 'Quitado de guardados');
-    } catch {
+    } catch (err) {
       setEstaGuardado(anterior);
+      mostrarToast(err.message || 'No se pudo actualizar guardados');
     }
   }
 
   async function handleGuardarEdicion() {
-    if (!textoEditado.trim()) return;
+    const texto = textoEditado.trim();
+    if (!texto) return;
     setGuardandoEdicion(true);
     try {
-      const actualizado = await editarComentario(comentario.id, textoEditado);
+      const actualizado = await editarComentario(comentario.id, texto);
       setContenidoLocal(actualizado.contenido);
       setEditadoEnLocal(actualizado.editado_en);
       setEditando(false);
+    } catch (err) {
+      mostrarToast(err.message || 'No se pudo guardar la edición');
     } finally {
       setGuardandoEdicion(false);
     }
@@ -164,6 +173,8 @@ export default function CommentThread({
       const resultado = await eliminarComentario(comentario.id);
       onComentarioEliminado(comentario.id, resultado.eliminado_permanente);
       setConfirmandoEliminar(false);
+    } catch (err) {
+      mostrarToast(err.message || 'No se pudo eliminar el comentario');
     } finally {
       setEliminando(false);
     }
@@ -192,7 +203,8 @@ export default function CommentThread({
                 <CommentThread
                   key={respuesta.id}
                   comentario={respuesta}
-                  apunteId={apunteId}
+                  tipoContenido={tipoContenido}
+                  contenidoId={contenidoId}
                   onNuevaRespuesta={onNuevaRespuesta}
                   onComentarioEliminado={onComentarioEliminado}
                 />
@@ -236,6 +248,7 @@ export default function CommentThread({
             <textarea
               value={textoEditado}
               onChange={(e) => setTextoEditado(e.target.value)}
+              maxLength={COMENTARIO_MAX} 
               rows={2}
               className='w-full resize-none rounded-lg border border-white/[0.07] bg-[#111114] px-3 py-2 text-[12.5px] text-neutral-100 outline-none placeholder-neutral-600 focus:border-pink-500/40'
             />
@@ -313,6 +326,7 @@ export default function CommentThread({
             <textarea
               value={textoRespuesta}
               onChange={(e) => setTextoRespuesta(e.target.value)}
+              maxLength={COMENTARIO_MAX}
               rows={2}
               placeholder='Escribe tu respuesta...'
               className='w-full resize-none rounded-lg border border-white/[0.07] bg-[#111114] px-3 py-2 text-[12.5px] text-neutral-100 outline-none placeholder-neutral-600 focus:border-pink-500/40'
@@ -349,7 +363,8 @@ export default function CommentThread({
               <CommentThread
                 key={respuesta.id}
                 comentario={respuesta}
-                apunteId={apunteId}
+                tipoContenido={tipoContenido}
+                contenidoId={contenidoId}
                 onNuevaRespuesta={onNuevaRespuesta}
                 onComentarioEliminado={onComentarioEliminado}
               />
@@ -401,30 +416,32 @@ export default function CommentThread({
               />{' '}
               {estaGuardado ? 'Quitar de guardados' : 'Guardar'}
             </button>
-            {esDueno ? (
-              <>
-                <button
-                  type='button'
-                  onClick={() => {
-                    setMenuAbierto(false);
-                    handleAbrirEdicion();
-                  }}
-                  className='flex w-full items-center gap-2 px-3 py-2 text-left text-[12px] text-neutral-300 transition-colors hover:bg-white/[0.05] hover:text-neutral-100'
-                >
-                  <i className='ti ti-edit text-[13px]' /> Editar
-                </button>
-                <button
-                  type='button'
-                  onClick={() => {
-                    setMenuAbierto(false);
-                    setConfirmandoEliminar(true);
-                  }}
-                  className='flex w-full items-center gap-2 px-3 py-2 text-left text-[12px] text-red-400 transition-colors hover:bg-red-500/[0.08]'
-                >
-                  <i className='ti ti-trash text-[13px]' /> Eliminar
-                </button>
-              </>
-            ) : (
+            {esAutor && (
+              <button
+                type='button'
+                onClick={() => {
+                  setMenuAbierto(false);
+                  handleAbrirEdicion();
+                }}
+                className='flex w-full items-center gap-2 px-3 py-2 text-left text-[12px] text-neutral-300 transition-colors hover:bg-white/[0.05] hover:text-neutral-100'
+              >
+                <i className='ti ti-edit text-[13px]' /> Editar
+              </button>
+            )}
+            {puedeBorrar && (
+              <button
+                type='button'
+                onClick={() => {
+                  setMenuAbierto(false);
+                  setConfirmandoEliminar(true);
+                }}
+                className='flex w-full items-center gap-2 px-3 py-2 text-left text-[12px] text-red-400 transition-colors hover:bg-red-500/[0.08]'
+              >
+                <i className='ti ti-trash text-[13px]' />{' '}
+                {esAutor ? 'Eliminar' : 'Eliminar (moderación)'}
+              </button>
+            )}
+            {!esAutor && !esModerador && (
               <button
                 type='button'
                 onClick={() => {

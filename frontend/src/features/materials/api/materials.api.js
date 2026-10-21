@@ -16,6 +16,7 @@ export async function listarApuntes({
   orden,
   pagina = 1,
   limite = 20,
+  signal,
 } = {}) {
   const qs = buildQuery({
     carrera_id,
@@ -27,12 +28,12 @@ export async function listarApuntes({
     pagina,
     limite,
   });
-  const res = await apiFetch(`/apuntes${qs ? `?${qs}` : ''}`);
+  const res = await apiFetch(`/apuntes${qs ? `?${qs}` : ''}`, { signal });
   return { apuntes: res.data, meta: res.meta };
 }
 
-export async function obtenerApunte(id) {
-  const res = await apiFetch(`/apuntes/${id}`);
+export async function obtenerApunte(id, { signal } = {}) {
+  const res = await apiFetch(`/apuntes/${id}`, { signal });
   return res.data;
 }
 

@@ -6,6 +6,7 @@ import {
   obtenerPerfilActual,
 } from './auth.service';
 import { refrescarSesion, clearAccessToken } from '@/shared/api/client';
+import { queryClient } from '@/shared/api/queryClient';
 
 export const useAuthStore = create((set) => ({
   usuario: null,
@@ -27,6 +28,7 @@ export const useAuthStore = create((set) => ({
     } catch {
       // sin conexión: igual se cierra la sesión localmente
     } finally {
+      queryClient.clear();
       set({ usuario: null });
     }
   },
@@ -54,5 +56,6 @@ export const useAuthStore = create((set) => ({
 }));
 
 window.addEventListener('auth:session-expired', () => {
+  queryClient.clear();
   useAuthStore.setState({ usuario: null });
 });

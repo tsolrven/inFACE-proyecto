@@ -1,12 +1,16 @@
 import { apiFetch } from '@/shared/api/client';
 
-export async function listarComentarios(apunteId) {
-  const res = await apiFetch(`/comentarios/apunte/${apunteId}`);
+export async function listarComentarios(tipoContenido, contenidoId) {
+  const res = await apiFetch(`/comentarios/${tipoContenido}/${contenidoId}`);
   return res.data;
 }
 
-export async function crearComentario(apunteId, { contenido, padre_id } = {}) {
-  const res = await apiFetch(`/comentarios/apunte/${apunteId}`, {
+export async function crearComentario(
+  tipoContenido,
+  contenidoId,
+  { contenido, padre_id } = {},
+) {
+  const res = await apiFetch(`/comentarios/${tipoContenido}/${contenidoId}`, {
     method: 'POST',
     body: { contenido, padre_id },
   });

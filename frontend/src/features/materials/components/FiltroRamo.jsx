@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { listarRamosPorCarrera } from '@/shared/api/catalog.api';
-import { useRepositorioStore } from '@/features/materials/store/materialsStore';
+import { useFiltrosStore } from '@/features/materials/store/filtrosStore';
 import { colorPorRamo } from '@/shared/lib/courseColors';
 
 function agruparPorAnio(ramosPorSemestre) {
@@ -25,8 +25,9 @@ export default function FiltroRamo({ carreraId }) {
   const [cargando, setCargando] = useState(false);
   const ref = useRef(null);
 
-  const ramoId = useRepositorioStore((s) => s.filtros.ramo_id);
-  const setFiltro = useRepositorioStore((s) => s.setFiltro);
+  const ramoId = useFiltrosStore((s) => s.filtros.ramo_id);
+  const setFiltro = useFiltrosStore((s) => s.setFiltro);
+
   const [ramoSeleccionado, setRamoSeleccionado] = useState(null);
 
   useEffect(() => {

@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useRepositorioStore } from '@/features/materials/store/materialsStore';
 import { useAuthStore } from '@/shared/auth/authStore';
 import { colorPorRamo } from '@/shared/lib/courseColors';
 import {
@@ -11,38 +10,31 @@ import {
 } from '@/features/materials/utils/fileMeta';
 import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
 import { descargarArchivo } from '@/features/materials/api/files.api';
-import { alternarGuardadoApunte } from '@/shared/post/bookmarks/bookmarks.api';
-import { mostrarToast } from '@/shared/stores/toastStore';
+import { useEliminarApunte } from '@/features/materials/hooks/useApuntes';
+import { useVotar } from '@/shared/post/votes/useVotar';
+import { useGuardar } from '@/shared/post/bookmarks/useGuardar';
 import EditApunteModal from '@/features/materials/components/EditApunteModal';
 import ConfirmDialog from '@/shared/components/ui/ConfirmDialog';
 import ReportModal from '@/shared/moderation/ReportModal';
 import VotePill from '@/shared/post/votes/VotePill';
+import ShareButton from '@/shared/post/share/ShareButton';
 import CodeViewer from '@/features/materials/components/CodeViewer';
 import BookmarkIcon from '@/shared/post/bookmarks/BookmarkIcon';
-import ShareButton from '@/shared/post/share/ShareButton';
-import { esStaff } from '@/shared/auth/roles';
+import { esStaff, puedeEditar, puedeEliminar } from '@/shared/auth/roles';
 
 export default function MaterialCard({ apunte, onQuitarDeGuardados }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const votar = useRepositorioStore((s) => s.votar);
-  const eliminarApunteDelFeed = useRepositorioStore(
-    (s) => s.eliminarApunteDelFeed,
-  );
-  const actualizarApunteEnFeed = useRepositorioStore(
-    (s) => s.actualizarApunteEnFeed,
-  );
   const usuario = useAuthStore((s) => s.usuario);
+  const votarMut = useVotar('apunte');
+  const guardarMut = useGuardar('apunte');
+  const eliminarMut = useEliminarApunte();
 
   const [editando, setEditando] = useState(false);
   const [confirmandoEliminar, setConfirmandoEliminar] = useState(false);
-  const [eliminando, setEliminando] = useState(false);
   const [errorEliminar, setErrorEliminar] = useState(null);
   const [reportando, setReportando] = useState(false);
   const [menuAbierto, setMenuAbierto] = useState(false);
-  const [estaGuardado, setEstaGuardado] = useState(
-    apunte.esta_guardado ?? false,
-  );
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -55,8 +47,9 @@ export default function MaterialCard({ apunte, onQuitarDeGuardados }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const esDueno =
-    usuario && (apunte.autor?.id === usuario.id || esStaff(usuario.rol));
+  const esAutor = puedeEditar(usuario, apunte.autor?.id);
+  const puedeBorrar = puedeEliminar(usuario, apunte.autor?.id);
+  const esModerador = esStaff(usuario?.rol);
 
   const ramoColor = colorPorRamo(apunte.ramo?.id);
 
@@ -68,41 +61,33 @@ export default function MaterialCard({ apunte, onQuitarDeGuardados }) {
 
   function handleVotar(e, tipo) {
     e.stopPropagation();
-    votar(apunte.id, tipo);
+    votarMut.mutate({ id: apunte.id, tipo });
   }
 
-  async function handleGuardar(e) {
+  function handleGuardar(e) {
     e.stopPropagation();
     setMenuAbierto(false);
-    const anterior = estaGuardado;
-    setEstaGuardado(!anterior);
-    try {
-      const { guardado } = await alternarGuardadoApunte(apunte.id);
-      setEstaGuardado(guardado);
-      actualizarApunteEnFeed(apunte.id, { esta_guardado: guardado });
-      if (guardado) {
-        mostrarToast('Publicación guardada');
-      } else {
-        mostrarToast('Quitado de guardados');
-        onQuitarDeGuardados?.(apunte.id);
-      }
-    } catch {
-      setEstaGuardado(anterior);
-    }
+    guardarMut.mutate(
+      { id: apunte.id },
+      {
+        onSuccess: ({ guardado }) => {
+          if (!guardado) onQuitarDeGuardados?.(apunte.id);
+        },
+      },
+    );
   }
 
   async function handleEliminar() {
-    setEliminando(true);
     setErrorEliminar(null);
     try {
-      await eliminarApunteDelFeed(apunte.id);
+      await eliminarMut.mutateAsync(apunte.id);
       setConfirmandoEliminar(false);
     } catch (err) {
       setErrorEliminar(err.message || 'No se pudo eliminar el material.');
-    } finally {
-      setEliminando(false);
     }
   }
+
+  // return (  ← desde aquí el JSX sigue igual, salvo los cambios de abajo
 
   return (
     <div
@@ -131,49 +116,52 @@ export default function MaterialCard({ apunte, onQuitarDeGuardados }) {
               className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-neutral-300 transition-colors hover:bg-white/[0.05] hover:text-neutral-100'
             >
               <BookmarkIcon
-                filled={estaGuardado}
-                className={`text-[14px] ${estaGuardado ? 'text-white' : ''}`}
+                filled={apunte.esta_guardado}
+                className={`text-[14px] ${apunte.esta_guardado ? 'text-white' : ''}`}
               />{' '}
-              {estaGuardado ? 'Quitar de guardados' : 'Guardar'}
+              {apunte.esta_guardado ? 'Quitar de guardados' : 'Guardar'}
             </button>
-            {esDueno ? (
-              <>
-                <button
-                  type='button'
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setMenuAbierto(false);
-                    setEditando(true);
-                  }}
-                  className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-neutral-300 transition-colors hover:bg-white/[0.05] hover:text-neutral-100'
-                >
-                  <i className='ti ti-edit text-[14px]' /> Editar
-                </button>
-                <button
-                  type='button'
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setMenuAbierto(false);
-                    setConfirmandoEliminar(true);
-                  }}
-                  className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-red-400 transition-colors hover:bg-red-500/[0.08]'
-                >
-                  <i className='ti ti-trash text-[14px]' /> Eliminar
-                </button>
-              </>
-            ) : (
-              usuario && (
-                <button
-                  type='button'
-                  onClick={() => {
-                    setMenuAbierto(false);
-                    setReportando(true);
-                  }}
-                  className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-red-400 transition-colors hover:bg-red-500/[0.08]'
-                >
-                  <i className='ti ti-flag text-[14px]' /> Reportar
-                </button>
-              )
+
+            {esAutor && (
+              <button
+                type='button'
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMenuAbierto(false);
+                  setEditando(true);
+                }}
+                className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-neutral-300 transition-colors hover:bg-white/[0.05] hover:text-neutral-100'
+              >
+                <i className='ti ti-edit text-[14px]' /> Editar
+              </button>
+            )}
+
+            {puedeBorrar && (
+              <button
+                type='button'
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMenuAbierto(false);
+                  setConfirmandoEliminar(true);
+                }}
+                className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-red-400 transition-colors hover:bg-red-500/[0.08]'
+              >
+                <i className='ti ti-trash text-[14px]' />{' '}
+                {esAutor ? 'Eliminar' : 'Eliminar (moderación)'}
+              </button>
+            )}
+
+            {usuario && !esAutor && !esModerador && (
+              <button
+                type='button'
+                onClick={() => {
+                  setMenuAbierto(false);
+                  setReportando(true);
+                }}
+                className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-red-400 transition-colors hover:bg-red-500/[0.08]'
+              >
+                <i className='ti ti-flag text-[14px]' /> Reportar
+              </button>
             )}
           </div>
         )}
@@ -273,7 +261,7 @@ export default function MaterialCard({ apunte, onQuitarDeGuardados }) {
         </div>
       </div>
 
-      {!esDueno && (
+      {!esAutor && !esModerador && (
         <div onClick={(e) => e.stopPropagation()}>
           <ReportModal
             open={reportando}
@@ -284,14 +272,16 @@ export default function MaterialCard({ apunte, onQuitarDeGuardados }) {
         </div>
       )}
 
-      {esDueno && (
+      {(esAutor || puedeBorrar) && (
         <div onClick={(e) => e.stopPropagation()}>
-          <EditApunteModal
-            open={editando}
-            onClose={() => setEditando(false)}
-            apunte={apunte}
-            carreraId={usuario?.carrera_id}
-          />
+          {esAutor && (
+            <EditApunteModal
+              open={editando}
+              onClose={() => setEditando(false)}
+              apunte={apunte}
+              carreraId={usuario?.carrera_id}
+            />
+          )}
           <ConfirmDialog
             open={confirmandoEliminar}
             title='Eliminar material'
@@ -301,7 +291,7 @@ export default function MaterialCard({ apunte, onQuitarDeGuardados }) {
             }
             confirmLabel='Eliminar'
             danger
-            loading={eliminando}
+            loading={eliminarMut.isPending}
             onConfirm={handleEliminar}
             onCancel={() => {
               setConfirmandoEliminar(false);
