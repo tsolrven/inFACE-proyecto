@@ -9,6 +9,7 @@ import CodeEditor from '@/features/materials/components/CodeEditor';
 import BadgeSelector, {
   InfoTooltip,
 } from '@/features/materials/components/BadgeSelector';
+import { normalizarHashtags } from '@/features/materials/utils/normalizarHashtags';
 
 const TIPOS = [
   { value: 'file', icon: 'ti-upload', label: 'Archivo' },
@@ -131,10 +132,7 @@ export default function UploadModal({ open, onClose, carreraId }) {
 
     setEnviando(true);
     try {
-      const hashtags = hashtagsTexto
-        .split(/[\s,]+/)
-        .map((t) => t.replace('#', '').trim())
-        .filter(Boolean);
+      const hashtags = normalizarHashtags(hashtagsTexto);
 
       const apunte = await crearApunte({
         titulo,
