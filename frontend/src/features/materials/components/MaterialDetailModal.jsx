@@ -1,13 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import Modal, { ModalHeader } from '@/shared/components/ui/Modal';
-import CommentThread from '@/shared/post/comments/CommentThread';
-import { useComments } from '@/shared/post/comments/useComments';
-import { useCommentActions } from '@/shared/post/comments/useCommentActions';
-import {
-  COMENTARIO_MAX,
-  COMENTARIO_ORDENES,
-} from '@/shared/post/comments/constants';
+import CommentsSection from '@/shared/post/comments/CommentsSection';
 import { colorPorRamo } from '@/shared/lib/courseColors';
 import {
   metaDeArchivo,
@@ -41,25 +35,10 @@ export default function MaterialDetailModal() {
   const usuario = useAuthStore((s) => s.usuario);
 
   const { data: apunte, isPending: cargando, error } = useApunte(id);
-
-  const [orden, setOrden] = useState('mejores');
-  const {
-    data: comentariosData,
-    isPending: cargandoComentarios,
-    isPlaceholderData,
-    error: errorComentarios,
-    hasNextPage,
-    fetchNextPage,
-    isFetchingNextPage,
-  } = useComments('apunte', id, orden);
-  const raices = comentariosData?.raices ?? [];
-  const acciones = useCommentActions('apunte', id, orden);
-
   const votarMut = useVotar('apunte');
   const guardarMut = useGuardar('apunte');
   const eliminarMut = useEliminarApunte();
 
-  const [textoNuevo, setTextoNuevo] = useState('');
   const [editando, setEditando] = useState(false);
   const [confirmandoEliminar, setConfirmandoEliminar] = useState(false);
   const [errorEliminar, setErrorEliminar] = useState(null);
@@ -95,15 +74,6 @@ export default function MaterialDetailModal() {
   function handleGuardar() {
     setMenuAbierto(false);
     guardarMut.mutate({ id, guardar: !apunte.esta_guardado });
-  }
-
-  function handleEnviarComentario() {
-    const texto = textoNuevo.trim();
-    if (!texto) return;
-    acciones.crear.mutate(
-      { contenido: texto },
-      { onSuccess: () => setTextoNuevo('') },
-    );
   }
 
   async function handleEliminar() {
@@ -317,99 +287,12 @@ export default function MaterialDetailModal() {
             ref={comentariosRef}
             className='border-t border-white/[0.06] bg-[rgba(23,23,27,0.4)] p-6'
           >
-            <h3 className='mb-4 flex items-center gap-1.5 text-sm font-semibold text-neutral-100'>
-              <i className='ti ti-messages text-base text-pink-500' />
-              Discusión y Respuestas ({apunte.comentarios_count ?? 0})
-            </h3>
-
-            <div className='mb-6 flex flex-col gap-2 rounded-[10px] border border-white/[0.06] bg-[#111114] p-2.5'>
-              <textarea
-                value={textoNuevo}
-                onChange={(e) => setTextoNuevo(e.target.value)}
-                maxLength={COMENTARIO_MAX}
-                rows={3}
-                placeholder='Escribe un comentario o duda sobre este material...'
-                className='w-full resize-none bg-transparent text-[13px] text-neutral-100 outline-none placeholder-neutral-600'
-              />
-              <div className='flex items-center justify-between'>
-                <span className='text-[11px] text-neutral-600'>
-                  {textoNuevo.length}/{COMENTARIO_MAX}
-                </span>
-                <button
-                  type='button'
-                  onClick={handleEnviarComentario}
-                  disabled={acciones.crear.isPending || !textoNuevo.trim()}
-                  className='rounded-md bg-pink-500 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#D43E56] disabled:opacity-50'
-                >
-                  {acciones.crear.isPending ? 'Enviando...' : 'Comentar'}
-                </button>
-              </div>
-            </div>
-
-            <div className='mb-4 flex items-center gap-1'>
-              {COMENTARIO_ORDENES.map((o) => (
-                <button
-                  key={o.valor}
-                  type='button'
-                  onClick={() => setOrden(o.valor)}
-                  className={`rounded-full px-2.5 py-1 text-[11.5px] font-medium transition-colors ${
-                    orden === o.valor
-                      ? 'bg-white/[0.1] text-neutral-100'
-                      : 'text-neutral-500 hover:text-neutral-200'
-                  }`}
-                >
-                  {o.label}
-                </button>
-              ))}
-            </div>
-
-            <div
-              className={`flex flex-col gap-4 transition-opacity ${
-                isPlaceholderData ? 'opacity-60' : ''
-              }`}
-            >
-              {cargandoComentarios && (
-                <div className='flex items-center justify-center py-6 text-neutral-600'>
-                  <i className='ti ti-loader-2 animate-spin text-xl' />
-                </div>
-              )}
-
-              {errorComentarios && (
-                <p className='text-center text-[12.5px] text-red-400'>
-                  {errorComentarios.message}
-                </p>
-              )}
-
-              {!cargandoComentarios &&
-                !errorComentarios &&
-                raices.length === 0 && (
-                  <p className='text-center text-[12.5px] text-neutral-600'>
-                    Todavía no hay comentarios. ¡Sé el primero en preguntar o
-                    aportar!
-                  </p>
-                )}
-
-              {raices.map((comentario) => (
-                <CommentThread
-                  key={comentario.id}
-                  comentario={comentario}
-                  acciones={acciones}
-                />
-              ))}
-
-              {hasNextPage && (
-                <button
-                  type='button'
-                  onClick={() => fetchNextPage()}
-                  disabled={isFetchingNextPage}
-                  className='self-center rounded-full bg-white/[0.06] px-4 py-1.5 text-[12px] font-medium text-neutral-300 transition-colors hover:bg-white/[0.1] disabled:opacity-50'
-                >
-                  {isFetchingNextPage
-                    ? 'Cargando...'
-                    : 'Cargar más comentarios'}
-                </button>
-              )}
-            </div>
+            <CommentsSection
+              tipoContenido='apunte'
+              contenidoId={id}
+              total={apunte.comentarios_count ?? 0}
+              placeholder='Escribe un comentario o duda sobre este material...'
+            />
           </div>
 
           {esAutor && (

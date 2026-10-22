@@ -93,3 +93,15 @@ export function aplanarRaices(data) {
   }
   return raices;
 }
+// ────────────────────────────────────────────────────────────────────────────────────────
+// Busca un comentario en cualquier nivel del árbol.
+export function buscarNodo(nodos, id) {
+  for (const nodo of nodos) {
+    if (nodo.id === id) return nodo;
+    const dentro = nodo.respuestas?.length
+      ? buscarNodo(nodo.respuestas, id)
+      : null;
+    if (dentro) return dentro;
+  }
+  return null;
+}
