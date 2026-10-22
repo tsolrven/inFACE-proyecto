@@ -1,4 +1,5 @@
 import { prisma } from '../../config/configDb.js';
+import { Prisma } from '@prisma/client';
 import {
   BadRequestError,
   ForbiddenError,
@@ -13,25 +14,188 @@ import { eliminarInteracciones } from '../content/contentCleanup.js';
 import { obtenerMisInteracciones } from '../content/contentEnrichment.js';
 import { esStaff } from '../auth/permissions.js';
 import { AUTOR_PUBLICO_SELECT } from '../content/selects.js';
-import { MAX_NIVEL_COMENTARIO } from './comments.constants.js';
+import {
+  MAX_NIVEL_COMENTARIO,
+  RESPUESTAS_PRECARGADAS,
+  NIVELES_PRECARGADOS,
+} from './comments.constants.js';
+import { codificarCursor, decodificarCursor } from './comments.cursor.js';
 
-const INCLUDE_AUTOR = { autor: { select: AUTOR_PUBLICO_SELECT } };
+const INCLUDE_COMENTARIO = {
+  autor: { select: AUTOR_PUBLICO_SELECT },
+  _count: { select: { respuestas: true } },
+};
+
+const ORDER_BY = {
+  mejores: [{ votos_neto: 'desc' }, { creado_en: 'asc' }, { id: 'asc' }],
+  nuevos: [{ creado_en: 'desc' }, { id: 'desc' }],
+  antiguos: [{ creado_en: 'asc' }, { id: 'asc' }],
+};
+
+// mismo orden que ORDER_BY, para la consulta con ROW_NUMBER (lista blanca fija:
+// nunca se interpola texto del cliente)
+const ORDER_SQL = {
+  mejores: Prisma.sql`votos_neto DESC, creado_en ASC, id ASC`,
+  nuevos: Prisma.sql`creado_en DESC, id DESC`,
+  antiguos: Prisma.sql`creado_en ASC, id ASC`,
+};
 
 // ────────────────────────────────────────────────────────────────────────────────────────
-async function listarComentarios(tipo_contenido, contenido_id, usuario_id) {
-  const comentarios = await prisma.comentario.findMany({
-    where: { tipo_contenido, contenido_id },
-    orderBy: { creado_en: 'asc' },
-    include: INCLUDE_AUTOR,
+async function listarComentarios({
+  tipo_contenido,
+  contenido_id,
+  usuario_id,
+  orden,
+  limite,
+  cursor,
+}) {
+  await verificarContenidoExiste(tipo_contenido, contenido_id);
+  return paginarComentarios({
+    filtro: { tipo_contenido, contenido_id, padre_id: null },
+    orden,
+    limite,
+    cursor,
+    usuario_id,
   });
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+// Respuestas directas de un comentario ("ver más respuestas").
+async function listarRespuestas({
+  comentario_id,
+  usuario_id,
+  orden,
+  limite,
+  cursor,
+}) {
+  const padre = await prisma.comentario.findUnique({
+    where: { id: comentario_id },
+    select: { id: true },
+  });
+  if (!padre) throw new NotFoundError('Comentario');
 
+  return paginarComentarios({
+    filtro: { padre_id: comentario_id },
+    orden,
+    limite,
+    cursor,
+    usuario_id,
+  });
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+async function paginarComentarios({
+  filtro,
+  orden,
+  limite,
+  cursor,
+  usuario_id,
+}) {
+  const where = cursor
+    ? {
+        AND: [
+          filtro,
+          condicionDespuesDe(orden, decodificarCursor(cursor, orden)),
+        ],
+      }
+    : filtro;
+
+  // se pide uno de más para saber si hay página siguiente sin hacer un count
+  const filas = await prisma.comentario.findMany({
+    where,
+    orderBy: ORDER_BY[orden],
+    take: limite + 1,
+    include: INCLUDE_COMENTARIO,
+  });
+  const hayMas = filas.length > limite;
+  const pagina = hayMas ? filas.slice(0, limite) : filas;
+
+  const todas = await agregarRespuestasPrecargadas(pagina, orden);
   const { mapVotos, setGuardados } = await obtenerMisInteracciones(
     'comentario',
-    comentarios.map((c) => c.id),
+    todas.map((c) => c.id),
     usuario_id,
   );
 
-  return construirArbolComentarios(comentarios, mapVotos, setGuardados);
+  const ultimo = pagina.at(-1);
+  return {
+    items: construirArbolComentarios(todas, mapVotos, setGuardados),
+    meta: {
+      limite,
+      hasNext: hayMas,
+      nextCursor: hayMas
+        ? codificarCursor({
+            v: ultimo.votos_neto,
+            c: ultimo.creado_en.toISOString(),
+            id: ultimo.id,
+          })
+        : null,
+    },
+  };
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+// "Lo que viene después del cursor" según el orden. Es paginación por claves:
+// compara contra el último comentario visto, no cuenta filas.
+function condicionDespuesDe(orden, cursor) {
+  const fecha = new Date(cursor.c);
+
+  if (orden === 'mejores') {
+    return {
+      OR: [
+        { votos_neto: { lt: cursor.v } },
+        { votos_neto: cursor.v, creado_en: { gt: fecha } },
+        { votos_neto: cursor.v, creado_en: fecha, id: { gt: cursor.id } },
+      ],
+    };
+  }
+  if (orden === 'nuevos') {
+    return {
+      OR: [
+        { creado_en: { lt: fecha } },
+        { creado_en: fecha, id: { lt: cursor.id } },
+      ],
+    };
+  }
+  return {
+    OR: [
+      { creado_en: { gt: fecha } },
+      { creado_en: fecha, id: { gt: cursor.id } },
+    ],
+  };
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+// Agrega, nivel por nivel, las mejores respuestas de cada comentario.
+// Una consulta por nivel (no una por comentario).
+async function agregarRespuestasPrecargadas(raices, orden) {
+  const todas = [...raices];
+  let padres = raices.filter((c) => c._count.respuestas > 0).map((c) => c.id);
+
+  for (let i = 0; i < NIVELES_PRECARGADOS && padres.length > 0; i++) {
+    const hijos = await cargarMejoresRespuestas(padres, orden);
+    todas.push(...hijos);
+    padres = hijos.filter((c) => c._count.respuestas > 0).map((c) => c.id);
+  }
+  return todas;
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+// Las N primeras respuestas de CADA padre, en una sola consulta.
+// ROW_NUMBER numera las respuestas dentro de cada padre según el orden elegido.
+async function cargarMejoresRespuestas(padreIds, orden) {
+  const ranking = await prisma.$queryRaw`
+    SELECT id, pos FROM (
+      SELECT id,
+             ROW_NUMBER() OVER (PARTITION BY padre_id ORDER BY ${ORDER_SQL[orden]}) AS pos
+      FROM comentarios
+      WHERE padre_id IN (${Prisma.join(padreIds)})
+    ) AS ranked
+    WHERE pos <= ${RESPUESTAS_PRECARGADAS}::int`;
+  if (ranking.length === 0) return [];
+
+  const posicion = new Map(ranking.map((r) => [r.id, Number(r.pos)]));
+  const hijos = await prisma.comentario.findMany({
+    where: { id: { in: [...posicion.keys()] } },
+    include: INCLUDE_COMENTARIO,
+  });
+  // el orden relativo entre hermanos se conserva al armar el árbol
+  return hijos.sort((a, b) => posicion.get(a.id) - posicion.get(b.id));
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 function construirArbolComentarios(
@@ -110,7 +274,7 @@ async function crearComentario({
       padre_id: padre_id || null,
       nivel,
     },
-    include: INCLUDE_AUTOR,
+    include: INCLUDE_COMENTARIO,
   });
 
   return formatearComentario(comentario);
@@ -134,7 +298,7 @@ async function editarComentario(comentario_id, usuario_id, contenido) {
   const actualizado = await prisma.comentario.update({
     where: { id: comentario_id },
     data: { contenido, editado_en: new Date() },
-    include: INCLUDE_AUTOR,
+    include: INCLUDE_COMENTARIO,
   });
 
   return formatearComentario(actualizado);
@@ -184,9 +348,10 @@ async function eliminarComentario(comentario_id, usuario_id, rol) {
         eliminado: true,
         eliminado_por_id: usuario_id,
         eliminado_en: new Date(),
+        votos_neto: 0, // un eliminado no debe quedar arriba en "Mejores"
         ...(esAutor && { contenido: '' }),
       },
-      include: INCLUDE_AUTOR,
+      include: INCLUDE_COMENTARIO,
     });
     return {
       eliminado_permanente: false,
@@ -234,7 +399,7 @@ async function podarAncestrosEliminados(tx, padre_id) {
 async function hidratarComentariosGuardados(ids, usuario_id) {
   const comentarios = await prisma.comentario.findMany({
     where: { id: { in: ids } },
-    include: INCLUDE_AUTOR,
+    include: INCLUDE_COMENTARIO,
   });
 
   const mapComentarios = Object.fromEntries(comentarios.map((c) => [c.id, c]));
@@ -295,6 +460,7 @@ function formatearComentario(
       mi_voto: null,
       esta_guardado,
       nivel: comentario.nivel,
+      respuestas_count: comentario._count?.respuestas ?? 0,
       creado_en: comentario.creado_en,
       editado_en: null, // un comentario eliminado no muestra "(editado)"
       eliminado: true,
@@ -315,6 +481,7 @@ function formatearComentario(
     mi_voto,
     esta_guardado,
     nivel: comentario.nivel,
+    respuestas_count: comentario._count?.respuestas ?? 0,
     creado_en: comentario.creado_en,
     editado_en: comentario.editado_en,
     eliminado: false,
@@ -330,6 +497,7 @@ registrarHidratadorGuardados('comentario', hidratarComentariosGuardados);
 // ────────────────────────────────────────────────────────────────────────────────────────
 export {
   listarComentarios,
+  listarRespuestas,
   crearComentario,
   editarComentario,
   eliminarComentario,

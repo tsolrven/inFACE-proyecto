@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import { admiteComentarios } from '../content/contentRegistry.js';
+import { paginacionQuerySchema } from '../validation/common.schemas.js';
+import { ORDENES_COMENTARIO } from './comments.constants.js';
 // ─────────────────────────────────────────────────────────────────────────────
 const ERROR_MESSAGES = {
   contenido: {
@@ -52,8 +54,21 @@ const editarComentarioSchema = z.object({
     .max(2000, ERROR_MESSAGES.contenido.max),
 });
 // ─────────────────────────────────────────────────────────────────────────────
+// Query de los listados de comentarios (raíces y "más respuestas").
+const listarComentariosQuerySchema = paginacionQuerySchema
+  .pick({ limite: true })
+  .extend({
+    orden: z
+      .enum(ORDENES_COMENTARIO, {
+        error: 'Orden inválido: usa mejores, nuevos o antiguos',
+      })
+      .default('mejores'),
+    cursor: z.string().max(300, 'Cursor inválido').optional(),
+  });
+// ─────────────────────────────────────────────────────────────────────────────
 export {
   contenidoComentableParamSchema,
   crearComentarioSchema,
   editarComentarioSchema,
+  listarComentariosQuerySchema,
 };

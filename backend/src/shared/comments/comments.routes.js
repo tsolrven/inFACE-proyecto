@@ -1,6 +1,7 @@
 import express from 'express';
 import {
   listarDeContenido,
+  listarRespuestasDeComentario,
   crearEnContenido,
   editar,
   eliminar,
@@ -11,17 +12,28 @@ import {
   contenidoComentableParamSchema,
   crearComentarioSchema,
   editarComentarioSchema,
+  listarComentariosQuerySchema,
 } from './comments.validation.js';
 import { comentarioIdParamSchema } from '../validation/common.schemas.js';
 import { publicacionLimiter } from '../../middlewares/rateLimiter.js';
 
 const router = express.Router();
 
-// comentarios DE un contenido (apunte hoy; hilo y anuncio mañana)
+// respuestas directas de UN comentario (va antes de /:tipo/:id)
+router.get(
+  '/:comentario_id/respuestas',
+  autenticar,
+  validate(comentarioIdParamSchema, 'params'),
+  validate(listarComentariosQuerySchema, 'query'),
+  listarRespuestasDeComentario,
+);
+
+// comentarios raíz DE un contenido (apunte hoy; hilo y anuncio mañana)
 router.get(
   '/:tipo/:id',
   autenticar,
   validate(contenidoComentableParamSchema, 'params'),
+  validate(listarComentariosQuerySchema, 'query'),
   listarDeContenido,
 );
 router.post(

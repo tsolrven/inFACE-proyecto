@@ -1,5 +1,6 @@
 import {
   listarComentarios,
+  listarRespuestas,
   crearComentario,
   editarComentario,
   eliminarComentario,
@@ -9,8 +10,32 @@ import ApiResponse from '../../utils/apiResponse.js';
 async function listarDeContenido(req, res, next) {
   try {
     const { tipo, id } = req.params;
-    const comentarios = await listarComentarios(tipo, id, req.usuario.id);
-    return ApiResponse.success(res, comentarios);
+    const { orden, limite, cursor } = req.query;
+    const { items, meta } = await listarComentarios({
+      tipo_contenido: tipo,
+      contenido_id: id,
+      usuario_id: req.usuario.id,
+      orden,
+      limite,
+      cursor,
+    });
+    return ApiResponse.success(res, items, 200, meta);
+  } catch (err) {
+    next(err);
+  }
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+async function listarRespuestasDeComentario(req, res, next) {
+  try {
+    const { orden, limite, cursor } = req.query;
+    const { items, meta } = await listarRespuestas({
+      comentario_id: req.params.comentario_id,
+      usuario_id: req.usuario.id,
+      orden,
+      limite,
+      cursor,
+    });
+    return ApiResponse.success(res, items, 200, meta);
   } catch (err) {
     next(err);
   }
@@ -60,4 +85,10 @@ async function eliminar(req, res, next) {
   }
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-export { listarDeContenido, crearEnContenido, editar, eliminar };
+export {
+  listarDeContenido,
+  listarRespuestasDeComentario,
+  crearEnContenido,
+  editar,
+  eliminar,
+};
