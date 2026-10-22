@@ -6,36 +6,21 @@ import {
   tiposContenidoValidos,
 } from '../content/contentRegistry.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
-async function alternarGuardado({ usuario_id, tipo_contenido, contenido_id }) {
+async function guardarContenido({ usuario_id, tipo_contenido, contenido_id }) {
   await verificarContenidoExiste(tipo_contenido, contenido_id);
-
-  const existente = await prisma.guardado.findUnique({
-    where: {
-      usuario_id_tipo_contenido_contenido_id: {
-        usuario_id,
-        tipo_contenido,
-        contenido_id,
-      },
-    },
-  });
-
-  if (existente) {
-    await prisma.guardado.delete({
-      where: {
-        usuario_id_tipo_contenido_contenido_id: {
-          usuario_id,
-          tipo_contenido,
-          contenido_id,
-        },
-      },
-    });
-    return { guardado: false };
-  }
-
-  await prisma.guardado.create({
-    data: { usuario_id, tipo_contenido, contenido_id },
+  await prisma.guardado.createMany({
+    data: [{ usuario_id, tipo_contenido, contenido_id }],
+    skipDuplicates: true,
   });
   return { guardado: true };
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+// No exige que el contenido siga disponible: siempre se puede dejar de guardar.
+async function quitarGuardado({ usuario_id, tipo_contenido, contenido_id }) {
+  await prisma.guardado.deleteMany({
+    where: { usuario_id, tipo_contenido, contenido_id },
+  });
+  return { guardado: false };
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function listarGuardados({
@@ -69,4 +54,4 @@ async function listarGuardados({
   return { items, total, pagina, paginas };
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-export { alternarGuardado, listarGuardados };
+export { guardarContenido, quitarGuardado, listarGuardados };

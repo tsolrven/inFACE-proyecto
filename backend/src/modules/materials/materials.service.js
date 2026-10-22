@@ -15,10 +15,11 @@ import { eliminarContenido } from '../../shared/content/contentCleanup.js';
 import { registrarHidratadorGuardados } from '../../shared/content/contentRegistry.js';
 import { obtenerEnriquecimiento } from '../../shared/content/contentEnrichment.js';
 import { esStaff } from '../../shared/auth/permissions.js';
+import { AUTOR_PUBLICO_SELECT } from '../../shared/content/selects.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 // relaciones que siempre se piden junto con un apunte
 const INCLUDE_APUNTE = {
-  autor: { include: { perfil: { select: { nombre_usuario: true } } } },
+  autor: { select: AUTOR_PUBLICO_SELECT },
   ramo: { select: { id: true, nombre: true, codigo: true, semestre: true } },
   hashtags: { include: { hashtag: { select: { nombre: true } } } },
 };

@@ -2,7 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { votar } from '@/shared/post/votes/votes.api';
-import { alternarGuardado } from '@/shared/post/bookmarks/bookmarks.api';
+import {
+  guardarContenido,
+  quitarGuardado,
+} from '@/shared/post/bookmarks/bookmarks.api';
 import { esStaff, puedeEditar, puedeEliminar } from '@/shared/auth/roles';
 import { COMENTARIO_MAX } from '@/shared/post/comments/constants';
 import { mostrarToast } from '@/shared/stores/toastStore';
@@ -142,7 +145,10 @@ export default function CommentThread({
     const anterior = estaGuardado;
     setEstaGuardado(!anterior);
     try {
-      const { guardado } = await alternarGuardado('comentario', comentario.id);
+      const { guardado } = await (anterior ? quitarGuardado : guardarContenido)(
+        'comentario',
+        comentario.id,
+      );
       setEstaGuardado(guardado);
       mostrarToast(guardado ? 'Comentario guardado' : 'Quitado de guardados');
     } catch (err) {
@@ -248,7 +254,7 @@ export default function CommentThread({
             <textarea
               value={textoEditado}
               onChange={(e) => setTextoEditado(e.target.value)}
-              maxLength={COMENTARIO_MAX} 
+              maxLength={COMENTARIO_MAX}
               rows={2}
               className='w-full resize-none rounded-lg border border-white/[0.07] bg-[#111114] px-3 py-2 text-[12.5px] text-neutral-100 outline-none placeholder-neutral-600 focus:border-pink-500/40'
             />

@@ -24,7 +24,8 @@ model Usuario {
   perfil           Perfil?
   usuario_carrera  UsuarioCarrera[]
   apuntes          Apunte[]
-  comentarios      Comentario[]
+  comentarios            Comentario[] @relation("ComentarioAutor")
+  comentarios_eliminados Comentario[] @relation("ComentarioEliminadoPor")
   votos            Voto[]
   guardados        Guardado[]
   reportes_creados Reporte[]  @relation("ReporteCreadoPor")
@@ -188,12 +189,15 @@ model Comentario {
   contenido        String
   votos_neto       Int      @default(0)
   es_respuesta_aceptada Boolean @default(false)
-  eliminado        Boolean  @default(false)   
+  eliminado        Boolean  @default(false)
+  eliminado_por_id String?
+  eliminado_en     DateTime?  
   creado_en        DateTime @default(now())
   actualizado_en   DateTime @updatedAt
   editado_en       DateTime?   // null = nunca editado por su autor
 
-  autor      Usuario      @relation(fields: [autor_id], references: [id])
+  autor      Usuario      @relation("ComentarioAutor", fields: [autor_id], references: [id])
+  eliminador Usuario?     @relation("ComentarioEliminadoPor", fields: [eliminado_por_id], references: [id])
   padre      Comentario?  @relation("ComentarioRespuesta", fields: [padre_id], references: [id])
   respuestas Comentario[] @relation("ComentarioRespuesta")
 

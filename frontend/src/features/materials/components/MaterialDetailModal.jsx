@@ -140,7 +140,7 @@ export default function MaterialDetailModal() {
 
   function handleGuardar() {
     setMenuAbierto(false);
-    guardarMut.mutate({ id });
+    guardarMut.mutate({ id, guardar: !apunte.esta_guardado });
   }
 
   // un solo lugar para tocar el árbol de comentarios y mantener el contador

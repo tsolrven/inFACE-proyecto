@@ -68,7 +68,7 @@ export default function MaterialCard({ apunte }) {
   function handleGuardar(e) {
     e.stopPropagation();
     setMenuAbierto(false);
-    guardarMut.mutate({ id: apunte.id });
+    guardarMut.mutate({ id: apunte.id, guardar: !apunte.esta_guardado });
   }
 
   async function handleEliminar() {

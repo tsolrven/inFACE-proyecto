@@ -1,8 +1,15 @@
 import { apiFetch } from '@/shared/api/client';
 
-export async function alternarGuardado(tipoContenido, id) {
+export async function guardarContenido(tipoContenido, id) {
   const res = await apiFetch(`/guardados/${tipoContenido}/${id}`, {
-    method: 'POST',
+    method: 'PUT',
+  });
+  return res.data;
+}
+
+export async function quitarGuardado(tipoContenido, id) {
+  const res = await apiFetch(`/guardados/${tipoContenido}/${id}`, {
+    method: 'DELETE',
   });
   return res.data;
 }

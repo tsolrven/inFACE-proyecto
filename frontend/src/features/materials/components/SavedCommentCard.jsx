@@ -24,7 +24,7 @@ export default function SavedCommentCard({ comentario }) {
 
   function handleQuitar(e) {
     e.stopPropagation();
-    guardarMut.mutate({ id: comentario.id });
+    guardarMut.mutate({ id: comentario.id, guardar: false });
   }
 
   return (

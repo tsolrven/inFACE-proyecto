@@ -1,5 +1,5 @@
 import express from 'express';
-import { guardarContenido, listar } from './bookmarks.controller.js';
+import { guardar, quitar, listar } from './bookmarks.controller.js';
 import { autenticar } from '../../middlewares/auth.middleware.js';
 import validate from '../../middlewares/validate.js';
 import { listarGuardadosQuerySchema } from './bookmarks.validation.js';
@@ -14,12 +14,19 @@ router.get(
   validate(listarGuardadosQuerySchema, 'query'),
   listar,
 );
-router.post(
+router.put(
   '/:tipo/:id',
   autenticar,
   interaccionLimiter,
   validate(contenidoParamSchema, 'params'),
-  guardarContenido,
+  guardar,
+);
+router.delete(
+  '/:tipo/:id',
+  autenticar,
+  interaccionLimiter,
+  validate(contenidoParamSchema, 'params'),
+  quitar,
 );
 
 export default router;

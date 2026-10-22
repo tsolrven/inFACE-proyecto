@@ -29,6 +29,7 @@ const CONTENT_REGISTRY = {
     votesField: 'votos_neto',
     previewField: 'contenido',
     allowsComments: false,
+    eliminadoField: 'eliminado', // borrado lógico: ya no admite interacciones
   },
 };
 // ────────────────────────────────────────────────────────────────────────────────────────
@@ -40,19 +41,24 @@ function obtenerEntradaRegistro(tipo_contenido) {
   return entrada;
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-// `client` por defecto es el prisma global, pero se le puede pasar `tx` cuando se
-// llama desde dentro de un prisma.$transaction (ver votes.service.js).
 async function verificarContenidoExiste(
   tipo_contenido,
   contenido_id,
   client = prisma,
 ) {
   const entrada = obtenerEntradaRegistro(tipo_contenido);
-  const existe = await client[entrada.modelName].findUnique({
+  const campo = entrada.eliminadoField;
+
+  const registro = await client[entrada.modelName].findUnique({
     where: { id: contenido_id },
-    select: { id: true },
+    select: { id: true, ...(campo && { [campo]: true }) },
   });
-  if (!existe) throw new NotFoundError(entrada.label);
+  if (!registro) throw new NotFoundError(entrada.label);
+  if (campo && registro[campo]) {
+    throw new BadRequestError(
+      `${entrada.label} eliminado: ya no admite interacciones`,
+    );
+  }
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function obtenerPropietarioContenido(

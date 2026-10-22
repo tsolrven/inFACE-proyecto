@@ -12,14 +12,17 @@ import {
 import { eliminarInteracciones } from '../content/contentCleanup.js';
 import { obtenerMisInteracciones } from '../content/contentEnrichment.js';
 import { esStaff } from '../auth/permissions.js';
+import { AUTOR_PUBLICO_SELECT } from '../content/selects.js';
+import { MAX_NIVEL_COMENTARIO } from './comments.constants.js';
+
+const INCLUDE_AUTOR = { autor: { select: AUTOR_PUBLICO_SELECT } };
+
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function listarComentarios(tipo_contenido, contenido_id, usuario_id) {
   const comentarios = await prisma.comentario.findMany({
     where: { tipo_contenido, contenido_id },
     orderBy: { creado_en: 'asc' },
-    include: {
-      autor: { include: { perfil: { select: { nombre_usuario: true } } } },
-    },
+    include: INCLUDE_AUTOR,
   });
 
   const { mapVotos, setGuardados } = await obtenerMisInteracciones(
@@ -91,8 +94,10 @@ async function crearComentario({
       );
     }
     nivel = padre.nivel + 1;
-    if (nivel > 50) {
-      throw new BadRequestError('Se alcanzó el límite máximo de anidamiento');
+    if (nivel > MAX_NIVEL_COMENTARIO) {
+      throw new BadRequestError(
+        `Se alcanzó el máximo de ${MAX_NIVEL_COMENTARIO} niveles de respuestas`,
+      );
     }
   }
 
@@ -105,9 +110,7 @@ async function crearComentario({
       padre_id: padre_id || null,
       nivel,
     },
-    include: {
-      autor: { include: { perfil: { select: { nombre_usuario: true } } } },
-    },
+    include: INCLUDE_AUTOR,
   });
 
   return formatearComentario(comentario);
@@ -131,9 +134,7 @@ async function editarComentario(comentario_id, usuario_id, contenido) {
   const actualizado = await prisma.comentario.update({
     where: { id: comentario_id },
     data: { contenido, editado_en: new Date() },
-    include: {
-      autor: { include: { perfil: { select: { nombre_usuario: true } } } },
-    },
+    include: INCLUDE_AUTOR,
   });
 
   return formatearComentario(actualizado);
@@ -144,52 +145,96 @@ async function eliminarComentario(comentario_id, usuario_id, rol) {
     where: { id: comentario_id },
   });
   if (!comentario) throw new NotFoundError('Comentario');
+  if (comentario.eliminado) {
+    throw new BadRequestError('Este comentario ya fue eliminado');
+  }
 
-  // el autor o staff pueden eliminar
-  if (comentario.autor_id !== usuario_id && !esStaff(rol)) {
+  const esAutor = comentario.autor_id === usuario_id;
+  if (!esAutor && !esStaff(rol)) {
     throw new ForbiddenError('No tienes permiso para eliminar este comentario');
   }
 
-  const cantidadRespuestas = await prisma.comentario.count({
-    where: { padre_id: comentario_id },
-  });
+  // todo en una transacción: el conteo de respuestas y el borrado ven lo mismo
+  return prisma.$transaction(async (tx) => {
+    const cantidadRespuestas = await tx.comentario.count({
+      where: { padre_id: comentario_id },
+    });
 
-  // sin respuestas: se borra de verdad, con todo lo que cuelga de él
-  if (cantidadRespuestas === 0) {
-    await prisma.$transaction(async (tx) => {
+    // borrado real: solo el autor, y solo si nadie respondió
+    if (esAutor && cantidadRespuestas === 0) {
       await eliminarInteracciones(tx, 'comentario', [comentario_id]);
       await tx.comentario.delete({ where: { id: comentario_id } });
-    });
-    return { eliminado_permanente: true, comentario: null };
-  }
+      const podados = await podarAncestrosEliminados(tx, comentario.padre_id);
+      return {
+        eliminado_permanente: true,
+        comentario: null,
+        ids_eliminados: [comentario_id, ...podados],
+      };
+    }
 
-  // con respuestas: queda como "[eliminado]" para no romper el hilo,
-  // pero nadie debe seguir teniéndolo guardado
-  const actualizado = await prisma.$transaction(async (tx) => {
+    // borrado lógico: queda como fantasma para no romper el hilo.
+    // El autor vacía su texto; si modera el staff, el texto se conserva como
+    // evidencia (el cliente nunca lo recibe, ver formatearComentario).
     await tx.guardado.deleteMany({
       where: { tipo_contenido: 'comentario', contenido_id: comentario_id },
     });
-    return tx.comentario.update({
+    const actualizado = await tx.comentario.update({
       where: { id: comentario_id },
-      data: { eliminado: true },
-      include: {
-        autor: { include: { perfil: { select: { nombre_usuario: true } } } },
+      data: {
+        eliminado: true,
+        eliminado_por_id: usuario_id,
+        eliminado_en: new Date(),
+        ...(esAutor && { contenido: '' }),
+      },
+      include: INCLUDE_AUTOR,
+    });
+    return {
+      eliminado_permanente: false,
+      comentario: formatearComentario(actualizado),
+      ids_eliminados: [],
+    };
+  });
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+// Sube por la cadena de padres borrando los fantasmas que quedaron sin respuestas.
+// Solo poda los que eliminó su propio autor (los de moderación se conservan).
+// Devuelve los ids borrados para que el cliente los saque del árbol.
+async function podarAncestrosEliminados(tx, padre_id) {
+  const podados = [];
+  let actualId = padre_id;
+
+  while (actualId) {
+    const padre = await tx.comentario.findUnique({
+      where: { id: actualId },
+      select: {
+        id: true,
+        autor_id: true,
+        eliminado: true,
+        eliminado_por_id: true,
+        padre_id: true,
+        _count: { select: { respuestas: true } },
       },
     });
-  });
 
-  return {
-    eliminado_permanente: false,
-    comentario: formatearComentario(actualizado),
-  };
+    const podable =
+      padre &&
+      padre.eliminado &&
+      padre._count.respuestas === 0 &&
+      (!padre.eliminado_por_id || padre.eliminado_por_id === padre.autor_id);
+    if (!podable) break;
+
+    await eliminarInteracciones(tx, 'comentario', [padre.id]);
+    await tx.comentario.delete({ where: { id: padre.id } });
+    podados.push(padre.id);
+    actualId = padre.padre_id;
+  }
+  return podados;
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function hidratarComentariosGuardados(ids, usuario_id) {
   const comentarios = await prisma.comentario.findMany({
     where: { id: { in: ids } },
-    include: {
-      autor: { include: { perfil: { select: { nombre_usuario: true } } } },
-    },
+    include: INCLUDE_AUTOR,
   });
 
   const mapComentarios = Object.fromEntries(comentarios.map((c) => [c.id, c]));
@@ -253,6 +298,11 @@ function formatearComentario(
       creado_en: comentario.creado_en,
       editado_en: null, // un comentario eliminado no muestra "(editado)"
       eliminado: true,
+      eliminado_por:
+        comentario.eliminado_por_id &&
+        comentario.eliminado_por_id !== comentario.autor_id
+          ? 'moderacion'
+          : 'autor',
       autor: null,
     };
   }
@@ -268,6 +318,7 @@ function formatearComentario(
     creado_en: comentario.creado_en,
     editado_en: comentario.editado_en,
     eliminado: false,
+    eliminado_por: null,
     autor: {
       id: comentario.autor.id,
       nombre_usuario: comentario.autor.perfil?.nombre_usuario,

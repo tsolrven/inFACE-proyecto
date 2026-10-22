@@ -1,5 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { alternarGuardado } from '@/shared/post/bookmarks/bookmarks.api';
+import {
+  guardarContenido,
+  quitarGuardado,
+} from '@/shared/post/bookmarks/bookmarks.api';
 import { mostrarToast } from '@/shared/stores/toastStore';
 import {
   instantanea,
@@ -12,14 +15,13 @@ export function useGuardar(tipoContenido) {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id }) => alternarGuardado(tipoContenido, id),
+    mutationFn: ({ id, guardar }) =>
+      (guardar ? guardarContenido : quitarGuardado)(tipoContenido, id),
 
-    onMutate: async ({ id }) => {
+    onMutate: async ({ id, guardar }) => {
       await qc.cancelQueries({ queryKey: [tipoContenido] });
       const snapshot = instantanea(qc, tipoContenido);
-      parchearContenido(qc, tipoContenido, id, (item) => ({
-        esta_guardado: !item.esta_guardado,
-      }));
+      parchearContenido(qc, tipoContenido, id, { esta_guardado: guardar });
       return { snapshot };
     },
 
@@ -34,7 +36,6 @@ export function useGuardar(tipoContenido) {
       mostrarToast(err.message || 'No se pudo actualizar tus guardados');
     },
 
-    // la lista de guardados cambia de contenido: se vuelve a pedir
     onSettled: () =>
       qc.invalidateQueries({ queryKey: ['guardados', tipoContenido] }),
   });

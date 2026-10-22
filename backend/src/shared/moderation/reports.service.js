@@ -1,6 +1,7 @@
 import { prisma } from '../../config/configDb.js';
 import { BadRequestError, ConflictError } from '../../errors/appError.js';
 import {
+  verificarContenidoExiste,
   obtenerPropietarioContenido,
   obtenerPreviewsContenido,
 } from '../content/contentRegistry.js';
@@ -21,6 +22,7 @@ async function crearReporte({
   detalle,
   objetivo,
 }) {
+  await verificarContenidoExiste(tipo_contenido, contenido_id);
   const autor_id = await obtenerPropietarioContenido(
     tipo_contenido,
     contenido_id,

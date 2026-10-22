@@ -1,14 +1,31 @@
-import { alternarGuardado, listarGuardados } from './bookmarks.service.js';
+import {
+  guardarContenido,
+  quitarGuardado,
+  listarGuardados,
+} from './bookmarks.service.js';
 import ApiResponse from '../../utils/apiResponse.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
-async function guardarContenido(req, res, next) {
+async function guardar(req, res, next) {
   try {
     const { tipo: tipo_contenido, id: contenido_id } = req.params;
-
-    const resultado = await alternarGuardado({
+    const resultado = await guardarContenido({
       usuario_id: req.usuario.id,
-      contenido_id,
       tipo_contenido,
+      contenido_id,
+    });
+    return ApiResponse.success(res, resultado);
+  } catch (err) {
+    next(err);
+  }
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+async function quitar(req, res, next) {
+  try {
+    const { tipo: tipo_contenido, id: contenido_id } = req.params;
+    const resultado = await quitarGuardado({
+      usuario_id: req.usuario.id,
+      tipo_contenido,
+      contenido_id,
     });
     return ApiResponse.success(res, resultado);
   } catch (err) {
@@ -31,4 +48,4 @@ async function listar(req, res, next) {
   }
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-export { guardarContenido, listar };
+export { guardar, quitar, listar };
