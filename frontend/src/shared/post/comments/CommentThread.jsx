@@ -1,21 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { votar } from '@/shared/post/votes/votes.api';
-import {
-  guardarContenido,
-  quitarGuardado,
-} from '@/shared/post/bookmarks/bookmarks.api';
 import { esStaff, puedeEditar, puedeEliminar } from '@/shared/auth/roles';
-import { COMENTARIO_MAX } from '@/shared/post/comments/constants';
-import { mostrarToast } from '@/shared/stores/toastStore';
 import {
-  crearComentario,
-  editarComentario,
-  eliminarComentario,
-} from './comments.api';
+  COMENTARIO_MAX,
+  COMENTARIO_MAX_NIVEL,
+} from '@/shared/post/comments/constants';
 import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
-import { predecirVoto } from '@/shared/post/votes/votes';
 import { useAuthStore } from '@/shared/auth/authStore';
 import ReportModal from '@/shared/moderation/ReportModal';
 import ConfirmDialog from '@/shared/components/ui/ConfirmDialog';
@@ -24,34 +15,15 @@ import BookmarkIcon from '@/shared/post/bookmarks/BookmarkIcon';
 const MAX_NIVEL_INDENTADO = 6;
 const ANCHO_MENU = 150;
 
-export default function CommentThread({
-  comentario,
-  tipoContenido,
-  contenidoId,
-  onNuevaRespuesta,
-  onComentarioEliminado,
-}) {
-  const [votoLocal, setVotoLocal] = useState(comentario.mi_voto ?? null);
-  const [votosNeto, setVotosNeto] = useState(comentario.votos_neto);
+export default function CommentThread({ comentario, acciones }) {
   const [respondiendo, setRespondiendo] = useState(false);
   const [textoRespuesta, setTextoRespuesta] = useState('');
-  const [enviando, setEnviando] = useState(false);
   const [reportando, setReportando] = useState(false);
-
-  const [contenidoLocal, setContenidoLocal] = useState(comentario.contenido);
-  const [editadoEnLocal, setEditadoEnLocal] = useState(comentario.editado_en);
   const [editando, setEditando] = useState(false);
   const [textoEditado, setTextoEditado] = useState(comentario.contenido);
-  const [guardandoEdicion, setGuardandoEdicion] = useState(false);
-
   const [confirmandoEliminar, setConfirmandoEliminar] = useState(false);
-  const [eliminando, setEliminando] = useState(false);
-
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [menuPos, setMenuPos] = useState(null);
-  const [estaGuardado, setEstaGuardado] = useState(
-    comentario.esta_guardado ?? false,
-  );
   const botonMenuRef = useRef(null);
   const dropdownRef = useRef(null);
 
@@ -59,6 +31,19 @@ export default function CommentThread({
   const esAutor = puedeEditar(usuario, comentario.autor?.id);
   const puedeBorrar = puedeEliminar(usuario, comentario.autor?.id);
   const esModerador = esStaff(usuario?.rol);
+
+  const enviando = acciones.crear.isPending;
+  const guardandoEdicion = acciones.editar.isPending;
+  const eliminando = acciones.eliminar.isPending;
+
+  const respuestasCargadas = comentario.respuestas?.length ?? 0;
+  const faltanRespuestas = Math.max(
+    0,
+    (comentario.respuestas_count ?? 0) - respuestasCargadas,
+  );
+  // cursor_respuestas === null: ya se pidieron todas
+  const hayMasPorCargar =
+    faltanRespuestas > 0 && comentario.cursor_respuestas !== null;
 
   useEffect(() => {
     if (!menuAbierto) return;
@@ -99,91 +84,57 @@ export default function CommentThread({
     setMenuAbierto((a) => !a);
   }
 
-  async function handleVotar(tipo) {
-    const anterior = { votoLocal, votosNeto };
-    const { mi_voto, delta } = predecirVoto(votoLocal, tipo);
-    setVotoLocal(mi_voto);
-    setVotosNeto((v) => v + delta);
-
-    try {
-      const real = await votar('comentario', comentario.id, tipo);
-      setVotoLocal(real.mi_voto);
-      setVotosNeto(real.votos_neto);
-    } catch (err) {
-      setVotoLocal(anterior.votoLocal);
-      setVotosNeto(anterior.votosNeto);
-      mostrarToast(err.message || 'No se pudo registrar tu voto');
-    }
+  function handleVotar(tipo) {
+    acciones.votar.mutate({ id: comentario.id, tipo });
   }
 
-  async function handleEnviarRespuesta() {
+  function handleGuardar() {
+    setMenuAbierto(false);
+    acciones.guardar.mutate({
+      id: comentario.id,
+      guardar: !comentario.esta_guardado,
+    });
+  }
+
+  function handleEnviarRespuesta() {
     const texto = textoRespuesta.trim();
     if (!texto) return;
-    setEnviando(true);
-    try {
-      const nueva = await crearComentario(tipoContenido, contenidoId, {
-        contenido: texto,
-        padre_id: comentario.id,
-      });
-      onNuevaRespuesta(comentario.id, nueva);
-      setTextoRespuesta('');
-      setRespondiendo(false);
-    } catch (err) {
-      mostrarToast(err.message || 'No se pudo enviar la respuesta');
-    } finally {
-      setEnviando(false);
-    }
+    acciones.crear.mutate(
+      { contenido: texto, padre_id: comentario.id },
+      {
+        onSuccess: () => {
+          setTextoRespuesta('');
+          setRespondiendo(false);
+        },
+      },
+    );
   }
 
   function handleAbrirEdicion() {
-    setTextoEditado(contenidoLocal);
+    setTextoEditado(comentario.contenido);
     setEditando(true);
   }
 
-  async function handleGuardar() {
-    setMenuAbierto(false);
-    const anterior = estaGuardado;
-    setEstaGuardado(!anterior);
-    try {
-      const { guardado } = await (anterior ? quitarGuardado : guardarContenido)(
-        'comentario',
-        comentario.id,
-      );
-      setEstaGuardado(guardado);
-      mostrarToast(guardado ? 'Comentario guardado' : 'Quitado de guardados');
-    } catch (err) {
-      setEstaGuardado(anterior);
-      mostrarToast(err.message || 'No se pudo actualizar guardados');
-    }
-  }
-
-  async function handleGuardarEdicion() {
+  function handleGuardarEdicion() {
     const texto = textoEditado.trim();
     if (!texto) return;
-    setGuardandoEdicion(true);
-    try {
-      const actualizado = await editarComentario(comentario.id, texto);
-      setContenidoLocal(actualizado.contenido);
-      setEditadoEnLocal(actualizado.editado_en);
-      setEditando(false);
-    } catch (err) {
-      mostrarToast(err.message || 'No se pudo guardar la edición');
-    } finally {
-      setGuardandoEdicion(false);
-    }
+    acciones.editar.mutate(
+      { id: comentario.id, contenido: texto },
+      { onSuccess: () => setEditando(false) },
+    );
   }
 
-  async function handleEliminar() {
-    setEliminando(true);
-    try {
-      const resultado = await eliminarComentario(comentario.id);
-      onComentarioEliminado(comentario.id, resultado.eliminado_permanente);
-      setConfirmandoEliminar(false);
-    } catch (err) {
-      mostrarToast(err.message || 'No se pudo eliminar el comentario');
-    } finally {
-      setEliminando(false);
-    }
+  function handleEliminar() {
+    acciones.eliminar.mutate(comentario.id, {
+      onSuccess: () => setConfirmandoEliminar(false),
+    });
+  }
+
+  function handleVerMasRespuestas() {
+    acciones.masRespuestas.mutate({
+      comentarioId: comentario.id,
+      cursor: comentario.cursor_respuestas ?? undefined,
+    });
   }
 
   if (comentario.eliminado) {
@@ -194,7 +145,9 @@ export default function CommentThread({
         </div>
         <div className='min-w-0 flex-1'>
           <div className='mb-1.5 text-[13px] italic leading-relaxed text-neutral-600'>
-            Comentario eliminado por el usuario
+            {comentario.eliminado_por === 'moderacion'
+              ? 'Comentario eliminado por moderación'
+              : 'Comentario eliminado por el usuario'}
           </div>
 
           {comentario.respuestas?.length > 0 && (
@@ -209,13 +162,26 @@ export default function CommentThread({
                 <CommentThread
                   key={respuesta.id}
                   comentario={respuesta}
-                  tipoContenido={tipoContenido}
-                  contenidoId={contenidoId}
-                  onNuevaRespuesta={onNuevaRespuesta}
-                  onComentarioEliminado={onComentarioEliminado}
+                  acciones={acciones}
                 />
               ))}
             </div>
+          )}
+
+          {hayMasPorCargar && (
+            <button
+              type='button'
+              onClick={handleVerMasRespuestas}
+              disabled={acciones.masRespuestas.isPending}
+              className='mt-2 flex items-center gap-1 text-[11.5px] font-medium text-blue-400 hover:underline disabled:opacity-50'
+            >
+              <i className='ti ti-corner-down-right' />
+              {acciones.masRespuestas.isPending
+                ? 'Cargando...'
+                : `Ver ${faltanRespuestas} ${
+                    respuestasCargadas > 0 ? 'más ' : ''
+                  }${faltanRespuestas === 1 ? 'respuesta' : 'respuestas'}`}
+            </button>
           )}
         </div>
       </div>
@@ -242,9 +208,9 @@ export default function CommentThread({
           <span className='text-neutral-600'>
             {formatearTiempoRelativo(comentario.creado_en)}
           </span>
-          {editadoEnLocal && (
+          {comentario.editado_en && (
             <span className='text-neutral-700'>
-              · editado {formatearTiempoRelativo(editadoEnLocal)}
+              · editado {formatearTiempoRelativo(comentario.editado_en)}
             </span>
           )}
         </div>
@@ -278,7 +244,7 @@ export default function CommentThread({
           </div>
         ) : (
           <div className='mb-1.5 text-[13px] leading-relaxed text-neutral-100'>
-            {contenidoLocal}
+            {comentario.contenido}
           </div>
         )}
 
@@ -288,32 +254,38 @@ export default function CommentThread({
               type='button'
               onClick={() => handleVotar('up')}
               className={`flex items-center transition-colors hover:text-[#FF6B35] ${
-                votoLocal === 'up' ? 'text-[#FF6B35]' : 'text-neutral-600'
+                comentario.mi_voto === 'up'
+                  ? 'text-[#FF6B35]'
+                  : 'text-neutral-600'
               }`}
             >
               <i className='ti ti-arrow-big-up text-[13px]' />
             </button>
             <span className='min-w-[14px] text-center text-[11.5px] font-semibold text-neutral-400'>
-              {votosNeto}
+              {comentario.votos_neto}
             </span>
             <button
               type='button'
               onClick={() => handleVotar('down')}
               className={`flex items-center transition-colors hover:text-[#7B8CDE] ${
-                votoLocal === 'down' ? 'text-[#7B8CDE]' : 'text-neutral-600'
+                comentario.mi_voto === 'down'
+                  ? 'text-[#7B8CDE]'
+                  : 'text-neutral-600'
               }`}
             >
               <i className='ti ti-arrow-big-down text-[13px]' />
             </button>
           </div>
 
-          <button
-            type='button'
-            onClick={() => setRespondiendo((r) => !r)}
-            className='flex items-center gap-1 text-[11.5px] text-neutral-600 transition-colors hover:text-neutral-200'
-          >
-            <i className='ti ti-message-reply' /> Responder
-          </button>
+          {comentario.nivel < COMENTARIO_MAX_NIVEL && (
+            <button
+              type='button'
+              onClick={() => setRespondiendo((r) => !r)}
+              className='flex items-center gap-1 text-[11.5px] text-neutral-600 transition-colors hover:text-neutral-200'
+            >
+              <i className='ti ti-message-reply' /> Responder
+            </button>
+          )}
 
           {usuario && (
             <button
@@ -369,13 +341,26 @@ export default function CommentThread({
               <CommentThread
                 key={respuesta.id}
                 comentario={respuesta}
-                tipoContenido={tipoContenido}
-                contenidoId={contenidoId}
-                onNuevaRespuesta={onNuevaRespuesta}
-                onComentarioEliminado={onComentarioEliminado}
+                acciones={acciones}
               />
             ))}
           </div>
+        )}
+
+        {hayMasPorCargar && (
+          <button
+            type='button'
+            onClick={handleVerMasRespuestas}
+            disabled={acciones.masRespuestas.isPending}
+            className='mt-2 flex items-center gap-1 text-[11.5px] font-medium text-blue-400 hover:underline disabled:opacity-50'
+          >
+            <i className='ti ti-corner-down-right' />
+            {acciones.masRespuestas.isPending
+              ? 'Cargando...'
+              : `Ver ${faltanRespuestas} ${
+                  respuestasCargadas > 0 ? 'más ' : ''
+                }${faltanRespuestas === 1 ? 'respuesta' : 'respuestas'}`}
+          </button>
         )}
 
         <ReportModal
@@ -417,10 +402,12 @@ export default function CommentThread({
               className='flex w-full items-center gap-2 px-3 py-2 text-left text-[12px] text-neutral-300 transition-colors hover:bg-white/[0.05] hover:text-neutral-100'
             >
               <BookmarkIcon
-                filled={estaGuardado}
-                className={`text-[13px] ${estaGuardado ? 'text-white' : ''}`}
+                filled={comentario.esta_guardado}
+                className={`text-[13px] ${
+                  comentario.esta_guardado ? 'text-white' : ''
+                }`}
               />{' '}
-              {estaGuardado ? 'Quitar de guardados' : 'Guardar'}
+              {comentario.esta_guardado ? 'Quitar de guardados' : 'Guardar'}
             </button>
             {esAutor && (
               <button

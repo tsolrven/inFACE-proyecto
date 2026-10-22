@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Modal, { ModalHeader } from '@/shared/components/ui/Modal';
 import CommentThread from '@/shared/post/comments/CommentThread';
+import { useComments } from '@/shared/post/comments/useComments';
+import { useCommentActions } from '@/shared/post/comments/useCommentActions';
 import {
-  listarComentarios,
-  crearComentario,
-} from '@/shared/post/comments/comments.api';
-import { COMENTARIO_MAX } from '@/shared/post/comments/constants';
+  COMENTARIO_MAX,
+  COMENTARIO_ORDENES,
+} from '@/shared/post/comments/constants';
 import { colorPorRamo } from '@/shared/lib/courseColors';
 import {
   metaDeArchivo,
@@ -25,8 +25,6 @@ import {
 } from '@/features/materials/hooks/useApuntes';
 import { useVotar } from '@/shared/post/votes/useVotar';
 import { useGuardar } from '@/shared/post/bookmarks/useGuardar';
-import { parchearContenido } from '@/shared/post/cache';
-import { mostrarToast } from '@/shared/stores/toastStore';
 import EditApunteModal from '@/features/materials/components/EditApunteModal';
 import ConfirmDialog from '@/shared/components/ui/ConfirmDialog';
 import ReportModal from '@/shared/moderation/ReportModal';
@@ -36,76 +34,32 @@ import CodeViewer from '@/features/materials/components/CodeViewer';
 import BookmarkIcon from '@/shared/post/bookmarks/BookmarkIcon';
 import { esStaff, puedeEditar, puedeEliminar } from '@/shared/auth/roles';
 
-const comentariosKey = (id) => ['comentario', 'list', 'apunte', id];
-
-function insertarRespuesta(comentarios, padreId, nueva) {
-  return comentarios.map((c) => {
-    if (c.id === padreId) {
-      return { ...c, respuestas: [...(c.respuestas ?? []), nueva] };
-    }
-    if (c.respuestas?.length) {
-      return {
-        ...c,
-        respuestas: insertarRespuesta(c.respuestas, padreId, nueva),
-      };
-    }
-    return c;
-  });
-}
-
-function eliminarNodoDelArbol(comentarios, comentarioId) {
-  return comentarios
-    .filter((c) => c.id !== comentarioId)
-    .map((c) =>
-      c.respuestas?.length
-        ? { ...c, respuestas: eliminarNodoDelArbol(c.respuestas, comentarioId) }
-        : c,
-    );
-}
-
-function marcarComoEliminado(comentarios, comentarioId) {
-  return comentarios.map((c) => {
-    if (c.id === comentarioId) {
-      return { ...c, eliminado: true, contenido: null, autor: null };
-    }
-    if (c.respuestas?.length) {
-      return {
-        ...c,
-        respuestas: marcarComoEliminado(c.respuestas, comentarioId),
-      };
-    }
-    return c;
-  });
-}
-
-function contarComentarios(comentarios) {
-  return comentarios.reduce(
-    (acc, c) =>
-      acc +
-      (c.eliminado ? 0 : 1) +
-      (c.respuestas?.length ? contarComentarios(c.respuestas) : 0),
-    0,
-  );
-}
-
 export default function MaterialDetailModal() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const qc = useQueryClient();
   const usuario = useAuthStore((s) => s.usuario);
 
   const { data: apunte, isPending: cargando, error } = useApunte(id);
-  const { data: comentarios = [] } = useQuery({
-    queryKey: comentariosKey(id),
-    queryFn: () => listarComentarios('apunte', id),
-  });
+
+  const [orden, setOrden] = useState('mejores');
+  const {
+    data: comentariosData,
+    isPending: cargandoComentarios,
+    isPlaceholderData,
+    error: errorComentarios,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useComments('apunte', id, orden);
+  const raices = comentariosData?.raices ?? [];
+  const acciones = useCommentActions('apunte', id, orden);
+
   const votarMut = useVotar('apunte');
   const guardarMut = useGuardar('apunte');
   const eliminarMut = useEliminarApunte();
 
   const [textoNuevo, setTextoNuevo] = useState('');
-  const [enviando, setEnviando] = useState(false);
   const [editando, setEditando] = useState(false);
   const [confirmandoEliminar, setConfirmandoEliminar] = useState(false);
   const [errorEliminar, setErrorEliminar] = useState(null);
@@ -143,40 +97,13 @@ export default function MaterialDetailModal() {
     guardarMut.mutate({ id, guardar: !apunte.esta_guardado });
   }
 
-  // un solo lugar para tocar el árbol de comentarios y mantener el contador
-  function actualizarComentarios(fn) {
-    const nuevos = fn(qc.getQueryData(comentariosKey(id)) ?? []);
-    qc.setQueryData(comentariosKey(id), nuevos);
-    parchearContenido(qc, 'apunte', id, {
-      comentarios_count: contarComentarios(nuevos),
-    });
-  }
-
-  function handleNuevaRespuesta(padreId, nueva) {
-    actualizarComentarios((prev) => insertarRespuesta(prev, padreId, nueva));
-  }
-
-  function handleComentarioEliminado(comentarioId, eliminadoPermanente) {
-    actualizarComentarios((prev) =>
-      eliminadoPermanente
-        ? eliminarNodoDelArbol(prev, comentarioId)
-        : marcarComoEliminado(prev, comentarioId),
-    );
-  }
-
-  async function handleEnviarComentario() {
+  function handleEnviarComentario() {
     const texto = textoNuevo.trim();
     if (!texto) return;
-    setEnviando(true);
-    try {
-      const nuevo = await crearComentario('apunte', id, { contenido: texto });
-      actualizarComentarios((prev) => [...prev, nuevo]);
-      setTextoNuevo('');
-    } catch (err) {
-      mostrarToast(err.message || 'No se pudo publicar el comentario');
-    } finally {
-      setEnviando(false);
-    }
+    acciones.crear.mutate(
+      { contenido: texto },
+      { onSuccess: () => setTextoNuevo('') },
+    );
   }
 
   async function handleEliminar() {
@@ -371,7 +298,7 @@ export default function MaterialDetailModal() {
                 className='flex items-center gap-1.5 rounded-full bg-white/[0.06] px-3 py-1.5 transition-colors hover:bg-white/[0.1] hover:text-neutral-200'
               >
                 <i className='ti ti-message-circle-2 text-[13px]' />{' '}
-                {contarComentarios(comentarios)}
+                {apunte.comentarios_count ?? 0}
               </button>
 
               <ShareButton
@@ -392,7 +319,7 @@ export default function MaterialDetailModal() {
           >
             <h3 className='mb-4 flex items-center gap-1.5 text-sm font-semibold text-neutral-100'>
               <i className='ti ti-messages text-base text-pink-500' />
-              Discusión y Respuestas ({contarComentarios(comentarios)})
+              Discusión y Respuestas ({apunte.comentarios_count ?? 0})
             </h3>
 
             <div className='mb-6 flex flex-col gap-2 rounded-[10px] border border-white/[0.06] bg-[#111114] p-2.5'>
@@ -411,31 +338,77 @@ export default function MaterialDetailModal() {
                 <button
                   type='button'
                   onClick={handleEnviarComentario}
-                  disabled={enviando || !textoNuevo.trim()}
+                  disabled={acciones.crear.isPending || !textoNuevo.trim()}
                   className='rounded-md bg-pink-500 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#D43E56] disabled:opacity-50'
                 >
-                  {enviando ? 'Enviando...' : 'Comentar'}
+                  {acciones.crear.isPending ? 'Enviando...' : 'Comentar'}
                 </button>
               </div>
             </div>
 
-            <div className='flex flex-col gap-4'>
-              {comentarios.length === 0 && (
-                <p className='text-center text-[12.5px] text-neutral-600'>
-                  Todavía no hay comentarios. ¡Sé el primero en preguntar o
-                  aportar!
+            <div className='mb-4 flex items-center gap-1'>
+              {COMENTARIO_ORDENES.map((o) => (
+                <button
+                  key={o.valor}
+                  type='button'
+                  onClick={() => setOrden(o.valor)}
+                  className={`rounded-full px-2.5 py-1 text-[11.5px] font-medium transition-colors ${
+                    orden === o.valor
+                      ? 'bg-white/[0.1] text-neutral-100'
+                      : 'text-neutral-500 hover:text-neutral-200'
+                  }`}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+
+            <div
+              className={`flex flex-col gap-4 transition-opacity ${
+                isPlaceholderData ? 'opacity-60' : ''
+              }`}
+            >
+              {cargandoComentarios && (
+                <div className='flex items-center justify-center py-6 text-neutral-600'>
+                  <i className='ti ti-loader-2 animate-spin text-xl' />
+                </div>
+              )}
+
+              {errorComentarios && (
+                <p className='text-center text-[12.5px] text-red-400'>
+                  {errorComentarios.message}
                 </p>
               )}
-              {comentarios.map((comentario) => (
+
+              {!cargandoComentarios &&
+                !errorComentarios &&
+                raices.length === 0 && (
+                  <p className='text-center text-[12.5px] text-neutral-600'>
+                    Todavía no hay comentarios. ¡Sé el primero en preguntar o
+                    aportar!
+                  </p>
+                )}
+
+              {raices.map((comentario) => (
                 <CommentThread
                   key={comentario.id}
                   comentario={comentario}
-                  tipoContenido='apunte'
-                  contenidoId={id}
-                  onNuevaRespuesta={handleNuevaRespuesta}
-                  onComentarioEliminado={handleComentarioEliminado}
+                  acciones={acciones}
                 />
               ))}
+
+              {hasNextPage && (
+                <button
+                  type='button'
+                  onClick={() => fetchNextPage()}
+                  disabled={isFetchingNextPage}
+                  className='self-center rounded-full bg-white/[0.06] px-4 py-1.5 text-[12px] font-medium text-neutral-300 transition-colors hover:bg-white/[0.1] disabled:opacity-50'
+                >
+                  {isFetchingNextPage
+                    ? 'Cargando...'
+                    : 'Cargar más comentarios'}
+                </button>
+              )}
             </div>
           </div>
 
