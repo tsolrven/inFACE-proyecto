@@ -11,8 +11,9 @@ export async function listarGuardados({
   tipo = 'apunte',
   pagina = 1,
   limite = 20,
+  signal,
 } = {}) {
   const qs = new URLSearchParams({ tipo, pagina, limite }).toString();
-  const res = await apiFetch(`/guardados?${qs}`);
+  const res = await apiFetch(`/guardados?${qs}`, { signal });
   return { items: res.data, meta: res.meta };
 }

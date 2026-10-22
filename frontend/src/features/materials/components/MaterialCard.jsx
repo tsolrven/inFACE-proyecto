@@ -23,7 +23,7 @@ import CodeViewer from '@/features/materials/components/CodeViewer';
 import BookmarkIcon from '@/shared/post/bookmarks/BookmarkIcon';
 import { esStaff, puedeEditar, puedeEliminar } from '@/shared/auth/roles';
 
-export default function MaterialCard({ apunte, onQuitarDeGuardados }) {
+export default function MaterialCard({ apunte }) {
   const navigate = useNavigate();
   const location = useLocation();
   const usuario = useAuthStore((s) => s.usuario);
@@ -68,14 +68,7 @@ export default function MaterialCard({ apunte, onQuitarDeGuardados }) {
   function handleGuardar(e) {
     e.stopPropagation();
     setMenuAbierto(false);
-    guardarMut.mutate(
-      { id: apunte.id },
-      {
-        onSuccess: ({ guardado }) => {
-          if (!guardado) onQuitarDeGuardados?.(apunte.id);
-        },
-      },
-    );
+    guardarMut.mutate({ id: apunte.id });
   }
 
   async function handleEliminar() {
@@ -87,8 +80,6 @@ export default function MaterialCard({ apunte, onQuitarDeGuardados }) {
       setErrorEliminar(err.message || 'No se pudo eliminar el material.');
     }
   }
-
-  // return (  ← desde aquí el JSX sigue igual, salvo los cambios de abajo
 
   return (
     <div

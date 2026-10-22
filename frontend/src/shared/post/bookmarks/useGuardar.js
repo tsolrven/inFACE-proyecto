@@ -1,7 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { alternarGuardado } from '@/shared/post/bookmarks/bookmarks.api';
 import { mostrarToast } from '@/shared/stores/toastStore';
-import { instantanea, parchearContenido, restaurar } from '@/shared/post/cache';
+import {
+  instantanea,
+  parchearContenido,
+  quitarDeGuardados,
+  restaurar,
+} from '@/shared/post/cache';
 
 export function useGuardar(tipoContenido) {
   const qc = useQueryClient();
@@ -20,6 +25,7 @@ export function useGuardar(tipoContenido) {
 
     onSuccess: ({ guardado }, { id }) => {
       parchearContenido(qc, tipoContenido, id, { esta_guardado: guardado });
+      if (!guardado) quitarDeGuardados(qc, tipoContenido, id);
       mostrarToast(guardado ? 'Guardado' : 'Quitado de guardados');
     },
 

@@ -73,21 +73,30 @@ export function buscarContenido(qc, tipo, id) {
   return encontrado;
 }
 
+function sinItem(data, id) {
+  if (!data?.pages) return data;
+  const estaba = data.pages.some((p) => p.items.some((i) => i.id === id));
+  if (!estaba) return data;
+  return {
+    ...data,
+    pages: data.pages.map((p) => ({
+      ...p,
+      items: p.items.filter((i) => i.id !== id),
+      meta: p.meta && { ...p.meta, total: Math.max(0, p.meta.total - 1) },
+    })),
+  };
+}
+
 // Saca un contenido de todas las listas (al eliminarlo).
 export function quitarContenido(qc, tipo, id) {
   clavesDe(tipo).forEach((queryKey) => {
-    qc.setQueriesData({ queryKey }, (data) => {
-      if (!data?.pages) return data;
-      const estaba = data.pages.some((p) => p.items.some((i) => i.id === id));
-      if (!estaba) return data;
-      return {
-        ...data,
-        pages: data.pages.map((p) => ({
-          ...p,
-          items: p.items.filter((i) => i.id !== id),
-          meta: p.meta && { ...p.meta, total: Math.max(0, p.meta.total - 1) },
-        })),
-      };
-    });
+    qc.setQueriesData({ queryKey }, (data) => sinItem(data, id));
   });
+}
+
+// Lo saca solo de la lista de guardados (al dejar de guardarlo).
+export function quitarDeGuardados(qc, tipo, id) {
+  qc.setQueriesData({ queryKey: ['guardados', tipo] }, (data) =>
+    sinItem(data, id),
+  );
 }
