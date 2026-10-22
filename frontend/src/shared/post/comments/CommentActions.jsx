@@ -1,7 +1,5 @@
-import { useAuthStore } from '@/shared/auth/authStore';
-import { esStaff, puedeEditar, puedeEliminar } from '@/shared/auth/roles';
-import BookmarkIcon from '@/shared/post/bookmarks/BookmarkIcon';
 import PostActionsMenu from '@/shared/post/actions/PostActionsMenu';
+import usePostMenuItems from '@/shared/post/actions/usePostMenuItems';
 
 export default function CommentActions({
   comentario,
@@ -12,53 +10,22 @@ export default function CommentActions({
   onEliminar,
   onReportar,
 }) {
-  const usuario = useAuthStore((s) => s.usuario);
-  const esAutor = puedeEditar(usuario, comentario.autor?.id);
-  const puedeBorrar = puedeEliminar(usuario, comentario.autor?.id);
-  const esModerador = esStaff(usuario?.rol);
-  const guardado = comentario.esta_guardado;
+  const items = usePostMenuItems({
+    autorId: comentario.autor?.id,
+    guardado: comentario.esta_guardado,
+    onGuardar: () =>
+      acciones.guardar.mutate({
+        id: comentario.id,
+        guardar: !comentario.esta_guardado,
+      }),
+    onEditar,
+    onEliminar,
+    onReportar,
+  });
 
   function votar(tipo) {
     acciones.votar.mutate({ id: comentario.id, tipo });
   }
-
-  const items = [
-    {
-      key: 'guardar',
-      label: guardado ? 'Quitar de guardados' : 'Guardar',
-      icon: (
-        <BookmarkIcon
-          filled={guardado}
-          className={`text-[13px] ${guardado ? 'text-white' : ''}`}
-        />
-      ),
-      onClick: () =>
-        acciones.guardar.mutate({ id: comentario.id, guardar: !guardado }),
-    },
-    {
-      key: 'editar',
-      label: 'Editar',
-      icon: <i className='ti ti-edit text-[13px]' />,
-      onClick: onEditar,
-      hidden: !esAutor,
-    },
-    {
-      key: 'eliminar',
-      label: esAutor ? 'Eliminar' : 'Eliminar (moderación)',
-      icon: <i className='ti ti-trash text-[13px]' />,
-      onClick: onEliminar,
-      danger: true,
-      hidden: !puedeBorrar,
-    },
-    {
-      key: 'reportar',
-      label: 'Reportar',
-      icon: <i className='ti ti-flag text-[13px]' />,
-      onClick: onReportar,
-      danger: true,
-      hidden: esAutor || esModerador,
-    },
-  ];
 
   return (
     <div className='flex items-center gap-3'>
@@ -102,12 +69,10 @@ export default function CommentActions({
         </button>
       )}
 
-      {usuario && (
-        <PostActionsMenu
-          items={items}
-          label='Más acciones del comentario'
-        />
-      )}
+      <PostActionsMenu
+        items={items}
+        label='Más acciones del comentario'
+      />
     </div>
   );
 }

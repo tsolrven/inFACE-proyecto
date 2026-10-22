@@ -1,6 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useAuthStore } from '@/shared/auth/authStore';
 import { colorPorRamo } from '@/shared/lib/courseColors';
 import {
   metaDeBadge,
@@ -11,46 +9,16 @@ import {
 } from '@/features/materials/utils/fileMeta';
 import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
 import { descargarArchivo } from '@/features/materials/api/files.api';
-import { useEliminarApunte } from '@/features/materials/hooks/useApuntes';
 import { useVotar } from '@/shared/post/votes/useVotar';
-import { useGuardar } from '@/shared/post/bookmarks/useGuardar';
-import EditApunteModal from '@/features/materials/components/EditApunteModal';
-import ConfirmDialog from '@/shared/components/ui/ConfirmDialog';
-import ReportModal from '@/shared/moderation/ReportModal';
+import ApunteMenu from '@/features/materials/components/ApunteMenu';
 import VotePill from '@/shared/post/votes/VotePill';
 import ShareButton from '@/shared/post/share/ShareButton';
 import CodeViewer from '@/features/materials/components/CodeViewer';
-import BookmarkIcon from '@/shared/post/bookmarks/BookmarkIcon';
-import { esStaff, puedeEditar, puedeEliminar } from '@/shared/auth/roles';
 
 export default function MaterialCard({ apunte }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const usuario = useAuthStore((s) => s.usuario);
   const votarMut = useVotar('apunte');
-  const guardarMut = useGuardar('apunte');
-  const eliminarMut = useEliminarApunte();
-
-  const [editando, setEditando] = useState(false);
-  const [confirmandoEliminar, setConfirmandoEliminar] = useState(false);
-  const [errorEliminar, setErrorEliminar] = useState(null);
-  const [reportando, setReportando] = useState(false);
-  const [menuAbierto, setMenuAbierto] = useState(false);
-  const menuRef = useRef(null);
-
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setMenuAbierto(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const esAutor = puedeEditar(usuario, apunte.autor?.id);
-  const puedeBorrar = puedeEliminar(usuario, apunte.autor?.id);
-  const esModerador = esStaff(usuario?.rol);
 
   const ramoColor = colorPorRamo(apunte.ramo?.id);
 
@@ -65,99 +33,16 @@ export default function MaterialCard({ apunte }) {
     votarMut.mutate({ id: apunte.id, tipo });
   }
 
-  function handleGuardar(e) {
-    e.stopPropagation();
-    setMenuAbierto(false);
-    guardarMut.mutate({ id: apunte.id, guardar: !apunte.esta_guardado });
-  }
-
-  async function handleEliminar() {
-    setErrorEliminar(null);
-    try {
-      await eliminarMut.mutateAsync(apunte.id);
-      setConfirmandoEliminar(false);
-    } catch (err) {
-      setErrorEliminar(err.message || 'No se pudo eliminar el material.');
-    }
-  }
-
   return (
     <div
       onClick={abrirDetalle}
       className='relative mb-2 flex cursor-pointer overflow-hidden rounded-[14px] border border-white/[0.06] bg-[#1E1E24] transition-colors hover:border-white/[0.12]'
     >
-      {/* menú de tres puntos: guardar / reportar */}
-      <div
-        ref={menuRef}
-        onClick={(e) => e.stopPropagation()}
+      <ApunteMenu
+        apunte={apunte}
         className='absolute right-2 top-2 z-10'
-      >
-        <button
-          type='button'
-          onClick={() => setMenuAbierto((abierto) => !abierto)}
-          className='flex h-7 w-7 items-center justify-center rounded-full text-neutral-500 transition-colors hover:bg-white/[0.08] hover:text-neutral-200'
-        >
-          <i className='ti ti-dots text-base' />
-        </button>
-
-        {menuAbierto && (
-          <div className='absolute right-0 top-[32px] w-[168px] overflow-hidden rounded-xl border border-white/10 bg-[#1E1E24] shadow-[0_12px_40px_rgba(0,0,0,0.5)]'>
-            <button
-              type='button'
-              onClick={handleGuardar}
-              className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-neutral-300 transition-colors hover:bg-white/[0.05] hover:text-neutral-100'
-            >
-              <BookmarkIcon
-                filled={apunte.esta_guardado}
-                className={`text-[14px] ${apunte.esta_guardado ? 'text-white' : ''}`}
-              />{' '}
-              {apunte.esta_guardado ? 'Quitar de guardados' : 'Guardar'}
-            </button>
-
-            {esAutor && (
-              <button
-                type='button'
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setMenuAbierto(false);
-                  setEditando(true);
-                }}
-                className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-neutral-300 transition-colors hover:bg-white/[0.05] hover:text-neutral-100'
-              >
-                <i className='ti ti-edit text-[14px]' /> Editar
-              </button>
-            )}
-
-            {puedeBorrar && (
-              <button
-                type='button'
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setMenuAbierto(false);
-                  setConfirmandoEliminar(true);
-                }}
-                className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-red-400 transition-colors hover:bg-red-500/[0.08]'
-              >
-                <i className='ti ti-trash text-[14px]' />{' '}
-                {esAutor ? 'Eliminar' : 'Eliminar (moderación)'}
-              </button>
-            )}
-
-            {usuario && !esAutor && !esModerador && (
-              <button
-                type='button'
-                onClick={() => {
-                  setMenuAbierto(false);
-                  setReportando(true);
-                }}
-                className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-red-400 transition-colors hover:bg-red-500/[0.08]'
-              >
-                <i className='ti ti-flag text-[14px]' /> Reportar
-              </button>
-            )}
-          </div>
-        )}
-      </div>
+        triggerClassName='flex h-7 w-7 items-center justify-center rounded-full text-base text-neutral-500 transition-colors hover:bg-white/[0.08] hover:text-neutral-200'
+      />
 
       {/* cuerpo */}
       <div className='min-w-0 flex-1 p-3'>
@@ -252,46 +137,6 @@ export default function MaterialCard({ apunte }) {
           </span>
         </div>
       </div>
-
-      {!esAutor && !esModerador && (
-        <div onClick={(e) => e.stopPropagation()}>
-          <ReportModal
-            open={reportando}
-            onClose={() => setReportando(false)}
-            tipoContenido='apunte'
-            contenidoId={apunte.id}
-          />
-        </div>
-      )}
-
-      {(esAutor || puedeBorrar) && (
-        <div onClick={(e) => e.stopPropagation()}>
-          {esAutor && (
-            <EditApunteModal
-              open={editando}
-              onClose={() => setEditando(false)}
-              apunte={apunte}
-              carreraId={usuario?.carrera_id}
-            />
-          )}
-          <ConfirmDialog
-            open={confirmandoEliminar}
-            title='Eliminar material'
-            message={
-              errorEliminar ||
-              'Esta acción no se puede deshacer. Se eliminarán también sus archivos, comentarios y votos.'
-            }
-            confirmLabel='Eliminar'
-            danger
-            loading={eliminarMut.isPending}
-            onConfirm={handleEliminar}
-            onCancel={() => {
-              setConfirmandoEliminar(false);
-              setErrorEliminar(null);
-            }}
-          />
-        </div>
-      )}
     </div>
   );
 }

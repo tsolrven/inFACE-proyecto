@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import Modal, { ModalHeader } from '@/shared/components/ui/Modal';
 import CommentsSection from '@/shared/post/comments/CommentsSection';
@@ -11,55 +11,22 @@ import {
   badgesDeApunte,
 } from '@/features/materials/utils/fileMeta';
 import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
-import { useAuthStore } from '@/shared/auth/authStore';
 import { descargarArchivo } from '@/features/materials/api/files.api';
-import {
-  useApunte,
-  useEliminarApunte,
-} from '@/features/materials/hooks/useApuntes';
+import { useApunte } from '@/features/materials/hooks/useApuntes';
 import { useVotar } from '@/shared/post/votes/useVotar';
-import { useGuardar } from '@/shared/post/bookmarks/useGuardar';
-import EditApunteModal from '@/features/materials/components/EditApunteModal';
-import ConfirmDialog from '@/shared/components/ui/ConfirmDialog';
-import ReportModal from '@/shared/moderation/ReportModal';
+import ApunteMenu from '@/features/materials/components/ApunteMenu';
 import VotePill from '@/shared/post/votes/VotePill';
 import ShareButton from '@/shared/post/share/ShareButton';
 import CodeViewer from '@/features/materials/components/CodeViewer';
-import BookmarkIcon from '@/shared/post/bookmarks/BookmarkIcon';
-import { esStaff, puedeEditar, puedeEliminar } from '@/shared/auth/roles';
 
 export default function MaterialDetailModal() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const usuario = useAuthStore((s) => s.usuario);
 
   const { data: apunte, isPending: cargando, error } = useApunte(id);
   const votarMut = useVotar('apunte');
-  const guardarMut = useGuardar('apunte');
-  const eliminarMut = useEliminarApunte();
-
-  const [editando, setEditando] = useState(false);
-  const [confirmandoEliminar, setConfirmandoEliminar] = useState(false);
-  const [errorEliminar, setErrorEliminar] = useState(null);
-  const [reportando, setReportando] = useState(false);
-  const [menuAbierto, setMenuAbierto] = useState(false);
-  const menuRef = useRef(null);
   const comentariosRef = useRef(null);
-
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setMenuAbierto(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const esAutor = puedeEditar(usuario, apunte?.autor?.id);
-  const puedeBorrar = puedeEliminar(usuario, apunte?.autor?.id);
-  const esModerador = esStaff(usuario?.rol);
 
   function handleClose() {
     if (location.state?.backgroundLocation) navigate(-1);
@@ -69,21 +36,6 @@ export default function MaterialDetailModal() {
   function handleVotar(e, tipo) {
     e?.stopPropagation?.();
     votarMut.mutate({ id, tipo });
-  }
-
-  function handleGuardar() {
-    setMenuAbierto(false);
-    guardarMut.mutate({ id, guardar: !apunte.esta_guardado });
-  }
-
-  async function handleEliminar() {
-    setErrorEliminar(null);
-    try {
-      await eliminarMut.mutateAsync(id);
-      handleClose();
-    } catch (err) {
-      setErrorEliminar(err.message || 'No se pudo eliminar el material.');
-    }
   }
 
   return (
@@ -109,74 +61,11 @@ export default function MaterialDetailModal() {
           <ModalHeader
             onClose={handleClose}
             rightContent={
-              <div
-                ref={menuRef}
-                className='relative'
-              >
-                <button
-                  type='button'
-                  onClick={() => setMenuAbierto((abierto) => !abierto)}
-                  className='flex h-[30px] w-[30px] items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/[0.06] hover:text-neutral-100'
-                >
-                  <i className='ti ti-dots text-base' />
-                </button>
-
-                {menuAbierto && (
-                  <div className='absolute right-0 top-[36px] w-[168px] overflow-hidden rounded-xl border border-white/10 bg-[#1E1E24] shadow-[0_12px_40px_rgba(0,0,0,0.5)]'>
-                    <button
-                      type='button'
-                      onClick={handleGuardar}
-                      className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-neutral-300 transition-colors hover:bg-white/[0.05] hover:text-neutral-100'
-                    >
-                      <BookmarkIcon
-                        filled={apunte.esta_guardado}
-                        className={`text-[14px] ${apunte.esta_guardado ? 'text-white' : ''}`}
-                      />{' '}
-                      {apunte.esta_guardado ? 'Quitar de guardados' : 'Guardar'}
-                    </button>
-
-                    {esAutor && (
-                      <button
-                        type='button'
-                        onClick={() => {
-                          setMenuAbierto(false);
-                          setEditando(true);
-                        }}
-                        className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-neutral-300 transition-colors hover:bg-white/[0.05] hover:text-neutral-100'
-                      >
-                        <i className='ti ti-edit text-[14px]' /> Editar
-                      </button>
-                    )}
-
-                    {puedeBorrar && (
-                      <button
-                        type='button'
-                        onClick={() => {
-                          setMenuAbierto(false);
-                          setConfirmandoEliminar(true);
-                        }}
-                        className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-red-400 transition-colors hover:bg-red-500/[0.08]'
-                      >
-                        <i className='ti ti-trash text-[14px]' />{' '}
-                        {esAutor ? 'Eliminar' : 'Eliminar (moderación)'}
-                      </button>
-                    )}
-
-                    {usuario && !esAutor && !esModerador && (
-                      <button
-                        type='button'
-                        onClick={() => {
-                          setMenuAbierto(false);
-                          setReportando(true);
-                        }}
-                        className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-red-400 transition-colors hover:bg-red-500/[0.08]'
-                      >
-                        <i className='ti ti-flag text-[14px]' /> Reportar
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
+              <ApunteMenu
+                apunte={apunte}
+                triggerClassName='flex h-[30px] w-[30px] items-center justify-center rounded-lg text-base text-neutral-400 transition-colors hover:bg-white/[0.06] hover:text-neutral-100'
+                onEliminado={handleClose}
+              />
             }
           >
             <button
@@ -294,43 +183,6 @@ export default function MaterialDetailModal() {
               placeholder='Escribe un comentario o duda sobre este material...'
             />
           </div>
-
-          {esAutor && (
-            <EditApunteModal
-              open={editando}
-              onClose={() => setEditando(false)}
-              apunte={apunte}
-              carreraId={usuario?.carrera_id}
-            />
-          )}
-
-          {puedeBorrar && (
-            <ConfirmDialog
-              open={confirmandoEliminar}
-              title='Eliminar material'
-              message={
-                errorEliminar ||
-                'Esta acción no se puede deshacer. Se eliminarán también sus archivos, comentarios y votos.'
-              }
-              confirmLabel='Eliminar'
-              danger
-              loading={eliminarMut.isPending}
-              onConfirm={handleEliminar}
-              onCancel={() => {
-                setConfirmandoEliminar(false);
-                setErrorEliminar(null);
-              }}
-            />
-          )}
-
-          {!esAutor && !esModerador && (
-            <ReportModal
-              open={reportando}
-              onClose={() => setReportando(false)}
-              tipoContenido='apunte'
-              contenidoId={id}
-            />
-          )}
         </>
       )}
     </Modal>
