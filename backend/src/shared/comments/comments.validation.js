@@ -3,10 +3,12 @@ import { admiteComentarios } from '../content/contentRegistry.js';
 import { paginacionQuerySchema } from '../validation/common.schemas.js';
 import { ORDENES_COMENTARIO } from './comments.constants.js';
 // ─────────────────────────────────────────────────────────────────────────────
+const MAX_LONGITUD_COMENTARIO = 2000;
+
 const ERROR_MESSAGES = {
   contenido: {
     min: 'El comentario no puede estar vacío',
-    max: 'El comentario no puede superar 2000 caracteres',
+    max: `El comentario no puede superar ${MAX_LONGITUD_COMENTARIO} caracteres`,
     required: 'El contenido del comentario es requerido',
   },
   padre_id: {
@@ -33,7 +35,7 @@ const crearComentarioSchema = z.object({
     })
     .trim()
     .min(1, ERROR_MESSAGES.contenido.min)
-    .max(2000, ERROR_MESSAGES.contenido.max),
+    .max(MAX_LONGITUD_COMENTARIO, ERROR_MESSAGES.contenido.max),
   padre_id: z
     .string()
     .uuid(ERROR_MESSAGES.padre_id.invalid)
@@ -51,7 +53,7 @@ const editarComentarioSchema = z.object({
     })
     .trim()
     .min(1, ERROR_MESSAGES.contenido.min)
-    .max(2000, ERROR_MESSAGES.contenido.max),
+    .max(MAX_LONGITUD_COMENTARIO, ERROR_MESSAGES.contenido.max),
 });
 // ─────────────────────────────────────────────────────────────────────────────
 // Query de los listados de comentarios (raíces y "más respuestas").
@@ -67,6 +69,7 @@ const listarComentariosQuerySchema = paginacionQuerySchema
   });
 // ─────────────────────────────────────────────────────────────────────────────
 export {
+  MAX_LONGITUD_COMENTARIO,
   contenidoComentableParamSchema,
   crearComentarioSchema,
   editarComentarioSchema,

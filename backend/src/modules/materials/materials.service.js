@@ -234,7 +234,7 @@ async function actualizarApunte(id, usuario_id, datos) {
   const apunteActualizado = await prisma.apunte.update({
     where: { id },
     data: {
-      editado_en: new Date(), // ← nuevo: solo el autor editando llega hasta acá
+      editado_en: new Date(),
       ...(ramo_id && { ramo_id }),
       ...(titulo && { titulo }),
       ...(descripcion !== undefined && { descripcion }),

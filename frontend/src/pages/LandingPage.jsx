@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import armadillo from '@/assets/armadillo.png';
-import logoWhite from '@/assets/logo_white.png';
 
 /*
  * Envuelve una sección para que aparezca suavemente al entrar en el viewport.
@@ -257,7 +256,7 @@ export default function Landing() {
         <nav className='mx-auto flex h-[68px] max-w-6xl items-center gap-3 px-5'>
           <div className='flex flex-shrink-0 items-center gap-1.5'>
             <img
-              src={logoWhite}
+              src='/logo_white.png'
               alt='InFACE'
               className='h-8 w-8 flex-shrink-0 rounded-[8px] object-contain'
             />
@@ -623,7 +622,7 @@ export default function Landing() {
 
             {/* LOGO */}
             <img
-              src={logoWhite}
+              src='/logo_white.png'
               alt='Logo InFACE'
               className='h-52 w-52 flex-shrink-0 object-contain'
             />
@@ -636,7 +635,7 @@ export default function Landing() {
         <div className='mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 md:flex-row'>
           <div className='flex items-center gap-2.5 text-center md:text-left'>
             <img
-              src={logoWhite}
+              src='/logo_white.png'
               alt='InFACE'
               className='h-11 w-11 flex-shrink-0 rounded-[9px] object-contain'
             />

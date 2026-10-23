@@ -67,10 +67,12 @@ export default function SavedCommentCard({ comentario }) {
         <span>· {formatearTiempoRelativo(comentario.creado_en)}</span>
       </div>
 
-      <p className='text-[13px] leading-relaxed text-neutral-100'>
+      <p className='whitespace-pre-wrap break-words text-[13px] leading-relaxed text-neutral-100'>
         {comentario.eliminado ? (
           <span className='italic text-neutral-600'>
-            Comentario eliminado por el usuario
+            {comentario.eliminado_por === 'moderacion'
+              ? 'Comentario eliminado por moderación'
+              : 'Comentario eliminado por el usuario'}
           </span>
         ) : (
           comentario.contenido

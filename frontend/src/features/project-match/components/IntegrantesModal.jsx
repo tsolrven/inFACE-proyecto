@@ -5,7 +5,6 @@ import ConfirmDialog from '@/shared/components/ui/ConfirmDialog';
 import {
   getInitials,
   avatarColor,
-  etiquetaColor,
   carreraColor,
   formatFecha,
 } from '@/shared/lib/matchHelpers';
