@@ -11,13 +11,13 @@ export function ProtectedRoute({ children }) {
     if (location.pathname === '/') {
       return <Landing />;
     }
-  return (
-    <Navigate
-      to='/login'
-      replace
-      state={{ from: location }}
-    />
-  );
+    return (
+      <Navigate
+        to='/login'
+        replace
+        state={{ from: location }}
+      />
+    );
   }
 
   // mientras no configure sus intereses, no puede entrar al resto de la app

@@ -29,7 +29,8 @@ function formatearArchivo(archivo) {
 // datos de la fila Archivo a partir de lo que dejó multer
 function datosArchivo(file) {
   const tipo_mime = obtenerMimePorExtension(file.originalname);
-  if (!tipo_mime) throw new BadRequestError('No se reconoce el tipo de archivo');
+  if (!tipo_mime)
+    throw new BadRequestError('No se reconoce el tipo de archivo');
   return {
     nombre_archivo: file.originalname,
     ruta_url: `/uploads/${file.filename}`,

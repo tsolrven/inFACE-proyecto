@@ -32,7 +32,9 @@ export const protectedRoutes = [
   },
   {
     path: '/espacio-creativo',
-    component: lazy(() => import('@/features/creative-space/pages/EspacioCreativo')),
+    component: lazy(
+      () => import('@/features/creative-space/pages/EspacioCreativo'),
+    ),
   },
   {
     path: '/marketplace',
@@ -120,5 +122,4 @@ export const modalRoutes = [
       () => import('@/features/materials/components/MaterialDetailModal'),
     ),
   },
-
 ];

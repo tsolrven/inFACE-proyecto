@@ -24,8 +24,8 @@ function fileFilter(req, file, cb) {
 
   // si el tipo restringe extensiones, se aplica sobre la lista general
   // (nunca puede ampliarla)
-  const tipo = req.tipoContenido ?? req.params.tipo; 
-  const { extensiones } = obtenerConfigAdjuntos(tipo); 
+  const tipo = req.tipoContenido ?? req.params.tipo;
+  const { extensiones } = obtenerConfigAdjuntos(tipo);
   const permitidas = extensiones
     ? EXTENSIONES_PERMITIDAS.filter((e) => extensiones.includes(e))
     : EXTENSIONES_PERMITIDAS;

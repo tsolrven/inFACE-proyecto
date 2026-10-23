@@ -14,7 +14,7 @@ import { go } from '@codemirror/legacy-modes/mode/go';
 import { shell } from '@codemirror/legacy-modes/mode/shell';
 import { csharp } from '@codemirror/legacy-modes/mode/clike';
 
-// catálogo de lenguajes soportados por el editor de snippets 
+// catálogo de lenguajes soportados por el editor de snippets
 export const LENGUAJES_SNIPPET = [
   { value: 'texto', label: 'Texto plano', extension: null },
   {

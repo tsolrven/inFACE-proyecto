@@ -39,7 +39,9 @@ function validarEntorno() {
   }
 
   if (access && refresh && access === refresh) {
-    errores.push('=> JWT_ACCESS_SECRET y JWT_REFRESH_SECRET deben ser distintos');
+    errores.push(
+      '=> JWT_ACCESS_SECRET y JWT_REFRESH_SECRET deben ser distintos',
+    );
   }
 
   if (errores.length > 0) {
