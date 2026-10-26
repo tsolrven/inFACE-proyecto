@@ -16,12 +16,18 @@ import { registrarHidratadorGuardados } from '../../shared/content/contentRegist
 import { obtenerEnriquecimiento } from '../../shared/content/contentEnrichment.js';
 import { esStaff } from '../../shared/auth/permissions.js';
 import { AUTOR_PUBLICO_SELECT } from '../../shared/content/selects.js';
+import {
+  INCLUDE_HASHTAGS,
+  resolverHashtags,
+  filtroPorHashtag,
+  nombresDeHashtags,
+} from '../../shared/hashtags/hashtags.service.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 // relaciones que siempre se piden junto con un apunte
 const INCLUDE_APUNTE = {
   autor: { select: AUTOR_PUBLICO_SELECT },
   ramo: { select: { id: true, nombre: true, codigo: true, semestre: true } },
-  hashtags: { include: { hashtag: { select: { nombre: true } } } },
+  hashtags: INCLUDE_HASHTAGS,
 };
 // ────────────────────────────────────────────────────────────────────────────────────────
 // Único lugar donde se arma el apunte "completo" para un usuario
@@ -62,7 +68,7 @@ async function listarApuntes({
   if (ramo_id) where.ramo_id = ramo_id;
   if (tipo) where.tipo = tipo;
   if (hashtag) {
-    where.hashtags = { some: { hashtag: { nombre: hashtag } } };
+    where.hashtags = filtroPorHashtag(hashtag);
   }
 
   if (tipo_archivo && MIME_MAP[tipo_archivo]) {
@@ -295,19 +301,6 @@ async function hidratarApuntesGuardados(ids, usuario_id) {
   return formatearApuntes(ordenados, usuario_id);
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-async function resolverHashtags(hashtags) {
-  return Promise.all(
-    hashtags.map(async (nombre) => {
-      const tag = await prisma.hashtag.upsert({
-        where: { nombre },
-        update: {},
-        create: { nombre },
-      });
-      return { hashtag_id: tag.id };
-    }),
-  );
-}
-// ────────────────────────────────────────────────────────────────────────────────────────
 function formatearApunte(
   apunte,
   {
@@ -341,7 +334,7 @@ function formatearApunte(
       codigo: apunte.ramo.codigo,
       semestre: apunte.ramo.semestre,
     },
-    hashtags: apunte.hashtags.map((h) => h.hashtag.nombre),
+    hashtags: nombresDeHashtags(apunte.hashtags),
     archivos: archivos.map(formatearArchivo),
     comentarios_count: comentarios,
     descargas: archivos.reduce(

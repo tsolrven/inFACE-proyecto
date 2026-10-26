@@ -15,7 +15,7 @@ import { useEditarApunte } from '@/features/materials/hooks/useApuntes';
 import { parchearContenido } from '@/shared/post/cache';
 import CodeEditor from '@/features/materials/components/CodeEditor';
 import InfoTooltip from '@/shared/components/ui/InfoTooltip';
-import { normalizarHashtags } from '@/features/materials/utils/normalizarHashtags';
+import { normalizarHashtags } from '@/shared/lib/hashtags';
 import CharCounter from '@/shared/components/ui/CharCounter';
 import {
   TITULO_MIN,

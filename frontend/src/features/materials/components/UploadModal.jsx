@@ -6,7 +6,7 @@ import { crearApunte } from '@/features/materials/api/materials.api';
 import { useQueryClient } from '@tanstack/react-query';
 import CodeEditor from '@/features/materials/components/CodeEditor';
 import InfoTooltip from '@/shared/components/ui/InfoTooltip';
-import { normalizarHashtags } from '@/features/materials/utils/normalizarHashtags';
+import { normalizarHashtags } from '@/shared/lib/hashtags';
 import CharCounter from '@/shared/components/ui/CharCounter';
 import {
   TITULO_MIN,

@@ -1,6 +1,10 @@
 import { z } from 'zod';
 import { MIME_MAP } from './fileType.helper.js';
 import { paginacionQuerySchema } from '../../shared/validation/common.schemas.js';
+import {
+  hashtagsSchema,
+  hashtagFiltroSchema,
+} from '../../shared/hashtags/hashtags.validation.js';
 // ─────────────────────────────────────────────────────────────────────────────
 const TIPOS_APUNTE = ['apunte', 'codigo', 'guia', 'ejercicio', 'otro'];
 const LENGUAJES_SNIPPET = [
@@ -51,32 +55,8 @@ const ERROR_MESSAGES = {
   lenguaje_snippet: {
     invalid: 'El lenguaje seleccionado no es válido',
   },
-  hashtags: {
-    max_cantidad: 'No puedes agregar más de 10 hashtags',
-    pattern: 'Los hashtags solo pueden tener letras, números y guiones bajos',
-    max_largo: 'Cada hashtag no puede superar 30 caracteres',
-  },
 };
 // ─────────────────────────────────────────────────────────────────────────────
-const hashtagsSchema = z
-  .array(
-    z
-      .string()
-      .trim()
-      .toLowerCase()
-      .transform((tag) => tag.replace(/^#+/, ''))
-      .pipe(
-        z
-          .string()
-          .min(1)
-          .max(30, ERROR_MESSAGES.hashtags.max_largo)
-          .regex(/^[a-zA-Z0-9_]+$/, ERROR_MESSAGES.hashtags.pattern),
-      ),
-  )
-  .max(10, ERROR_MESSAGES.hashtags.max_cantidad)
-  .transform((tags) => [...new Set(tags)])
-  .optional();
-
 const tituloSchema = z
   .string({
     error: (issue) =>
@@ -159,12 +139,7 @@ const listarApuntesQuerySchema = paginacionQuerySchema.extend({
   tipo_archivo: z
     .enum(Object.keys(MIME_MAP), { error: 'Tipo de archivo inválido' })
     .optional(),
-  hashtag: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .max(30, 'El hashtag es demasiado largo')
-    .optional(),
+  hashtag: hashtagFiltroSchema.optional(),
   orden: z
     .enum(['recientes', 'populares'], { error: 'Orden inválido' })
     .optional(),
