@@ -9,6 +9,7 @@ import {
   verificarContenidoExiste,
   registrarHidratadorGuardados,
   obtenerPreviewsContenido,
+  ejecutarAlEliminarComentario,
 } from '../content/contentRegistry.js';
 import { eliminarInteracciones } from '../content/contentCleanup.js';
 import { obtenerMisInteracciones } from '../content/contentEnrichment.js';
@@ -328,6 +329,7 @@ async function eliminarComentario(comentario_id, usuario_id, rol) {
     if (esAutor && cantidadRespuestas === 0) {
       await eliminarInteracciones(tx, 'comentario', [comentario_id]);
       await tx.comentario.delete({ where: { id: comentario_id } });
+      await ejecutarAlEliminarComentario(tx, comentario);
       const podados = await podarAncestrosEliminados(tx, comentario.padre_id);
       return {
         eliminado_permanente: true,
@@ -353,6 +355,7 @@ async function eliminarComentario(comentario_id, usuario_id, rol) {
       },
       include: INCLUDE_COMENTARIO,
     });
+    await ejecutarAlEliminarComentario(tx, comentario);
     return {
       eliminado_permanente: false,
       comentario: formatearComentario(actualizado),

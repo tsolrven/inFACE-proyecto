@@ -132,6 +132,21 @@ async function hidratarGuardados(tipo_contenido, ids, usuario_id) {
   }
   return entrada.hidratarGuardados(ids, usuario_id);
 }
+
+// ────────────────────────────────────────────────────────────────────────────────────────
+// Cada módulo puede reaccionar cuando se elimina (lógica o físicamente) un comentario
+// de SU contenido. Ej: el foro limpia la respuesta aceptada del hilo.
+// El hook corre dentro de la transacción del borrado: recibe (tx, comentario),
+// con `comentario` tal como estaba ANTES de eliminarlo.
+function registrarAlEliminarComentario(tipo_contenido, hook) {
+  obtenerEntradaRegistro(tipo_contenido).alEliminarComentario = hook;
+}
+
+async function ejecutarAlEliminarComentario(tx, comentario) {
+  const hook =
+    CONTENT_REGISTRY[comentario.tipo_contenido]?.alEliminarComentario;
+  if (hook) await hook(tx, comentario);
+}
 // ────────────────────────────────────────────────────────────────────────────────────────
 function tiposContenidoValidos() {
   return Object.keys(CONTENT_REGISTRY);
@@ -158,6 +173,8 @@ export {
   obtenerPreviewsContenido,
   registrarHidratadorGuardados,
   hidratarGuardados,
+  registrarAlEliminarComentario,
+  ejecutarAlEliminarComentario,
   tiposContenidoValidos,
   admiteComentarios,
   obtenerConfigAdjuntos,
