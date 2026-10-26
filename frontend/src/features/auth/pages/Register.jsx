@@ -41,6 +41,8 @@ export default function Register() {
     nombre_usuario: '',
     carrera_id: '',
     contrasena: '',
+    acepta_terminos: false,
+    acepta_investigacion: false,
   });
   const [errors, setErrors] = useState({ fields: {}, general: null });
   const [loading, setLoading] = useState(false);
@@ -63,8 +65,8 @@ export default function Register() {
   );
 
   function handleChange(e) {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setForm((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
     setErrors((prev) => ({
       ...prev,
       fields: { ...prev.fields, [name]: undefined },
@@ -74,6 +76,16 @@ export default function Register() {
 
   async function handleSubmit(e) {
     e.preventDefault();
+    if (!form.acepta_terminos) {
+      setErrors({
+        fields: {
+          acepta_terminos:
+            'Debes aceptar los Términos y la Política de Privacidad para registrarte',
+        },
+        general: null,
+      });
+      return;
+    }
     setLoading(true);
     setErrors({ fields: {}, general: null });
 
@@ -295,6 +307,49 @@ export default function Register() {
                   Mínimo 8 caracteres, una mayúscula, una minúscula y un número.
                 </p>
               )}
+            </div>
+
+            {/* Términos (obligatorio) y consentimiento de investigación (opcional, separado) */}
+            <div className='flex flex-col gap-2.5'>
+              <label className='flex items-start gap-2.5 text-[12px] text-neutral-400'>
+                <input
+                  type='checkbox'
+                  name='acepta_terminos'
+                  checked={form.acepta_terminos}
+                  onChange={handleChange}
+                  className='mt-0.5'
+                />
+                <span>
+                  He leído y acepto los{' '}
+                  <Link to='/legal/terminos' target='_blank' className='text-pink-400 hover:underline'>
+                    Términos y Condiciones
+                  </Link>{' '}
+                  y la{' '}
+                  <Link to='/legal/privacidad' target='_blank' className='text-pink-400 hover:underline'>
+                    Política de Privacidad
+                  </Link>
+                  .
+                </span>
+              </label>
+              {errors.fields.acepta_terminos && (
+                <p className='text-[11.5px] text-red-400'>
+                  {errors.fields.acepta_terminos}
+                </p>
+              )}
+              <label className='flex items-start gap-2.5 text-[12px] text-neutral-500'>
+                <input
+                  type='checkbox'
+                  name='acepta_investigacion'
+                  checked={form.acepta_investigacion}
+                  onChange={handleChange}
+                  className='mt-0.5'
+                />
+                <span>
+                  (Opcional) Acepto que mi actividad en el Match de proyectos se use, de
+                  forma seudonimizada, para evaluar los algoritmos de recomendación de una
+                  tesis.
+                </span>
+              </label>
             </div>
 
             <button

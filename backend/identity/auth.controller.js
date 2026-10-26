@@ -4,6 +4,7 @@ import {
   refrescarToken,
   cerrarSesion,
   obtenerUsuarioActual,
+  aceptarTerminos,
 } from './auth.service.js';
 import ApiResponse from '../utils/apiResponse.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
@@ -66,4 +67,13 @@ async function me(req, res, next) {
   }
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-export { register, login, refresh, logout, me };
+async function aceptarTerminosController(req, res, next) {
+  try {
+    const usuario = await aceptarTerminos(req.usuario.id, req.body);
+    return ApiResponse.success(res, usuario);
+  } catch (err) {
+    next(err);
+  }
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+export { register, login, refresh, logout, me, aceptarTerminosController };

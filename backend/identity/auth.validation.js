@@ -27,6 +27,11 @@ const ERROR_MESSAGES = {
     invalid: 'Selecciona una carrera válida',
     required: 'Debes seleccionar tu carrera',
   },
+
+  terminos: {
+    required:
+      'Debes aceptar los Términos y Condiciones y la Política de Privacidad para registrarte',
+  },
 };
 // ─────────────────────────────────────────────────────────────────────────────
 const DOMINIOS_PERMITIDOS = ['@alumnos.ubiobio.cl', '@ubiobio.cl'];
@@ -96,6 +101,15 @@ const registerSchema = z.object({
     .max(15, 'Puedes seleccionar como máximo 15 intereses')
     .optional()
     .default([]),
+  
+    acepta_terminos: z.literal(true, { error: ERROR_MESSAGES.terminos.required }),
+
+    acepta_investigacion: z.boolean().optional().default(false),   
+});
+
+const aceptarTerminosSchema = z.object({
+  acepta_terminos: z.literal(true, { error: ERROR_MESSAGES.terminos.required }),
+  acepta_investigacion: z.boolean().optional().default(false),
 });
 // ─────────────────────────────────────────────────────────────────────────────
 const loginSchema = z.object({
@@ -111,4 +125,4 @@ const loginSchema = z.object({
     .min(1, ERROR_MESSAGES.password.required),
 });
 // ─────────────────────────────────────────────────────────────────────────────
-export { registerSchema, loginSchema, DOMINIOS_PERMITIDOS };
+export { registerSchema, loginSchema, DOMINIOS_PERMITIDOS, aceptarTerminosSchema };

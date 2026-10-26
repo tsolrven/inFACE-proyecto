@@ -4,11 +4,6 @@ import { prisma } from '../../config/configDb.js';
 import { BadRequestError, NotFoundError } from '../../errors/appError.js';
 
 // ────────────────────────────────────────────────────────────────────────────────────────
-// Única fuente de verdad: qué tipos de contenido existen, a qué tabla de Prisma
-// corresponden, cómo se llama su dueño, su contador de votos, qué campo sirve de
-// vista previa y si admiten comentarios.
-// Cuando llegue el foro/anuncios, SOLO se agrega una entrada acá (y cada módulo
-// registra su hidratador de guardados, ver registrarHidratadorGuardados).
 const CONTENT_REGISTRY = {
   apunte: {
     modelName: 'apunte',
@@ -18,7 +13,6 @@ const CONTENT_REGISTRY = {
     votesField: 'votos_neto',
     previewField: 'titulo',
     allowsComments: true,
-    // sin `adjuntos`, el tipo no admite archivos (ej: comentario)
     adjuntos: { max: 10 },
   },
   comentario: {
@@ -49,8 +43,6 @@ function obtenerEntradaRegistro(tipo_contenido) {
   return entrada;
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-// `client` por defecto es el prisma global, pero se le puede pasar `tx` cuando se
-// llama desde dentro de un prisma.$transaction (ver votes.service.js).
 async function verificarContenidoExiste(
   tipo_contenido,
   contenido_id,
@@ -91,26 +83,19 @@ async function actualizarVotosNetoContenido(
   });
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-// Bloquea la fila del contenido hasta que termine la transacción: dos votos simultáneos
-// sobre el mismo contenido se ejecutan uno tras otro y el contador no se desfasa.
-// Solo tiene efecto dentro de una transacción (hay que pasar `tx`).
 async function bloquearContenido(
   tipo_contenido,
   contenido_id,
   client = prisma,
 ) {
   const entrada = obtenerEntradaRegistro(tipo_contenido);
-  // tableName sale de este registro (constante del código), nunca de lo que envía el usuario
   const filas = await client.$queryRawUnsafe(
     `SELECT id FROM "${entrada.tableName}" WHERE id = $1 FOR UPDATE`,
     contenido_id,
   );
-  // si lo borraron mientras esperaba el bloqueo, ya no existe
   if (filas.length === 0) throw new NotFoundError(entrada.label);
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-// Devuelve un Map id -> texto de vista previa (título, texto del comentario, etc.).
-// Los ids que ya no existen simplemente no aparecen en el Map.
 async function obtenerPreviewsContenido(tipo_contenido, ids, client = prisma) {
   const entrada = obtenerEntradaRegistro(tipo_contenido);
   const registros = await client[entrada.modelName].findMany({
@@ -120,8 +105,6 @@ async function obtenerPreviewsContenido(tipo_contenido, ids, client = prisma) {
   return new Map(registros.map((r) => [r.id, r[entrada.previewField]]));
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-// Cada módulo registra cómo se muestra SU contenido en la lista de guardados.
-// Así shared/bookmarks no necesita importar ningún módulo.
 function registrarHidratadorGuardados(tipo_contenido, hidratador) {
   obtenerEntradaRegistro(tipo_contenido).hidratarGuardados = hidratador;
 }
@@ -134,6 +117,22 @@ async function hidratarGuardados(tipo_contenido, ids, usuario_id) {
     );
   }
   return entrada.hidratarGuardados(ids, usuario_id);
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+const OYENTES_INTERACCION = new Map();
+
+function registrarOyenteInteraccion(tipo_contenido, oyente) {
+  obtenerEntradaRegistro(tipo_contenido);
+  OYENTES_INTERACCION.set(tipo_contenido, oyente);
+}
+
+async function notificarInteraccion(tipo_contenido, datos) {
+  const oyente = OYENTES_INTERACCION.get(tipo_contenido);
+  if (!oyente) return;
+  try {
+    await oyente(datos);
+  } catch {
+  }
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 function tiposContenidoValidos() {
@@ -161,6 +160,8 @@ export {
   obtenerPreviewsContenido,
   registrarHidratadorGuardados,
   hidratarGuardados,
+  registrarOyenteInteraccion,
+  notificarInteraccion,
   tiposContenidoValidos,
   admiteComentarios,
   obtenerConfigAdjuntos,

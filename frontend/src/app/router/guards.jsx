@@ -19,6 +19,16 @@ export function ProtectedRoute({ children }) {
     );
   }
 
+  // cuentas antiguas o cambio de versión: primero deben aceptar los términos vigentes
+  if (usuario.terminos_vigentes === false) {
+    return (
+      <Navigate
+        to='/aceptar-terminos'
+        replace
+      />
+    );
+  }
+
   // mientras no configure sus intereses, no puede entrar al resto de la app
   if (usuario.tiene_intereses === false) {
     return (
@@ -41,8 +51,38 @@ export function OnboardingRoute({ children }) {
       />
     );
   }
+  if (usuario.terminos_vigentes === false) {
+    return (
+      <Navigate
+        to='/aceptar-terminos'
+        replace
+      />
+    );
+  }
   // si ya configuró intereses, no tiene sentido que vuelva a ver el onboarding
   if (usuario.tiene_intereses !== false) {
+    return (
+      <Navigate
+        to='/'
+        replace
+      />
+    );
+  }
+  return children;
+}
+
+export function TermsRoute({ children }) {
+  const usuario = useAuthStore((s) => s.usuario);
+  if (!usuario) {
+    return (
+      <Navigate
+        to='/login'
+        replace
+      />
+    );
+  }
+  // si ya aceptó la versión vigente, no hay nada que aceptar
+  if (usuario.terminos_vigentes !== false) {
     return (
       <Navigate
         to='/'

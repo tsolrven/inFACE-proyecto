@@ -44,6 +44,8 @@ export const useAuthStore = create((set) => ({
     }
   },
 
+  actualizarUsuario: (usuario) => set({ usuario }),
+
   marcarInteresesConfigurados: () => {
     set((state) =>
       state.usuario

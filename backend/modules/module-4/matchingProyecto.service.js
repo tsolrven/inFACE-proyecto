@@ -27,6 +27,17 @@ import {
   formatearUsuarioSimilar,
 } from '../../helpers/matchingProyecto.helper.js';
 
+import {
+  registrarServidas,
+  registrarEvento,
+} from './interaccionesLog.service.js';
+
+import {
+  calcularPuntajesHibridos,
+  intercalarTeamDraft,
+  crearRng,
+} from './recomendador.service.js';
+
 //──────────────────────────────────────────────────────────────────────────────
 // VOTOS Y COMENTARIOS (módulo compartido: shared/votes y shared/comments)
 //──────────────────────────────────────────────────────────────────────────────
@@ -309,6 +320,8 @@ async function postularProyecto({
       proyecto: { select: { titulo_proyecto: true } },
     },
   });
+
+  await registrarEvento(postulante_id, proyecto_id, 'postulacion');
 
   logger.info('Nueva postulación', {
     proyecto_id,
@@ -673,10 +686,12 @@ async function toggleFavorito(usuario_id, proyecto_id) {
     await prisma.favoritoProyecto.delete({
       where: { usuario_id_proyecto_id: { usuario_id, proyecto_id } },
     });
+    await registrarEvento(usuario_id, proyecto_id, 'favorito_quitado');
     return { guardado: false, mensaje: 'Proyecto eliminado de favoritos' };
   }
 
   await prisma.favoritoProyecto.create({ data: { usuario_id, proyecto_id } });
+  await registrarEvento(usuario_id, proyecto_id, 'favorito');
   return { guardado: true, mensaje: 'Proyecto guardado en favoritos' };
 }
 
@@ -716,6 +731,8 @@ async function descartarProyecto(usuario_id, proyecto_id) {
   await prisma.favoritoProyecto.deleteMany({
     where: { usuario_id, proyecto_id },
   });
+
+  await registrarEvento(usuario_id, proyecto_id, 'descarte');
 
   logger.info('Proyecto descartado en Descubrir', { usuario_id, proyecto_id });
   return { mensaje: 'Proyecto descartado, no volverá a aparecer en Descubrir' };
@@ -785,12 +802,56 @@ async function obtenerProyectosRecomendados(
   //* se calcula el % de coincidencia de cada proyecto y se ordena de mayor a menor
   //* (el sort de JS es estable, así que ante empate se conserva el orden por más reciente)
   const formateados = formatearProyectos(proyectos, { etiquetasUsuarioIds });
-  formateados.sort((a, b) => b.porcentaje_match - a.porcentaje_match);
+  const listaEtiquetas = [...formateados].sort(
+    (a, b) => b.porcentaje_match - a.porcentaje_match,
+  );
 
-  const total = formateados.length;
+  let ordenados = listaEtiquetas.map((p) => ({ proyecto: p, algoritmo: 'etiquetas' }));
+  let puntajes = new Map();
+  let modelo_id = null;
+  try {
+    const calculo = await calcularPuntajesHibridos(
+      usuario_id,
+      formateados,
+      etiquetasUsuarioIds,
+    );
+    puntajes = calculo.puntajes;
+    modelo_id = calculo.modelo_id;
+    //* el sort de JS es estable: ante empate se conserva el orden por más reciente
+    const listaHibrida = [...formateados].sort(
+      (a, b) => puntajes.get(b.id).puntaje - puntajes.get(a.id).puntaje,
+    );
+    const hoy = new Date().toISOString().slice(0, 10);
+    ordenados = intercalarTeamDraft(
+      listaEtiquetas,
+      listaHibrida,
+      crearRng(`${usuario_id}:${hoy}`), // mismo usuario y día => mismo orden (el mazo no "baila")
+    );
+  } catch (err) {
+    //* el recomendador nunca debe dejar al usuario sin mazo: si algo falla, solo etiquetas
+    logger.error('Falló el recomendador híbrido; se usa solo etiquetas', {
+      usuario_id,
+      error: err.message,
+    });
+  }
+
+  const total = ordenados.length;
   const skip = (pagina - 1) * limite;
+  const pagina_items = ordenados.slice(skip, skip + limite);
+
+  await registrarServidas(
+    usuario_id,
+    pagina_items.map((o, i) => ({
+      proyecto_id: o.proyecto.id,
+      algoritmo: o.algoritmo,
+      modelo_id,
+      posicion: skip + i + 1,
+      puntaje: puntajes.get(o.proyecto.id)?.puntaje ?? o.proyecto.porcentaje_match / 100,
+    })),
+  );
+
   const datos = await agregarInteracciones(
-    formateados.slice(skip, skip + limite),
+    pagina_items.map((o) => o.proyecto),
     usuario_id,
   );
 

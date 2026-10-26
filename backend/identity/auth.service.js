@@ -13,6 +13,7 @@ import {
   NotFoundError,
 } from '../errors/appError.js';
 import { derivarNombreDesdeCorreo } from './nombre.helper.js';
+import { VERSION_TERMINOS } from './terminos.constants.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 function determinarRolPorCorreo(correo) {
   if (correo.endsWith('@alumnos.ubiobio.cl')) {
@@ -38,10 +39,11 @@ function formatearUsuario(usuario) {
       codigo: uc.carrera.codigo,
     })),
     tiene_intereses: (usuario.usuario_etiquetas?.length ?? 0) > 0,
+    terminos_vigentes: usuario.terminos_version === VERSION_TERMINOS,
   };
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-async function registrar({ correo, contrasena, nombre_usuario, carrera_id }) {
+async function registrar({ correo, contrasena, nombre_usuario, carrera_id, acepta_investigacion = false }) {
   const usuarioExiste = await prisma.usuario.findUnique({
     where: { correo },
   });
@@ -74,6 +76,10 @@ async function registrar({ correo, contrasena, nombre_usuario, carrera_id }) {
       correo,
       contrasena: hash,
       rol: rol,
+      terminos_version: VERSION_TERMINOS,
+      terminos_aceptados_en: new Date(),
+      consentimiento_investigacion: acepta_investigacion,
+      consentimiento_investigacion_en: acepta_investigacion ? new Date() : null,
       perfil: {
         create: {
           nombre_usuario,
@@ -94,6 +100,20 @@ async function registrar({ correo, contrasena, nombre_usuario, carrera_id }) {
   });
 
   return formatearUsuario(usuario);
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+// Para usuarios que ya existían (o cuando cambia VERSION_TERMINOS)
+async function aceptarTerminos(id, { acepta_investigacion = false } = {}) {
+  await prisma.usuario.update({
+    where: { id },
+    data: {
+      terminos_version: VERSION_TERMINOS,
+      terminos_aceptados_en: new Date(),
+      consentimiento_investigacion: acepta_investigacion,
+      consentimiento_investigacion_en: acepta_investigacion ? new Date() : null,
+    },
+  });
+  return obtenerUsuarioActual(id);
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function iniciarSesion({ correo, contrasena }) {
@@ -203,4 +223,5 @@ export {
   cerrarSesion,
   obtenerUsuarioActual,
   determinarRolPorCorreo,
+  aceptarTerminos,
 };

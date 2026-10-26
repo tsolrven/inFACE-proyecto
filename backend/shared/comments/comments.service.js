@@ -8,6 +8,7 @@ import {
   verificarContenidoExiste,
   registrarHidratadorGuardados,
   obtenerPreviewsContenido,
+  notificarInteraccion,
 } from '../content/contentRegistry.js';
 import { eliminarInteracciones } from '../content/contentCleanup.js';
 import { obtenerMisInteracciones } from '../content/contentEnrichment.js';
@@ -108,6 +109,12 @@ async function crearComentario({
     include: {
       autor: { include: { perfil: { select: { nombre_usuario: true } } } },
     },
+  });
+  
+  await notificarInteraccion(tipo_contenido, {
+    clase: 'comentario',
+    usuario_id: autor_id,
+    contenido_id,
   });
 
   return formatearComentario(comentario);
@@ -228,10 +235,10 @@ async function hidratarComentariosGuardados(ids, usuario_id) {
         }),
         contenido_padre: previews.has(clave)
           ? {
-              tipo_contenido: c.tipo_contenido,
-              id: c.contenido_id,
-              titulo: previews.get(clave),
-            }
+            tipo_contenido: c.tipo_contenido,
+            id: c.contenido_id,
+            titulo: previews.get(clave),
+          }
           : null,
       };
     });

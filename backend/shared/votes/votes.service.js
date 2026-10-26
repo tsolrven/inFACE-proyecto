@@ -3,6 +3,7 @@ import {
   verificarContenidoExiste,
   bloquearContenido,
   actualizarVotosNetoContenido,
+  notificarInteraccion,
 } from '../content/contentRegistry.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 // Devuelve el estado final tras votar: { mensaje, votos_neto, mi_voto }.
@@ -10,7 +11,7 @@ import {
 async function votar({ usuario_id, contenido_id, tipo_contenido, tipo }) {
   await verificarContenidoExiste(tipo_contenido, contenido_id);
 
-  return prisma.$transaction(async (tx) => {
+  const resultado = await prisma.$transaction(async (tx) => {
     // serializa los votos sobre este contenido (evita que el contador se desfase)
     await bloquearContenido(tipo_contenido, contenido_id, tx);
 
@@ -60,6 +61,15 @@ async function votar({ usuario_id, contenido_id, tipo_contenido, tipo }) {
 
     return { mensaje, votos_neto: votosNeto, mi_voto: miVoto };
   });
+  
+  await notificarInteraccion(tipo_contenido, {
+    clase: 'voto',
+    usuario_id,
+    contenido_id,
+    estado: resultado.mi_voto,
+  });
+
+  return resultado;
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 export { votar };

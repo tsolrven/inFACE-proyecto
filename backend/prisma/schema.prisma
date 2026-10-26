@@ -20,6 +20,12 @@ model Usuario {
   creado_en      DateTime @default(now())
   actualizado_en DateTime @updatedAt
 
+  // Términos y consentimientos 
+  terminos_version               String?   @db.VarChar(20) 
+  terminos_aceptados_en          DateTime?
+  consentimiento_investigacion   Boolean   @default(false)
+  consentimiento_investigacion_en DateTime?
+
   // RELACIONES
   perfil           Perfil?
   usuario_carrera  UsuarioCarrera[]
@@ -396,6 +402,86 @@ model DescarteProyecto {
 }
 
 // ╰─────────────────────────────✧────────────────────────────────╮
+
+// RECOMENDADOR (clusters + señales de interacción)
+
+model ModeloCluster {
+  id           String   @id @default(uuid())
+  version      String   @unique
+  k            Int
+  silueta      Float?
+  n_usuarios   Int
+  n_proyectos  Int
+  etiquetas    Json     // ids de etiqueta en el orden de las columnas del vector
+  centroides   Json     // k filas x n_etiquetas
+  parametros   Json?    // pesos de señales y de puntaje con los que se entrenó (reproducibilidad)
+  activo       Boolean  @default(false)
+  entrenado_en DateTime @default(now())
+
+  usuarios  ClusterUsuario[]
+  proyectos ClusterProyecto[]
+
+  @@index([activo])
+  @@map("modelos_cluster")
+}
+
+model ClusterUsuario {
+  modelo_id  String
+  usuario_id String
+  cluster    Int
+  distancia  Float // distancia al centroide: menor = más típico del cluster
+
+  modelo ModeloCluster @relation(fields: [modelo_id], references: [id], onDelete: Cascade)
+
+  @@id([modelo_id, usuario_id])
+  @@index([usuario_id])
+  @@index([modelo_id, cluster])
+  @@map("cluster_usuario")
+}
+
+model ClusterProyecto {
+  modelo_id   String
+  proyecto_id String
+  cluster     Int
+  distancia   Float
+
+  modelo ModeloCluster @relation(fields: [modelo_id], references: [id], onDelete: Cascade)
+
+  @@id([modelo_id, proyecto_id])
+  @@index([proyecto_id])
+  @@map("cluster_proyecto")
+}
+
+// Una fila por (usuario, proyecto) la primera vez que se le muestra en Descubrir, con el
+// algoritmo que lo propuso. Es lo que permite comparar "solo etiquetas" contra "híbrido".
+model RecomendacionLog {
+  id          String   @id @default(uuid())
+  usuario_id  String
+  proyecto_id String
+  algoritmo   String   @db.VarChar(20) // 'etiquetas' | 'hibrido'
+  modelo_id   String?
+  posicion    Int
+  puntaje     Float
+  servido_en  DateTime @default(now())
+
+  @@unique([usuario_id, proyecto_id])
+  @@index([algoritmo])
+  @@map("recomendacion_log")
+}
+
+// Historial de todo lo que un usuario hace con un proyecto 
+model InteraccionProyecto {
+  id          String   @id @default(uuid())
+  usuario_id  String
+  proyecto_id String
+  tipo        String   @db.VarChar(20)
+  creado_en   DateTime @default(now())
+
+  @@index([usuario_id, proyecto_id])
+  @@index([creado_en])
+  @@index([tipo])
+  @@map("interaccion_proyecto_log")
+}
 
 //───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 // MODERACIÓN 
