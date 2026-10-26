@@ -14,6 +14,7 @@ import {
   useInteraccionesProyecto,
   useValoresProyecto,
 } from '@/features/project-match/store/interaccionesStore';
+import ConDescripcion from '@/shared/components/ConDescripcion';
 
 // las etiquetas vienen con el nombre real del tipo (tal como está en la BD);
 // acá se traducen a las etiquetas que se le muestran al usuario y se fija el orden.
@@ -180,12 +181,17 @@ export default function DetalleProyecto({
                       {etiquetas.map((et) => {
                         const c = etiquetaColor(et.nombre);
                         return (
-                          <span
+                          <ConDescripcion
                             key={et.id}
-                            className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${c.bg} ${c.text} ${c.border}`}
+                            nombre={et.nombre}
+                            descripcion={et.descripcion}
                           >
-                            {et.nombre}
-                          </span>
+                            <span
+                              className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${c.bg} ${c.text} ${c.border}`} 
+                            >
+                              {et.nombre}
+                            </span>
+                          </ConDescripcion>
                         );
                       })}
                     </div>

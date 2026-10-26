@@ -34,6 +34,7 @@ import PostulacionesModal from '@/features/project-match/components/Postulacione
 import IntegrantesModal from '@/features/project-match/components/IntegrantesModal';
 import DescubrirTab from '@/features/project-match/components/DescubrirTab';
 import ConfirmDialog from '@/shared/components/ui/ConfirmDialog';
+import ConDescripcion from '@/shared/components/ConDescripcion';
 
 const TABS = [
   { id: 'descubrir', label: 'Descubrir', icon: 'ti-flame' },
@@ -441,7 +442,6 @@ export default function MatchProyectos() {
           }}
         />
       )}
-
       {modalIntegrantes && (
         <IntegrantesModal
           proyecto={modalIntegrantes}
@@ -726,19 +726,24 @@ function EtiquetaFilterDropdown({ selectedIds, onChange }) {
                       const c = etiquetaColor(et.nombre);
                       const seleccionada = selectedIds.includes(et.id);
                       return (
-                        <button
+                        <ConDescripcion
                           key={et.id}
-                          onClick={() => toggle(et.id)}
-                          className={`rounded-full border px-2 py-1 text-[11px] font-medium transition ${seleccionada
-                              ? `${c.bg} ${c.text} ${c.border}`
-                              : 'border-white/[0.07] text-neutral-400 hover:border-white/[0.16] hover:text-neutral-100'
-                            }`}
+                          nombre={et.nombre}
+                          descripcion={et.descripcion}
                         >
-                          {seleccionada && (
-                            <i className='ti ti-check mr-1 text-[10px]' />
-                          )}
-                          {et.nombre}
-                        </button>
+                          <button
+                            onClick={() => toggle(et.id)}
+                            className={`rounded-full border px-2 py-1 text-[11px] font-medium transition ${seleccionada
+                                ? `${c.bg} ${c.text} ${c.border}`
+                                : 'border-white/[0.07] text-neutral-400 hover:border-white/[0.16] hover:text-neutral-100'
+                              }`}
+                          >
+                            {seleccionada && (
+                              <i className='ti ti-check mr-1 text-[10px]' />
+                            )}
+                            {et.nombre}
+                          </button>
+                        </ConDescripcion>
                       );
                     })}
                   </div>
@@ -1013,12 +1018,17 @@ function TarjetaProyectoBase({ proyecto: p, extra, accionesDerecha }) {
             {p.etiquetas.slice(0, 6).map((et) => {
               const c = etiquetaColor(et.nombre);
               return (
-                <span
+                <ConDescripcion
                   key={et.id}
-                  className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${c.bg} ${c.text} ${c.border}`}
+                  nombre={et.nombre}
+                  descripcion={et.descripcion}
                 >
-                  {et.nombre}
-                </span>
+                  <span
+                    className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${c.bg} ${c.text} ${c.border}`}
+                  >
+                    {et.nombre}
+                  </span>
+                </ConDescripcion>
               );
             })}
           </div>

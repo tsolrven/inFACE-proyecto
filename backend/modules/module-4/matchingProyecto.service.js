@@ -899,6 +899,7 @@ async function obtenerHabilidadesEnDemanda(usuario_id, { limite = 8 } = {}) {
       return {
         id: et.id,
         nombre: et.nombre_etiqueta,
+        descripcion: et.descripcion ?? null,
         total_proyectos: c._count.etiqueta_id,
         es_interes_propio: etiquetasUsuarioIds.has(et.id),
       };
@@ -968,7 +969,7 @@ async function obtenerUsuariosSimilares(usuario_id, { limite = 6 } = {}) {
       );
       return formatearUsuarioSimilar(
         u,
-        compartidas.map((e) => ({ id: e.id, nombre: e.nombre_etiqueta })),
+        compartidas.map((e) => ({ id: e.id, nombre: e.nombre_etiqueta, descripcion: e.descripcion ?? null, })),
         porcentaje,
       );
     })

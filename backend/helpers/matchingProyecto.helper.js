@@ -222,6 +222,7 @@ function formatearProyecto(p, opciones = {}) {
             id: e.etiqueta.id,
             nombre: e.etiqueta.nombre_etiqueta,
             tipo: e.etiqueta.tipo_etiqueta?.nombre_tipo_etiqueta || null,
+            descripcion: e.etiqueta.descripcion ?? null,
         })) || [],
         integrantes: p.integrantes?.map(i => ({
             usuario_id: i.usuario_id,

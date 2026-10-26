@@ -28,6 +28,7 @@ function formatearPerfil(usuario, stats = {}) {
             id: ue.etiqueta.id,
             nombre: ue.etiqueta.nombre_etiqueta,
             tipo: ue.etiqueta.tipo_etiqueta?.nombre_tipo_etiqueta ?? null,
+            descripcion: ue.etiqueta.descripcion ?? null,
         })),
         stats: {
             proyectos_creados: stats.proyectos_creados ?? 0,

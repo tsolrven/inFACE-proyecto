@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Modal, { ModalHeader, ModalBody } from '@/shared/components/ui/Modal';
-import { listarEtiquetas } from '@/shared/api/etiqueta.api';
-import { etiquetaColor } from '@/shared/lib/matchHelpers';
+import EtiquetasPicker from '@/shared/components/EtiquetasPicker';
 
 const MODALIDAD_COLORES = {
   presencial: 'border-sky-400/25 bg-sky-400/10 text-sky-400',
@@ -35,39 +34,8 @@ export default function ProyectoFormModal({ proyecto, onClose, onSubmit }) {
   const [enviando, setEnviando] = useState(false);
 
   const [etiquetaIds, setEtiquetaIds] = useState(
-    () => new Set(proyecto?.etiquetas?.map((et) => et.id) || []),
+    () => (proyecto?.etiquetas || []).map((et) => et.id),
   );
-  const [etiquetasDisponibles, setEtiquetasDisponibles] = useState([]);
-  const [cargandoEtiquetas, setCargandoEtiquetas] = useState(true);
-  const [busquedaEtiqueta, setBusquedaEtiqueta] = useState('');
-
-  useEffect(() => {
-    listarEtiquetas()
-      .then(setEtiquetasDisponibles)
-      .catch(() => setEtiquetasDisponibles([]))
-      .finally(() => setCargandoEtiquetas(false));
-  }, []);
-
-  function toggleEtiqueta(id) {
-    setEtiquetaIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else if (next.size < 10) {
-        next.add(id);
-      }
-      return next;
-    });
-  }
-
-  const etiquetasFiltradas = etiquetasDisponibles.filter((et) =>
-    et.nombre.toLowerCase().includes(busquedaEtiqueta.trim().toLowerCase()),
-  );
-  const etiquetasPorTipo = etiquetasFiltradas.reduce((acc, et) => {
-    const tipo = et.tipo || 'Otras';
-    (acc[tipo] ||= []).push(et);
-    return acc;
-  }, {});
 
   function validar() {
     const errs = [];
@@ -136,7 +104,7 @@ export default function ProyectoFormModal({ proyecto, onClose, onSubmit }) {
             : Number(form.maximo_integrantes),
         fecha_inicio: form.fecha_inicio || null,
         fecha_fin: form.fecha_fin || null,
-        etiqueta_ids: [...etiquetaIds],
+        etiqueta_ids: etiquetaIds,
       });
     } catch (err) {
       setErrores(err.details?.length ? err.details : [err.message]);
@@ -149,7 +117,7 @@ export default function ProyectoFormModal({ proyecto, onClose, onSubmit }) {
     <Modal
       open
       onClose={onClose}
-      maxWidth='560px'
+      maxWidth='820px'
     >
       <ModalHeader
         title={esEdicion ? 'Editar proyecto' : 'Crear proyecto'}
@@ -215,11 +183,10 @@ export default function ProyectoFormModal({ proyecto, onClose, onSubmit }) {
                   onClick={() =>
                     setForm((f) => ({ ...f, modalidad_proyecto: m.value }))
                   }
-                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-medium transition ${
-                    form.modalidad_proyecto === m.value
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-medium transition ${form.modalidad_proyecto === m.value
                       ? MODALIDAD_COLORES[m.value]
                       : 'border-white/[0.07] text-neutral-400 hover:text-neutral-100'
-                  }`}
+                    }`}
                 >
                   <i className={`ti ${m.icon} text-[13px]`} />
                   {m.label}
@@ -230,82 +197,14 @@ export default function ProyectoFormModal({ proyecto, onClose, onSubmit }) {
 
           <div>
             <label className='mb-1.5 block text-[11px] font-medium text-neutral-500'>
-              Etiquetas{' '}
-              <span className='text-neutral-600'>({etiquetaIds.size}/10)</span>
+              Etiquetas del proyecto
             </label>
-
-            {etiquetaIds.size > 0 && (
-              <div className='mb-2 flex flex-wrap gap-1.5'>
-                {etiquetasDisponibles
-                  .filter((et) => etiquetaIds.has(et.id))
-                  .map((et) => {
-                    const c = etiquetaColor(et.nombre);
-                    return (
-                      <span
-                        key={et.id}
-                        className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium ${c.bg} ${c.text} ${c.border}`}
-                      >
-                        {et.nombre}
-                        <i
-                          onClick={() => toggleEtiqueta(et.id)}
-                          className='ti ti-x cursor-pointer text-[12px]'
-                        />
-                      </span>
-                    );
-                  })}
-              </div>
-            )}
-
-            <input
-              type='text'
-              value={busquedaEtiqueta}
-              onChange={(e) => setBusquedaEtiqueta(e.target.value)}
-              placeholder='Buscar etiquetas (tecnologías, habilidades, metodologías...)'
-              className='mb-2 w-full rounded-[10px] border border-white/[0.07] bg-[#1E1E24] px-3.5 py-2 text-[12.5px] text-neutral-100 outline-none transition placeholder:text-neutral-600 focus:border-pink-500/50'
+            <EtiquetasPicker
+              selectedIds={etiquetaIds}
+              onChange={setEtiquetaIds}
+              max={10}
+              emptyHint='Elige hasta 10 etiquetas que describan lo que necesita tu proyecto.'
             />
-
-            <div className='max-h-[160px] overflow-y-auto rounded-[10px] border border-white/[0.07] bg-[#232329] p-2.5'>
-              {cargandoEtiquetas && (
-                <p className='py-2 text-center text-[12px] text-neutral-500'>
-                  Cargando etiquetas…
-                </p>
-              )}
-              {!cargandoEtiquetas && etiquetasFiltradas.length === 0 && (
-                <p className='py-2 text-center text-[12px] text-neutral-500'>
-                  No se encontraron etiquetas
-                </p>
-              )}
-              {Object.entries(etiquetasPorTipo).map(([tipo, etiquetas]) => (
-                <div
-                  key={tipo}
-                  className='mb-2 last:mb-0'
-                >
-                  <div className='mb-1 px-1 text-[10px] font-bold uppercase tracking-wide text-neutral-600'>
-                    {tipo}
-                  </div>
-                  <div className='flex flex-wrap gap-1.5'>
-                    {etiquetas.map((et) => {
-                      const seleccionada = etiquetaIds.has(et.id);
-                      const c = etiquetaColor(et.nombre);
-                      return (
-                        <button
-                          type='button'
-                          key={et.id}
-                          onClick={() => toggleEtiqueta(et.id)}
-                          className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${
-                            seleccionada
-                              ? `${c.bg} ${c.text} ${c.border}`
-                              : 'border-white/[0.07] text-neutral-400 hover:border-white/[0.16] hover:text-neutral-100'
-                          }`}
-                        >
-                          {et.nombre}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
 
           <div className='grid grid-cols-2 gap-3'>
