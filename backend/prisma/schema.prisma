@@ -36,6 +36,7 @@ model Usuario {
   integrantes_proyecto IntegranteProyecto[]
   favoritos_proyecto   FavoritoProyecto[]
   descartes_proyecto   DescarteProyecto[]
+  hilos Hilo[]
 
   @@map("usuarios")
 }
@@ -132,6 +133,7 @@ model Ramo {
 
   ramo_carrera RamoCarrera[]
   apuntes      Apunte[]
+  hilos Hilo[]
 
   @@map("ramos")
 }
@@ -144,6 +146,7 @@ model Hashtag {
   creado_en DateTime @default(now())
 
   apuntes ApunteHashtag[]
+  hilos HiloHashtag[]
 
   @@map("hashtags")
 }
@@ -188,7 +191,7 @@ model Comentario {
   nivel            Int      @default(0)
   contenido        String
   votos_neto       Int      @default(0)
-  es_respuesta_aceptada Boolean @default(false)
+  hilo_aceptado Hilo? @relation("HiloRespuestaAceptada")
   eliminado        Boolean  @default(false)
   eliminado_por_id String?
   eliminado_en     DateTime?  
@@ -297,8 +300,41 @@ model ApunteHashtag {
 
   @@id([apunte_id, hashtag_id])
   @@map("apuntes_hashtags")
+  @@index([hashtag_id])
 }
 
+//───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+// MÓDULO 2: FORO POR RAMOS
+//───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+model Hilo {
+  id                    String    @id @default(uuid())
+  autor_id              String
+  ramo_id               String
+  titulo                String
+  contenido             String?   // markdown
+  votos_neto            Int       @default(0)
+  respuesta_aceptada_id String?   @unique
+  creado_en             DateTime  @default(now())
+  actualizado_en        DateTime  @updatedAt
+  editado_en            DateTime?
+  autor              Usuario       @relation(fields: [autor_id], references: [id])
+  ramo               Ramo          @relation(fields: [ramo_id], references: [id])
+  respuesta_aceptada Comentario?   @relation("HiloRespuestaAceptada", fields: [respuesta_aceptada_id], references: [id], onDelete: SetNull)
+  hashtags           HiloHashtag[]
+  @@index([ramo_id, creado_en])
+  @@index([ramo_id, votos_neto])
+  @@index([autor_id])
+  @@map("hilos")
+}
+model HiloHashtag {
+  hilo_id    String
+  hashtag_id String
+  hilo    Hilo    @relation(fields: [hilo_id], references: [id], onDelete: Cascade)
+  hashtag Hashtag @relation(fields: [hashtag_id], references: [id])
+  @@id([hilo_id, hashtag_id])
+  @@index([hashtag_id])
+  @@map("hilos_hashtags")
+}
 //───────────────────────────────────────────────────────────────────────────────
 // MÓDULO 4: MATCH DE PROYECTOS
 //───────────────────────────────────────────────────────────────────────────────
