@@ -90,7 +90,10 @@ export function useRespuestaAceptada(hiloId, comentarioId) {
     },
     initialDataUpdatedAt: () =>
       qc.getQueryState(hiloKeys.detail(hiloId))?.dataUpdatedAt,
-    select: (data) => data.pages[0].items[0] ?? null,
+    // Se busca por id, no por posición: crear un comentario raíz inserta
+    // elementos al principio de toda consulta con este prefijo de clave.
+    select: (data) =>
+      data.pages[0].items.find((c) => c.id === comentarioId) ?? null,
   });
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
