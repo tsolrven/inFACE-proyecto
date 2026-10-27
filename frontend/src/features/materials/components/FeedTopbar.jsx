@@ -1,16 +1,21 @@
 import FiltroTipoArchivo from '@/features/materials/components/FiltroTipoArchivo';
-import FiltroRamo from '@/features/materials/components/FiltroRamo';
+import FiltroRamo from '@/shared/components/FiltroRamo';
 import Button from '@/shared/components/ui/Button';
 import { useFiltrosStore } from '@/features/materials/store/filtrosStore';
 
 export default function FeedTopbar({ carreraId, onAbrirSubida }) {
   const orden = useFiltrosStore((s) => s.filtros.orden);
+  const ramoId = useFiltrosStore((s) => s.filtros.ramo_id);
   const setFiltro = useFiltrosStore((s) => s.setFiltro);
 
   return (
     <div className='mb-3 flex flex-wrap items-center gap-2'>
       <FiltroTipoArchivo />
-      <FiltroRamo carreraId={carreraId} />
+      <FiltroRamo
+        carreraId={carreraId}
+        ramoId={ramoId}
+        onCambiar={(id) => setFiltro('ramo_id', id)}
+      />
 
       <div className='ml-auto flex gap-1'>
         <button
