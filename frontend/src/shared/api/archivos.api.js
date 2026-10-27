@@ -30,3 +30,9 @@ export async function subirArchivos(tipoContenido, contenidoId, files) {
 export async function eliminarArchivo(id) {
   return apiFetch(`/archivos/${id}`, { method: 'DELETE' });
 }
+
+// Imagen para mostrar en pantalla (GET /archivos/:id/ver). A diferencia de
+// /descargar, NO incrementa el contador de descargas. Devuelve un Blob.
+export function obtenerImagen(id, signal) {
+  return apiFetch(`/archivos/${id}/ver`, { responseType: 'blob', signal });
+}

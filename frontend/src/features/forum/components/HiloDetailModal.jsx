@@ -10,6 +10,7 @@ import { useVotar } from '@/shared/post/votes/useVotar';
 import { parchearContenido } from '@/shared/post/cache';
 import VotePill from '@/shared/post/votes/VotePill';
 import ShareButton from '@/shared/post/share/ShareButton';
+import GaleriaImagenes from '@/shared/post/images/GaleriaImagenes';
 import MarkdownView from '@/shared/markdown/MarkdownView';
 import HiloMenu from '@/features/forum/components/HiloMenu';
 import {
@@ -204,12 +205,8 @@ export default function HiloDetailModal() {
             )}
 
             {hilo.archivos?.length > 0 && (
-              <div className='mb-4 flex items-center gap-1 text-[12px] text-neutral-500'>
-                <i className='ti ti-photo text-[14px]' />
-                {hilo.archivos.length}{' '}
-                {hilo.archivos.length === 1
-                  ? 'imagen adjunta'
-                  : 'imágenes adjuntas'}
+              <div className='mb-4'>
+                <GaleriaImagenes archivos={hilo.archivos} />
               </div>
             )}
 
