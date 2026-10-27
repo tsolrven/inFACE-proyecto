@@ -22,6 +22,22 @@ export async function listarHilos({
   return { hilos: res.data, meta: res.meta };
 }
 
+export async function crearHilo(payload, archivos = []) {
+  const formData = new FormData();
+  formData.append('datos', JSON.stringify(payload));
+  archivos.forEach((f) => formData.append('archivos', f));
+  const res = await apiFetch('/hilos', { method: 'POST', body: formData });
+  return res.data;
+}
+
+export async function actualizarHilo(id, payload) {
+  const res = await apiFetch(`/hilos/${id}`, {
+    method: 'PATCH',
+    body: payload,
+  });
+  return res.data;
+}
+
 export async function eliminarHilo(id) {
   return apiFetch(`/hilos/${id}`, { method: 'DELETE' });
 }

@@ -7,10 +7,13 @@ import {
 import {
   listarHilos,
   obtenerHilo,
+  crearHilo,
+  actualizarHilo,
   eliminarHilo,
   aceptarRespuesta,
   desmarcarRespuesta,
 } from '@/features/forum/api/forum.api';
+import { eliminarArchivo, subirArchivos } from '@/shared/api/archivos.api';
 import { commentKeys } from '@/shared/post/comments/useComments';
 import {
   buscarContenido,
@@ -88,6 +91,58 @@ export function useRespuestaAceptada(hiloId, comentarioId) {
     initialDataUpdatedAt: () =>
       qc.getQueryState(hiloKeys.detail(hiloId))?.dataUpdatedAt,
     select: (data) => data.pages[0].items[0] ?? null,
+  });
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+export function useCrearHilo() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ payload, archivos }) => crearHilo(payload, archivos),
+    onSuccess: (hilo) => {
+      // la respuesta tiene la misma forma que el detalle
+      qc.setQueryData(hiloKeys.detail(hilo.id), hilo);
+      qc.invalidateQueries({ queryKey: ['hilo', 'list'] });
+    },
+  });
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+// `quitar`: ids de archivos a eliminar. `nuevos`: File[] a subir.
+// Devuelve { hilo, fallos: { quitar, subir } }: cuántas operaciones de archivos
+// fallaron (el texto ya quedó guardado, ver orden abajo).
+export function useEditarHilo() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, payload, quitar = [], nuevos = [] }) => {
+      // 1. Texto: si falla, no se toca nada más
+      const actualizado = await actualizarHilo(id, payload);
+
+      // 2. Quitar ANTES de subir: el backend compara contra el máximo de archivos
+      const resultadoQuitar = await Promise.allSettled(
+        quitar.map((archivoId) => eliminarArchivo(archivoId)),
+      );
+      const fallosQuitar = resultadoQuitar.filter(
+        (r) => r.status === 'rejected',
+      ).length;
+
+      // 3. Subir (secuencial)
+      const { fallidos } =
+        nuevos.length > 0
+          ? await subirArchivos('hilo', id, nuevos)
+          : { fallidos: [] };
+
+      // 4. Si cambiaron los archivos, la lista real se pide de nuevo
+      const hilo =
+        quitar.length > 0 || nuevos.length > 0
+          ? await obtenerHilo(id)
+          : actualizado;
+
+      return { hilo, fallos: { quitar: fallosQuitar, subir: fallidos.length } };
+    },
+    onSuccess: ({ hilo }, { id }) => {
+      // el árbol de la respuesta aceptada no cambia al editar: no se copia a las listas
+      const { respuesta_aceptada: _arbol, ...resto } = hilo;
+      parchearContenido(qc, 'hilo', id, resto);
+    },
   });
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
