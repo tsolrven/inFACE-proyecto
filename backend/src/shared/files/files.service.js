@@ -141,6 +141,21 @@ async function borrarArchivosFisicos(archivos) {
   );
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
+// Para mostrar imágenes en pantalla: igual que descargar, pero sin contar descarga
+// y solo para imágenes.
+async function obtenerImagenParaVer(id) {
+  const archivo = await prisma.archivo.findUnique({ where: { id } });
+  if (!archivo) throw new NotFoundError('Archivo');
+  if (!archivo.tipo_mime?.startsWith('image/')) {
+    throw new BadRequestError('Solo se pueden visualizar imágenes');
+  }
+
+  const rutaFisica = resolverRutaFisica(archivo.ruta_url);
+  if (!fs.existsSync(rutaFisica)) throw new NotFoundError('Archivo');
+
+  return { rutaFisica, tipo_mime: archivo.tipo_mime };
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
 export {
   subirArchivo,
   eliminarArchivo,
@@ -148,4 +163,5 @@ export {
   borrarArchivosFisicos,
   formatearArchivo,
   datosArchivo,
+  obtenerImagenParaVer,
 };

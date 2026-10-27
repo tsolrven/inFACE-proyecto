@@ -11,6 +11,7 @@ import reporteRoutes from '../shared/moderation/reports.routes.js';
 import proyectoRoutes from '../modules/project-match/matchingProyecto.routes.js';
 import etiquetaRoutes from '../modules/identity/etiqueta.routes.js';
 import perfilRoutes from '../modules/identity/perfil.routes.js';
+import hiloRoutes from '../modules/forum/forum.routes.js';
 
 function routerApi(app) {
   const router = Router();
@@ -28,6 +29,9 @@ function routerApi(app) {
   router.use('/guardados', guardadoRoutes);
   router.use('/repositorio', ramoRoutes);
   router.use('/repositorio', estadisticasRoutes);
+
+  // módulo 2: Foro por ramos
+  router.use('/hilos', hiloRoutes);
 
   // moderación (transversal a todos los módulos)
   router.use('/reportes', reporteRoutes);
