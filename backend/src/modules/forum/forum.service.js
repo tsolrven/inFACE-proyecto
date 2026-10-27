@@ -260,13 +260,12 @@ async function aceptarRespuesta(hilo_id, comentario_id, usuario_id) {
       throw new BadRequestError('No puedes aceptar un comentario eliminado');
     }
 
-    // aceptar tu propia respuesta se permite (no hay reputación en juego)
-    if (hilo.respuesta_aceptada_id !== comentario_id) {
-      await tx.hilo.update({
-        where: { id: hilo_id },
-        data: { respuesta_aceptada_id: comentario_id },
-      });
-    }
+    // aceptar tu propia respuesta se permite (no hay reputación en juego).
+    // El update es idempotente: sin `if` no se decide con un valor leído antes del lock.
+    await tx.hilo.update({
+      where: { id: hilo_id },
+      data: { respuesta_aceptada_id: comentario_id },
+    });
     return { respuesta_aceptada_id: comentario_id, resuelto: true };
   });
 }

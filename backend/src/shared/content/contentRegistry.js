@@ -21,6 +21,20 @@ const CONTENT_REGISTRY = {
     // sin `adjuntos`, el tipo no admite archivos (ej: comentario)
     adjuntos: { max: 10 },
   },
+  hilo: {
+    modelName: 'hilo',
+    tableName: 'hilos',
+    label: 'Hilo',
+    ownerField: 'autor_id',
+    votesField: 'votos_neto',
+    previewField: 'titulo',
+    allowsComments: true,
+    // solo imágenes: se aplica sobre EXTENSIONES_PERMITIDAS (multer.helper.js)
+    adjuntos: {
+      max: 10,
+      extensiones: ['.jpg', '.jpeg', '.png', '.webp', '.gif'],
+    },
+  },
   comentario: {
     modelName: 'comentario',
     tableName: 'comentarios',
