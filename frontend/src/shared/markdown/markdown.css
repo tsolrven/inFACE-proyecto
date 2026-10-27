@@ -90,3 +90,18 @@
 .md-view .hljs-meta, .md-view .hljs-deletion { color: #fca5a5; }
 .md-view .hljs-emphasis { font-style: italic; }
 .md-view .hljs-strong { font-weight: 700; }
+
+/* ── Editor (MarkdownEditor) ───────────────────────────────────────────── */
+.md-editor-contenido {
+  min-height: 180px;
+  max-height: 420px;
+  overflow-y: auto;
+  padding: 0.75rem 0.9rem;
+  outline: none;
+}
+.md-editor-contenido hr.ProseMirror-selectednode {
+  border-top-color: #60a5fa;
+}
+.md-editor-contenido pre.ProseMirror-selectednode {
+  border-color: #60a5fa;
+}
