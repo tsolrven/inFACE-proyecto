@@ -10,6 +10,7 @@ import { useVotar } from '@/shared/post/votes/useVotar';
 import { parchearContenido } from '@/shared/post/cache';
 import VotePill from '@/shared/post/votes/VotePill';
 import ShareButton from '@/shared/post/share/ShareButton';
+import MarkdownView from '@/shared/markdown/MarkdownView';
 import HiloMenu from '@/features/forum/components/HiloMenu';
 import {
   useHilo,
@@ -189,7 +190,6 @@ export default function HiloDetailModal() {
               )}
             </div>
 
-            {/* TEMPORAL (F2): texto plano. En F3 se reemplaza por el renderizador seguro de Markdown */}
             {isPlaceholderData && hilo.contenido_truncado ? (
               <div className='mb-4 flex items-center gap-2 text-[12px] text-neutral-600'>
                 <i className='ti ti-loader-2 animate-spin' /> Cargando
@@ -197,8 +197,8 @@ export default function HiloDetailModal() {
               </div>
             ) : (
               hilo.contenido && (
-                <div className='mb-4 whitespace-pre-wrap break-words text-[13.5px] leading-relaxed text-neutral-300'>
-                  {hilo.contenido}
+                <div className='mb-4'>
+                  <MarkdownView contenido={hilo.contenido} />
                 </div>
               )
             )}
