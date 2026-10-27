@@ -5,16 +5,16 @@ import PostActionsMenu from '@/shared/post/actions/PostActionsMenu';
 import usePostMenuItems from '@/shared/post/actions/usePostMenuItems';
 import ConfirmDialog from '@/shared/components/ui/ConfirmDialog';
 import ReportModal from '@/shared/moderation/ReportModal';
+import EditarHiloModal from '@/features/forum/components/EditarHiloModal';
 
 /**
  * Menú ⋯ de un hilo: guardar, editar, eliminar y reportar.
- * Si no se pasa onEditar, la opción "Editar" no aparece (se activa en F3).
+ * "Editar" solo aparece para el autor (lo decide usePostMenuItems).
  */
 export default function HiloMenu({
   hilo,
   className,
   triggerClassName,
-  onEditar,
   onEliminado,
 }) {
   const guardarMut = useGuardar('hilo');
@@ -23,19 +23,18 @@ export default function HiloMenu({
   const [confirmandoEliminar, setConfirmandoEliminar] = useState(false);
   const [errorEliminar, setErrorEliminar] = useState(null);
   const [reportando, setReportando] = useState(false);
+  const [editando, setEditando] = useState(false);
 
   const items = usePostMenuItems({
     autorId: hilo.autor?.id,
     guardado: hilo.esta_guardado,
     onGuardar: () =>
       guardarMut.mutate({ id: hilo.id, guardar: !hilo.esta_guardado }),
-    onEditar,
+    onEditar: () => setEditando(true),
     onEliminar: () => setConfirmandoEliminar(true),
     onReportar: () => setReportando(true),
     iconSize: 14,
-  }).map((item) =>
-    item.key === 'editar' && !onEditar ? { ...item, hidden: true } : item,
-  );
+  });
 
   async function handleEliminar() {
     setErrorEliminar(null);
@@ -84,6 +83,14 @@ export default function HiloMenu({
           onClose={() => setReportando(false)}
           tipoContenido='hilo'
           contenidoId={hilo.id}
+        />
+      )}
+
+      {editando && (
+        <EditarHiloModal
+          hiloId={hilo.id}
+          onClose={() => setEditando(false)}
+          onGuardado={() => setEditando(false)}
         />
       )}
     </div>

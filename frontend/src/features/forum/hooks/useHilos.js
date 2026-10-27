@@ -107,14 +107,16 @@ export function useCrearHilo() {
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 // `quitar`: ids de archivos a eliminar. `nuevos`: File[] a subir.
+// `payload` null = solo cambian las imágenes (el PATCH marca "editado", así que
+// no se llama si el texto no cambió).
 // Devuelve { hilo, fallos: { quitar, subir } }: cuántas operaciones de archivos
 // fallaron (el texto ya quedó guardado, ver orden abajo).
 export function useEditarHilo() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, payload, quitar = [], nuevos = [] }) => {
+    mutationFn: async ({ id, payload = null, quitar = [], nuevos = [] }) => {
       // 1. Texto: si falla, no se toca nada más
-      const actualizado = await actualizarHilo(id, payload);
+      const actualizado = payload ? await actualizarHilo(id, payload) : null;
 
       // 2. Quitar ANTES de subir: el backend compara contra el máximo de archivos
       const resultadoQuitar = await Promise.allSettled(
@@ -130,15 +132,24 @@ export function useEditarHilo() {
           ? await subirArchivos('hilo', id, nuevos)
           : { fallidos: [] };
 
-      // 4. Si cambiaron los archivos, la lista real se pide de nuevo
-      const hilo =
-        quitar.length > 0 || nuevos.length > 0
-          ? await obtenerHilo(id)
-          : actualizado;
+      // 4. Si cambiaron los archivos, la lista real se pide de nuevo.
+      // Si esto falla no es grave: los cambios ya están guardados.
+      let hilo = actualizado;
+      if (!actualizado || quitar.length > 0 || nuevos.length > 0) {
+        try {
+          hilo = await obtenerHilo(id);
+        } catch {
+          // se recarga al invalidar (onSuccess)
+        }
+      }
 
       return { hilo, fallos: { quitar: fallosQuitar, subir: fallidos.length } };
     },
     onSuccess: ({ hilo }, { id }) => {
+      if (!hilo) {
+        qc.invalidateQueries({ queryKey: ['hilo'] });
+        return;
+      }
       // el árbol de la respuesta aceptada no cambia al editar: no se copia a las listas
       const { respuesta_aceptada: _arbol, ...resto } = hilo;
       parchearContenido(qc, 'hilo', id, resto);

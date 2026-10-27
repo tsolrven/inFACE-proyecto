@@ -66,7 +66,7 @@ export default function ForumTopbar({ carreraId }) {
           carreraId={carreraId}
           ramoInicial={ramoId}
           onClose={() => setCreando(false)}
-          onCreado={alCrear}
+          onGuardado={alCrear}
         />
       )}
     </div>

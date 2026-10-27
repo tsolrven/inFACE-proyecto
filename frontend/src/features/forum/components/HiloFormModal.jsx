@@ -11,7 +11,8 @@ import {
   claveArchivo,
   extensionDe,
 } from '@/shared/lib/archivos';
-import { useCrearHilo } from '@/features/forum/hooks/useHilos';
+import { mostrarToast } from '@/shared/stores/toastStore';
+import { useCrearHilo, useEditarHilo } from '@/features/forum/hooks/useHilos';
 import {
   TITULO_MIN,
   TITULO_MAX,
@@ -49,25 +50,39 @@ function formatearTamanio(bytes) {
 }
 
 // El backend responde { message, details: [{ field, message }] } en validaciones
-function mensajeDeError(err) {
+function mensajeDeError(err, porDefecto) {
   const detalles = err.details?.map((d) => d.message).filter(Boolean);
-  return detalles?.length
-    ? detalles.join(' · ')
-    : err.message || 'No se pudo publicar el hilo.';
+  return detalles?.length ? detalles.join(' · ') : err.message || porDefecto;
 }
 
+/**
+ * Formulario de hilo. Sin `hilo` = crear; con `hilo` (detalle COMPLETO, no el de
+ * la lista, que viene recortado) = editar. Para editar se usa EditarHiloModal.
+ */
 export default function HiloFormModal({
+  hilo = null,
   carreraId,
   ramoInicial = null,
   onClose,
-  onCreado,
+  onGuardado,
 }) {
+  const editando = !!hilo;
   const crear = useCrearHilo();
+  const editar = useEditarHilo();
 
+  // Valores con los que se abrió el formulario (se fijan una sola vez)
+  const [original] = useState(() => ({
+    titulo: hilo?.titulo ?? '',
+    contenido: (hilo?.contenido ?? '').trim(),
+    hashtags: hilo?.hashtags ?? [],
+    archivos: hilo?.archivos ?? [],
+  }));
+
+  // El ramo solo se elige al crear
   const { data: ramosPorSemestre } = useQuery({
     queryKey: ['ramos', carreraId],
     queryFn: () => listarRamosPorCarrera(carreraId),
-    enabled: !!carreraId,
+    enabled: !!carreraId && !editando,
     staleTime: Infinity,
   });
   const ramos = useMemo(
@@ -75,11 +90,14 @@ export default function HiloFormModal({
     [ramosPorSemestre],
   );
 
-  const [titulo, setTitulo] = useState('');
+  const [titulo, setTitulo] = useState(original.titulo);
   const [ramoId, setRamoId] = useState(ramoInicial ?? '');
-  const [contenido, setContenido] = useState('');
-  const [hashtagsTexto, setHashtagsTexto] = useState('');
-  const [archivos, setArchivos] = useState([]);
+  const [contenido, setContenido] = useState(original.contenido);
+  const [hashtagsTexto, setHashtagsTexto] = useState(
+    original.hashtags.map((t) => `#${t}`).join(' '),
+  );
+  const [archivos, setArchivos] = useState([]); // imágenes NUEVAS
+  const [quitarIds, setQuitarIds] = useState([]); // ids de imágenes existentes a quitar
   const [avisosArchivos, setAvisosArchivos] = useState([]);
   const [error, setError] = useState(null);
   const [confirmandoSalir, setConfirmandoSalir] = useState(false);
@@ -87,12 +105,27 @@ export default function HiloFormModal({
   const hashtags = normalizarHashtags(hashtagsTexto);
   const errorHashtags = validarHashtags(hashtags);
   const ramoValido = ramos.some((r) => r.id === ramoId);
-  const enviando = crear.isPending;
-  const hayCambios =
-    titulo.trim() !== '' ||
-    contenido !== '' ||
-    hashtagsTexto.trim() !== '' ||
-    archivos.length > 0;
+  const enviando = crear.isPending || editar.isPending;
+
+  const existentesQueQuedan = original.archivos.filter(
+    (a) => !quitarIds.includes(a.id),
+  );
+  const totalImagenes = existentesQueQuedan.length + archivos.length;
+  const cupo = ADJUNTOS_MAX - existentesQueQuedan.length; // lugares para imágenes nuevas
+
+  const tituloCambio = titulo.trim() !== original.titulo;
+  const contenidoCambio = contenido !== original.contenido;
+  const hashtagsCambiaron =
+    hashtags.length !== original.hashtags.length ||
+    hashtags.some((t) => !original.hashtags.includes(t));
+  const archivosCambiaron = quitarIds.length > 0 || archivos.length > 0;
+
+  const hayCambios = editando
+    ? tituloCambio || contenidoCambio || hashtagsCambiaron || archivosCambiaron
+    : titulo.trim() !== '' ||
+      contenido !== '' ||
+      hashtagsTexto.trim() !== '' ||
+      archivos.length > 0;
 
   function intentarCerrar() {
     if (enviando) return;
@@ -117,17 +150,33 @@ export default function HiloFormModal({
     }
 
     const combinados = agregarArchivosSinDuplicar(archivos, validos);
-    if (combinados.length > ADJUNTOS_MAX) {
+    if (combinados.length > cupo) {
       avisos.push(
         `Máximo ${ADJUNTOS_MAX} imágenes: se descartaron las que sobraban`,
       );
     }
-    setArchivos(combinados.slice(0, ADJUNTOS_MAX));
+    setArchivos(combinados.slice(0, Math.max(cupo, 0)));
     setAvisosArchivos(avisos);
   }
 
-  function quitarArchivo(index) {
+  function quitarArchivoNuevo(index) {
     setArchivos((prev) => prev.filter((_, i) => i !== index));
+    setAvisosArchivos([]);
+  }
+
+  function alternarQuitarExistente(id) {
+    if (quitarIds.includes(id)) {
+      // conservarla otra vez no puede pasar del máximo
+      if (totalImagenes >= ADJUNTOS_MAX) {
+        setAvisosArchivos([
+          'Quita una imagen nueva antes de conservar esta (máximo 10).',
+        ]);
+        return;
+      }
+      setQuitarIds((prev) => prev.filter((x) => x !== id));
+    } else {
+      setQuitarIds((prev) => [...prev, id]);
+    }
     setAvisosArchivos([]);
   }
 
@@ -135,7 +184,7 @@ export default function HiloFormModal({
     e.preventDefault();
     setError(null);
 
-    if (!ramoValido) {
+    if (!editando && !ramoValido) {
       setError('Debes seleccionar un ramo de tu carrera.');
       return;
     }
@@ -153,20 +202,63 @@ export default function HiloFormModal({
       setError(errorHashtags);
       return;
     }
+    if (totalImagenes > ADJUNTOS_MAX) {
+      setError(`No puedes tener más de ${ADJUNTOS_MAX} imágenes.`);
+      return;
+    }
 
     try {
-      const hilo = await crear.mutateAsync({
-        payload: {
-          ramo_id: ramoId,
-          titulo: titulo.trim(),
-          contenido, // '' es válido: el backend lo guarda como null
-          hashtags,
-        },
-        archivos,
+      if (!editando) {
+        const creado = await crear.mutateAsync({
+          payload: {
+            ramo_id: ramoId,
+            titulo: titulo.trim(),
+            contenido, // '' es válido: el backend lo guarda como null
+            hashtags,
+          },
+          archivos,
+        });
+        onGuardado(creado);
+        return;
+      }
+
+      // Edición: solo viaja lo que cambió (el backend marca "editado" en cada PATCH)
+      const payload = {};
+      if (tituloCambio) payload.titulo = titulo.trim();
+      if (contenidoCambio) payload.contenido = contenido;
+      if (hashtagsCambiaron) payload.hashtags = hashtags;
+      const hayTexto = Object.keys(payload).length > 0;
+
+      if (!hayTexto && !archivosCambiaron) {
+        onClose(); // nada que guardar
+        return;
+      }
+
+      const { hilo: actualizado, fallos } = await editar.mutateAsync({
+        id: hilo.id,
+        payload: hayTexto ? payload : null,
+        quitar: quitarIds,
+        nuevos: archivos,
       });
-      onCreado(hilo);
+
+      if (fallos.quitar > 0 || fallos.subir > 0) {
+        const partes = [];
+        if (fallos.quitar > 0) partes.push(`${fallos.quitar} sin quitar`);
+        if (fallos.subir > 0) partes.push(`${fallos.subir} sin subir`);
+        mostrarToast(
+          `Se guardaron los cambios, pero algunas imágenes fallaron (${partes.join(', ')}). Revisa el hilo.`,
+        );
+      }
+      onGuardado(actualizado);
     } catch (err) {
-      setError(mensajeDeError(err));
+      setError(
+        mensajeDeError(
+          err,
+          editando
+            ? 'No se pudo guardar el hilo.'
+            : 'No se pudo publicar el hilo.',
+        ),
+      );
     }
   }
 
@@ -179,7 +271,7 @@ export default function HiloFormModal({
       >
         <ModalHeader onClose={intentarCerrar}>
           <span className='text-[15px] font-semibold text-neutral-100'>
-            Nuevo hilo
+            {editando ? 'Editar hilo' : 'Nuevo hilo'}
           </span>
         </ModalHeader>
 
@@ -188,28 +280,41 @@ export default function HiloFormModal({
           className='flex flex-col gap-3.5 p-5'
         >
           <Campo label='Ramo'>
-            <select
-              value={ramoValido ? ramoId : ''}
-              onChange={(e) => setRamoId(e.target.value)}
-              className={inputClasses}
-            >
-              <option value=''>Selecciona un ramo de tu carrera...</option>
-              {Object.entries(ramosPorSemestre ?? {}).map(([sem, lista]) => (
-                <optgroup
-                  key={sem}
-                  label={sem === '0' ? 'Sin semestre' : `Semestre ${sem}`}
+            {editando ? (
+              <>
+                <div
+                  className={`${inputClasses} cursor-not-allowed opacity-60`}
                 >
-                  {lista.map((ramo) => (
-                    <option
-                      key={ramo.id}
-                      value={ramo.id}
-                    >
-                      {ramo.nombre}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
+                  {hilo.ramo?.nombre}
+                </div>
+                <p className='text-[11px] text-neutral-600'>
+                  El ramo no se puede cambiar una vez publicado.
+                </p>
+              </>
+            ) : (
+              <select
+                value={ramoValido ? ramoId : ''}
+                onChange={(e) => setRamoId(e.target.value)}
+                className={inputClasses}
+              >
+                <option value=''>Selecciona un ramo de tu carrera...</option>
+                {Object.entries(ramosPorSemestre ?? {}).map(([sem, lista]) => (
+                  <optgroup
+                    key={sem}
+                    label={sem === '0' ? 'Sin semestre' : `Semestre ${sem}`}
+                  >
+                    {lista.map((ramo) => (
+                      <option
+                        key={ramo.id}
+                        value={ramo.id}
+                      >
+                        {ramo.nombre}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+            )}
           </Campo>
 
           <Campo
@@ -240,6 +345,7 @@ export default function HiloFormModal({
               }
             >
               <MarkdownEditor
+                valorInicial={original.contenido}
                 onChange={setContenido}
                 max={CONTENIDO_MAX}
               />
@@ -262,15 +368,55 @@ export default function HiloFormModal({
             label='Imágenes (opcional)'
             extra={
               <span className='text-[10.5px] tabular-nums text-neutral-600'>
-                {archivos.length}/{ADJUNTOS_MAX}
+                {totalImagenes}/{ADJUNTOS_MAX}
               </span>
             }
           >
+            {editando && original.archivos.length > 0 && (
+              <div className='flex flex-col gap-1.5'>
+                {original.archivos.map((a) => {
+                  const quitada = quitarIds.includes(a.id);
+                  return (
+                    <div
+                      key={a.id}
+                      className='flex items-center gap-2 rounded-md border border-white/[0.07] bg-white/[0.03] px-2.5 py-1.5'
+                    >
+                      <i className='ti ti-photo text-[13px] text-neutral-500' />
+                      <span
+                        className={`flex-1 truncate text-[11.5px] ${
+                          quitada
+                            ? 'text-neutral-600 line-through'
+                            : 'text-neutral-300'
+                        }`}
+                      >
+                        {a.nombre_archivo}
+                      </span>
+                      {a.tamanio > 0 && (
+                        <span className='text-[10.5px] text-neutral-600'>
+                          {formatearTamanio(a.tamanio)}
+                        </span>
+                      )}
+                      <button
+                        type='button'
+                        onClick={() => alternarQuitarExistente(a.id)}
+                        title={quitada ? 'Conservar imagen' : 'Quitar imagen'}
+                        className='flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-neutral-500 hover:bg-white/[0.06] hover:text-red-400'
+                      >
+                        <i
+                          className={`ti ${quitada ? 'ti-arrow-back-up' : 'ti-trash'} text-[13px]`}
+                        />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
             <input
               type='file'
               multiple
               accept={ADJUNTOS_EXTENSIONES.join(',')}
-              disabled={archivos.length >= ADJUNTOS_MAX}
+              disabled={cupo - archivos.length <= 0}
               onChange={handleSeleccionarArchivos}
               className='text-[12.5px] text-neutral-400 file:mr-3 file:rounded-md file:border-0 file:bg-pink-500/10 file:px-3 file:py-1.5 file:text-[11.5px] file:font-semibold file:text-pink-500 disabled:opacity-50'
             />
@@ -289,7 +435,7 @@ export default function HiloFormModal({
                     key={claveArchivo(archivo)}
                     className='flex items-center gap-2 rounded-md border border-white/[0.07] bg-white/[0.03] px-2.5 py-1.5'
                   >
-                    <i className='ti ti-photo text-[13px] text-neutral-500' />
+                    <i className='ti ti-photo text-[13px] text-pink-500' />
                     <span className='flex-1 truncate text-[11.5px] text-neutral-300'>
                       {archivo.name}
                     </span>
@@ -298,7 +444,7 @@ export default function HiloFormModal({
                     </span>
                     <button
                       type='button'
-                      onClick={() => quitarArchivo(i)}
+                      onClick={() => quitarArchivoNuevo(i)}
                       title='Quitar imagen'
                       className='flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-neutral-500 hover:bg-white/[0.06] hover:text-red-400'
                     >
@@ -330,7 +476,7 @@ export default function HiloFormModal({
               variant='primary'
               loading={enviando}
             >
-              Publicar
+              {editando ? 'Guardar cambios' : 'Publicar'}
             </Button>
           </div>
         </form>
@@ -338,8 +484,12 @@ export default function HiloFormModal({
 
       <ConfirmDialog
         open={confirmandoSalir}
-        title='¿Descartar el hilo?'
-        message='Tienes cambios sin publicar. Si sales ahora, se perderán.'
+        title={editando ? '¿Descartar los cambios?' : '¿Descartar el hilo?'}
+        message={
+          editando
+            ? 'Tienes cambios sin guardar. Si sales ahora, se perderán.'
+            : 'Tienes cambios sin publicar. Si sales ahora, se perderán.'
+        }
         confirmLabel='Descartar'
         cancelLabel='Seguir editando'
         danger
