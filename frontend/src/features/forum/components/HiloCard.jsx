@@ -4,6 +4,7 @@ import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
 import { useVotar } from '@/shared/post/votes/useVotar';
 import VotePill from '@/shared/post/votes/VotePill';
 import ShareButton from '@/shared/post/share/ShareButton';
+import PortadaImagen from '@/shared/post/images/PortadaImagen';
 import HiloMenu from '@/features/forum/components/HiloMenu';
 import { extractoPlano } from '@/features/forum/utils/extractoPlano';
 
@@ -14,7 +15,6 @@ export default function HiloCard({ hilo }) {
 
   const ramoColor = colorPorRamo(hilo.ramo?.id);
   const extracto = extractoPlano(hilo.contenido ?? '', hilo.contenido_truncado);
-  const cantImagenes = hilo.archivos?.length ?? 0;
 
   // El detalle (F2) se abre como modal sobre la lista, igual que en materiales.
   function abrirDetalle() {
@@ -82,12 +82,7 @@ export default function HiloCard({ hilo }) {
           </p>
         )}
 
-        {cantImagenes > 0 && (
-          <div className='mb-1.5 flex items-center gap-1 text-[11.5px] text-neutral-500'>
-            <i className='ti ti-photo text-[13px]' />
-            {cantImagenes} {cantImagenes === 1 ? 'imagen' : 'imágenes'}
-          </div>
-        )}
+        <PortadaImagen archivos={hilo.archivos} />
 
         {hilo.hashtags?.length > 0 && (
           <div className='mb-1.5 flex flex-wrap gap-1.5'>

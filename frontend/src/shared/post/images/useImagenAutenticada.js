@@ -18,7 +18,7 @@ queryClient.getQueryCache().subscribe((evento) => {
  * Descarga una imagen adjunta con la sesión del usuario y devuelve una URL
  * utilizable en <img src>. Las imágenes no cambian por id: no se vuelven a pedir.
  */
-export function useImagenAutenticada(archivoId) {
+export function useImagenAutenticada(archivoId, { enabled = true } = {}) {
   return useQuery({
     queryKey: [CLAVE, archivoId],
     queryFn: async ({ signal }) => {
@@ -28,6 +28,7 @@ export function useImagenAutenticada(archivoId) {
       }
       return URL.createObjectURL(blob);
     },
+    enabled,
     staleTime: Infinity,
     retry: (intentos, error) =>
       !(error?.status >= 400 && error?.status < 500) && intentos < 1,
