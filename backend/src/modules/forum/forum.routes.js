@@ -5,6 +5,8 @@ import {
   crear,
   actualizar,
   eliminar,
+  aceptar,
+  desmarcar,
 } from './forum.controller.js';
 import { autenticar } from '../../middlewares/auth.middleware.js';
 import validate from '../../middlewares/validate.js';
@@ -12,6 +14,7 @@ import {
   crearHiloSchema,
   actualizarHiloSchema,
   listarHilosQuerySchema,
+  aceptarRespuestaSchema,
 } from './forum.validation.js';
 import { idParamSchema } from '../../shared/validation/common.schemas.js';
 import { publicacionLimiter } from '../../middlewares/rateLimiter.js';
@@ -54,5 +57,18 @@ router.patch(
   actualizar,
 );
 router.delete('/:id', autenticar, validate(idParamSchema, 'params'), eliminar);
+router.put(
+  '/:id/respuesta-aceptada',
+  autenticar,
+  validate(idParamSchema, 'params'),
+  validate(aceptarRespuestaSchema),
+  aceptar,
+);
+router.delete(
+  '/:id/respuesta-aceptada',
+  autenticar,
+  validate(idParamSchema, 'params'),
+  desmarcar,
+);
 // ────────────────────────────────────────────────────────────────────────────────────────
 export default router;

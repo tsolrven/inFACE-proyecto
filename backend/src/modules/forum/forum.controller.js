@@ -4,6 +4,8 @@ import {
   crearHilo,
   actualizarHilo,
   eliminarHilo,
+  aceptarRespuesta,
+  desmarcarRespuestaAceptada,
 } from './forum.service.js';
 import ApiResponse from '../../utils/apiResponse.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
@@ -66,4 +68,29 @@ async function eliminar(req, res, next) {
   }
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-export { listar, detalle, crear, actualizar, eliminar };
+async function aceptar(req, res, next) {
+  try {
+    const resultado = await aceptarRespuesta(
+      req.params.id,
+      req.body.comentario_id,
+      req.usuario.id,
+    );
+    return ApiResponse.success(res, resultado);
+  } catch (err) {
+    next(err);
+  }
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+async function desmarcar(req, res, next) {
+  try {
+    const resultado = await desmarcarRespuestaAceptada(
+      req.params.id,
+      req.usuario.id,
+    );
+    return ApiResponse.success(res, resultado);
+  } catch (err) {
+    next(err);
+  }
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+export { listar, detalle, crear, actualizar, eliminar, aceptar, desmarcar };

@@ -61,6 +61,15 @@ const listarHilosQuerySchema = paginacionQuerySchema.extend({
     .optional(),
 });
 // ─────────────────────────────────────────────────────────────────────────────
+const aceptarRespuestaSchema = z.object({
+  comentario_id: z
+    .string({
+      error: (issue) =>
+        issue.input === undefined ? 'El comentario es requerido' : undefined,
+    })
+    .uuid('El id del comentario no es válido'),
+});
+// ─────────────────────────────────────────────────────────────────────────────
 export {
   TITULO_MIN,
   TITULO_MAX,
@@ -68,4 +77,5 @@ export {
   crearHiloSchema,
   actualizarHiloSchema,
   listarHilosQuerySchema,
+  aceptarRespuestaSchema,
 };

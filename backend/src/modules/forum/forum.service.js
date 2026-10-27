@@ -1,5 +1,9 @@
 import { prisma } from '../../config/configDb.js';
-import { NotFoundError, ForbiddenError } from '../../errors/appError.js';
+import {
+  BadRequestError,
+  NotFoundError,
+  ForbiddenError,
+} from '../../errors/appError.js';
 import logger from '../../lib/logger.js';
 import {
   borrarArchivosFisicos,
@@ -10,7 +14,9 @@ import { eliminarContenido } from '../../shared/content/contentCleanup.js';
 import {
   registrarHidratadorGuardados,
   registrarAlEliminarComentario,
+  bloquearContenido,
 } from '../../shared/content/contentRegistry.js';
+import { obtenerComentarioConArbol } from '../../shared/comments/comments.service.js';
 import { obtenerEnriquecimiento } from '../../shared/content/contentEnrichment.js';
 import { esStaff } from '../../shared/auth/permissions.js';
 import { AUTOR_PUBLICO_SELECT } from '../../shared/content/selects.js';
@@ -97,8 +103,16 @@ async function obtenerHilo(id, usuario_id) {
   });
   if (!hilo) throw new NotFoundError('Hilo');
 
+  return armarDetalle(hilo, usuario_id);
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+// Detalle = hilo completo + su respuesta aceptada (con respuestas precargadas) o null.
+async function armarDetalle(hilo, usuario_id) {
   const [formateado] = await formatearHilos([hilo], usuario_id);
-  return formateado;
+  const respuesta_aceptada = hilo.respuesta_aceptada_id
+    ? await obtenerComentarioConArbol(hilo.respuesta_aceptada_id, usuario_id)
+    : null;
+  return { ...formateado, respuesta_aceptada };
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 // Se publica solo en ramos de la propia carrera (leer, comentar y votar es libre).
@@ -153,7 +167,10 @@ async function crearHilo({
     return { hilo, archivosCreados };
   });
 
-  return formatearHilo(hilo, { archivos: archivosCreados });
+  return {
+    ...formatearHilo(hilo, { archivos: archivosCreados }),
+    respuesta_aceptada: null,
+  };
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function actualizarHilo(id, usuario_id, datos) {
@@ -181,8 +198,7 @@ async function actualizarHilo(id, usuario_id, datos) {
     include: INCLUDE_HILO,
   });
 
-  const [formateado] = await formatearHilos([actualizado], usuario_id);
-  return formateado;
+  return armarDetalle(actualizado, usuario_id);
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function eliminarHilo(id, usuario_id, rol) {
@@ -203,6 +219,76 @@ async function eliminarHilo(id, usuario_id, rol) {
   await borrarArchivosFisicos(archivos);
 
   logger.info('Hilo eliminado', { hilo_id: id, eliminado_por: usuario_id });
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+// Solo el autor del hilo acepta o desmarca (ni el superadmin, igual que la política
+// de que staff solo elimina). Aceptar otra respuesta reemplaza la anterior.
+async function aceptarRespuesta(hilo_id, comentario_id, usuario_id) {
+  return prisma.$transaction(async (tx) => {
+    const hilo = await tx.hilo.findUnique({
+      where: { id: hilo_id },
+      select: { id: true, autor_id: true, respuesta_aceptada_id: true },
+    });
+    if (!hilo) throw new NotFoundError('Hilo');
+    if (hilo.autor_id !== usuario_id) {
+      throw new ForbiddenError(
+        'Solo el autor del hilo puede aceptar una respuesta',
+      );
+    }
+
+    // ORDEN DE LOCKS: comentario -> hilo. Es el mismo que usa el borrado de
+    // comentarios (B1: actualiza el comentario y luego el hilo). Invertirlo
+    // provocaría deadlocks. El bloqueo también garantiza que lo siguiente se lea
+    // después de que termine un borrado concurrente del mismo comentario.
+    await bloquearContenido('comentario', comentario_id, tx); // 404 si no existe
+    const comentario = await tx.comentario.findUnique({
+      where: { id: comentario_id },
+    });
+
+    if (
+      comentario.tipo_contenido !== 'hilo' ||
+      comentario.contenido_id !== hilo_id
+    ) {
+      throw new BadRequestError('El comentario no pertenece a este hilo');
+    }
+    if (comentario.padre_id !== null) {
+      throw new BadRequestError(
+        'Solo se puede aceptar una respuesta directa al hilo, no una sub-respuesta',
+      );
+    }
+    if (comentario.eliminado) {
+      throw new BadRequestError('No puedes aceptar un comentario eliminado');
+    }
+
+    // aceptar tu propia respuesta se permite (no hay reputación en juego)
+    if (hilo.respuesta_aceptada_id !== comentario_id) {
+      await tx.hilo.update({
+        where: { id: hilo_id },
+        data: { respuesta_aceptada_id: comentario_id },
+      });
+    }
+    return { respuesta_aceptada_id: comentario_id, resuelto: true };
+  });
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+async function desmarcarRespuestaAceptada(hilo_id, usuario_id) {
+  const hilo = await prisma.hilo.findUnique({
+    where: { id: hilo_id },
+    select: { autor_id: true },
+  });
+  if (!hilo) throw new NotFoundError('Hilo');
+  if (hilo.autor_id !== usuario_id) {
+    throw new ForbiddenError(
+      'Solo el autor del hilo puede desmarcar la respuesta aceptada',
+    );
+  }
+
+  // idempotente: desmarcar un hilo sin respuesta aceptada no es un error
+  await prisma.hilo.update({
+    where: { id: hilo_id },
+    data: { respuesta_aceptada_id: null },
+  });
+  return { respuesta_aceptada_id: null, resuelto: false };
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function hidratarHilosGuardados(ids, usuario_id) {
@@ -289,5 +375,7 @@ export {
   crearHilo,
   actualizarHilo,
   eliminarHilo,
+  aceptarRespuesta,
+  desmarcarRespuestaAceptada,
   formatearHilo,
 };

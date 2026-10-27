@@ -83,6 +83,22 @@ async function listarRespuestas({
   });
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
+// Un comentario con sus respuestas precargadas (mismo formato que la lista).
+// Lo usa el foro para mostrar la respuesta aceptada fijada arriba del hilo.
+async function obtenerComentarioConArbol(
+  comentario_id,
+  usuario_id,
+  orden = 'mejores',
+) {
+  const { items } = await paginarComentarios({
+    filtro: { id: comentario_id },
+    orden,
+    limite: 1,
+    usuario_id,
+  });
+  return items[0] ?? null;
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
 async function paginarComentarios({
   filtro,
   orden,
@@ -501,6 +517,7 @@ registrarHidratadorGuardados('comentario', hidratarComentariosGuardados);
 export {
   listarComentarios,
   listarRespuestas,
+  obtenerComentarioConArbol,
   crearComentario,
   editarComentario,
   eliminarComentario,
