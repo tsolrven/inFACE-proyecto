@@ -4,7 +4,7 @@ import { marked } from 'marked';
 const ERROR_MESSAGES = {
   imagen: 'No se permiten imágenes dentro del texto: usa los adjuntos',
   html: 'No se permite HTML dentro del texto',
-  enlace: 'Los enlaces deben empezar con http:// o https://',
+  enlace: 'Los enlaces deben empezar con http://, https:// o mailto:',
   max: (n) => `El contenido no puede superar ${n} caracteres`,
 };
 // ─────────────────────────────────────────────────────────────────────────────
@@ -15,7 +15,10 @@ function tokensProhibidos(markdown) {
   marked.walkTokens(marked.lexer(markdown), (token) => {
     if (token.type === 'image') encontrados.add('imagen');
     else if (token.type === 'html') encontrados.add('html');
-    else if (token.type === 'link' && !/^https?:\/\//i.test(token.href)) {
+    else if (
+      token.type === 'link' &&
+      !/^(https?:\/\/|mailto:)/i.test(token.href)
+    ) {
       encontrados.add('enlace');
     }
   });
