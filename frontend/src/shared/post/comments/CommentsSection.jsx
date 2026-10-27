@@ -7,6 +7,14 @@ import CommentItem from '@/shared/post/comments/CommentItem';
 import CommentComposer from '@/shared/post/comments/CommentComposer';
 import CommentSortSelect from '@/shared/post/comments/CommentSortSelect';
 
+/**
+ * Props opcionales (el contenido que no las usa funciona como siempre):
+ * - fijado: { raiz, clave, encabezado } un comentario raíz destacado arriba (ej:
+ *   respuesta aceptada). `raiz` puede ser null mientras carga; `clave` es la
+ *   clave de caché donde vive su árbol; no se repite en la lista normal.
+ * - accionExtra: (comentario) => nodo, botón extra junto a "Responder".
+ * - alEliminarComentario: (comentarioId, resultado) tras eliminar con éxito.
+ */
 export default function CommentsSection({
   tipoContenido,
   contenidoId,
@@ -14,6 +22,9 @@ export default function CommentsSection({
   titulo = 'Discusión y respuestas',
   placeholder = 'Escribe un comentario...',
   textoVacio = 'Todavía no hay comentarios. ¡Sé el primero en aportar!',
+  fijado = null,
+  accionExtra,
+  alEliminarComentario,
 }) {
   const [orden, setOrden] = useState('mejores');
   const [focoId, setFocoId] = useState(null);
@@ -29,11 +40,28 @@ export default function CommentsSection({
     fetchNextPage,
     isFetchingNextPage,
   } = useComments(tipoContenido, contenidoId, orden);
-  const acciones = useCommentActions(tipoContenido, contenidoId, orden);
 
-  const raices = data?.raices ?? [];
+  const base = useCommentActions(tipoContenido, contenidoId, orden, {
+    claveFijado: fijado?.clave,
+    alEliminar: alEliminarComentario,
+  });
+  const acciones = { ...base, extra: accionExtra };
+  const accionesFijado = {
+    ...acciones,
+    masRespuestas: base.masRespuestasFijado,
+  };
+
+  const raizFijada = fijado?.raiz ?? null;
+  // el fijado se muestra arriba: no se repite en la lista normal
+  const raices = (data?.raices ?? []).filter((r) => r.id !== raizFijada?.id);
+
   // si el comentario enfocado desaparece (se eliminó), se vuelve a la lista
-  const nodoFoco = focoId ? buscarNodo(raices, focoId) : null;
+  const foco = focoId
+    ? raizFijada && buscarNodo([raizFijada], focoId)
+      ? { nodo: buscarNodo([raizFijada], focoId), acciones: accionesFijado }
+      : { nodo: buscarNodo(raices, focoId), acciones }
+    : null;
+  const nodoFoco = foco?.nodo ?? null;
 
   function cambiarOrden(nuevoOrden) {
     setFocoId(null);
@@ -75,7 +103,7 @@ export default function CommentsSection({
           <CommentItem
             key={nodoFoco.id}
             comentario={nodoFoco}
-            acciones={acciones}
+            acciones={foco.acciones}
             profundidad={0}
             maxIndent={maxIndent}
             onEnfocar={enfocar}
@@ -83,6 +111,20 @@ export default function CommentsSection({
         </div>
       ) : (
         <>
+          {raizFijada && (
+            <div className='mb-4 rounded-xl border border-emerald-400/25 bg-emerald-400/[0.04] p-3'>
+              {fijado.encabezado}
+              <CommentItem
+                key={raizFijada.id}
+                comentario={raizFijada}
+                acciones={accionesFijado}
+                profundidad={0}
+                maxIndent={maxIndent}
+                onEnfocar={enfocar}
+              />
+            </div>
+          )}
+
           <div className='mb-4'>
             <CommentSortSelect
               value={orden}
@@ -107,7 +149,7 @@ export default function CommentsSection({
               </p>
             )}
 
-            {!isPending && !error && raices.length === 0 && (
+            {!isPending && !error && raices.length === 0 && !raizFijada && (
               <p className='text-center text-[12.5px] text-neutral-600'>
                 {textoVacio}
               </p>

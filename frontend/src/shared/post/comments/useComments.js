@@ -52,7 +52,13 @@ export function useComments(tipoContenido, contenidoId, orden) {
   });
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-export function useMasRespuestas(tipoContenido, contenidoId, orden) {
+export function useMasRespuestas(
+  tipoContenido,
+  contenidoId,
+  orden,
+  // dónde se guardan las respuestas que llegan; por defecto, la lista principal
+  claveCache = commentKeys.list(tipoContenido, contenidoId, orden),
+) {
   const qc = useQueryClient();
 
   return useMutation({
@@ -60,10 +66,8 @@ export function useMasRespuestas(tipoContenido, contenidoId, orden) {
       listarRespuestas({ comentarioId, orden, cursor }),
 
     onSuccess: ({ items, meta }, { comentarioId }) => {
-      qc.setQueryData(
-        commentKeys.list(tipoContenido, contenidoId, orden),
-        (data) =>
-          fusionarRespuestas(data, comentarioId, items, meta.nextCursor),
+      qc.setQueryData(claveCache, (data) =>
+        fusionarRespuestas(data, comentarioId, items, meta.nextCursor),
       );
     },
 

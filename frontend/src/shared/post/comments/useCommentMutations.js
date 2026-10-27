@@ -66,7 +66,7 @@ export function useEditarComentario() {
   });
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-export function useEliminarComentario(tipoContenido, contenidoId) {
+export function useEliminarComentario(tipoContenido, contenidoId, alEliminar) {
   const qc = useQueryClient();
 
   return useMutation({
@@ -92,6 +92,8 @@ export function useEliminarComentario(tipoContenido, contenidoId) {
       }
 
       if (eraVisible) sumarComentarios(qc, tipoContenido, contenidoId, -1);
+
+      alEliminar?.(comentarioId, resultado);
     },
 
     onError: (err) =>
