@@ -164,6 +164,16 @@ export default function HiloFormModal({
     setAvisosArchivos([]);
   }
 
+  function moverArchivoNuevo(index, delta) {
+    setArchivos((prev) => {
+      const destino = index + delta;
+      if (destino < 0 || destino >= prev.length) return prev;
+      const copia = [...prev];
+      [copia[index], copia[destino]] = [copia[destino], copia[index]];
+      return copia;
+    });
+  }
+
   function alternarQuitarExistente(id) {
     if (quitarIds.includes(id)) {
       // conservarla otra vez no puede pasar del máximo
@@ -430,11 +440,19 @@ export default function HiloFormModal({
             )}
             {archivos.length > 0 && (
               <div className='mt-1 flex flex-col gap-1.5'>
+                {archivos.length > 1 && (
+                  <p className='text-[11px] text-neutral-600'>
+                    Se publicarán en este orden. Usa las flechas para cambiarlo.
+                  </p>
+                )}
                 {archivos.map((archivo, i) => (
                   <div
                     key={claveArchivo(archivo)}
                     className='flex items-center gap-2 rounded-md border border-white/[0.07] bg-white/[0.03] px-2.5 py-1.5'
                   >
+                    <span className='w-4 text-center text-[10.5px] tabular-nums text-neutral-600'>
+                      {i + 1}
+                    </span>
                     <i className='ti ti-photo text-[13px] text-pink-500' />
                     <span className='flex-1 truncate text-[11.5px] text-neutral-300'>
                       {archivo.name}
@@ -442,10 +460,35 @@ export default function HiloFormModal({
                     <span className='text-[10.5px] text-neutral-600'>
                       {formatearTamanio(archivo.size)}
                     </span>
+                    {archivos.length > 1 && (
+                      <>
+                        <button
+                          type='button'
+                          onClick={() => moverArchivoNuevo(i, -1)}
+                          disabled={i === 0}
+                          title='Subir'
+                          aria-label='Subir imagen'
+                          className='flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-neutral-500 hover:bg-white/[0.06] hover:text-neutral-200 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent'
+                        >
+                          <i className='ti ti-chevron-up text-[13px]' />
+                        </button>
+                        <button
+                          type='button'
+                          onClick={() => moverArchivoNuevo(i, 1)}
+                          disabled={i === archivos.length - 1}
+                          title='Bajar'
+                          aria-label='Bajar imagen'
+                          className='flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-neutral-500 hover:bg-white/[0.06] hover:text-neutral-200 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent'
+                        >
+                          <i className='ti ti-chevron-down text-[13px]' />
+                        </button>
+                      </>
+                    )}
                     <button
                       type='button'
                       onClick={() => quitarArchivoNuevo(i)}
                       title='Quitar imagen'
+                      aria-label='Quitar imagen'
                       className='flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-neutral-500 hover:bg-white/[0.06] hover:text-red-400'
                     >
                       <i className='ti ti-x text-[13px]' />
