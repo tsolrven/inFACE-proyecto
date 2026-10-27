@@ -45,6 +45,9 @@ async function obtenerArchivos(tipo_contenido, ids) {
 
   const archivos = await prisma.archivo.findMany({
     where: { tipo_contenido, contenido_id: { in: ids } },
+    // El nombre físico empieza con Date.now() (multer.helper.js), así que ordenar
+    // por ruta_url deja los adjuntos en el orden en que se subieron.
+    orderBy: { ruta_url: 'asc' },
   });
 
   const mapa = new Map();
