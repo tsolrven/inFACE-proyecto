@@ -12,3 +12,20 @@ export function normalizarHashtags(texto = '') {
     ),
   ];
 }
+
+// Mismo patrón y mensajes que backend/src/shared/hashtags/hashtags.validation.js
+const HASHTAG_PATRON = /^[a-zA-Z0-9_]+$/;
+
+// Recibe la lista ya normalizada. Devuelve el mensaje de error o null.
+export function validarHashtags(lista) {
+  if (lista.length > HASHTAGS_MAX) {
+    return `No puedes agregar más de ${HASHTAGS_MAX} hashtags`;
+  }
+  if (lista.some((t) => t.length > HASHTAG_MAX_LARGO)) {
+    return `Cada hashtag no puede superar ${HASHTAG_MAX_LARGO} caracteres`;
+  }
+  if (lista.some((t) => !HASHTAG_PATRON.test(t))) {
+    return 'Los hashtags solo pueden tener letras, números y guiones bajos';
+  }
+  return null;
+}

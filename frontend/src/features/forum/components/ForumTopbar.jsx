@@ -1,4 +1,8 @@
+import { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import FiltroRamo from '@/shared/components/FiltroRamo';
+import Button from '@/shared/components/ui/Button';
+import HiloFormModal from '@/features/forum/components/HiloFormModal';
 import { useForumFiltrosStore } from '@/features/forum/store/forumFiltrosStore';
 
 const ORDENES = [
@@ -10,6 +14,18 @@ export default function ForumTopbar({ carreraId }) {
   const ramoId = useForumFiltrosStore((s) => s.filtros.ramo_id);
   const orden = useForumFiltrosStore((s) => s.filtros.orden);
   const setFiltro = useForumFiltrosStore((s) => s.setFiltro);
+
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [creando, setCreando] = useState(false);
+
+  // Publicado: se abre su detalle como modal sobre el feed (igual que HiloCard)
+  function alCrear(hilo) {
+    setCreando(false);
+    navigate(`/foro-por-ramos/${hilo.id}`, {
+      state: { backgroundLocation: location },
+    });
+  }
 
   return (
     <div className='mb-3 flex flex-wrap items-center gap-2'>
@@ -35,6 +51,24 @@ export default function ForumTopbar({ carreraId }) {
           </button>
         ))}
       </div>
+
+      <Button
+        variant='primary'
+        icon='ti-plus'
+        disabled={!carreraId}
+        onClick={() => setCreando(true)}
+      >
+        Nuevo hilo
+      </Button>
+
+      {creando && (
+        <HiloFormModal
+          carreraId={carreraId}
+          ramoInicial={ramoId}
+          onClose={() => setCreando(false)}
+          onCreado={alCrear}
+        />
+      )}
     </div>
   );
 }
