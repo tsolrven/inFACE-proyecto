@@ -1,8 +1,7 @@
 //! BOTÓN GENÉRICO, SE USA EN CUALQUIER MÓDULO
 
 const VARIANTS = {
-  primary:
-    'bg-pink-500 text-white hover:bg-[#D43E56] border border-pink-500',
+  primary: 'bg-pink-500 text-white hover:bg-[#D43E56] border border-pink-500',
   secondary:
     'bg-transparent text-neutral-300 border border-white/[0.07] hover:border-white/[0.18] hover:text-neutral-100',
   ghost:

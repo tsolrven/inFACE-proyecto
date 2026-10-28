@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuthStore } from '@/shared/auth/authStore';
 
 // extrae los errores del backend (auth.validation) y los agrupa por campo
@@ -16,7 +16,6 @@ function parseApiError(err) {
 
 export default function Login() {
   const { login } = useAuthStore();
-  const navigate = useNavigate();
 
   const [form, setForm] = useState({ correo: '', contrasena: '' });
   const [errors, setErrors] = useState({ fields: {}, general: null });
@@ -41,7 +40,6 @@ export default function Login() {
 
     try {
       await login(form);
-      navigate('/');
     } catch (err) {
       setErrors(parseApiError(err));
     } finally {

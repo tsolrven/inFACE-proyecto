@@ -33,8 +33,8 @@ export default function ProyectoFormModal({ proyecto, onClose, onSubmit }) {
   const [errores, setErrores] = useState([]);
   const [enviando, setEnviando] = useState(false);
 
-  const [etiquetaIds, setEtiquetaIds] = useState(
-    () => (proyecto?.etiquetas || []).map((et) => et.id),
+  const [etiquetaIds, setEtiquetaIds] = useState(() =>
+    (proyecto?.etiquetas || []).map((et) => et.id),
   );
 
   function validar() {
@@ -183,10 +183,11 @@ export default function ProyectoFormModal({ proyecto, onClose, onSubmit }) {
                   onClick={() =>
                     setForm((f) => ({ ...f, modalidad_proyecto: m.value }))
                   }
-                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-medium transition ${form.modalidad_proyecto === m.value
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-medium transition ${
+                    form.modalidad_proyecto === m.value
                       ? MODALIDAD_COLORES[m.value]
                       : 'border-white/[0.07] text-neutral-400 hover:text-neutral-100'
-                    }`}
+                  }`}
                 >
                   <i className={`ti ${m.icon} text-[13px]`} />
                   {m.label}

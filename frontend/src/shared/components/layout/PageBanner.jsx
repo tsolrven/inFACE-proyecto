@@ -12,9 +12,10 @@ export default function PageBanner({
 }) {
   return (
     <div
-      className={`border-b border-white/[0.07] px-[22px] pb-4 pt-[18px] flex-shrink-0 ${gradient}`}
+      className='border-b border-white/[0.07] px-[22px] pb-4 pt-[18px] flex-shrink-0'
       style={{ background: gradient || '#17171B' }}
     >
+      {/* ...resto igual... */}
       {/* Breadcrumb */}
       {breadcrumb.length > 0 && (
         <div className='mb-2.5 flex items-center gap-1.5'>

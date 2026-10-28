@@ -30,7 +30,8 @@ model Usuario {
   perfil           Perfil?
   usuario_carrera  UsuarioCarrera[]
   apuntes          Apunte[]
-  comentarios      Comentario[]
+  comentarios            Comentario[] @relation("ComentarioAutor")
+  comentarios_eliminados Comentario[] @relation("ComentarioEliminadoPor")
   votos            Voto[]
   guardados        Guardado[]
   reportes_creados Reporte[]  @relation("ReporteCreadoPor")
@@ -194,17 +195,22 @@ model Comentario {
   contenido        String
   votos_neto       Int      @default(0)
   es_respuesta_aceptada Boolean @default(false)
-  eliminado        Boolean  @default(false)   
+  eliminado        Boolean  @default(false)
+  eliminado_por_id String?
+  eliminado_en     DateTime?  
   creado_en        DateTime @default(now())
   actualizado_en   DateTime @updatedAt
   editado_en       DateTime?   // null = nunca editado por su autor
 
-  autor      Usuario      @relation(fields: [autor_id], references: [id])
+  autor      Usuario      @relation("ComentarioAutor", fields: [autor_id], references: [id])
+  eliminador Usuario?     @relation("ComentarioEliminadoPor", fields: [eliminado_por_id], references: [id])
   padre      Comentario?  @relation("ComentarioRespuesta", fields: [padre_id], references: [id])
   respuestas Comentario[] @relation("ComentarioRespuesta")
 
-  @@index([tipo_contenido, contenido_id])
-  @@index([padre_id])
+  @@index([tipo_contenido, contenido_id, padre_id, creado_en])
+  @@index([tipo_contenido, contenido_id, padre_id, votos_neto])
+  @@index([padre_id, creado_en])
+  @@index([padre_id, votos_neto])
   @@index([autor_id])
   @@map("comentarios")
 }
@@ -270,7 +276,6 @@ model Apunte {
   links             String[] @default([])
   codigo_snippet    String?   
   lenguaje_snippet  String?   
-  etiquetas_visuales String[] @default([])
   votos_neto        Int      @default(0)
   creado_en         DateTime @default(now())
   actualizado_en    DateTime @updatedAt

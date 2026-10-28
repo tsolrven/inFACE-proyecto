@@ -1,18 +1,16 @@
-import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
-import { alternarGuardadoComentario } from '@/shared/post/bookmarks/bookmarks.api';
-import { mostrarToast } from '@/shared/stores/toastStore';
+import { useGuardar } from '@/shared/post/bookmarks/useGuardar';
 
 // Tipo de contenido -> ruta. Cuando exista el foro o los anuncios, se agrega una línea acá.
 const RUTAS_CONTENIDO = {
   apunte: (id) => `/repositorio-materiales/${id}`,
 };
 
-export default function SavedCommentCard({ comentario, onQuitarDeGuardados }) {
+export default function SavedCommentCard({ comentario }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const [quitando, setQuitando] = useState(false);
+  const guardarMut = useGuardar('comentario');
 
   const padre = comentario.contenido_padre;
 
@@ -24,16 +22,9 @@ export default function SavedCommentCard({ comentario, onQuitarDeGuardados }) {
     });
   }
 
-  async function handleQuitar(e) {
+  function handleQuitar(e) {
     e.stopPropagation();
-    setQuitando(true);
-    try {
-      await alternarGuardadoComentario(comentario.id);
-      mostrarToast('Quitado de guardados');
-      onQuitarDeGuardados?.(comentario.id);
-    } catch {
-      setQuitando(false);
-    }
+    guardarMut.mutate({ id: comentario.id, guardar: false });
   }
 
   return (
@@ -53,7 +44,7 @@ export default function SavedCommentCard({ comentario, onQuitarDeGuardados }) {
         <button
           type='button'
           onClick={handleQuitar}
-          disabled={quitando}
+          disabled={guardarMut.isPending}
           title='Quitar de guardados'
           className='flex-shrink-0 text-neutral-600 transition-colors hover:text-pink-400 disabled:opacity-50'
         >
@@ -76,10 +67,12 @@ export default function SavedCommentCard({ comentario, onQuitarDeGuardados }) {
         <span>· {formatearTiempoRelativo(comentario.creado_en)}</span>
       </div>
 
-      <p className='text-[13px] leading-relaxed text-neutral-100'>
+      <p className='whitespace-pre-wrap break-words text-[13px] leading-relaxed text-neutral-100'>
         {comentario.eliminado ? (
           <span className='italic text-neutral-600'>
-            Comentario eliminado por el usuario
+            {comentario.eliminado_por === 'moderacion'
+              ? 'Comentario eliminado por moderación'
+              : 'Comentario eliminado por el usuario'}
           </span>
         ) : (
           comentario.contenido

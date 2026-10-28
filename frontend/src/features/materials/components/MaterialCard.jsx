@@ -1,61 +1,24 @@
-import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useRepositorioStore } from '@/features/materials/store/materialsStore';
-import { useAuthStore } from '@/shared/auth/authStore';
 import { colorPorRamo } from '@/shared/lib/courseColors';
 import {
   metaDeBadge,
   metaDeArchivo,
   metaDeLink,
   formatearTamanio,
+  badgesDeApunte,
 } from '@/features/materials/utils/fileMeta';
 import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
 import { descargarArchivo } from '@/features/materials/api/files.api';
-import { alternarGuardadoApunte } from '@/shared/post/bookmarks/bookmarks.api';
-import { mostrarToast } from '@/shared/stores/toastStore';
-import EditApunteModal from '@/features/materials/components/EditApunteModal';
-import ConfirmDialog from '@/shared/components/ui/ConfirmDialog';
-import ReportModal from '@/shared/moderation/ReportModal';
+import { useVotar } from '@/shared/post/votes/useVotar';
+import ApunteMenu from '@/features/materials/components/ApunteMenu';
 import VotePill from '@/shared/post/votes/VotePill';
+import ShareButton from '@/shared/post/share/ShareButton';
 import CodeViewer from '@/features/materials/components/CodeViewer';
-import BookmarkIcon from '@/shared/post/bookmarks/BookmarkIcon';
-import { esStaff } from '@/shared/auth/roles';
 
-export default function MaterialCard({ apunte, onQuitarDeGuardados }) {
+export default function MaterialCard({ apunte }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const votar = useRepositorioStore((s) => s.votar);
-  const eliminarApunteDelFeed = useRepositorioStore(
-    (s) => s.eliminarApunteDelFeed,
-  );
-  const actualizarApunteEnFeed = useRepositorioStore(
-    (s) => s.actualizarApunteEnFeed,
-  );
-  const usuario = useAuthStore((s) => s.usuario);
-
-  const [editando, setEditando] = useState(false);
-  const [confirmandoEliminar, setConfirmandoEliminar] = useState(false);
-  const [eliminando, setEliminando] = useState(false);
-  const [errorEliminar, setErrorEliminar] = useState(null);
-  const [reportando, setReportando] = useState(false);
-  const [menuAbierto, setMenuAbierto] = useState(false);
-  const [estaGuardado, setEstaGuardado] = useState(
-    apunte.esta_guardado ?? false,
-  );
-  const menuRef = useRef(null);
-
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setMenuAbierto(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const esDueno =
-    usuario && (apunte.autor?.id === usuario.id || esStaff(usuario.rol));
+  const votarMut = useVotar('apunte');
 
   const ramoColor = colorPorRamo(apunte.ramo?.id);
 
@@ -67,40 +30,7 @@ export default function MaterialCard({ apunte, onQuitarDeGuardados }) {
 
   function handleVotar(e, tipo) {
     e.stopPropagation();
-    votar(apunte.id, tipo);
-  }
-
-  async function handleGuardar(e) {
-    e.stopPropagation();
-    setMenuAbierto(false);
-    const anterior = estaGuardado;
-    setEstaGuardado(!anterior);
-    try {
-      const { guardado } = await alternarGuardadoApunte(apunte.id);
-      setEstaGuardado(guardado);
-      actualizarApunteEnFeed(apunte.id, { esta_guardado: guardado });
-      if (guardado) {
-        mostrarToast('Publicación guardada');
-      } else {
-        mostrarToast('Quitado de guardados');
-        onQuitarDeGuardados?.(apunte.id);
-      }
-    } catch {
-      setEstaGuardado(anterior);
-    }
-  }
-
-  async function handleEliminar() {
-    setEliminando(true);
-    setErrorEliminar(null);
-    try {
-      await eliminarApunteDelFeed(apunte.id);
-      setConfirmandoEliminar(false);
-    } catch (err) {
-      setErrorEliminar(err.message || 'No se pudo eliminar el material.');
-    } finally {
-      setEliminando(false);
-    }
+    votarMut.mutate({ id: apunte.id, tipo });
   }
 
   return (
@@ -108,75 +38,11 @@ export default function MaterialCard({ apunte, onQuitarDeGuardados }) {
       onClick={abrirDetalle}
       className='relative mb-2 flex cursor-pointer overflow-hidden rounded-[14px] border border-white/[0.06] bg-[#1E1E24] transition-colors hover:border-white/[0.12]'
     >
-      {/* menú de tres puntos: guardar / reportar */}
-      <div
-        ref={menuRef}
-        onClick={(e) => e.stopPropagation()}
+      <ApunteMenu
+        apunte={apunte}
         className='absolute right-2 top-2 z-10'
-      >
-        <button
-          type='button'
-          onClick={() => setMenuAbierto((abierto) => !abierto)}
-          className='flex h-7 w-7 items-center justify-center rounded-full text-neutral-500 transition-colors hover:bg-white/[0.08] hover:text-neutral-200'
-        >
-          <i className='ti ti-dots text-base' />
-        </button>
-
-        {menuAbierto && (
-          <div className='absolute right-0 top-[32px] w-[168px] overflow-hidden rounded-xl border border-white/10 bg-[#1E1E24] shadow-[0_12px_40px_rgba(0,0,0,0.5)]'>
-            <button
-              type='button'
-              onClick={handleGuardar}
-              className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-neutral-300 transition-colors hover:bg-white/[0.05] hover:text-neutral-100'
-            >
-              <BookmarkIcon
-                filled={estaGuardado}
-                className={`text-[14px] ${estaGuardado ? 'text-white' : ''}`}
-              />{' '}
-              {estaGuardado ? 'Quitar de guardados' : 'Guardar'}
-            </button>
-            {esDueno ? (
-              <>
-                <button
-                  type='button'
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setMenuAbierto(false);
-                    setEditando(true);
-                  }}
-                  className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-neutral-300 transition-colors hover:bg-white/[0.05] hover:text-neutral-100'
-                >
-                  <i className='ti ti-edit text-[14px]' /> Editar
-                </button>
-                <button
-                  type='button'
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setMenuAbierto(false);
-                    setConfirmandoEliminar(true);
-                  }}
-                  className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-red-400 transition-colors hover:bg-red-500/[0.08]'
-                >
-                  <i className='ti ti-trash text-[14px]' /> Eliminar
-                </button>
-              </>
-            ) : (
-              usuario && (
-                <button
-                  type='button'
-                  onClick={() => {
-                    setMenuAbierto(false);
-                    setReportando(true);
-                  }}
-                  className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-red-400 transition-colors hover:bg-red-500/[0.08]'
-                >
-                  <i className='ti ti-flag text-[14px]' /> Reportar
-                </button>
-              )
-            )}
-          </div>
-        )}
-      </div>
+        triggerClassName='flex h-7 w-7 items-center justify-center rounded-full text-base text-neutral-500 transition-colors hover:bg-white/[0.08] hover:text-neutral-200'
+      />
 
       {/* cuerpo */}
       <div className='min-w-0 flex-1 p-3'>
@@ -211,7 +77,7 @@ export default function MaterialCard({ apunte, onQuitarDeGuardados }) {
           {apunte.titulo}
         </div>
 
-        <BadgesPrincipales etiquetas={apunte.etiquetas_visuales} />
+        <BadgesPrincipales etiquetas={badgesDeApunte(apunte)} />
 
         {apunte.descripcion && (
           <p className='mb-1.5 line-clamp-2 text-xs leading-relaxed text-neutral-400'>
@@ -257,13 +123,10 @@ export default function MaterialCard({ apunte, onQuitarDeGuardados }) {
             {apunte.comentarios_count}
           </button>
 
-          <button
-            type='button'
-            onClick={(e) => e.stopPropagation()}
-            className='flex items-center gap-1.5 rounded-full bg-white/[0.06] px-3 py-1.5 transition-colors hover:bg-white/[0.1] hover:text-neutral-200'
-          >
-            <i className='ti ti-share-3 text-[13px]' /> Compartir
-          </button>
+          <ShareButton
+            path={`/repositorio-materiales/${apunte.id}`}
+            titulo={apunte.titulo}
+          />
 
           <span
             onClick={(e) => e.stopPropagation()}
@@ -274,44 +137,6 @@ export default function MaterialCard({ apunte, onQuitarDeGuardados }) {
           </span>
         </div>
       </div>
-
-      {!esDueno && (
-        <div onClick={(e) => e.stopPropagation()}>
-          <ReportModal
-            open={reportando}
-            onClose={() => setReportando(false)}
-            tipoContenido='apunte'
-            contenidoId={apunte.id}
-          />
-        </div>
-      )}
-
-      {esDueno && (
-        <div onClick={(e) => e.stopPropagation()}>
-          <EditApunteModal
-            open={editando}
-            onClose={() => setEditando(false)}
-            apunte={apunte}
-            carreraId={usuario?.carrera_id}
-          />
-          <ConfirmDialog
-            open={confirmandoEliminar}
-            title='Eliminar material'
-            message={
-              errorEliminar ||
-              'Esta acción no se puede deshacer. Se eliminarán también sus archivos, comentarios y votos.'
-            }
-            confirmLabel='Eliminar'
-            danger
-            loading={eliminando}
-            onConfirm={handleEliminar}
-            onCancel={() => {
-              setConfirmandoEliminar(false);
-              setErrorEliminar(null);
-            }}
-          />
-        </div>
-      )}
     </div>
   );
 }

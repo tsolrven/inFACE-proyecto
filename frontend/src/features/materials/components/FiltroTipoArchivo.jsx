@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { TIPOS_ARCHIVO_FILTRO } from '@/features/materials/utils/fileMeta';
-import { useRepositorioStore } from '@/features/materials/store/materialsStore';
+import { useFiltrosStore } from '@/features/materials/store/filtrosStore';
 
 export default function FiltroTipoArchivo() {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
-  const tipoArchivo = useRepositorioStore((s) => s.filtros.tipo_archivo);
-  const setFiltro = useRepositorioStore((s) => s.setFiltro);
+  const tipoArchivo = useFiltrosStore((s) => s.filtros.tipo_archivo);
+  const setFiltro = useFiltrosStore((s) => s.setFiltro);
 
   useEffect(() => {
     function onClickOutside(e) {

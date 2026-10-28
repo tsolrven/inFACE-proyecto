@@ -4,9 +4,18 @@
 //! (que sí necesita verse relleno, no solo cambiar de color) se usa un SVG propio
 //! en vez de depender del CDN.
 
-export default function BookmarkIcon({ filled = false, className = '' }) {
+export default function BookmarkIcon({
+  filled = false,
+  className = '',
+  style,
+}) {
   if (!filled) {
-    return <i className={`ti ti-bookmark ${className}`} />;
+    return (
+      <i
+        className={`ti ti-bookmark ${className}`}
+        style={style}
+      />
+    );
   }
 
   return (
@@ -16,6 +25,7 @@ export default function BookmarkIcon({ filled = false, className = '' }) {
       width='1em'
       height='1em'
       className={`inline-block align-[-0.125em] ${className}`}
+      style={style}
       aria-hidden='true'
     >
       <path d='M17 3H7a2 2 0 0 0-2 2v16l7-3.5 7 3.5V5a2 2 0 0 0-2-2z' />

@@ -429,8 +429,8 @@ export default function DescubrirTab({
               ¡Viste todas las recomendaciones!
             </h3>
             <p className='mb-4 max-w-[340px] text-[13px] leading-relaxed text-neutral-600'>
-              Puedes revisar los que guardaste en "Guardados" o explorar
-              todos los proyectos abiertos.
+              Puedes revisar los que guardaste en "Guardados" o explorar todos
+              los proyectos abiertos.
             </p>
             <div className='mb-5 flex w-full max-w-[400px] items-start gap-3 rounded-2xl border border-white/[0.06] bg-[#1E1E24] p-4 text-left'>
               <div className='flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] bg-pink-500/10'>
@@ -827,12 +827,15 @@ function TarjetaProyecto({ proyecto: p, interesesIds }) {
                     descripcion={et.descripcion}
                   >
                     <span
-                      className={`rounded-full border px-2.5 py-1 text-[10.5px] font-semibold ${c.bg} ${c.text} ${coincide
-                        ? `${c.border} ring-1 ring-inset ring-current`
-                        : 'border-transparent'
-                        }`}
+                      className={`rounded-full border px-2.5 py-1 text-[10.5px] font-semibold ${c.bg} ${c.text} ${
+                        coincide
+                          ? `${c.border} ring-1 ring-inset ring-current`
+                          : 'border-transparent'
+                      }`}
                     >
-                      {coincide && <i className='ti ti-check mr-1 text-[9px]' />}
+                      {coincide && (
+                        <i className='ti ti-check mr-1 text-[9px]' />
+                      )}
                       {et.nombre}
                     </span>
                   </ConDescripcion>

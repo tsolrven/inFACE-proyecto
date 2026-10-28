@@ -5,11 +5,25 @@ import {
   clearAccessToken,
 } from '@/shared/api/client';
 
-export function register({ correo, contrasena, nombre_usuario, carrera_id, acepta_terminos, acepta_investigacion }) {
+export function register({
+  correo,
+  contrasena,
+  nombre_usuario,
+  carrera_id,
+  acepta_terminos,
+  acepta_investigacion,
+}) {
   return apiFetch('/auth/register', {
     method: 'POST',
     auth: false,
-    body: { correo, contrasena, nombre_usuario, carrera_id, acepta_terminos, acepta_investigacion },
+    body: {
+      correo,
+      contrasena,
+      nombre_usuario,
+      carrera_id,
+      acepta_terminos,
+      acepta_investigacion,
+    },
   });
 }
 
@@ -37,7 +51,10 @@ export async function obtenerPerfilActual() {
 }
 
 // para usuarios que ya existían o cuando cambia la versión de los términos
-export async function aceptarTerminos({ acepta_terminos, acepta_investigacion }) {
+export async function aceptarTerminos({
+  acepta_terminos,
+  acepta_investigacion,
+}) {
   const data = await apiFetch('/auth/aceptar-terminos', {
     method: 'POST',
     body: { acepta_terminos, acepta_investigacion },

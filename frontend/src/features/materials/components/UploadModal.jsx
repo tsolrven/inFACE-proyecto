@@ -3,12 +3,27 @@ import Modal, { ModalHeader } from '@/shared/components/ui/Modal';
 import Button from '@/shared/components/ui/Button';
 import { listarRamosPorCarrera } from '@/shared/api/catalog.api';
 import { crearApunte } from '@/features/materials/api/materials.api';
-import { subirArchivos } from '@/features/materials/api/files.api';
-import { useRepositorioStore } from '@/features/materials/store/materialsStore';
+import { useQueryClient } from '@tanstack/react-query';
 import CodeEditor from '@/features/materials/components/CodeEditor';
-import BadgeSelector, {
-  InfoTooltip,
-} from '@/features/materials/components/BadgeSelector';
+import InfoTooltip from '@/shared/components/ui/InfoTooltip';
+import { normalizarHashtags } from '@/features/materials/utils/normalizarHashtags';
+import CharCounter from '@/shared/components/ui/CharCounter';
+import {
+  TITULO_MIN,
+  TITULO_MAX,
+  DESCRIPCION_MAX,
+  SNIPPET_MAX,
+  LINKS_MAX,
+  LINK_MAX,
+  MAX_ARCHIVOS,
+  MAX_TAMANIO_MB,
+  MAX_TAMANIO_BYTES,
+} from '@/features/materials/utils/limites';
+import {
+  agregarArchivosSinDuplicar,
+  claveArchivo,
+} from '@/features/materials/utils/archivos';
+import { normalizarLinks } from '@/features/materials/utils/normalizarLinks';
 
 const TIPOS = [
   { value: 'file', icon: 'ti-upload', label: 'Archivo' },
@@ -17,10 +32,6 @@ const TIPOS = [
 ];
 
 const FUENTES_INICIALES = { file: false, link: false, snippet: false };
-
-const MAX_ARCHIVOS = 10; //debe coincidir con MAX_ARCHIVOS_POR_APUNTE en el backend
-const MAX_TAMANIO_MB = 20; //debe coincidir con el límite de multer.helper.js
-const MAX_TAMANIO_BYTES = MAX_TAMANIO_MB * 1024 * 1024;
 
 export default function UploadModal({ open, onClose, carreraId }) {
   const [fuentes, setFuentes] = useState(FUENTES_INICIALES);
@@ -33,11 +44,10 @@ export default function UploadModal({ open, onClose, carreraId }) {
   const [codigoSnippet, setCodigoSnippet] = useState('');
   const [lenguajeSnippet, setLenguajeSnippet] = useState('texto');
   const [archivos, setArchivos] = useState([]);
-  const [etiquetasVisuales, setEtiquetasVisuales] = useState([]);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(null);
 
-  const fetchApuntes = useRepositorioStore((s) => s.fetchApuntes);
+  const qc = useQueryClient();
 
   useEffect(() => {
     if (!open || !carreraId) return;
@@ -56,13 +66,23 @@ export default function UploadModal({ open, onClose, carreraId }) {
   }
 
   function agregarLink() {
-    setLinks((prev) => (prev.length >= 5 ? prev : [...prev, '']));
+    setLinks((prev) => (prev.length >= LINKS_MAX ? prev : [...prev, '']));
   }
 
   function quitarLink(index) {
     setLinks((prev) =>
       prev.length === 1 ? [''] : prev.filter((_, i) => i !== index),
     );
+  }
+
+  function handleSeleccionarArchivos(e) {
+    const nuevos = Array.from(e.target.files); // primero capturar, después vaciar
+    setArchivos((prev) => agregarArchivosSinDuplicar(prev, nuevos));
+    e.target.value = ''; // permite volver a elegir el mismo archivo
+  }
+
+  function quitarArchivo(index) {
+    setArchivos((prev) => prev.filter((_, i) => i !== index));
   }
 
   function resetForm() {
@@ -75,7 +95,6 @@ export default function UploadModal({ open, onClose, carreraId }) {
     setCodigoSnippet('');
     setLenguajeSnippet('texto');
     setArchivos([]);
-    setEtiquetasVisuales([]);
     setError(null);
   }
 
@@ -89,8 +108,12 @@ export default function UploadModal({ open, onClose, carreraId }) {
     e.preventDefault();
     setError(null);
 
-    if (!titulo.trim() || !ramoId) {
-      setError('Título y ramo son obligatorios.');
+    if (!ramoId) {
+      setError('Debes seleccionar un ramo.');
+      return;
+    }
+    if (titulo.trim().length < TITULO_MIN) {
+      setError(`El título debe tener al menos ${TITULO_MIN} caracteres.`);
       return;
     }
     if (!fuentes.file && !fuentes.link && !fuentes.snippet) {
@@ -124,43 +147,29 @@ export default function UploadModal({ open, onClose, carreraId }) {
       setError('Pega el código del snippet.');
       return;
     }
+    if (fuentes.snippet && codigoSnippet.length > SNIPPET_MAX) {
+      setError(`El snippet no puede superar ${SNIPPET_MAX} caracteres.`);
+      return;
+    }
 
     setEnviando(true);
     try {
-      const hashtags = hashtagsTexto
-        .split(/[\s,]+/)
-        .map((t) => t.replace('#', '').trim())
-        .filter(Boolean);
+      await crearApunte(
+        {
+          titulo,
+          descripcion,
+          ramo_id: ramoId,
+          hashtags: normalizarHashtags(hashtagsTexto),
+          links: fuentes.link ? normalizarLinks(links) : undefined,
+          codigo_snippet: fuentes.snippet ? codigoSnippet : undefined,
+          lenguaje_snippet: fuentes.snippet ? lenguajeSnippet : undefined,
+        },
+        fuentes.file ? archivos : [],
+      );
 
-      const apunte = await crearApunte({
-        titulo,
-        descripcion,
-        ramo_id: ramoId,
-        hashtags,
-        links: fuentes.link
-          ? links.map((l) => l.trim()).filter(Boolean)
-          : undefined,
-        codigo_snippet: fuentes.snippet ? codigoSnippet : undefined,
-        lenguaje_snippet: fuentes.snippet ? lenguajeSnippet : undefined,
-        etiquetas_visuales: etiquetasVisuales,
-      });
-
-      let huboFallidos = false;
-      if (fuentes.file && archivos.length > 0) {
-        const { fallidos } = await subirArchivos(apunte.id, archivos);
-        if (fallidos.length > 0) {
-          huboFallidos = true;
-          setError(
-            `El material se creó, pero ${fallidos.length} archivo(s) no se pudieron subir. Puedes agregarlos después.`,
-          );
-        }
-      }
-
-      await fetchApuntes();
-      if (!huboFallidos) {
-        resetForm();
-        onClose();
-      }
+      await qc.invalidateQueries({ queryKey: ['apunte', 'list'] });
+      resetForm();
+      onClose();
     } catch (err) {
       setError(err.message || 'Ocurrió un error al publicar el material.');
     } finally {
@@ -207,21 +216,39 @@ export default function UploadModal({ open, onClose, carreraId }) {
           Puedes combinar más de uno (ej: archivo + link).
         </p>
 
-        <Campo label='Título'>
+        <Campo
+          label='Título'
+          extra={
+            <CharCounter
+              value={titulo}
+              max={TITULO_MAX}
+            />
+          }
+        >
           <input
             value={titulo}
             onChange={(e) => setTitulo(e.target.value)}
             placeholder='Ej: Resumen completo Certamen 1...'
+            maxLength={TITULO_MAX}
             className={inputClasses}
           />
         </Campo>
 
-        <Campo label='Descripción (opcional)'>
+        <Campo
+          label='Descripción (opcional)'
+          extra={
+            <CharCounter
+              value={descripcion}
+              max={DESCRIPCION_MAX}
+            />
+          }
+        >
           <textarea
             value={descripcion}
             onChange={(e) => setDescripcion(e.target.value)}
             rows={3}
             placeholder='Cuenta de qué se trata este material...'
+            maxLength={DESCRIPCION_MAX}
             className={`${inputClasses} resize-none`}
           />
         </Campo>
@@ -253,12 +280,6 @@ export default function UploadModal({ open, onClose, carreraId }) {
           />
         </Campo>
 
-        <BadgeSelector
-          value={etiquetasVisuales}
-          onChange={setEtiquetasVisuales}
-          disabled={enviando}
-        />
-
         {fuentes.file && (
           <Campo
             label={
@@ -271,7 +292,7 @@ export default function UploadModal({ open, onClose, carreraId }) {
             <input
               type='file'
               multiple
-              onChange={(e) => setArchivos(Array.from(e.target.files))}
+              onChange={handleSeleccionarArchivos}
               className='text-[12.5px] text-neutral-400 file:mr-3 file:rounded-md file:border-0 file:bg-pink-500/10 file:px-3 file:py-1.5 file:text-[11.5px] file:font-semibold file:text-pink-500'
             />
             <p className='mt-1 text-[11px] text-neutral-600'>
@@ -279,9 +300,30 @@ export default function UploadModal({ open, onClose, carreraId }) {
               seleccionar varios archivos a la vez.
             </p>
             {archivos.length > 0 && (
-              <p className='mt-1 text-[11px] text-neutral-500'>
-                {archivos.length} archivo(s) seleccionado(s)
-              </p>
+              <div className='mt-2 flex flex-col gap-1.5'>
+                <p className='text-[11px] text-neutral-500'>
+                  {archivos.length}/{MAX_ARCHIVOS} archivo(s) seleccionado(s)
+                </p>
+                {archivos.map((archivo, i) => (
+                  <div
+                    key={claveArchivo(archivo)}
+                    className='flex items-center gap-2 rounded-md border border-white/[0.07] bg-white/[0.03] px-2.5 py-1.5'
+                  >
+                    <i className='ti ti-file text-[13px] text-neutral-500' />
+                    <span className='flex-1 truncate text-[11.5px] text-neutral-300'>
+                      {archivo.name}
+                    </span>
+                    <button
+                      type='button'
+                      onClick={() => quitarArchivo(i)}
+                      className='flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-neutral-500 hover:bg-white/[0.06] hover:text-red-400'
+                      title='Quitar archivo'
+                    >
+                      <i className='ti ti-x text-[13px]' />
+                    </button>
+                  </div>
+                ))}
+              </div>
             )}
           </Campo>
         )}
@@ -298,6 +340,7 @@ export default function UploadModal({ open, onClose, carreraId }) {
                     value={link}
                     onChange={(e) => actualizarLink(i, e.target.value)}
                     placeholder='https://...'
+                    maxLength={LINK_MAX}
                     className={inputClasses}
                   />
                   {links.length > 1 && (
@@ -311,7 +354,7 @@ export default function UploadModal({ open, onClose, carreraId }) {
                   )}
                 </div>
               ))}
-              {links.length < 5 && (
+              {links.length < LINKS_MAX && (
                 <button
                   type='button'
                   onClick={agregarLink}
@@ -325,7 +368,15 @@ export default function UploadModal({ open, onClose, carreraId }) {
         )}
 
         {fuentes.snippet && (
-          <Campo label='Código'>
+          <Campo
+            label='Código'
+            extra={
+              <CharCounter
+                value={codigoSnippet}
+                max={SNIPPET_MAX}
+              />
+            }
+          >
             <CodeEditor
               value={codigoSnippet}
               onChange={setCodigoSnippet}
@@ -366,12 +417,15 @@ export default function UploadModal({ open, onClose, carreraId }) {
 const inputClasses =
   'w-full rounded-[10px] border border-white/[0.07] bg-[#111114] px-3 py-2 text-[13px] text-neutral-100 outline-none transition-colors placeholder-neutral-600 focus:border-pink-500/40';
 
-function Campo({ label, children }) {
+function Campo({ label, extra, children }) {
   return (
     <div className='flex flex-col gap-1.5'>
-      <span className='text-[11.5px] font-semibold text-neutral-500'>
-        {label}
-      </span>
+      <div className='flex items-center justify-between'>
+        <span className='text-[11.5px] font-semibold text-neutral-500'>
+          {label}
+        </span>
+        {extra}
+      </div>
       {children}
     </div>
   );

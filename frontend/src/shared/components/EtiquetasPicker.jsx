@@ -96,10 +96,11 @@ export default function EtiquetasPicker({
                 type='button'
                 key={tipo ?? 'todas'}
                 onClick={() => setTipoActivo(tipo)}
-                className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${activo
+                className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${
+                  activo
                     ? 'border-pink-500/40 bg-pink-500/10 text-pink-300'
                     : 'border-white/[0.07] text-neutral-500 hover:border-white/[0.16] hover:text-neutral-200'
-                  }`}
+                }`}
               >
                 {tipo ?? 'Todas'}
               </button>
@@ -139,14 +140,16 @@ export default function EtiquetasPicker({
                     onClick={() => toggle(et.id)}
                     aria-pressed={seleccionada}
                     disabled={bloqueada}
-                    className={`relative flex min-h-[78px] flex-col items-start rounded-[12px] border p-3 pr-8 text-left transition ${seleccionada
+                    className={`relative flex min-h-[78px] flex-col items-start rounded-[12px] border p-3 pr-8 text-left transition ${
+                      seleccionada
                         ? `${c.bg} ${c.border}`
                         : 'border-white/[0.07] bg-[#1E1E24] hover:border-white/[0.18]'
-                      } ${bloqueada ? 'cursor-not-allowed opacity-40' : ''}`}
+                    } ${bloqueada ? 'cursor-not-allowed opacity-40' : ''}`}
                   >
                     <span
-                      className={`text-[13px] font-semibold leading-tight ${seleccionada ? c.text : 'text-neutral-100'
-                        }`}
+                      className={`text-[13px] font-semibold leading-tight ${
+                        seleccionada ? c.text : 'text-neutral-100'
+                      }`}
                     >
                       {et.nombre}
                     </span>
@@ -156,10 +159,11 @@ export default function EtiquetasPicker({
                       </span>
                     )}
                     <span
-                      className={`absolute right-2.5 top-2.5 flex h-[18px] w-[18px] items-center justify-center rounded-full border text-[11px] ${seleccionada
+                      className={`absolute right-2.5 top-2.5 flex h-[18px] w-[18px] items-center justify-center rounded-full border text-[11px] ${
+                        seleccionada
                           ? `${c.border} ${c.text}`
                           : 'border-white/[0.14] text-transparent'
-                        }`}
+                      }`}
                     >
                       <i className='ti ti-check' />
                     </span>
@@ -172,8 +176,9 @@ export default function EtiquetasPicker({
       </div>
 
       <p
-        className={`mt-1.5 text-right text-[11px] ${llegoAlMaximo ? 'text-amber-400' : 'text-neutral-600'
-          }`}
+        className={`mt-1.5 text-right text-[11px] ${
+          llegoAlMaximo ? 'text-amber-400' : 'text-neutral-600'
+        }`}
       >
         {selectedIds.length}/{max} seleccionadas
         {llegoAlMaximo && ' · quita una para elegir otra'}

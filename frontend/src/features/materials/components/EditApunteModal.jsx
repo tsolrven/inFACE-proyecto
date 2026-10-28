@@ -10,11 +10,29 @@ import {
   metaDeArchivo,
   formatearTamanio,
 } from '@/features/materials/utils/fileMeta';
-import { useRepositorioStore } from '@/features/materials/store/materialsStore';
+import { useQueryClient } from '@tanstack/react-query';
+import { useEditarApunte } from '@/features/materials/hooks/useApuntes';
+import { parchearContenido } from '@/shared/post/cache';
 import CodeEditor from '@/features/materials/components/CodeEditor';
-import BadgeSelector, {
-  InfoTooltip,
-} from '@/features/materials/components/BadgeSelector';
+import InfoTooltip from '@/shared/components/ui/InfoTooltip';
+import { normalizarHashtags } from '@/features/materials/utils/normalizarHashtags';
+import CharCounter from '@/shared/components/ui/CharCounter';
+import {
+  TITULO_MIN,
+  TITULO_MAX,
+  DESCRIPCION_MAX,
+  SNIPPET_MAX,
+  LINKS_MAX,
+  LINK_MAX,
+  MAX_ARCHIVOS,
+  MAX_TAMANIO_MB,
+  MAX_TAMANIO_BYTES,
+} from '@/features/materials/utils/limites';
+import {
+  agregarArchivosSinDuplicar,
+  claveArchivo,
+} from '@/features/materials/utils/archivos';
+import { normalizarLinks } from '@/features/materials/utils/normalizarLinks';
 
 const TIPOS = [
   { value: 'file', icon: 'ti-upload', label: 'Archivo' },
@@ -22,72 +40,60 @@ const TIPOS = [
   { value: 'snippet', icon: 'ti-code', label: 'Snippet de código' },
 ];
 
-const MAX_ARCHIVOS = 10; //debe coincidir con MAX_ARCHIVOS_POR_APUNTE en el backend
-const MAX_TAMANIO_MB = 20; //debe coincidir con el límite de multer.helper.js
-const MAX_TAMANIO_BYTES = MAX_TAMANIO_MB * 1024 * 1024;
+// Envoltorio: el formulario solo existe mientras el modal está abierto.
+// Así sus useState toman los datos del apunte al abrirse, y los cambios
+// posteriores del caché (votos, guardados, el propio guardado) no pisan lo escrito.
+export default function EditApunteModal({ open, apunte, ...props }) {
+  if (!open || !apunte) return null;
+  return (
+    <EditApunteForm
+      apunte={apunte}
+      {...props}
+    />
+  );
+}
 
-export default function EditApunteModal({
-  open,
-  onClose,
-  apunte,
-  carreraId,
-  onSaved,
-}) {
-  const fuentesIniciales = (a) => ({
-    file: (a?.archivos?.length ?? 0) > 0,
-    link: (a?.links?.length ?? 0) > 0,
-    snippet: !!a?.codigo_snippet,
-  });
-
-  const [fuentes, setFuentes] = useState({
-    file: false,
-    link: false,
-    snippet: false,
-  });
-  const [titulo, setTitulo] = useState('');
-  const [descripcion, setDescripcion] = useState('');
-  const [ramoId, setRamoId] = useState('');
+function EditApunteForm({ onClose, apunte, carreraId, onSaved }) {
+  const [fuentes, setFuentes] = useState(() => ({
+    file: (apunte.archivos?.length ?? 0) > 0,
+    link: (apunte.links?.length ?? 0) > 0,
+    snippet: !!apunte.codigo_snippet,
+  }));
+  const [titulo, setTitulo] = useState(apunte.titulo ?? '');
+  const [descripcion, setDescripcion] = useState(apunte.descripcion ?? '');
+  const [ramoId, setRamoId] = useState(apunte.ramo?.id ?? '');
   const [ramosOpciones, setRamosOpciones] = useState([]);
-  const [hashtagsTexto, setHashtagsTexto] = useState('');
-  const [links, setLinks] = useState(['']);
-  const [codigoSnippet, setCodigoSnippet] = useState('');
-  const [lenguajeSnippet, setLenguajeSnippet] = useState('texto');
-  const [etiquetasVisuales, setEtiquetasVisuales] = useState([]);
+  const [hashtagsTexto, setHashtagsTexto] = useState(
+    (apunte.hashtags ?? []).join(' '),
+  );
+  const [links, setLinks] = useState(
+    apunte.links?.length ? apunte.links : [''],
+  );
+  const [codigoSnippet, setCodigoSnippet] = useState(
+    apunte.codigo_snippet ?? '',
+  );
+  const [lenguajeSnippet, setLenguajeSnippet] = useState(
+    apunte.lenguaje_snippet ?? 'texto',
+  );
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(null);
 
-  const [archivosActuales, setArchivosActuales] = useState([]);
+  const [archivosActuales, setArchivosActuales] = useState(
+    apunte.archivos ?? [],
+  );
   const [archivosNuevos, setArchivosNuevos] = useState([]);
   const [eliminandoId, setEliminandoId] = useState(null);
 
-  const editarApunte = useRepositorioStore((s) => s.editarApunte);
-  const actualizarApunteEnFeed = useRepositorioStore(
-    (s) => s.actualizarApunteEnFeed,
-  );
+  const qc = useQueryClient();
+  const editar = useEditarApunte();
 
   useEffect(() => {
-    if (!open || !apunte) return;
-    setFuentes(fuentesIniciales(apunte));
-    setTitulo(apunte.titulo ?? '');
-    setDescripcion(apunte.descripcion ?? '');
-    setRamoId(apunte.ramo?.id ?? '');
-    setHashtagsTexto((apunte.hashtags ?? []).join(' '));
-    setLinks(apunte.links?.length ? apunte.links : ['']);
-    setCodigoSnippet(apunte.codigo_snippet ?? '');
-    setLenguajeSnippet(apunte.lenguaje_snippet ?? 'texto');
-    setEtiquetasVisuales(apunte.etiquetas_visuales ?? []);
-    setArchivosActuales(apunte.archivos ?? []);
-    setArchivosNuevos([]);
-    setError(null);
-  }, [open, apunte]);
-
-  useEffect(() => {
-    if (!open || !carreraId) return;
+    if (!carreraId) return;
     listarRamosPorCarrera(carreraId).then((porSemestre) => {
       const flatten = Object.values(porSemestre).flat();
       setRamosOpciones(flatten);
     });
-  }, [open, carreraId]);
+  }, [carreraId]);
 
   function handleClose() {
     if (enviando) return;
@@ -104,7 +110,7 @@ export default function EditApunteModal({
   }
 
   function agregarLink() {
-    setLinks((prev) => (prev.length >= 5 ? prev : [...prev, '']));
+    setLinks((prev) => (prev.length >= LINKS_MAX ? prev : [...prev, '']));
   }
 
   function quitarLink(index) {
@@ -127,8 +133,9 @@ export default function EditApunteModal({
   }
 
   function handleAgregarArchivos(e) {
-    setArchivosNuevos((prev) => [...prev, ...Array.from(e.target.files)]);
-    e.target.value = '';
+    const nuevos = Array.from(e.target.files); // primero capturar, después vaciar
+    setArchivosNuevos((prev) => agregarArchivosSinDuplicar(prev, nuevos));
+    e.target.value = ''; // permite volver a elegir el mismo archivo
   }
 
   function handleQuitarArchivoNuevo(index) {
@@ -142,8 +149,12 @@ export default function EditApunteModal({
     e.preventDefault();
     setError(null);
 
-    if (!titulo.trim() || !ramoId) {
-      setError('Título y ramo son obligatorios.');
+    if (!ramoId) {
+      setError('Debes seleccionar un ramo.');
+      return;
+    }
+    if (titulo.trim().length < TITULO_MIN) {
+      setError(`El título debe tener al menos ${TITULO_MIN} caracteres.`);
       return;
     }
     if (!fuentes.file && !fuentes.link && !fuentes.snippet) {
@@ -158,6 +169,10 @@ export default function EditApunteModal({
     }
     if (fuentes.snippet && !codigoSnippet.trim()) {
       setError('Pega el código del snippet.');
+      return;
+    }
+    if (fuentes.snippet && codigoSnippet.length > SNIPPET_MAX) {
+      setError(`El snippet no puede superar ${SNIPPET_MAX} caracteres.`);
       return;
     }
     if (
@@ -184,22 +199,22 @@ export default function EditApunteModal({
       );
       return;
     }
+
     setEnviando(true);
     try {
-      const hashtags = hashtagsTexto
-        .split(/[\s,]+/)
-        .map((t) => t.replace('#', '').trim())
-        .filter(Boolean);
+      const hashtags = normalizarHashtags(hashtagsTexto);
 
-      const actualizado = await editarApunte(apunte.id, {
-        titulo,
-        descripcion,
-        ramo_id: ramoId,
-        hashtags,
-        links: fuentes.link ? links.map((l) => l.trim()).filter(Boolean) : [],
-        codigo_snippet: fuentes.snippet ? codigoSnippet : null,
-        lenguaje_snippet: fuentes.snippet ? lenguajeSnippet : null,
-        etiquetas_visuales: etiquetasVisuales,
+      const actualizado = await editar.mutateAsync({
+        id: apunte.id,
+        payload: {
+          titulo,
+          descripcion,
+          ramo_id: ramoId,
+          hashtags,
+          links: fuentes.link ? normalizarLinks(links) : [],
+          codigo_snippet: fuentes.snippet ? codigoSnippet : null,
+          lenguaje_snippet: fuentes.snippet ? lenguajeSnippet : null,
+        },
       });
 
       let archivosFinales = archivosActuales;
@@ -233,7 +248,7 @@ export default function EditApunteModal({
         0,
       );
 
-      actualizarApunteEnFeed(apunte.id, {
+      parchearContenido(qc, 'apunte', apunte.id, {
         archivos: archivosFinales,
         descargas,
       });
@@ -247,11 +262,9 @@ export default function EditApunteModal({
     }
   }
 
-  if (!apunte) return null;
-
   return (
     <Modal
-      open={open}
+      open
       onClose={handleClose}
       maxWidth='560px'
     >
@@ -298,21 +311,39 @@ export default function EditApunteModal({
           </p>
         )}
 
-        <Campo label='Título'>
+        <Campo
+          label='Título'
+          extra={
+            <CharCounter
+              value={titulo}
+              max={TITULO_MAX}
+            />
+          }
+        >
           <input
             value={titulo}
             onChange={(e) => setTitulo(e.target.value)}
             placeholder='Ej: Resumen completo Certamen 1...'
+            maxLength={TITULO_MAX}
             className={inputClasses}
           />
         </Campo>
 
-        <Campo label='Descripción (opcional)'>
+        <Campo
+          label='Descripción (opcional)'
+          extra={
+            <CharCounter
+              value={descripcion}
+              max={DESCRIPCION_MAX}
+            />
+          }
+        >
           <textarea
             value={descripcion}
             onChange={(e) => setDescripcion(e.target.value)}
             rows={3}
             placeholder='Cuenta de qué se trata este material...'
+            maxLength={DESCRIPCION_MAX}
             className={`${inputClasses} resize-none`}
           />
         </Campo>
@@ -344,12 +375,6 @@ export default function EditApunteModal({
           />
         </Campo>
 
-        <BadgeSelector
-          value={etiquetasVisuales}
-          onChange={setEtiquetasVisuales}
-          disabled={enviando}
-        />
-
         {fuentes.link && (
           <Campo label='Links'>
             <div className='flex flex-col gap-1.5'>
@@ -362,6 +387,7 @@ export default function EditApunteModal({
                     value={link}
                     onChange={(e) => actualizarLink(i, e.target.value)}
                     placeholder='https://...'
+                    maxLength={LINK_MAX}
                     className={inputClasses}
                   />
                   {links.length > 1 && (
@@ -375,7 +401,7 @@ export default function EditApunteModal({
                   )}
                 </div>
               ))}
-              {links.length < 5 && (
+              {links.length < LINKS_MAX && (
                 <button
                   type='button'
                   onClick={agregarLink}
@@ -389,7 +415,15 @@ export default function EditApunteModal({
         )}
 
         {fuentes.snippet && (
-          <Campo label='Código'>
+          <Campo
+            label='Código'
+            extra={
+              <CharCounter
+                value={codigoSnippet}
+                max={SNIPPET_MAX}
+              />
+            }
+          >
             <CodeEditor
               value={codigoSnippet}
               onChange={setCodigoSnippet}
@@ -405,6 +439,11 @@ export default function EditApunteModal({
               <span className='flex items-center gap-1.5'>
                 Archivos adjuntos
                 <InfoTooltip texto='¿No ves tu tipo de archivo? Comprímelo en .zip y súbelo.' />
+              </span>
+            }
+            extra={
+              <span className='text-[10.5px] tabular-nums text-neutral-600'>
+                {archivosActuales.length + archivosNuevos.length}/{MAX_ARCHIVOS}
               </span>
             }
           >
@@ -450,7 +489,7 @@ export default function EditApunteModal({
 
               {archivosNuevos.map((file, i) => (
                 <div
-                  key={`${file.name}-${i}`}
+                  key={claveArchivo(file)}
                   className='flex items-center gap-2.5 rounded-md border border-pink-500/20 bg-pink-500/[0.04] px-2.5 py-2'
                 >
                   <i className='ti ti-file-upload flex-shrink-0 text-sm text-pink-500' />
@@ -517,12 +556,15 @@ export default function EditApunteModal({
 const inputClasses =
   'w-full rounded-[10px] border border-white/[0.07] bg-[#111114] px-3 py-2 text-[13px] text-neutral-100 outline-none transition-colors placeholder-neutral-600 focus:border-pink-500/40';
 
-function Campo({ label, children }) {
+function Campo({ label, extra, children }) {
   return (
     <div className='flex flex-col gap-1.5'>
-      <span className='text-[11.5px] font-semibold text-neutral-500'>
-        {label}
-      </span>
+      <div className='flex items-center justify-between'>
+        <span className='text-[11.5px] font-semibold text-neutral-500'>
+          {label}
+        </span>
+        {extra}
+      </div>
       {children}
     </div>
   );

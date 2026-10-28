@@ -187,7 +187,7 @@ export default function DetalleProyecto({
                             descripcion={et.descripcion}
                           >
                             <span
-                              className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${c.bg} ${c.text} ${c.border}`} 
+                              className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${c.bg} ${c.text} ${c.border}`}
                             >
                               {et.nombre}
                             </span>
@@ -478,6 +478,7 @@ export default function DetalleProyecto({
           <ProyectoComentarios
             key={proyecto.id}
             proyectoId={proyecto.id}
+            total={totalComentarios}
             onConteoCambio={(n) =>
               actualizarInteracciones(proyecto.id, { comentarios_count: n })
             }

@@ -1,255 +1,41 @@
-import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useRef } from 'react';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import Modal, { ModalHeader } from '@/shared/components/ui/Modal';
-import CommentThread from '@/shared/post/comments/CommentThread';
-import { obtenerApunte } from '@/features/materials/api/materials.api';
-import {
-  listarComentarios,
-  crearComentario,
-} from '@/shared/post/comments/comments.api';
+import CommentsSection from '@/shared/post/comments/CommentsSection';
 import { colorPorRamo } from '@/shared/lib/courseColors';
 import {
   metaDeArchivo,
   metaDeBadge,
   metaDeLink,
   formatearTamanio,
+  badgesDeApunte,
 } from '@/features/materials/utils/fileMeta';
 import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
-import { useRepositorioStore } from '@/features/materials/store/materialsStore';
-import { predecirVoto } from '@/shared/post/votes/votes';
-import { useAuthStore } from '@/shared/auth/authStore';
 import { descargarArchivo } from '@/features/materials/api/files.api';
-import { votarApunte } from '@/shared/post/votes/votes.api';
-import { alternarGuardadoApunte } from '@/shared/post/bookmarks/bookmarks.api';
-import { mostrarToast } from '@/shared/stores/toastStore';
-import EditApunteModal from '@/features/materials/components/EditApunteModal';
-import ConfirmDialog from '@/shared/components/ui/ConfirmDialog';
-import ReportModal from '@/shared/moderation/ReportModal';
+import { useApunte } from '@/features/materials/hooks/useApuntes';
+import { useVotar } from '@/shared/post/votes/useVotar';
+import ApunteMenu from '@/features/materials/components/ApunteMenu';
 import VotePill from '@/shared/post/votes/VotePill';
+import ShareButton from '@/shared/post/share/ShareButton';
 import CodeViewer from '@/features/materials/components/CodeViewer';
-import BookmarkIcon from '@/shared/post/bookmarks/BookmarkIcon';
-import { esStaff } from '@/shared/auth/roles';
-
-function insertarRespuesta(comentarios, padreId, nueva) {
-  return comentarios.map((c) => {
-    if (c.id === padreId) {
-      return { ...c, respuestas: [...(c.respuestas ?? []), nueva] };
-    }
-    if (c.respuestas?.length) {
-      return {
-        ...c,
-        respuestas: insertarRespuesta(c.respuestas, padreId, nueva),
-      };
-    }
-    return c;
-  });
-}
-
-function eliminarNodoDelArbol(comentarios, comentarioId) {
-  return comentarios
-    .filter((c) => c.id !== comentarioId)
-    .map((c) =>
-      c.respuestas?.length
-        ? { ...c, respuestas: eliminarNodoDelArbol(c.respuestas, comentarioId) }
-        : c,
-    );
-}
-
-function marcarComoEliminado(comentarios, comentarioId) {
-  return comentarios.map((c) => {
-    if (c.id === comentarioId) {
-      return { ...c, eliminado: true, contenido: null, autor: null };
-    }
-    if (c.respuestas?.length) {
-      return {
-        ...c,
-        respuestas: marcarComoEliminado(c.respuestas, comentarioId),
-      };
-    }
-    return c;
-  });
-}
-
-function contarComentarios(comentarios) {
-  return comentarios.reduce(
-    (acc, c) =>
-      acc +
-      (c.eliminado ? 0 : 1) +
-      (c.respuestas?.length ? contarComentarios(c.respuestas) : 0),
-    0,
-  );
-}
 
 export default function MaterialDetailModal() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const actualizarApunteEnFeed = useRepositorioStore(
-    (s) => s.actualizarApunteEnFeed,
-  );
-  const eliminarApunteDelFeed = useRepositorioStore(
-    (s) => s.eliminarApunteDelFeed,
-  );
-  const usuario = useAuthStore((s) => s.usuario);
+  const location = useLocation();
 
-  const [apunte, setApunte] = useState(null);
-  const [comentarios, setComentarios] = useState([]);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState(null);
-  const [textoNuevo, setTextoNuevo] = useState('');
-  const [enviando, setEnviando] = useState(false);
-  const [editando, setEditando] = useState(false);
-  const [confirmandoEliminar, setConfirmandoEliminar] = useState(false);
-  const [eliminando, setEliminando] = useState(false);
-  const [errorEliminar, setErrorEliminar] = useState(null);
-  const [reportando, setReportando] = useState(false);
-  const [menuAbierto, setMenuAbierto] = useState(false);
-  const menuRef = useRef(null);
+  const { data: apunte, isPending: cargando, error } = useApunte(id);
+  const votarMut = useVotar('apunte');
   const comentariosRef = useRef(null);
 
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setMenuAbierto(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const esDueno =
-    usuario &&
-    apunte &&
-    (apunte.autor?.id === usuario.id || esStaff(usuario.rol));
-
-  useEffect(() => {
-    let cancelado = false;
-    setCargando(true);
-    Promise.all([obtenerApunte(id), listarComentarios(id)])
-      .then(([apunteData, comentariosData]) => {
-        if (cancelado) return;
-        setApunte(apunteData);
-        setComentarios(comentariosData);
-      })
-      .catch((err) => !cancelado && setError(err.message))
-      .finally(() => !cancelado && setCargando(false));
-    return () => {
-      cancelado = true;
-    };
-  }, [id]);
-
-  async function handleVotar(e, tipo) {
-    e?.stopPropagation?.();
-    const anterior = { mi_voto: apunte.mi_voto, votos_neto: apunte.votos_neto };
-
-    // 1) predicción instantánea
-    const { mi_voto, delta } = predecirVoto(apunte.mi_voto, tipo);
-    const prediccion = { mi_voto, votos_neto: apunte.votos_neto + delta };
-    setApunte((prev) => ({ ...prev, ...prediccion }));
-    actualizarApunteEnFeed(id, prediccion);
-
-    try {
-      // 2) la verdad del servidor reemplaza la predicción
-      const real = await votarApunte(id, tipo);
-      const estadoReal = { mi_voto: real.mi_voto, votos_neto: real.votos_neto };
-      setApunte((prev) => ({ ...prev, ...estadoReal }));
-      actualizarApunteEnFeed(id, estadoReal);
-    } catch {
-      // 3) si falla, vuelve atrás
-      setApunte((prev) => ({ ...prev, ...anterior }));
-      actualizarApunteEnFeed(id, anterior);
-    }
-  }
-
   function handleClose() {
-    navigate(-1);
+    if (location.state?.backgroundLocation) navigate(-1);
+    else navigate('/repositorio-materiales', { replace: true });
   }
 
-  async function handleGuardar() {
-    setMenuAbierto(false);
-    const anterior = apunte.esta_guardado;
-    setApunte((prev) => ({ ...prev, esta_guardado: !anterior }));
-    actualizarApunteEnFeed(id, { esta_guardado: !anterior });
-    try {
-      const { guardado } = await alternarGuardadoApunte(id);
-      setApunte((prev) => ({ ...prev, esta_guardado: guardado }));
-      actualizarApunteEnFeed(id, { esta_guardado: guardado });
-      mostrarToast(guardado ? 'Publicación guardada' : 'Quitado de guardados');
-    } catch {
-      setApunte((prev) => ({ ...prev, esta_guardado: anterior }));
-      actualizarApunteEnFeed(id, { esta_guardado: anterior });
-    }
-  }
-
-  function handleNuevaRespuesta(padreId, nueva) {
-    setComentarios((prev) => insertarRespuesta(prev, padreId, nueva));
-  }
-
-  function handleComentarioEliminado(comentarioId, eliminadoPermanente) {
-    setComentarios((prev) => {
-      const actualizados = eliminadoPermanente
-        ? eliminarNodoDelArbol(prev, comentarioId)
-        : marcarComoEliminado(prev, comentarioId);
-      actualizarApunteEnFeed(id, {
-        comentarios_count: contarComentarios(actualizados),
-      });
-      return actualizados;
-    });
-  }
-
-  async function handleEnviarComentario() {
-    if (!textoNuevo.trim()) return;
-    setEnviando(true);
-    try {
-      const nuevo = await crearComentario(id, { contenido: textoNuevo });
-      const actualizados = [...comentarios, nuevo];
-      setComentarios(actualizados);
-      actualizarApunteEnFeed(id, {
-        comentarios_count: contarComentarios(actualizados),
-      });
-      setTextoNuevo('');
-    } finally {
-      setEnviando(false);
-    }
-  }
-
-  function handleEdicionGuardada(actualizado) {
-    const {
-      titulo,
-      descripcion,
-      ramo,
-      hashtags,
-      links,
-      codigo_snippet,
-      etiquetas_visuales,
-      editado_en,
-      archivos,
-      descargas,
-    } = actualizado;
-    setApunte((prev) => ({
-      ...prev,
-      titulo,
-      descripcion,
-      etiquetas_visuales,
-      ramo,
-      hashtags,
-      links,
-      codigo_snippet,
-      editado_en,
-      archivos,
-      descargas,
-    }));
-  }
-
-  async function handleEliminar() {
-    setEliminando(true);
-    setErrorEliminar(null);
-    try {
-      await eliminarApunteDelFeed(id);
-      navigate(-1);
-    } catch (err) {
-      setErrorEliminar(err.message || 'No se pudo eliminar el material.');
-      setEliminando(false);
-    }
+  function handleVotar(e, tipo) {
+    e?.stopPropagation?.();
+    votarMut.mutate({ id, tipo });
   }
 
   return (
@@ -265,7 +51,9 @@ export default function MaterialDetailModal() {
       )}
 
       {error && !cargando && (
-        <div className='p-8 text-center text-sm text-red-400'>{error}</div>
+        <div className='p-8 text-center text-sm text-red-400'>
+          {error.message}
+        </div>
       )}
 
       {apunte && !cargando && (
@@ -273,72 +61,11 @@ export default function MaterialDetailModal() {
           <ModalHeader
             onClose={handleClose}
             rightContent={
-              <div
-                ref={menuRef}
-                className='relative'
-              >
-                <button
-                  type='button'
-                  onClick={() => setMenuAbierto((abierto) => !abierto)}
-                  className='flex h-[30px] w-[30px] items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/[0.06] hover:text-neutral-100'
-                >
-                  <i className='ti ti-dots text-base' />
-                </button>
-
-                {menuAbierto && (
-                  <div className='absolute right-0 top-[36px] w-[168px] overflow-hidden rounded-xl border border-white/10 bg-[#1E1E24] shadow-[0_12px_40px_rgba(0,0,0,0.5)]'>
-                    <button
-                      type='button'
-                      onClick={handleGuardar}
-                      className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-neutral-300 transition-colors hover:bg-white/[0.05] hover:text-neutral-100'
-                    >
-                      <BookmarkIcon
-                        filled={apunte.esta_guardado}
-                        className={`text-[14px] ${apunte.esta_guardado ? 'text-white' : ''}`}
-                      />{' '}
-                      {apunte.esta_guardado ? 'Quitar de guardados' : 'Guardar'}
-                    </button>
-                    {esDueno ? (
-                      <>
-                        <button
-                          type='button'
-                          onClick={() => {
-                            setMenuAbierto(false);
-                            setEditando(true);
-                          }}
-                          className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-neutral-300 transition-colors hover:bg-white/[0.05] hover:text-neutral-100'
-                        >
-                          <i className='ti ti-edit text-[14px]' /> Editar
-                        </button>
-                        <button
-                          type='button'
-                          onClick={() => {
-                            setMenuAbierto(false);
-                            setConfirmandoEliminar(true);
-                          }}
-                          className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-red-400 transition-colors hover:bg-red-500/[0.08]'
-                        >
-                          <i className='ti ti-trash text-[14px]' /> Eliminar
-                        </button>
-                      </>
-                    ) : (
-                      !esDueno &&
-                      usuario && (
-                        <button
-                          type='button'
-                          onClick={() => {
-                            setMenuAbierto(false);
-                            setReportando(true);
-                          }}
-                          className='flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[12.5px] text-red-400 transition-colors hover:bg-red-500/[0.08]'
-                        >
-                          <i className='ti ti-flag text-[14px]' /> Reportar
-                        </button>
-                      )
-                    )}
-                  </div>
-                )}
-              </div>
+              <ApunteMenu
+                apunte={apunte}
+                triggerClassName='flex h-[30px] w-[30px] items-center justify-center rounded-lg text-base text-neutral-400 transition-colors hover:bg-white/[0.06] hover:text-neutral-100'
+                onEliminado={handleClose}
+              />
             }
           >
             <button
@@ -365,7 +92,7 @@ export default function MaterialDetailModal() {
               {apunte.titulo}
             </h2>
 
-            <BadgesPrincipales etiquetas={apunte.etiquetas_visuales} />
+            <BadgesPrincipales etiquetas={badgesDeApunte(apunte)} />
 
             <div className='mb-4 flex items-center gap-2 text-[12.5px] text-neutral-600'>
               <Link
@@ -430,15 +157,13 @@ export default function MaterialDetailModal() {
                 className='flex items-center gap-1.5 rounded-full bg-white/[0.06] px-3 py-1.5 transition-colors hover:bg-white/[0.1] hover:text-neutral-200'
               >
                 <i className='ti ti-message-circle-2 text-[13px]' />{' '}
-                {contarComentarios(comentarios)}
+                {apunte.comentarios_count ?? 0}
               </button>
 
-              <button
-                type='button'
-                className='flex items-center gap-1.5 rounded-full bg-white/[0.06] px-3 py-1.5 transition-colors hover:bg-white/[0.1] hover:text-neutral-200'
-              >
-                <i className='ti ti-share-3 text-[13px]' /> Compartir
-              </button>
+              <ShareButton
+                path={`/repositorio-materiales/${apunte.id}`}
+                titulo={apunte.titulo}
+              />
 
               <span className='ml-auto flex items-center gap-1'>
                 <i className='ti ti-download text-[13px]' />{' '}
@@ -451,84 +176,13 @@ export default function MaterialDetailModal() {
             ref={comentariosRef}
             className='border-t border-white/[0.06] bg-[rgba(23,23,27,0.4)] p-6'
           >
-            <h3 className='mb-4 flex items-center gap-1.5 text-sm font-semibold text-neutral-100'>
-              <i className='ti ti-messages text-base text-pink-500' />
-              Discusión y Respuestas ({contarComentarios(comentarios)})
-            </h3>
-
-            <div className='mb-6 flex flex-col gap-2 rounded-[10px] border border-white/[0.06] bg-[#111114] p-2.5'>
-              <textarea
-                value={textoNuevo}
-                onChange={(e) => setTextoNuevo(e.target.value)}
-                rows={3}
-                placeholder='Escribe un comentario o duda sobre este material...'
-                className='w-full resize-none bg-transparent text-[13px] text-neutral-100 outline-none placeholder-neutral-600'
-              />
-              <div className='flex justify-end'>
-                <button
-                  type='button'
-                  onClick={handleEnviarComentario}
-                  disabled={enviando}
-                  className='rounded-md bg-pink-500 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#D43E56] disabled:opacity-50'
-                >
-                  {enviando ? 'Enviando...' : 'Comentar'}
-                </button>
-              </div>
-            </div>
-
-            <div className='flex flex-col gap-4'>
-              {comentarios.length === 0 && (
-                <p className='text-center text-[12.5px] text-neutral-600'>
-                  Todavía no hay comentarios. ¡Sé el primero en preguntar o
-                  aportar!
-                </p>
-              )}
-              {comentarios.map((comentario) => (
-                <CommentThread
-                  key={comentario.id}
-                  comentario={comentario}
-                  apunteId={id}
-                  onNuevaRespuesta={handleNuevaRespuesta}
-                  onComentarioEliminado={handleComentarioEliminado}
-                />
-              ))}
-            </div>
+            <CommentsSection
+              tipoContenido='apunte'
+              contenidoId={id}
+              total={apunte.comentarios_count ?? 0}
+              placeholder='Escribe un comentario o duda sobre este material...'
+            />
           </div>
-
-          {esDueno && (
-            <>
-              <EditApunteModal
-                open={editando}
-                onClose={() => setEditando(false)}
-                apunte={apunte}
-                carreraId={usuario?.carrera_id}
-                onSaved={handleEdicionGuardada}
-              />
-              <ConfirmDialog
-                open={confirmandoEliminar}
-                title='Eliminar material'
-                message={
-                  errorEliminar ||
-                  'Esta acción no se puede deshacer. Se eliminarán también sus archivos, comentarios y votos.'
-                }
-                confirmLabel='Eliminar'
-                danger
-                loading={eliminando}
-                onConfirm={handleEliminar}
-                onCancel={() => {
-                  setConfirmandoEliminar(false);
-                  setErrorEliminar(null);
-                }}
-              />
-            </>
-          )}
-
-          <ReportModal
-            open={reportando}
-            onClose={() => setReportando(false)}
-            tipoContenido='apunte'
-            contenidoId={id}
-          />
         </>
       )}
     </Modal>

@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { listarRamosPorCarrera } from '@/shared/api/catalog.api';
-import { useRepositorioStore } from '@/features/materials/store/materialsStore';
+import { useFiltrosStore } from '@/features/materials/store/filtrosStore';
 import { colorPorRamo } from '@/shared/lib/courseColors';
 
 function agruparPorAnio(ramosPorSemestre) {
@@ -21,13 +22,31 @@ export default function FiltroRamo({ carreraId }) {
   const [open, setOpen] = useState(false);
   const [anioAbierto, setAnioAbierto] = useState(null);
   const [semAbierto, setSemAbierto] = useState(null);
-  const [ramosPorAnio, setRamosPorAnio] = useState({});
-  const [cargando, setCargando] = useState(false);
   const ref = useRef(null);
 
-  const ramoId = useRepositorioStore((s) => s.filtros.ramo_id);
-  const setFiltro = useRepositorioStore((s) => s.setFiltro);
-  const [ramoSeleccionado, setRamoSeleccionado] = useState(null);
+  const ramoId = useFiltrosStore((s) => s.filtros.ramo_id);
+  const setFiltro = useFiltrosStore((s) => s.setFiltro);
+
+  const { data: ramosPorSemestre, isPending } = useQuery({
+    queryKey: ['ramos', carreraId],
+    queryFn: () => listarRamosPorCarrera(carreraId),
+    enabled: !!carreraId,
+    staleTime: Infinity,
+  });
+  const cargando = isPending && !!carreraId;
+
+  const ramosPorAnio = useMemo(
+    () => agruparPorAnio(ramosPorSemestre ?? {}),
+    [ramosPorSemestre],
+  );
+
+  const ramoSeleccionado = useMemo(
+    () =>
+      Object.values(ramosPorSemestre ?? {})
+        .flat()
+        .find((r) => r.id === ramoId) ?? null,
+    [ramosPorSemestre, ramoId],
+  );
 
   useEffect(() => {
     function onClickOutside(e) {
@@ -37,22 +56,12 @@ export default function FiltroRamo({ carreraId }) {
     return () => document.removeEventListener('mousedown', onClickOutside);
   }, []);
 
-  useEffect(() => {
-    if (!open || !carreraId || Object.keys(ramosPorAnio).length > 0) return;
-    setCargando(true);
-    listarRamosPorCarrera(carreraId)
-      .then((data) => setRamosPorAnio(agruparPorAnio(data)))
-      .finally(() => setCargando(false));
-  }, [open, carreraId, ramosPorAnio]);
-
   function elegirRamo(ramo) {
-    setRamoSeleccionado(ramo);
     setFiltro('ramo_id', ramo.id);
     setOpen(false);
   }
 
   function limpiar() {
-    setRamoSeleccionado(null);
     setFiltro('ramo_id', null);
     setOpen(false);
   }

@@ -17,7 +17,8 @@ export default function QuickUploadBox({ onClick }) {
         {getInitials(usuario?.nombre_usuario)}
       </div>
       <div className='flex-1 text-[13px] text-neutral-500'>
-        ¿Tienes apuntes, guías o código que pueda ayudar a alguien? Compártelos aquí...
+        ¿Tienes apuntes, guías o código que pueda ayudar a alguien? Compártelos
+        aquí...
       </div>
       <div className='flex items-center gap-1.5 text-neutral-500'>
         <i className='ti ti-upload text-lg' />

@@ -8,6 +8,7 @@ function buildQuery(params = {}) {
 }
 
 export async function listarApuntes({
+  carrera_id,
   ramo_id,
   tipo,
   tipo_archivo,
@@ -15,8 +16,10 @@ export async function listarApuntes({
   orden,
   pagina = 1,
   limite = 20,
+  signal,
 } = {}) {
   const qs = buildQuery({
+    carrera_id,
     ramo_id,
     tipo,
     tipo_archivo,
@@ -25,17 +28,20 @@ export async function listarApuntes({
     pagina,
     limite,
   });
-  const res = await apiFetch(`/apuntes${qs ? `?${qs}` : ''}`);
+  const res = await apiFetch(`/apuntes${qs ? `?${qs}` : ''}`, { signal });
   return { apuntes: res.data, meta: res.meta };
 }
 
-export async function obtenerApunte(id) {
-  const res = await apiFetch(`/apuntes/${id}`);
+export async function obtenerApunte(id, { signal } = {}) {
+  const res = await apiFetch(`/apuntes/${id}`, { signal });
   return res.data;
 }
 
-export async function crearApunte(payload) {
-  const res = await apiFetch('/apuntes', { method: 'POST', body: payload });
+export async function crearApunte(payload, archivos = []) {
+  const formData = new FormData();
+  formData.append('datos', JSON.stringify(payload));
+  archivos.forEach((f) => formData.append('archivos', f));
+  const res = await apiFetch('/apuntes', { method: 'POST', body: formData });
   return res.data;
 }
 

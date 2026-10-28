@@ -285,10 +285,11 @@ export default function MatchProyectos() {
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`-mb-px flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-[12.5px] font-medium transition sm:px-4 sm:py-3 sm:text-[13px] ${tab === t.id
+              className={`-mb-px flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-[12.5px] font-medium transition sm:px-4 sm:py-3 sm:text-[13px] ${
+                tab === t.id
                   ? 'border-pink-500 font-semibold text-pink-500'
                   : 'border-transparent text-neutral-500 hover:text-neutral-300'
-                }`}
+              }`}
             >
               <i className={`ti ${t.icon} text-[15px]`} />
               {t.label}
@@ -578,10 +579,11 @@ function FilterDropdown({
                       sec.onSelect(opt.value);
                       setOpen(false);
                     }}
-                    className={`flex cursor-pointer items-center gap-2 px-3.5 py-2 text-[13px] transition hover:bg-white/[0.04] ${sec.selected === opt.value
+                    className={`flex cursor-pointer items-center gap-2 px-3.5 py-2 text-[13px] transition hover:bg-white/[0.04] ${
+                      sec.selected === opt.value
                         ? 'text-pink-500'
                         : 'text-neutral-400'
-                      }`}
+                    }`}
                   >
                     {opt.label}
                     {sec.selected === opt.value && (
@@ -733,10 +735,11 @@ function EtiquetaFilterDropdown({ selectedIds, onChange }) {
                         >
                           <button
                             onClick={() => toggle(et.id)}
-                            className={`rounded-full border px-2 py-1 text-[11px] font-medium transition ${seleccionada
+                            className={`rounded-full border px-2 py-1 text-[11px] font-medium transition ${
+                              seleccionada
                                 ? `${c.bg} ${c.text} ${c.border}`
                                 : 'border-white/[0.07] text-neutral-400 hover:border-white/[0.16] hover:text-neutral-100'
-                              }`}
+                            }`}
                           >
                             {seleccionada && (
                               <i className='ti ti-check mr-1 text-[10px]' />
@@ -1121,10 +1124,11 @@ function ProyectoCard({
           )}
           <button
             onClick={onToggleFavorito}
-            className={`inline-flex items-center gap-1.5 rounded-[10px] border px-3.5 py-1.5 text-[12px] font-medium transition ${esFavorito
+            className={`inline-flex items-center gap-1.5 rounded-[10px] border px-3.5 py-1.5 text-[12px] font-medium transition ${
+              esFavorito
                 ? 'border-pink-500/40 bg-pink-500/10 text-pink-500'
                 : 'border-white/[0.07] text-neutral-400 hover:text-neutral-100'
-              }`}
+            }`}
           >
             <i className='ti ti-bookmark text-[13px]' />
             {esFavorito ? 'Guardado' : 'Guardar'}
@@ -1284,19 +1288,21 @@ function MisProyectosTab({
         <div className='flex gap-1 rounded-[10px] border border-white/[0.07] bg-[#1E1E24] p-1'>
           <button
             onClick={() => setSub('creados')}
-            className={`rounded-[8px] px-3.5 py-1.5 text-[12.5px] font-medium transition ${sub === 'creados'
+            className={`rounded-[8px] px-3.5 py-1.5 text-[12.5px] font-medium transition ${
+              sub === 'creados'
                 ? 'bg-pink-500 text-white'
                 : 'text-neutral-400 hover:text-neutral-100'
-              }`}
+            }`}
           >
             Creados <span className='opacity-70'>({creados.length})</span>
           </button>
           <button
             onClick={() => setSub('participa')}
-            className={`rounded-[8px] px-3.5 py-1.5 text-[12.5px] font-medium transition ${sub === 'participa'
+            className={`rounded-[8px] px-3.5 py-1.5 text-[12.5px] font-medium transition ${
+              sub === 'participa'
                 ? 'bg-pink-500 text-white'
                 : 'text-neutral-400 hover:text-neutral-100'
-              }`}
+            }`}
           >
             Participo <span className='opacity-70'>({participa.length})</span>
           </button>
@@ -1363,9 +1369,9 @@ function MisProyectosTab({
               esIntegrante
               esFavorito={false}
               yaPostulado={false}
-              onToggleFavorito={() => { }}
+              onToggleFavorito={() => {}}
               onVerDetalle={() => onVerDetalle(p)}
-              onPostularClick={() => { }}
+              onPostularClick={() => {}}
             />
           ))}
         </div>
@@ -1573,21 +1579,21 @@ function MisPostulacionesTab({
           const { icono, clase, titulo } =
             p.estado === 'aceptada'
               ? {
-                icono: 'ti-circle-check',
-                clase: 'bg-emerald-400/10 text-emerald-400',
-                titulo: 'Aceptada',
-              }
+                  icono: 'ti-circle-check',
+                  clase: 'bg-emerald-400/10 text-emerald-400',
+                  titulo: 'Aceptada',
+                }
               : p.estado === 'rechazada'
                 ? {
-                  icono: 'ti-x',
-                  clase: 'bg-red-500/10 text-red-400',
-                  titulo: 'Rechazada',
-                }
+                    icono: 'ti-x',
+                    clase: 'bg-red-500/10 text-red-400',
+                    titulo: 'Rechazada',
+                  }
                 : {
-                  icono: 'ti-clock',
-                  clase: 'bg-amber-400/10 text-amber-400',
-                  titulo: 'Pendiente',
-                };
+                    icono: 'ti-clock',
+                    clase: 'bg-amber-400/10 text-amber-400',
+                    titulo: 'Pendiente',
+                  };
 
           return (
             <div

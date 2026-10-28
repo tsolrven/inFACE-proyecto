@@ -15,6 +15,7 @@ export function ProtectedRoute({ children }) {
       <Navigate
         to='/login'
         replace
+        state={{ from: location }}
       />
     );
   }
@@ -95,11 +96,12 @@ export function TermsRoute({ children }) {
 
 export function GuestRoute({ children }) {
   const usuario = useAuthStore((s) => s.usuario);
-  return !usuario ? (
-    children
-  ) : (
+  const location = useLocation();
+  if (!usuario) return children;
+  const from = location.state?.from;
+  return (
     <Navigate
-      to='/'
+      to={from ? `${from.pathname}${from.search}` : '/'}
       replace
     />
   );

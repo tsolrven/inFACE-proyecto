@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/shared/auth/authStore';
 import { useUiStore } from '@/shared/stores/uiStore';
-import logoWhite from '@/assets/logo_white.png';
 
 function getInitials(nombreUsuario) {
   if (!nombreUsuario) return '?';
@@ -47,7 +46,7 @@ export default function Navbar() {
 
       <div className='flex flex-shrink-0 items-center gap-1.5'>
         <img
-          src={logoWhite}
+          src='/logo_white.png'
           alt='InFACE'
           className='h-7 w-7 flex-shrink-0 rounded-[7px] object-contain'
         />

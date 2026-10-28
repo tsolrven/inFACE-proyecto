@@ -1,32 +1,44 @@
-import { useEffect, useRef, useCallback } from 'react';
-import { useRepositorioStore } from '@/features/materials/store/materialsStore';
+import { useEffect, useMemo, useRef } from 'react';
+import { useParams } from 'react-router-dom';
+import { useFiltrosStore } from '@/features/materials/store/filtrosStore';
+import { useApuntesFeed } from '@/features/materials/hooks/useApuntes';
 import FeedTopbar from '@/features/materials/components/FeedTopbar';
 import QuickUploadBox from '@/features/materials/components/QuickUploadBox';
 import MaterialCard from '@/features/materials/components/MaterialCard';
 
 export default function MaterialFeed({ carreraId, onAbrirSubida }) {
-  const apuntes = useRepositorioStore((s) => s.apuntes);
-  const cargando = useRepositorioStore((s) => s.cargando);
-  const cargandoMas = useRepositorioStore((s) => s.cargandoMas);
-  const error = useRepositorioStore((s) => s.error);
-  const meta = useRepositorioStore((s) => s.meta);
-  const cargarMasApuntes = useRepositorioStore((s) => s.cargarMasApuntes);
-
-  const centinelaRef = useRef(null);
-  const handleObserver = useCallback(
-    (entries) => {
-      if (entries[0].isIntersecting) cargarMasApuntes();
-    },
-    [cargarMasApuntes],
+  const { hashtag } = useParams();
+  const filtrosStore = useFiltrosStore((s) => s.filtros);
+  const filtros = useMemo(
+    () => ({ ...filtrosStore, hashtag: hashtag ?? null }),
+    [filtrosStore, hashtag],
   );
 
+  const {
+    data,
+    isPending,
+    error,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useApuntesFeed(filtros);
+
+  const apuntes = data?.pages.flatMap((p) => p.items) ?? [];
+  const total = data?.pages.at(-1)?.meta?.total;
+
+  const centinelaRef = useRef(null);
   useEffect(() => {
-    const observer = new IntersectionObserver(handleObserver, {
-      rootMargin: '200px',
-    });
-    if (centinelaRef.current) observer.observe(centinelaRef.current);
+    const el = centinelaRef.current;
+    if (!el || !hasNextPage || isFetchingNextPage) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) fetchNextPage();
+      },
+      { rootMargin: '200px' },
+    );
+    observer.observe(el);
     return () => observer.disconnect();
-  }, [handleObserver]);
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   return (
     <div className='flex-1 overflow-y-auto p-4'>
@@ -38,17 +50,17 @@ export default function MaterialFeed({ carreraId, onAbrirSubida }) {
 
       {error && (
         <div className='mb-3 rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2 text-[12.5px] text-red-400'>
-          {error}
+          {error.message}
         </div>
       )}
 
-      {cargando && (
+      {isPending && (
         <div className='flex items-center justify-center py-16 text-neutral-600'>
           <i className='ti ti-loader-2 animate-spin text-2xl' />
         </div>
       )}
 
-      {!cargando && apuntes.length === 0 && (
+      {!isPending && !error && apuntes.length === 0 && (
         <div className='flex flex-col items-center justify-center py-16 text-center select-none'>
           <i className='ti ti-mood-empty mb-3 block text-5xl text-neutral-700' />
           <p className='text-sm font-semibold text-neutral-300'>
@@ -72,15 +84,15 @@ export default function MaterialFeed({ carreraId, onAbrirSubida }) {
         className='h-1'
       />
 
-      {cargandoMas && (
+      {isFetchingNextPage && (
         <div className='flex items-center justify-center py-4 text-neutral-600'>
           <i className='ti ti-loader-2 animate-spin text-xl' />
         </div>
       )}
 
-      {meta && !meta.hasNext && apuntes.length > 0 && (
+      {!hasNextPage && apuntes.length > 0 && (
         <p className='py-4 text-center text-[11.5px] text-neutral-700'>
-          Llegaste al final — {meta.total} materiales en total
+          Llegaste al final — {total} materiales en total
         </p>
       )}
     </div>

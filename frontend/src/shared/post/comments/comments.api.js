@@ -1,16 +1,41 @@
 import { apiFetch } from '@/shared/api/client';
 
-export async function listarComentarios(contenidoId, tipo = 'apunte') {
-  const res = await apiFetch(`/comentarios/${tipo}/${contenidoId}`);
-  return res.data;
+export async function listarComentarios({
+  tipoContenido,
+  contenidoId,
+  orden = 'mejores',
+  cursor,
+  signal,
+}) {
+  const qs = new URLSearchParams({ orden });
+  if (cursor) qs.set('cursor', cursor);
+  const res = await apiFetch(
+    `/comentarios/${tipoContenido}/${contenidoId}?${qs}`,
+    { signal },
+  );
+  return { items: res.data, meta: res.meta };
+}
+
+export async function listarRespuestas({
+  comentarioId,
+  orden = 'mejores',
+  cursor,
+  signal,
+}) {
+  const qs = new URLSearchParams({ orden });
+  if (cursor) qs.set('cursor', cursor);
+  const res = await apiFetch(`/comentarios/${comentarioId}/respuestas?${qs}`, {
+    signal,
+  });
+  return { items: res.data, meta: res.meta };
 }
 
 export async function crearComentario(
+  tipoContenido,
   contenidoId,
   { contenido, padre_id } = {},
-  tipo = 'apunte',
 ) {
-  const res = await apiFetch(`/comentarios/${tipo}/${contenidoId}`, {
+  const res = await apiFetch(`/comentarios/${tipoContenido}/${contenidoId}`, {
     method: 'POST',
     body: { contenido, padre_id },
   });

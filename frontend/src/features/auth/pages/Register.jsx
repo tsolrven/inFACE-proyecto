@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/shared/auth/authStore';
 import { listarCarreras } from '@/shared/api/catalog.api';
 
-
 function parseApiError(err) {
   if (err.details && Array.isArray(err.details)) {
     const byField = {};
@@ -67,7 +66,10 @@ export default function Register() {
 
   function handleChange(e) {
     const { name, value, type, checked } = e.target;
-    setForm((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+    setForm((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
     setErrors((prev) => ({
       ...prev,
       fields: { ...prev.fields, [name]: undefined },
@@ -322,11 +324,19 @@ export default function Register() {
                 />
                 <span>
                   He leído y acepto los{' '}
-                  <Link to='/legal/terminos' target='_blank' className='text-pink-400 hover:underline'>
+                  <Link
+                    to='/legal/terminos'
+                    target='_blank'
+                    className='text-pink-400 hover:underline'
+                  >
                     Términos y Condiciones
                   </Link>{' '}
                   y la{' '}
-                  <Link to='/legal/privacidad' target='_blank' className='text-pink-400 hover:underline'>
+                  <Link
+                    to='/legal/privacidad'
+                    target='_blank'
+                    className='text-pink-400 hover:underline'
+                  >
                     Política de Privacidad
                   </Link>
                   .
@@ -346,9 +356,9 @@ export default function Register() {
                   className='mt-0.5'
                 />
                 <span>
-                  (Opcional) Acepto que mi actividad en el Match de proyectos se use, de
-                  forma seudonimizada, para evaluar los algoritmos de recomendación de una
-                  tesis.
+                  (Opcional) Acepto que mi actividad en el Match de proyectos se
+                  use, de forma seudonimizada, para evaluar los algoritmos de
+                  recomendación de una tesis.
                 </span>
               </label>
             </div>
