@@ -8,7 +8,7 @@ import {
   badgesDeApunte,
 } from '@/features/materials/utils/fileMeta';
 import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
-import { descargarArchivo } from '@/features/materials/api/files.api';
+import { descargarArchivo } from '@/shared/api/archivos.api';
 import { useVotar } from '@/shared/post/votes/useVotar';
 import ApunteMenu from '@/features/materials/components/ApunteMenu';
 import VotePill from '@/shared/post/votes/VotePill';

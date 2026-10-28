@@ -36,3 +36,21 @@ export async function eliminarArchivo(id) {
 export function obtenerImagen(id, signal) {
   return apiFetch(`/archivos/${id}/ver`, { responseType: 'blob', signal });
 }
+
+
+// Descarga el archivo al equipo (GET /archivos/:id/descargar, que sí cuenta
+// la descarga). Recibe el objeto archivo tal como viene del backend.
+export async function descargarArchivo(archivo) {
+  const blob = await apiFetch(`/archivos/${archivo.id}/descargar`, {
+    responseType: 'blob',
+  });
+
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = archivo.nombre_archivo;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(url);
+}

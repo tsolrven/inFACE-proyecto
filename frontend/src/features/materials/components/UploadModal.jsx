@@ -22,7 +22,7 @@ import {
 import {
   agregarArchivosSinDuplicar,
   claveArchivo,
-} from '@/features/materials/utils/archivos';
+} from '@/shared/lib/archivos';
 import { normalizarLinks } from '@/features/materials/utils/normalizarLinks';
 
 const TIPOS = [

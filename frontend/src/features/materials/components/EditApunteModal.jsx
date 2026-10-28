@@ -2,10 +2,7 @@ import { useEffect, useState } from 'react';
 import Modal, { ModalHeader } from '@/shared/components/ui/Modal';
 import Button from '@/shared/components/ui/Button';
 import { listarRamosPorCarrera } from '@/shared/api/catalog.api';
-import {
-  subirArchivos,
-  eliminarArchivo,
-} from '@/features/materials/api/files.api';
+import { subirArchivos, eliminarArchivo } from '@/shared/api/archivos.api';
 import {
   metaDeArchivo,
   formatearTamanio,
@@ -31,7 +28,7 @@ import {
 import {
   agregarArchivosSinDuplicar,
   claveArchivo,
-} from '@/features/materials/utils/archivos';
+} from '@/shared/lib/archivos';
 import { normalizarLinks } from '@/features/materials/utils/normalizarLinks';
 
 const TIPOS = [
@@ -229,6 +226,7 @@ function EditApunteForm({ onClose, apunte, carreraId, onSaved }) {
         setArchivosNuevos([]);
       } else if (archivosNuevos.length > 0) {
         const { exitosos, fallidos } = await subirArchivos(
+          'apunte',
           apunte.id,
           archivosNuevos,
         );
