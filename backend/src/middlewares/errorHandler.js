@@ -30,7 +30,7 @@ function handlePrismaError(err) {
 }
 
 // procesamiento de errores
-const errorHandler = (err, req, res, next) => {
+const errorHandler = (err, req, res, _next) => {
   // convierte error de prisma a AppError
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
     logger.error('Prisma error original', {
