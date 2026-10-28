@@ -1,7 +1,7 @@
 // Calcula con el código REAL del backend los puntajes de los casos de fixture.json
 // y los imprime como JSON (los compara test_paridad.py contra la versión de Python).
 import { readFileSync } from 'node:fs';
-import { puntuarCandidatos } from '../../backend/modules/module-4/recomendador.puro.js';
+import { puntuarCandidatos } from '../../backend/src/modules/project-match/recomendador.puro.js';
 
 const casos = JSON.parse(readFileSync(process.argv[2], 'utf8'));
 const salida = casos.map((c) => {
