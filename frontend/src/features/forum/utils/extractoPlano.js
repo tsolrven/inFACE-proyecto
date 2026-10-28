@@ -9,6 +9,11 @@ export function extractoPlano(markdown = '', truncado = false) {
     .replace(/^\s*([-*+]|\d+\.)\s+/gm, '') // viñetas y listas numeradas
     .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1') // enlaces: queda el texto
     .replace(/(\*\*|__|~~|\*|`)/g, '') // negrita, tachado, cursiva, código
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&') // siempre al final, para no decodificar dos veces
     .replace(/\s+/g, ' ')
     .trim();
   return truncado && texto ? `${texto}…` : texto;
