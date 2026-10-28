@@ -25,7 +25,7 @@ export default function PortadaImagen({ archivos }) {
   return (
     <div
       ref={ref}
-      className='relative mb-2 aspect-video overflow-hidden rounded-[10px] border border-white/[0.07] bg-[#17171B]'
+      className='relative mb-2 aspect-video max-h-[300px] w-full overflow-hidden rounded-[10px] border border-white/[0.07] bg-[#17171B]'
     >
       {isError && !isFetching ? (
         <div className='flex h-full w-full flex-col items-center justify-center gap-1.5 text-center'>
