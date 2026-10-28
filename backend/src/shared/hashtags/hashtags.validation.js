@@ -12,20 +12,31 @@ const ERROR_MESSAGES = {
   filtro_largo: 'El hashtag es demasiado largo',
 };
 // ─────────────────────────────────────────────────────────────────────────────
+// Forma canónica de un hashtag: sin '#', en minúsculas y sin tildes, pero
+// conservando la ñ (año y ano son palabras distintas).
+// Debe dar el mismo resultado que normalizarHashtag de frontend/src/shared/lib/hashtags.js
+function normalizarHashtag(valor) {
+  return valor
+    .trim()
+    .replace(/^#+/, '')
+    .toLowerCase()
+    .normalize('NFD') // á -> a + marca; ñ -> n + marca
+    .replace(/n\u0303/g, '\u00f1') // devuelve la ñ como un solo carácter
+    .replace(/[\u0300-\u036f]/g, ''); // quita las demás marcas (tildes, diéresis)
+}
+// ─────────────────────────────────────────────────────────────────────────────
 // Hashtags que escribe el autor al crear/editar un contenido.
 const hashtagsSchema = z
   .array(
     z
       .string()
-      .trim()
-      .toLowerCase()
-      .transform((tag) => tag.replace(/^#+/, ''))
+      .transform(normalizarHashtag)
       .pipe(
         z
           .string()
           .min(1)
           .max(MAX_LARGO_HASHTAG, ERROR_MESSAGES.max_largo)
-          .regex(/^[a-zA-Z0-9_]+$/, ERROR_MESSAGES.pattern),
+          .regex(/^[a-z0-9_\u00f1]+$/, ERROR_MESSAGES.pattern),
       ),
   )
   .max(MAX_HASHTAGS, ERROR_MESSAGES.max_cantidad)
@@ -35,8 +46,13 @@ const hashtagsSchema = z
 // Hashtag que llega en el query de un listado (?hashtag=calculo).
 const hashtagFiltroSchema = z
   .string()
-  .trim()
-  .toLowerCase()
-  .max(MAX_LARGO_HASHTAG, ERROR_MESSAGES.filtro_largo);
+  .transform(normalizarHashtag)
+  .pipe(z.string().max(MAX_LARGO_HASHTAG, ERROR_MESSAGES.filtro_largo));
 // ─────────────────────────────────────────────────────────────────────────────
-export { MAX_HASHTAGS, MAX_LARGO_HASHTAG, hashtagsSchema, hashtagFiltroSchema };
+export {
+  MAX_HASHTAGS,
+  MAX_LARGO_HASHTAG,
+  hashtagsSchema,
+  hashtagFiltroSchema,
+  normalizarHashtag,
+};
