@@ -13,7 +13,9 @@ export default function SavedCommentCard({ comentario, rutaDe }) {
 
   function irAlPost() {
     if (!ruta) return;
-    navigate(ruta, { state: { backgroundLocation: location } });
+    navigate(`${ruta}?comentario=${comentario.id}`, {
+      state: { backgroundLocation: location },
+    });
   }
 
   return (

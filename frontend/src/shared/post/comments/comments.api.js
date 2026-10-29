@@ -56,3 +56,12 @@ export async function eliminarComentario(comentarioId) {
   });
   return res.data;
 }
+
+// Un comentario con el camino desde su raíz (GET /comentarios/:id/contexto).
+// Devuelve { raiz, ruta, contenido }: `ruta` son los ids de la raíz al comentario.
+export async function obtenerContextoComentario({ comentarioId, signal }) {
+  const res = await apiFetch(`/comentarios/${comentarioId}/contexto`, {
+    signal,
+  });
+  return res.data;
+}

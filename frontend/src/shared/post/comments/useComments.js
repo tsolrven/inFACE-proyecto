@@ -2,11 +2,13 @@ import {
   keepPreviousData,
   useInfiniteQuery,
   useMutation,
+  useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
 import {
   listarComentarios,
   listarRespuestas,
+  obtenerContextoComentario,
 } from '@/shared/post/comments/comments.api';
 import {
   aplanarRaices,
@@ -26,6 +28,13 @@ export const commentKeys = {
   list: (tipoContenido, contenidoId, orden) => [
     ...commentKeys.contenido(tipoContenido, contenidoId),
     orden,
+  ],
+  // El contexto vive bajo el prefijo del contenido: crear, editar, votar o
+  // eliminar comentarios también lo actualizan (igual que la respuesta aceptada).
+  contexto: (tipoContenido, contenidoId, comentarioId) => [
+    ...commentKeys.contenido(tipoContenido, contenidoId),
+    'contexto',
+    comentarioId,
   ],
 };
 
@@ -49,6 +58,42 @@ export function useComments(tipoContenido, contenidoId, orden) {
     // al cambiar de orden se sigue viendo la lista anterior mientras llega la nueva
     placeholderData: keepPreviousData,
     select: seleccionarRaices,
+  });
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+// El árbol se guarda con la misma forma que las listas ({ pages: [{ items, meta }] })
+// para que useMasRespuestas y las mutaciones lo actualicen sin código especial.
+// Se busca la raíz por id, no por posición: crear un comentario raíz inserta
+// elementos al principio de toda consulta con este prefijo de clave.
+const seleccionarContexto = (data) => {
+  const { items, meta } = data.pages[0];
+  return {
+    raiz: items.find((c) => c.id === meta.ruta[0]) ?? null,
+    ruta: meta.ruta,
+    contenido: meta.contenido,
+  };
+};
+
+export function useComentarioContexto(
+  tipoContenido,
+  contenidoId,
+  comentarioId,
+) {
+  return useQuery({
+    queryKey: commentKeys.contexto(tipoContenido, contenidoId, comentarioId),
+    enabled: !!comentarioId,
+    retry: false, // un 404 no mejora al reintentar
+    queryFn: async ({ signal }) => {
+      const { raiz, ruta, contenido } = await obtenerContextoComentario({
+        comentarioId,
+        signal,
+      });
+      return {
+        pages: [{ items: raiz ? [raiz] : [], meta: { ruta, contenido } }],
+        pageParams: [null],
+      };
+    },
+    select: seleccionarContexto,
   });
 }
 // ────────────────────────────────────────────────────────────────────────────────────────

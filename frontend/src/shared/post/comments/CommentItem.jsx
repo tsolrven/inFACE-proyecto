@@ -18,6 +18,7 @@ export default function CommentItem({
   profundidad = 0,
   maxIndent,
   onEnfocar,
+  resaltadoId = null,
 }) {
   const [colapsado, setColapsado] = useState(false);
   const [mostrarRespuestas, setMostrarRespuestas] = useState(
@@ -75,7 +76,14 @@ export default function CommentItem({
   }
 
   return (
-    <div className='flex gap-2.5'>
+    <div
+      data-comentario-id={comentario.id}
+      className={`-m-1.5 flex gap-2.5 rounded-lg p-1.5 transition-[background-color,box-shadow] duration-700 ${
+        comentario.id === resaltadoId
+          ? 'bg-pink-500/[0.08] ring-1 ring-pink-500/40'
+          : ''
+      }`}
+    >
       {/* riel izquierdo: avatar + línea clicable para colapsar */}
       <div className='flex w-[26px] flex-shrink-0 flex-col items-center'>
         {eliminado ? (
@@ -212,6 +220,7 @@ export default function CommentItem({
                     profundidad={profundidad + 1}
                     maxIndent={maxIndent}
                     onEnfocar={onEnfocar}
+                    resaltadoId={resaltadoId}
                   />
                 ))}
               </div>
