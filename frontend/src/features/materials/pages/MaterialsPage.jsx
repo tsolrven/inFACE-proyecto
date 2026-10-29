@@ -5,7 +5,7 @@ import RpCard from '@/shared/components/layout/RpCard';
 import RpRules from '@/shared/components/layout/RpRules';
 import PageBanner from '@/shared/components/layout/PageBanner';
 import MaterialFeed from '@/features/materials/components/MaterialFeed';
-import GuardadosFeed from '@/features/materials/components/GuardadosFeed';
+import MaterialGuardados from '@/features/materials/components/MaterialGuardados';
 import UploadModal from '@/features/materials/components/UploadModal';
 import { useAuthStore } from '@/shared/auth/authStore';
 import {
@@ -96,7 +96,7 @@ export default function RepositorioMateriales() {
             onAbrirSubida={() => setUploadAbierto(true)}
           />
         ) : (
-          <GuardadosFeed />
+          <MaterialGuardados />
         )}
       </div>
 

@@ -2,24 +2,19 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
 import { useGuardar } from '@/shared/post/bookmarks/useGuardar';
 
-// Tipo de contenido -> ruta. Cuando exista el foro o los anuncios, se agrega una línea acá.
-const RUTAS_CONTENIDO = {
-  apunte: (id) => `/repositorio-materiales/${id}`,
-};
-
-export default function SavedCommentCard({ comentario }) {
+// `rutaDe(padre)` la define cada módulo: recibe la publicación a la que pertenece
+// el comentario ({ id, tipo_contenido, titulo }) y devuelve su ruta, o null.
+export default function SavedCommentCard({ comentario, rutaDe }) {
   const navigate = useNavigate();
   const location = useLocation();
   const guardarMut = useGuardar('comentario');
 
   const padre = comentario.contenido_padre;
+  const ruta = padre ? (rutaDe?.(padre) ?? null) : null;
 
   function irAlPost() {
-    const ruta = padre && RUTAS_CONTENIDO[padre.tipo_contenido];
     if (!ruta) return;
-    navigate(ruta(padre.id), {
-      state: { backgroundLocation: location },
-    });
+    navigate(ruta, { state: { backgroundLocation: location } });
   }
 
   function handleQuitar(e) {
@@ -31,7 +26,7 @@ export default function SavedCommentCard({ comentario }) {
     <div
       onClick={irAlPost}
       className={`mb-2 flex flex-col gap-1.5 rounded-[14px] border border-white/[0.06] bg-[#1E1E24] p-3 transition-colors hover:border-white/[0.12] ${
-        padre ? 'cursor-pointer' : 'cursor-default opacity-70'
+        ruta ? 'cursor-pointer' : 'cursor-default opacity-70'
       }`}
     >
       <div className='flex items-center justify-between gap-2'>
