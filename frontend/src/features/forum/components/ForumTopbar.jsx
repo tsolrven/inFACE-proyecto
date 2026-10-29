@@ -10,7 +10,7 @@ const ORDENES = [
   { valor: 'populares', label: 'Más votados', icono: 'ti-flame' },
 ];
 
-export default function ForumTopbar({ carreraId }) {
+export default function ForumTopbar({ carreraId, permitirCrear = true }) {
   const ramoId = useForumFiltrosStore((s) => s.filtros.ramo_id);
   const orden = useForumFiltrosStore((s) => s.filtros.orden);
   const setFiltro = useForumFiltrosStore((s) => s.setFiltro);
@@ -52,14 +52,16 @@ export default function ForumTopbar({ carreraId }) {
         ))}
       </div>
 
-      <Button
-        variant='primary'
-        icon='ti-plus'
-        disabled={!carreraId}
-        onClick={() => setCreando(true)}
-      >
-        Nuevo hilo
-      </Button>
+      {permitirCrear && (
+        <Button
+          variant='primary'
+          icon='ti-plus'
+          disabled={!carreraId}
+          onClick={() => setCreando(true)}
+        >
+          Nuevo hilo
+        </Button>
+      )}
 
       {creando && (
         <HiloFormModal

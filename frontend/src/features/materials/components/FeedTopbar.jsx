@@ -42,13 +42,15 @@ export default function FeedTopbar({ carreraId, onAbrirSubida }) {
         </button>
       </div>
 
-      <Button
-        variant='primary'
-        icon='ti-upload'
-        onClick={onAbrirSubida}
-      >
-        Subir material
-      </Button>
+      {onAbrirSubida && (
+        <Button
+          variant='primary'
+          icon='ti-upload'
+          onClick={onAbrirSubida}
+        >
+          Subir material
+        </Button>
+      )}
     </div>
   );
 }

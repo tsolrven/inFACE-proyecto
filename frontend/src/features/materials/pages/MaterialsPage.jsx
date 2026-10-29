@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import RightPanel from '@/shared/components/layout/RightPanel';
 import RpCard from '@/shared/components/layout/RpCard';
 import RpRules from '@/shared/components/layout/RpRules';
@@ -13,6 +13,7 @@ import {
   listarHashtagsPopulares,
 } from '@/features/materials/api/statistics.api';
 import armadilloRepositorio from '@/assets/armadillo-repositorio-materiales.png';
+import { rutaHashtag } from '@/shared/lib/hashtags';
 
 const COLORES_COLABORADOR = [
   'bg-amber-400/10 text-amber-400',
@@ -50,8 +51,6 @@ export default function RepositorioMateriales() {
   const [colaboradores, setColaboradores] = useState([]);
   const [tagsPopulares, setTagsPopulares] = useState([]);
 
-  const { hashtag } = useParams();
-
   useEffect(() => {
     if (!carreraId) return;
     listarTopColaboradores()
@@ -62,26 +61,15 @@ export default function RepositorioMateriales() {
       .catch(() => setTagsPopulares([]));
   }, [carreraId]);
 
-  const banner = hashtag
-    ? {
-        title: `#${hashtag}`,
-        subtitle: `Publicaciones con #${hashtag} en ${carreraNombre}`,
-        breadcrumb: [
-          { label: 'Inicio', to: '/' },
-          { label: 'Académico' },
-          { label: 'Repositorio de materiales', to: '/repositorio-materiales' },
-          { label: `#${hashtag}` },
-        ],
-      }
-    : {
-        title: 'Repositorio de materiales',
-        subtitle: `${carreraNombre} · Materiales compartidos por la comunidad`,
-        breadcrumb: [
-          { label: 'Inicio', to: '/' },
-          { label: 'Académico' },
-          { label: 'Repositorio de materiales' },
-        ],
-      };
+  const banner = {
+    title: 'Repositorio de materiales',
+    subtitle: `${carreraNombre} · Materiales compartidos por la comunidad`,
+    breadcrumb: [
+      { label: 'Inicio', to: '/' },
+      { label: 'Académico' },
+      { label: 'Repositorio de materiales' },
+    ],
+  };
 
   return (
     <div className='flex flex-1 overflow-hidden h-full'>
@@ -181,7 +169,7 @@ export default function RepositorioMateriales() {
               {tagsPopulares.map(({ nombre }) => (
                 <Link
                   key={nombre}
-                  to={`/repositorio-materiales/tag/${nombre}`}
+                  to={rutaHashtag(nombre)}
                   className='cursor-pointer rounded-full border border-transparent bg-[#2A2A32] px-2.5 py-0.5 text-[11px] text-neutral-500 transition-colors hover:border-white/[0.07] hover:bg-white/[0.06] hover:text-neutral-100'
                 >
                   #{nombre}

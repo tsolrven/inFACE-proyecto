@@ -5,7 +5,11 @@ import { useCentinela } from '@/shared/hooks/useCentinela';
 import ForumTopbar from '@/features/forum/components/ForumTopbar';
 import HiloCard from '@/features/forum/components/HiloCard';
 
-export default function ForumFeed({ carreraId, hashtag = null }) {
+export default function ForumFeed({
+  carreraId,
+  hashtag = null,
+  permitirCrear = true,
+}) {
   const filtrosStore = useForumFiltrosStore((s) => s.filtros);
   const filtros = useMemo(
     () => ({ ...filtrosStore, hashtag }),
@@ -34,7 +38,10 @@ export default function ForumFeed({ carreraId, hashtag = null }) {
   return (
     <div className='flex-1 overflow-y-auto p-4'>
       <div className='mx-auto w-full max-w-[720px]'>
-        <ForumTopbar carreraId={carreraId} />
+        <ForumTopbar
+          carreraId={carreraId}
+          permitirCrear={permitirCrear}
+        />
 
         {error && (
           <div className='mb-3 rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2 text-[12.5px] text-red-400'>

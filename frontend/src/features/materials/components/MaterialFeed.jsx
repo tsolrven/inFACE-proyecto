@@ -1,16 +1,18 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { useParams } from 'react-router-dom';
 import { useFiltrosStore } from '@/features/materials/store/filtrosStore';
 import { useApuntesFeed } from '@/features/materials/hooks/useApuntes';
 import FeedTopbar from '@/features/materials/components/FeedTopbar';
 import QuickUploadBox from '@/features/materials/components/QuickUploadBox';
 import MaterialCard from '@/features/materials/components/MaterialCard';
 
-export default function MaterialFeed({ carreraId, onAbrirSubida }) {
-  const { hashtag } = useParams();
+export default function MaterialFeed({
+  carreraId,
+  hashtag = null,
+  onAbrirSubida,
+}) {
   const filtrosStore = useFiltrosStore((s) => s.filtros);
   const filtros = useMemo(
-    () => ({ ...filtrosStore, hashtag: hashtag ?? null }),
+    () => ({ ...filtrosStore, hashtag }),
     [filtrosStore, hashtag],
   );
 
@@ -46,7 +48,7 @@ export default function MaterialFeed({ carreraId, onAbrirSubida }) {
         carreraId={carreraId}
         onAbrirSubida={onAbrirSubida}
       />
-      <QuickUploadBox onClick={onAbrirSubida} />
+      {onAbrirSubida && <QuickUploadBox onClick={onAbrirSubida} />}
 
       {error && (
         <div className='mb-3 rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2 text-[12.5px] text-red-400'>

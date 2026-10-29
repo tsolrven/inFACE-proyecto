@@ -95,9 +95,18 @@ export const protectedRoutes = [
   },
 ];
 
-// rutas que existen pero no van en el sidebar (se llega a ellas navegando, por ej. al hacer click en un hashtag dentro del repositorio de materiales)
+// rutas que existen pero no van en el sidebar (se llega a ellas navegando, por ej. al hacer click en un hashtag)
 export const extraRoutes = [
-  { path: '/repositorio-materiales/tag/:hashtag', component: MaterialsPage },
+  {
+    path: '/hashtag/:nombre',
+    component: lazy(() => import('@/features/hashtags/pages/HashtagPage')),
+  },
+  {
+    path: '/repositorio-materiales/tag/:hashtag',
+    component: lazy(
+      () => import('@/features/hashtags/pages/TagMaterialesRedirect'),
+    ),
+  },
   {
     path: '/perfil',
     component: lazy(() => import('@/features/profile/pages/Perfil')),

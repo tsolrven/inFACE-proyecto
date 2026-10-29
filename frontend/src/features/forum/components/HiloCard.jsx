@@ -7,6 +7,7 @@ import ShareButton from '@/shared/post/share/ShareButton';
 import PortadaImagen from '@/shared/post/images/PortadaImagen';
 import HiloMenu from '@/features/forum/components/HiloMenu';
 import { extractoPlano } from '@/features/forum/utils/extractoPlano';
+import { rutaHashtag } from '@/shared/lib/hashtags';
 
 export default function HiloCard({ hilo }) {
   const navigate = useNavigate();
@@ -89,7 +90,7 @@ export default function HiloCard({ hilo }) {
             {hilo.hashtags.map((tag) => (
               <Link
                 key={tag}
-                to={`/hashtag/${tag}`}
+                to={rutaHashtag(tag, 'foro')}
                 onClick={(e) => e.stopPropagation()}
                 className='text-[11px] text-blue-400 hover:underline'
               >

@@ -20,6 +20,7 @@ import {
   useDesmarcarRespuesta,
   claveRespuestaAceptada,
 } from '@/features/forum/hooks/useHilos';
+import { rutaHashtag } from '@/shared/lib/hashtags';
 
 export default function HiloDetailModal() {
   const { id } = useParams();
@@ -215,7 +216,7 @@ export default function HiloDetailModal() {
                 {hilo.hashtags.map((tag) => (
                   <Link
                     key={tag}
-                    to={`/hashtag/${tag}`}
+                    to={rutaHashtag(tag, 'foro')}
                     className='text-[11.5px] text-blue-400 hover:underline'
                   >
                     #{tag}

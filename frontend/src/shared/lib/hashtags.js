@@ -36,3 +36,9 @@ export function validarHashtags(lista) {
   }
   return null;
 }
+
+// Ruta de la página de un hashtag. `pestana`: 'materiales' (por defecto) o 'foro'.
+export function rutaHashtag(tag, pestana = 'materiales') {
+  const base = `/hashtag/${encodeURIComponent(tag)}`;
+  return pestana === 'materiales' ? base : `${base}?pestana=${pestana}`;
+}

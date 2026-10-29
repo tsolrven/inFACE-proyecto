@@ -18,6 +18,7 @@ import ApunteMenu from '@/features/materials/components/ApunteMenu';
 import VotePill from '@/shared/post/votes/VotePill';
 import ShareButton from '@/shared/post/share/ShareButton';
 import CodeViewer from '@/features/materials/components/CodeViewer';
+import { rutaHashtag } from '@/shared/lib/hashtags';
 
 export default function MaterialDetailModal() {
   const { id } = useParams();
@@ -131,9 +132,7 @@ export default function MaterialDetailModal() {
                 {apunte.hashtags.map((tag) => (
                   <span
                     key={tag}
-                    onClick={() =>
-                      navigate(`/repositorio-materiales/tag/${tag}`)
-                    }
+                    onClick={() => navigate(rutaHashtag(tag))}
                     className='cursor-pointer text-[11.5px] text-blue-400 hover:underline'
                   >
                     #{tag}
