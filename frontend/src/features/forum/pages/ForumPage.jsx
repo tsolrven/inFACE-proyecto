@@ -4,6 +4,9 @@ import RpRules from '@/shared/components/layout/RpRules';
 import PageBanner from '@/shared/components/layout/PageBanner';
 import ForumFeed from '@/features/forum/components/ForumFeed';
 import { useAuthStore } from '@/shared/auth/authStore';
+import { useState } from 'react';
+import Pestanas from '@/shared/components/ui/Pestanas';
+import ForumGuardados from '@/features/forum/components/ForumGuardados';
 
 const rules = [
   'Publica solo en ramos de tu carrera; puedes leer, comentar y votar en las demás.',
@@ -13,10 +16,16 @@ const rules = [
   'Respeta a la comunidad: reporta, no respondas con ataques.',
 ];
 
+const VISTAS = [
+  { id: 'publicaciones', label: 'Publicaciones', icono: 'ti-layout-grid' },
+  { id: 'guardados', label: 'Guardados', icono: 'ti-bookmark' },
+];
+
 export default function ForumPage() {
   const usuario = useAuthStore((s) => s.usuario);
   const carreraId = usuario?.carrera_id ?? null;
   const carreraNombre = usuario?.carreras?.[0]?.nombre ?? 'tu carrera';
+  const [vista, setVista] = useState('publicaciones');
 
   return (
     <div className='flex h-full flex-1 overflow-hidden'>
@@ -36,7 +45,18 @@ export default function ForumPage() {
           ]}
         />
 
-        <ForumFeed carreraId={carreraId} />
+        <Pestanas
+          pestanas={VISTAS}
+          activa={vista}
+          onCambiar={setVista}
+          acento='border-emerald-400'
+        />
+
+        {vista === 'publicaciones' ? (
+          <ForumFeed carreraId={carreraId} />
+        ) : (
+          <ForumGuardados />
+        )}
       </div>
 
       <RightPanel>
