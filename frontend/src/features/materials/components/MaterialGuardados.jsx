@@ -14,7 +14,12 @@ const TIPOS = [
     icono: 'ti-file-text',
     plural: 'materiales',
     singular: 'publicación',
-    renderItem: (apunte) => <MaterialCard apunte={apunte} />,
+    renderItem: (apunte) => (
+      <MaterialCard
+        apunte={apunte}
+        enGuardados
+      />
+    ),
   },
   {
     valor: 'comentario',

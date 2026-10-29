@@ -12,7 +12,12 @@ const TIPOS = [
     icono: 'ti-message-circle-2',
     plural: 'hilos',
     singular: 'hilo',
-    renderItem: (hilo) => <HiloCard hilo={hilo} />,
+    renderItem: (hilo) => (
+      <HiloCard
+        hilo={hilo}
+        enGuardados
+      />
+    ),
   },
   {
     valor: 'comentario',

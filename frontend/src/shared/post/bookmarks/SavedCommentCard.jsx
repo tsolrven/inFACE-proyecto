@@ -1,13 +1,12 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
-import { useGuardar } from '@/shared/post/bookmarks/useGuardar';
+  import QuitarGuardadoButton from '@/shared/post/bookmarks/QuitarGuardadoButton';
 
 // `rutaDe(padre)` la define cada módulo: recibe la publicación a la que pertenece
 // el comentario ({ id, tipo_contenido, titulo }) y devuelve su ruta, o null.
 export default function SavedCommentCard({ comentario, rutaDe }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const guardarMut = useGuardar('comentario');
 
   const padre = comentario.contenido_padre;
   const ruta = padre ? (rutaDe?.(padre) ?? null) : null;
@@ -15,11 +14,6 @@ export default function SavedCommentCard({ comentario, rutaDe }) {
   function irAlPost() {
     if (!ruta) return;
     navigate(ruta, { state: { backgroundLocation: location } });
-  }
-
-  function handleQuitar(e) {
-    e.stopPropagation();
-    guardarMut.mutate({ id: comentario.id, guardar: false });
   }
 
   return (
@@ -36,15 +30,10 @@ export default function SavedCommentCard({ comentario, rutaDe }) {
             {padre?.titulo ?? 'una publicación eliminada'}
           </b>
         </span>
-        <button
-          type='button'
-          onClick={handleQuitar}
-          disabled={guardarMut.isPending}
-          title='Quitar de guardados'
-          className='flex-shrink-0 text-neutral-600 transition-colors hover:text-pink-400 disabled:opacity-50'
-        >
-          <i className='ti ti-bookmark-off text-[14px]' />
-        </button>
+        <QuitarGuardadoButton
+          tipo='comentario'
+          id={comentario.id}
+        />
       </div>
 
       <div className='flex items-center gap-1.5 text-[11.5px] text-neutral-600'>
