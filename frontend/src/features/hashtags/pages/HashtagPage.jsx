@@ -20,6 +20,11 @@ export default function HashtagPage() {
   const hashtag = normalizarHashtag(nombre);
   const pestana = params.get('pestana') === 'foro' ? 'foro' : 'materiales';
 
+  const modulo =
+    pestana === 'foro'
+      ? { label: 'Foro por ramos', to: '/foro-por-ramos' }
+      : { label: 'Repositorio de materiales', to: '/repositorio-materiales' };
+
   // /hashtag/Cálculo -> /hashtag/calculo (la misma forma que guarda el backend)
   if (!hashtag)
     return (
@@ -47,7 +52,12 @@ export default function HashtagPage() {
         icon='ti-hash'
         title={`#${hashtag}`}
         subtitle={`Publicaciones con #${hashtag} en ${carreraNombre}`}
-        breadcrumb={[{ label: 'Inicio', to: '/' }, { label: `#${hashtag}` }]}
+        breadcrumb={[
+          { label: 'Inicio', to: '/' },
+          { label: 'Académico' },
+          modulo,
+          { label: `#${hashtag}` },
+        ]}
       />
 
       <div className='flex gap-1 border-b border-white/[0.06] px-4 pt-2'>
