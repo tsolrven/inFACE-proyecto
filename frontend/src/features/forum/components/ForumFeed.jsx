@@ -33,7 +33,23 @@ export default function ForumFeed({
     fetchNextPage,
   });
 
-  const hayFiltros = !!(filtros.ramo_id || filtros.hashtag);
+  const hayOtrosFiltros = !!filtros.ramo_id;
+  const textoVacio = hashtag
+    ? {
+        titulo: `No hay hilos con #${hashtag}`,
+        detalle: hayOtrosFiltros
+          ? 'Prueba quitando el filtro de ramo.'
+          : 'Nadie ha usado este hashtag en el foro de tu carrera.',
+      }
+    : hayOtrosFiltros
+      ? {
+          titulo: 'No hay hilos con estos filtros',
+          detalle: 'Prueba quitando algún filtro.',
+        }
+      : {
+          titulo: 'No hay hilos todavía',
+          detalle: 'Sé el primero en abrir una conversación.',
+        };
 
   return (
     <div className='flex-1 overflow-y-auto p-4'>
@@ -59,14 +75,10 @@ export default function ForumFeed({
           <div className='flex flex-col items-center justify-center py-16 text-center select-none'>
             <i className='ti ti-message-off mb-3 block text-5xl text-neutral-700' />
             <p className='text-sm font-semibold text-neutral-300'>
-              {hayFiltros
-                ? 'No hay hilos con estos filtros'
-                : 'No hay hilos todavía'}
+              {textoVacio.titulo}
             </p>
             <p className='mt-1.5 text-xs text-neutral-600'>
-              {hayFiltros
-                ? 'Prueba quitando algún filtro.'
-                : 'Sé el primero en abrir una conversación.'}
+              {textoVacio.detalle}
             </p>
           </div>
         )}

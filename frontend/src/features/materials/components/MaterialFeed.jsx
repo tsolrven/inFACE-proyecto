@@ -16,6 +16,24 @@ export default function MaterialFeed({
     [filtrosStore, hashtag],
   );
 
+  const hayOtrosFiltros = !!(filtros.ramo_id || filtros.tipo_archivo);
+  const textoVacio = hashtag
+    ? {
+        titulo: `No hay materiales con #${hashtag}`,
+        detalle: hayOtrosFiltros
+          ? 'Prueba quitando algún filtro.'
+          : 'Nadie ha usado este hashtag en materiales de tu carrera.',
+      }
+    : hayOtrosFiltros
+      ? {
+          titulo: 'No hay materiales con estos filtros',
+          detalle: 'Prueba quitando algún filtro.',
+        }
+      : {
+          titulo: 'No hay materiales todavía',
+          detalle: 'Sé el primero en compartir algo con la comunidad.',
+        };
+
   const {
     data,
     isPending,
@@ -66,10 +84,10 @@ export default function MaterialFeed({
         <div className='flex flex-col items-center justify-center py-16 text-center select-none'>
           <i className='ti ti-mood-empty mb-3 block text-5xl text-neutral-700' />
           <p className='text-sm font-semibold text-neutral-300'>
-            No hay materiales todavía
+            {textoVacio.titulo}
           </p>
           <p className='mt-1.5 text-xs text-neutral-600'>
-            Sé el primero en compartir algo con la comunidad.
+            {textoVacio.detalle}
           </p>
         </div>
       )}
