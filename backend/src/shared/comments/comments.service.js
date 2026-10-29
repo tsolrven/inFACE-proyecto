@@ -415,6 +415,61 @@ async function podarAncestrosEliminados(tx, padre_id) {
   return podados;
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
+// Un comentario con el camino hasta su raíz (como el enlace permanente de Reddit):
+// ancestros + el comentario + sus mejores respuestas. Los hermanos no se incluyen:
+// cada ancestro trae `respuestas_count` para que "Ver más respuestas" los cargue.
+async function obtenerContextoComentario({
+  comentario_id,
+  usuario_id,
+  orden = 'mejores',
+}) {
+  // raíz -> comentario, en una sola consulta (la profundidad máxima es MAX_NIVEL_COMENTARIO)
+  const cadena = await prisma.$queryRaw`
+    WITH RECURSIVE cadena AS (
+      SELECT id, padre_id, 0 AS distancia
+      FROM comentarios WHERE id = ${comentario_id}
+      UNION ALL
+      SELECT c.id, c.padre_id, cadena.distancia + 1
+      FROM comentarios c JOIN cadena ON c.id = cadena.padre_id
+    )
+    SELECT id FROM cadena ORDER BY distancia DESC`;
+  if (cadena.length === 0) throw new NotFoundError('Comentario');
+
+  const ids = cadena.map((f) => f.id);
+  const filas = await prisma.comentario.findMany({
+    where: { id: { in: ids } },
+    include: INCLUDE_COMENTARIO,
+  });
+  const porId = new Map(filas.map((f) => [f.id, f]));
+  const objetivo = porId.get(comentario_id);
+  if (!objetivo) throw new NotFoundError('Comentario');
+
+  const ancestros = ids
+    .slice(0, -1)
+    .map((id) => porId.get(id))
+    .filter(Boolean);
+
+  // el comentario con sus respuestas precargadas, igual que en la lista
+  const desdeObjetivo = await agregarRespuestasPrecargadas([objetivo], orden);
+  const todas = [...ancestros, ...desdeObjetivo];
+
+  const { mapVotos, setGuardados } = await obtenerMisInteracciones(
+    'comentario',
+    todas.map((c) => c.id),
+    usuario_id,
+  );
+  const [raiz] = construirArbolComentarios(todas, mapVotos, setGuardados);
+
+  return {
+    raiz,
+    ruta: ids, // ids de la raíz al comentario
+    contenido: {
+      tipo_contenido: objetivo.tipo_contenido,
+      contenido_id: objetivo.contenido_id,
+    },
+  };
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
 async function hidratarComentariosGuardados(ids, usuario_id) {
   const comentarios = await prisma.comentario.findMany({
     where: { id: { in: ids } },
@@ -521,5 +576,6 @@ export {
   crearComentario,
   editarComentario,
   eliminarComentario,
+  obtenerContextoComentario,
   formatearComentario,
 };

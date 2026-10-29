@@ -6,6 +6,7 @@ import {
   eliminarComentario,
 } from './comments.service.js';
 import ApiResponse from '../../utils/apiResponse.js';
+import { obtenerContextoComentario } from './comments.service.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function listarDeContenido(req, res, next) {
   try {
@@ -85,10 +86,25 @@ async function eliminar(req, res, next) {
   }
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
+async function obtenerContexto(req, res, next) {
+  try {
+    const { orden } = req.query;
+    const contexto = await obtenerContextoComentario({
+      comentario_id: req.params.comentario_id,
+      usuario_id: req.usuario.id,
+      orden,
+    });
+    return ApiResponse.success(res, contexto);
+  } catch (err) {
+    next(err);
+  }
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
 export {
   listarDeContenido,
   listarRespuestasDeComentario,
   crearEnContenido,
   editar,
   eliminar,
+  obtenerContexto,
 };

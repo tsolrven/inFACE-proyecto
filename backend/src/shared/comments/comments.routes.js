@@ -5,6 +5,7 @@ import {
   crearEnContenido,
   editar,
   eliminar,
+  obtenerContexto,
 } from './comments.controller.js';
 import { autenticar } from '../../middlewares/auth.middleware.js';
 import validate from '../../middlewares/validate.js';
@@ -26,6 +27,15 @@ router.get(
   validate(comentarioIdParamSchema, 'params'),
   validate(listarComentariosQuerySchema, 'query'),
   listarRespuestasDeComentario,
+);
+
+// un comentario con el camino hasta su raíz 
+router.get(
+  '/:comentario_id/contexto',
+  autenticar,
+  validate(comentarioIdParamSchema, 'params'),
+  validate(listarComentariosQuerySchema, 'query'),
+  obtenerContexto,
 );
 
 // comentarios raíz DE un contenido (apunte hoy; hilo y anuncio mañana)
