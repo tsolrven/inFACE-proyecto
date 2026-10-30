@@ -16,7 +16,12 @@ export function normalizarHashtag(valor = '') {
 
 export function normalizarHashtags(texto = '') {
   return [
-    ...new Set(texto.split(/[\s,]+/).map(normalizarHashtag).filter(Boolean)),
+    ...new Set(
+      texto
+        .split(/[\s,]+/)
+        .map(normalizarHashtag)
+        .filter(Boolean),
+    ),
   ];
 }
 

@@ -1,6 +1,6 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
-  import QuitarGuardadoButton from '@/shared/post/bookmarks/QuitarGuardadoButton';
+import QuitarGuardadoButton from '@/shared/post/bookmarks/QuitarGuardadoButton';
 
 // `rutaDe(padre)` la define cada módulo: recibe la publicación a la que pertenece
 // el comentario ({ id, tipo_contenido, titulo }) y devuelve su ruta, o null.

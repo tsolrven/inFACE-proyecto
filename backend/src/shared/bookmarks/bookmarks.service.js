@@ -97,7 +97,12 @@ async function listarGuardados({
           pagina,
           limite,
         })
-      : await listarIdsGuardados({ usuario_id, tipo_contenido, pagina, limite });
+      : await listarIdsGuardados({
+          usuario_id,
+          tipo_contenido,
+          pagina,
+          limite,
+        });
 
   const paginas = Math.ceil(total / limite);
 

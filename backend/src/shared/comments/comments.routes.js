@@ -29,7 +29,7 @@ router.get(
   listarRespuestasDeComentario,
 );
 
-// un comentario con el camino hasta su raíz 
+// un comentario con el camino hasta su raíz
 router.get(
   '/:comentario_id/contexto',
   autenticar,
