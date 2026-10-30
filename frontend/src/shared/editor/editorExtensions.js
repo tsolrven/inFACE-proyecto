@@ -20,19 +20,45 @@ export function normalizarEnlace(entrada = '') {
 // 'common' trae los ~35 lenguajes habituales (el paquete completo pesa mucho más).
 const lowlight = createLowlight(common);
 
-// Se crea una sola vez: useEditor no debe recibir extensiones nuevas en cada render.
+const LINK = {
+  openOnClick: false,
+  autolink: true,
+  defaultProtocol: 'https',
+  isAllowedUri: (url) => PROTOCOLO_PERMITIDO.test(url),
+};
+
+const BLOQUE_CODIGO = CodeBlockLowlight.configure({
+  lowlight,
+  defaultLanguage: null,
+});
+
+// Se crean una sola vez: useEditor no debe recibir extensiones nuevas en cada render.
+
+// Barra completa: foro y cualquier módulo con contenido largo.
 export const EXTENSIONES_EDITOR = [
   StarterKit.configure({
     heading: { levels: [2, 3] },
     underline: false, // no existe en Markdown estándar
     codeBlock: false, // lo reemplaza CodeBlockLowlight
-    link: {
-      openOnClick: false,
-      autolink: true,
-      defaultProtocol: 'https',
-      isAllowedUri: (url) => PROTOCOLO_PERMITIDO.test(url),
-    },
+    link: LINK,
   }),
-  CodeBlockLowlight.configure({ lowlight, defaultLanguage: null }),
+  BLOQUE_CODIGO,
+  Markdown,
+];
+
+// Barra reducida (descripciones cortas): además de ocultar los botones, se
+// desactivan las extensiones, para que ni los atajos de teclado, ni escribir
+// "## " / "> " / "---", ni pegar contenido puedan crearlos.
+export const EXTENSIONES_EDITOR_REDUCIDO = [
+  StarterKit.configure({
+    heading: false,
+    blockquote: false,
+    horizontalRule: false,
+    strike: false,
+    underline: false,
+    codeBlock: false,
+    link: LINK,
+  }),
+  BLOQUE_CODIGO,
   Markdown,
 ];

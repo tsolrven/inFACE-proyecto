@@ -99,6 +99,13 @@
   padding: 0.75rem 0.9rem;
   outline: none;
 }
+.md-editor-contenido p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: #525252;
+}
 .md-editor-contenido hr.ProseMirror-selectednode {
   border-top-color: #60a5fa;
 }

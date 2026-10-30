@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { EditorContent, useEditor, useEditorState } from '@tiptap/react';
+import { Placeholder } from '@tiptap/extensions';
 import CharCounter from '@/shared/components/ui/CharCounter';
 import {
   EXTENSIONES_EDITOR,
+  EXTENSIONES_EDITOR_REDUCIDO,
   normalizarEnlace,
 } from '@/shared/editor/editorExtensions';
 import '@/shared/markdown/markdown.css';
@@ -58,13 +60,22 @@ function Separador() {
  *   cargar otro contenido, el padre cambia la `key` del componente.
  * - onChange(markdown): se llama en cada cambio con el markdown ya recortado.
  * - max: límite de caracteres del markdown (el padre decide si bloquea el envío).
+ * - ariaLabel: nombre accesible del área de escritura.
+ * - placeholder: texto gris mientras el editor está vacío (se lee al montar).
+ * - barra: 'completa' | 'reducida'. La reducida quita tachado, títulos, cita y
+ *   línea horizontal (botones Y extensiones). Se lee al montar.
  */
 export default function MarkdownEditor({
   valorInicial = '',
   onChange,
   max,
   disabled = false,
+  ariaLabel = 'Contenido',
+  placeholder = '',
+  barra = 'completa',
 }) {
+  const reducida = barra === 'reducida';
+
   const [markdown, setMarkdown] = useState(valorInicial.trim());
   const [enlace, setEnlace] = useState(null); // null = cerrado; texto = URL en edición
   const [errorEnlace, setErrorEnlace] = useState('');
@@ -75,15 +86,24 @@ export default function MarkdownEditor({
     onChangeRef.current = onChange;
   });
 
+  // useEditor no debe recibir un arreglo nuevo en cada render
+  const extensiones = useMemo(
+    () => [
+      ...(reducida ? EXTENSIONES_EDITOR_REDUCIDO : EXTENSIONES_EDITOR),
+      ...(placeholder ? [Placeholder.configure({ placeholder })] : []),
+    ],
+    [reducida, placeholder],
+  );
+
   const editor = useEditor({
-    extensions: EXTENSIONES_EDITOR,
+    extensions: extensiones,
     content: valorInicial,
     contentType: 'markdown',
     editable: !disabled,
     editorProps: {
       attributes: {
         class: 'md-view md-editor-contenido',
-        'aria-label': 'Contenido del hilo',
+        'aria-label': ariaLabel,
       },
     },
     onUpdate: ({ editor: ed }) => {
@@ -165,13 +185,15 @@ export default function MarkdownEditor({
           disabled={disabled}
           onClick={() => run().toggleItalic().run()}
         />
-        <Boton
-          icono='ti-strikethrough'
-          titulo='Tachado'
-          activo={estado.tachado}
-          disabled={disabled}
-          onClick={() => run().toggleStrike().run()}
-        />
+        {!reducida && (
+          <Boton
+            icono='ti-strikethrough'
+            titulo='Tachado'
+            activo={estado.tachado}
+            disabled={disabled}
+            onClick={() => run().toggleStrike().run()}
+          />
+        )}
         <Boton
           icono='ti-code'
           titulo='Código en línea'
@@ -189,22 +211,25 @@ export default function MarkdownEditor({
 
         <Separador />
 
-        <Boton
-          icono='ti-h-2'
-          titulo='Título grande (H2)'
-          activo={estado.h2}
-          disabled={disabled}
-          onClick={() => run().toggleHeading({ level: 2 }).run()}
-        />
-        <Boton
-          icono='ti-h-3'
-          titulo='Título mediano (H3)'
-          activo={estado.h3}
-          disabled={disabled}
-          onClick={() => run().toggleHeading({ level: 3 }).run()}
-        />
-
-        <Separador />
+        {!reducida && (
+          <>
+            <Boton
+              icono='ti-h-2'
+              titulo='Título grande (H2)'
+              activo={estado.h2}
+              disabled={disabled}
+              onClick={() => run().toggleHeading({ level: 2 }).run()}
+            />
+            <Boton
+              icono='ti-h-3'
+              titulo='Título mediano (H3)'
+              activo={estado.h3}
+              disabled={disabled}
+              onClick={() => run().toggleHeading({ level: 3 }).run()}
+            />
+            <Separador />
+          </>
+        )}
 
         <Boton
           icono='ti-list'
@@ -220,13 +245,15 @@ export default function MarkdownEditor({
           disabled={disabled}
           onClick={() => run().toggleOrderedList().run()}
         />
-        <Boton
-          icono='ti-blockquote'
-          titulo='Cita'
-          activo={estado.cita}
-          disabled={disabled}
-          onClick={() => run().toggleBlockquote().run()}
-        />
+        {!reducida && (
+          <Boton
+            icono='ti-blockquote'
+            titulo='Cita'
+            activo={estado.cita}
+            disabled={disabled}
+            onClick={() => run().toggleBlockquote().run()}
+          />
+        )}
         <Boton
           icono='ti-source-code'
           titulo='Bloque de código'
@@ -234,12 +261,14 @@ export default function MarkdownEditor({
           disabled={disabled}
           onClick={() => run().toggleCodeBlock().run()}
         />
-        <Boton
-          icono='ti-separator-horizontal'
-          titulo='Línea horizontal'
-          disabled={disabled}
-          onClick={() => run().setHorizontalRule().run()}
-        />
+        {!reducida && (
+          <Boton
+            icono='ti-separator-horizontal'
+            titulo='Línea horizontal'
+            disabled={disabled}
+            onClick={() => run().setHorizontalRule().run()}
+          />
+        )}
 
         <Separador />
 

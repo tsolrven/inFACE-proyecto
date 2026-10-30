@@ -277,6 +277,8 @@ export default function HiloFormModal({
                 valorInicial={original.contenido}
                 onChange={setContenido}
                 max={CONTENIDO_MAX}
+                ariaLabel='Contenido del hilo'
+                placeholder='Cuenta tu duda o aporte con el detalle que puedas…'
               />
             </Suspense>
           </Campo>
