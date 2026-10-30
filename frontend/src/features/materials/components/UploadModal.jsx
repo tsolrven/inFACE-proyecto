@@ -24,6 +24,7 @@ import {
   claveArchivo,
 } from '@/shared/lib/archivos';
 import { normalizarLinks } from '@/features/materials/utils/normalizarLinks';
+import { mensajeDeError } from '@/shared/lib/errores';
 
 const TIPOS = [
   { value: 'file', icon: 'ti-upload', label: 'Archivo' },
@@ -171,7 +172,9 @@ export default function UploadModal({ open, onClose, carreraId }) {
       resetForm();
       onClose();
     } catch (err) {
-      setError(err.message || 'Ocurrió un error al publicar el material.');
+      setError(
+        mensajeDeError(err, 'Ocurrió un error al publicar el material.'),
+      );
     } finally {
       setEnviando(false);
     }

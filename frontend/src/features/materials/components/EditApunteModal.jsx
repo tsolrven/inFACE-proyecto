@@ -28,6 +28,7 @@ import {
   claveArchivo,
 } from '@/shared/lib/archivos';
 import { normalizarLinks } from '@/features/materials/utils/normalizarLinks';
+import { mensajeDeError } from '@/shared/lib/errores';
 
 const TIPOS = [
   { value: 'file', icon: 'ti-upload', label: 'Archivo' },
@@ -252,7 +253,7 @@ function EditApunteForm({ onClose, apunte, carreraId, onSaved }) {
 
       if (!huboFallidos) onClose();
     } catch (err) {
-      setError(err.message || 'Ocurrió un error al guardar los cambios.');
+      setError(mensajeDeError(err, 'Ocurrió un error al guardar los cambios.'));
     } finally {
       setEnviando(false);
     }

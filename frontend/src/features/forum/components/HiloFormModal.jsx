@@ -11,6 +11,7 @@ import CharCounter from '@/shared/components/ui/CharCounter';
 import ConfirmDialog from '@/shared/components/ui/ConfirmDialog';
 import { listarRamosPorCarrera } from '@/shared/api/catalog.api';
 import { normalizarHashtags, validarHashtags } from '@/shared/lib/hashtags';
+import { mensajeDeError } from '@/shared/lib/errores';
 import { mostrarToast } from '@/shared/stores/toastStore';
 import { useCrearHilo, useEditarHilo } from '@/features/forum/hooks/useHilos';
 import {
@@ -25,12 +26,6 @@ import {
 
 // Tiptap + ProseMirror + lowlight solo se descargan al abrir el formulario
 const MarkdownEditor = lazy(() => import('@/shared/editor/MarkdownEditor'));
-
-// El backend responde { message, details: [{ field, message }] } en validaciones
-function mensajeDeError(err, porDefecto) {
-  const detalles = err.details?.map((d) => d.message).filter(Boolean);
-  return detalles?.length ? detalles.join(' · ') : err.message || porDefecto;
-}
 
 /**
  * Formulario de hilo. Sin `hilo` = crear; con `hilo` (detalle COMPLETO, no el de
