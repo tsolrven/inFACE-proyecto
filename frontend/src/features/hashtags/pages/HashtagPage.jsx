@@ -1,5 +1,6 @@
 import { Navigate, useParams, useSearchParams } from 'react-router-dom';
 import PageBanner from '@/shared/components/layout/PageBanner';
+import Pestanas from '@/shared/components/ui/Pestanas';
 import { MaterialFeed } from '@/features/materials';
 import { ForumFeed } from '@/features/forum';
 import { useAuthStore } from '@/shared/auth/authStore';
@@ -60,22 +61,11 @@ export default function HashtagPage() {
         ]}
       />
 
-      <div className='flex gap-1 border-b border-white/[0.06] px-4 pt-2'>
-        {PESTANAS.map((p) => (
-          <button
-            key={p.id}
-            type='button'
-            onClick={() => cambiarPestana(p.id)}
-            className={`flex items-center gap-1.5 border-b-2 px-3 py-2 text-[13px] font-semibold transition-colors ${
-              pestana === p.id
-                ? 'border-pink-500 text-neutral-100'
-                : 'border-transparent text-neutral-500 hover:text-neutral-200'
-            }`}
-          >
-            <i className={`ti ${p.icono} text-[15px]`} /> {p.label}
-          </button>
-        ))}
-      </div>
+      <Pestanas
+        pestanas={PESTANAS}
+        activa={pestana}
+        onCambiar={cambiarPestana}
+      />
 
       {pestana === 'materiales' ? (
         <MaterialFeed
