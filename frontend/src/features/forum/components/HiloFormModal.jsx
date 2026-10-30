@@ -1,6 +1,8 @@
 import { lazy, Suspense, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Modal, { ModalHeader } from '@/shared/components/ui/Modal';
+import Campo from '@/shared/components/form/Campo';
+import { inputClasses } from '@/shared/components/form/inputClasses';
 import Button from '@/shared/components/ui/Button';
 import CharCounter from '@/shared/components/ui/CharCounter';
 import ConfirmDialog from '@/shared/components/ui/ConfirmDialog';
@@ -10,6 +12,7 @@ import {
   agregarArchivosSinDuplicar,
   claveArchivo,
   extensionDe,
+  formatearTamanio,
 } from '@/shared/lib/archivos';
 import { mostrarToast } from '@/shared/stores/toastStore';
 import { useCrearHilo, useEditarHilo } from '@/features/forum/hooks/useHilos';
@@ -25,29 +28,6 @@ import {
 
 // Tiptap + ProseMirror + lowlight solo se descargan al abrir el formulario
 const MarkdownEditor = lazy(() => import('@/shared/editor/MarkdownEditor'));
-
-const inputClasses =
-  'w-full rounded-[10px] border border-white/[0.07] bg-[#111114] px-3 py-2 text-[13px] text-neutral-100 outline-none transition-colors placeholder-neutral-600 focus:border-pink-500/40';
-
-function Campo({ label, extra, children }) {
-  return (
-    <div className='flex flex-col gap-1.5'>
-      <div className='flex items-center justify-between'>
-        <span className='text-[11.5px] font-semibold text-neutral-500'>
-          {label}
-        </span>
-        {extra}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function formatearTamanio(bytes) {
-  return bytes >= 1024 * 1024
-    ? `${(bytes / 1024 / 1024).toFixed(1)} MB`
-    : `${Math.max(1, Math.round(bytes / 1024))} KB`;
-}
 
 // El backend responde { message, details: [{ field, message }] } en validaciones
 function mensajeDeError(err, porDefecto) {

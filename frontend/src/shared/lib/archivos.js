@@ -17,3 +17,11 @@ export function extensionDe(nombre = '') {
   const i = nombre.lastIndexOf('.');
   return i === -1 ? '' : nombre.slice(i).toLowerCase();
 }
+
+// '340.0 KB', '2.1 MB', '512 B'; '' si no hay tamaño
+export function formatearTamanio(bytes) {
+  if (!bytes && bytes !== 0) return '';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}

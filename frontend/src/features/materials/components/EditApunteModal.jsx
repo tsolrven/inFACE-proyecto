@@ -3,10 +3,8 @@ import Modal, { ModalHeader } from '@/shared/components/ui/Modal';
 import Button from '@/shared/components/ui/Button';
 import { listarRamosPorCarrera } from '@/shared/api/catalog.api';
 import { subirArchivos, eliminarArchivo } from '@/shared/api/archivos.api';
-import {
-  metaDeArchivo,
-  formatearTamanio,
-} from '@/features/materials/utils/fileMeta';
+import { metaDeArchivo } from '@/features/materials/utils/fileMeta';
+import { formatearTamanio } from '@/shared/lib/archivos';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEditarApunte } from '@/features/materials/hooks/useApuntes';
 import { parchearContenido } from '@/shared/post/cache';

@@ -4,9 +4,9 @@ import {
   metaDeBadge,
   metaDeArchivo,
   metaDeLink,
-  formatearTamanio,
   badgesDeApunte,
 } from '@/features/materials/utils/fileMeta';
+import { formatearTamanio } from '@/shared/lib/archivos';
 import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
 import { descargarArchivo } from '@/shared/api/archivos.api';
 import { useVotar } from '@/shared/post/votes/useVotar';

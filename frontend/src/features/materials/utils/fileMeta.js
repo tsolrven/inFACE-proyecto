@@ -200,10 +200,3 @@ export function badgesDeApunte({
   if (links.some(esLinkGithub)) presentes.add('github');
   return ORDEN_BADGES.filter((b) => presentes.has(b)); // orden estable
 }
-
-export function formatearTamanio(bytes) {
-  if (!bytes && bytes !== 0) return '';
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
