@@ -31,12 +31,47 @@ export async function eliminarArchivo(id) {
   return apiFetch(`/archivos/${id}`, { method: 'DELETE' });
 }
 
+// Aplica los cambios de archivos de un contenido que ya existe. Orden fijo:
+//   1. quitar, uno tras otro, ANTES de subir (el backend compara el total
+//      contra el máximo permitido);
+//   2. subir, uno tras otro (ver subirArchivos).
+// Un archivo que falla no detiene al resto: no lanza, devuelve el detalle para
+// que quien la llama decida qué mostrar.
+//   quitar: ids de archivos existentes · nuevos: File[]
+export async function sincronizarArchivos(
+  tipoContenido,
+  contenidoId,
+  { quitar = [], nuevos = [] } = {},
+) {
+  const quitados = [];
+  const fallidosQuitar = [];
+  for (const id of quitar) {
+    try {
+      await eliminarArchivo(id);
+      quitados.push(id);
+    } catch (error) {
+      fallidosQuitar.push({ id, error });
+    }
+  }
+
+  const { exitosos, fallidos } =
+    nuevos.length > 0
+      ? await subirArchivos(tipoContenido, contenidoId, nuevos)
+      : { exitosos: [], fallidos: [] };
+
+  return {
+    quitados, // ids
+    fallidosQuitar, // [{ id, error }]
+    subidos: exitosos, // archivos tal como los devuelve el backend
+    fallidosSubir: fallidos, // [{ file, error }]
+  };
+}
+
 // Imagen para mostrar en pantalla (GET /archivos/:id/ver). A diferencia de
 // /descargar, NO incrementa el contador de descargas. Devuelve un Blob.
 export function obtenerImagen(id, signal) {
   return apiFetch(`/archivos/${id}/ver`, { responseType: 'blob', signal });
 }
-
 
 // Descarga el archivo al equipo (GET /archivos/:id/descargar, que sí cuenta
 // la descarga). Recibe el objeto archivo tal como viene del backend.

@@ -13,7 +13,7 @@ import {
   aceptarRespuesta,
   desmarcarRespuesta,
 } from '@/features/forum/api/forum.api';
-import { eliminarArchivo, subirArchivos } from '@/shared/api/archivos.api';
+import { sincronizarArchivos } from '@/shared/api/archivos.api';
 import { commentKeys } from '@/shared/post/comments/useComments';
 import {
   buscarContenido,
@@ -121,21 +121,14 @@ export function useEditarHilo() {
       // 1. Texto: si falla, no se toca nada más
       const actualizado = payload ? await actualizarHilo(id, payload) : null;
 
-      // 2. Quitar ANTES de subir: el backend compara contra el máximo de archivos
-      const resultadoQuitar = await Promise.allSettled(
-        quitar.map((archivoId) => eliminarArchivo(archivoId)),
+      // 2. Archivos: quitar ANTES de subir (ver sincronizarArchivos)
+      const { fallidosQuitar, fallidosSubir } = await sincronizarArchivos(
+        'hilo',
+        id,
+        { quitar, nuevos },
       );
-      const fallosQuitar = resultadoQuitar.filter(
-        (r) => r.status === 'rejected',
-      ).length;
 
-      // 3. Subir (secuencial)
-      const { fallidos } =
-        nuevos.length > 0
-          ? await subirArchivos('hilo', id, nuevos)
-          : { fallidos: [] };
-
-      // 4. Si cambiaron los archivos, la lista real se pide de nuevo.
+      // 3. Si cambiaron los archivos, la lista real se pide de nuevo.
       // Si esto falla no es grave: los cambios ya están guardados.
       let hilo = actualizado;
       if (!actualizado || quitar.length > 0 || nuevos.length > 0) {
@@ -146,7 +139,10 @@ export function useEditarHilo() {
         }
       }
 
-      return { hilo, fallos: { quitar: fallosQuitar, subir: fallidos.length } };
+      return {
+        hilo,
+        fallos: { quitar: fallidosQuitar.length, subir: fallidosSubir.length },
+      };
     },
     onSuccess: ({ hilo }, { id }) => {
       if (!hilo) {
