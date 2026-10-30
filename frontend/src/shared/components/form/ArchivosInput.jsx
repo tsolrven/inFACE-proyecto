@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import Campo from '@/shared/components/form/Campo';
 import { claveArchivo, formatearTamanio } from '@/shared/lib/archivos';
 
@@ -27,11 +28,14 @@ export default function ArchivosInput({
     cupo,
     extensiones,
     singular,
+    plural,
     agregar,
     quitarNuevo,
     mover,
     alternarExistente,
   } = control;
+
+  const inputId = useId();
 
   function handleChange(e) {
     const elegidos = Array.from(e.target.files); // primero capturar, después vaciar
@@ -95,14 +99,24 @@ export default function ArchivosInput({
         </div>
       )}
 
-      <input
-        type='file'
-        multiple
-        accept={extensiones?.join(',')}
-        disabled={cupo - nuevos.length <= 0}
-        onChange={handleChange}
-        className='text-[12.5px] text-neutral-400 file:mr-3 file:rounded-md file:border-0 file:bg-pink-500/10 file:px-3 file:py-1.5 file:text-[11.5px] file:font-semibold file:text-pink-500 disabled:opacity-50'
-      />
+      <div className='flex items-center'>
+        <input
+          id={inputId}
+          type='file'
+          multiple
+          accept={extensiones?.join(',')}
+          disabled={cupo - nuevos.length <= 0}
+          onChange={handleChange}
+          className='peer sr-only'
+        />
+        <label
+          htmlFor={inputId}
+          className='cursor-pointer rounded-md bg-pink-500/10 px-3 py-1.5 text-[11.5px] font-semibold text-pink-500 transition-colors hover:bg-pink-500/20 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-pink-500 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 peer-disabled:hover:bg-pink-500/10'
+        >
+          Elegir {plural}
+        </label>
+      </div>
+
       {ayuda && <p className='text-[11px] text-neutral-600'>{ayuda}</p>}
       {avisos.length > 0 && (
         <p className='text-[11px] text-amber-400'>{avisos.join(' · ')}</p>
