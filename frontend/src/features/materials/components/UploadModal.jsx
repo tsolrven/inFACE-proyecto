@@ -12,7 +12,7 @@ import { inputClasses } from '@/shared/components/form/inputClasses';
 import HashtagsInput from '@/shared/components/form/HashtagsInput';
 import ArchivosInput from '@/shared/components/form/ArchivosInput';
 import { useArchivosForm } from '@/shared/hooks/useArchivosForm';
-import { metaDeArchivo } from '@/features/materials/utils/fileMeta';
+import { iconoDeAdjunto } from '@/features/materials/utils/fileMeta';
 import CharCounter from '@/shared/components/ui/CharCounter';
 import {
   TITULO_MIN,
@@ -37,10 +37,6 @@ const TIPOS = [
 ];
 
 const FUENTES_INICIALES = { file: false, link: false, snippet: false };
-
-// File.type es el MIME que informa el navegador; si viene vacío, ícono genérico
-const iconoDeArchivo = (archivo) =>
-  metaDeArchivo({ tipo_mime: archivo.type }).icon;
 
 export default function UploadModal({ open, onClose, carreraId }) {
   const [fuentes, setFuentes] = useState(FUENTES_INICIALES);
@@ -312,7 +308,7 @@ export default function UploadModal({ open, onClose, carreraId }) {
                 </span>
               }
               ayuda={`PDF, Word, PowerPoint, Excel, TXT, ZIP o imágenes · hasta ${MAX_TAMANIO_MB} MB cada uno.`}
-              iconoDe={iconoDeArchivo}
+              iconoDe={iconoDeAdjunto}
             />
           )}
 

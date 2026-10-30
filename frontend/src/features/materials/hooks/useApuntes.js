@@ -15,6 +15,7 @@ import {
   parchearContenido,
   quitarContenido,
 } from '@/shared/post/cache';
+import { sincronizarArchivos } from '@/shared/api/archivos.api';
 
 export const apunteKeys = {
   list: (filtros) => ['apunte', 'list', filtros],
@@ -48,12 +49,54 @@ export function useApunte(id) {
   });
 }
 
+// `quitar`: ids de archivos a eliminar · `nuevos`: File[] a subir.
+// `payload` null = solo cambian los archivos (el PATCH marca "editado", así que
+// no se llama si el texto no cambió).
+// Devuelve { apunte, fallos: { quitar, subir } }: cuántas operaciones de
+// archivos fallaron (el texto ya quedó guardado).
 export function useEditarApunte() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, payload }) => actualizarApunte(id, payload),
-    onSuccess: (actualizado, { id }) => {
-      parchearContenido(qc, 'apunte', id, actualizado);
+    mutationFn: async ({
+      id,
+      payload = null,
+      quitar = [],
+      nuevos = [],
+      subirPrimero = false,
+    }) => {
+      // 1. Texto: si falla, no se toca nada más
+      const actualizado = payload ? await actualizarApunte(id, payload) : null;
+
+      // 2. Archivos
+      const { fallidosQuitar, fallidosSubir } = await sincronizarArchivos(
+        'apunte',
+        id,
+        { quitar, nuevos, subirPrimero },
+      );
+
+      // 3. La respuesta del PATCH trae los archivos de ANTES de sincronizar:
+      // si cambiaron, se pide el apunte de nuevo. Si eso falla, null = se
+      // invalida y se recarga (mejor que parchear con una lista vieja).
+      let apunte = actualizado;
+      if (!actualizado || quitar.length > 0 || nuevos.length > 0) {
+        try {
+          apunte = await obtenerApunte(id);
+        } catch {
+          apunte = null;
+        }
+      }
+
+      return {
+        apunte,
+        fallos: { quitar: fallidosQuitar.length, subir: fallidosSubir.length },
+      };
+    },
+    onSuccess: ({ apunte }, { id }) => {
+      if (!apunte) {
+        qc.invalidateQueries({ queryKey: ['apunte'] });
+        return;
+      }
+      parchearContenido(qc, 'apunte', id, apunte);
     },
   });
 }

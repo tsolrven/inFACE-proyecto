@@ -102,6 +102,12 @@ export function metaDeArchivo(archivo) {
   return DEFS[categoriaDeMime(archivo?.tipo_mime)] ?? DEFS.default;
 }
 
+// Para ArchivosInput: sirve para archivos ya guardados (tipo_mime) y para los
+// File recién elegidos (type).
+export function iconoDeAdjunto(archivo) {
+  return metaDeArchivo({ tipo_mime: archivo.tipo_mime ?? archivo.type }).icon;
+}
+
 const DOMINIOS_LINK = {
   'github.com': DEFS.github,
   'gitlab.com': { ...DEFS.link, icon: 'ti-brand-gitlab', label: 'GitLab' },

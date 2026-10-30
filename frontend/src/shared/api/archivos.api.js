@@ -31,39 +31,56 @@ export async function eliminarArchivo(id) {
   return apiFetch(`/archivos/${id}`, { method: 'DELETE' });
 }
 
-// Aplica los cambios de archivos de un contenido que ya existe. Orden fijo:
+// Aplica los cambios de archivos de un contenido que ya existe. Orden por defecto:
 //   1. quitar, uno tras otro, ANTES de subir (el backend compara el total
 //      contra el máximo permitido);
 //   2. subir, uno tras otro (ver subirArchivos).
+// Con `subirPrimero` se invierte: sube y después quita. Solo es seguro si
+// existentes + nuevos <= máximo (el backend cuenta TODOS los archivos actuales
+// al subir). Sirve para que, si una subida falla, no se haya borrado ya lo que
+// había (ej: material cuyo único contenido es un archivo).
 // Un archivo que falla no detiene al resto: no lanza, devuelve el detalle para
 // que quien la llama decida qué mostrar.
 //   quitar: ids de archivos existentes · nuevos: File[]
 export async function sincronizarArchivos(
   tipoContenido,
   contenidoId,
-  { quitar = [], nuevos = [] } = {},
+  { quitar = [], nuevos = [], subirPrimero = false } = {},
 ) {
-  const quitados = [];
-  const fallidosQuitar = [];
-  for (const id of quitar) {
-    try {
-      await eliminarArchivo(id);
-      quitados.push(id);
-    } catch (error) {
-      fallidosQuitar.push({ id, error });
+  async function quitarTodos() {
+    const quitados = [];
+    const fallidosQuitar = [];
+    for (const id of quitar) {
+      try {
+        await eliminarArchivo(id);
+        quitados.push(id);
+      } catch (error) {
+        fallidosQuitar.push({ id, error });
+      }
     }
+    return { quitados, fallidosQuitar };
   }
 
-  const { exitosos, fallidos } =
+  const subirTodos = () =>
     nuevos.length > 0
-      ? await subirArchivos(tipoContenido, contenidoId, nuevos)
-      : { exitosos: [], fallidos: [] };
+      ? subirArchivos(tipoContenido, contenidoId, nuevos)
+      : Promise.resolve({ exitosos: [], fallidos: [] });
+
+  let quitadas;
+  let subidas;
+  if (subirPrimero) {
+    subidas = await subirTodos();
+    quitadas = await quitarTodos();
+  } else {
+    quitadas = await quitarTodos();
+    subidas = await subirTodos();
+  }
 
   return {
-    quitados, // ids
-    fallidosQuitar, // [{ id, error }]
-    subidos: exitosos, // archivos tal como los devuelve el backend
-    fallidosSubir: fallidos, // [{ file, error }]
+    quitados: quitadas.quitados, // ids
+    fallidosQuitar: quitadas.fallidosQuitar, // [{ id, error }]
+    subidos: subidas.exitosos, // archivos tal como los devuelve el backend
+    fallidosSubir: subidas.fallidos, // [{ file, error }]
   };
 }
 
