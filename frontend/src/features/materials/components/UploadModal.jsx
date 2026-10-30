@@ -6,7 +6,13 @@ import { crearApunte } from '@/features/materials/api/materials.api';
 import { useQueryClient } from '@tanstack/react-query';
 import CodeEditor from '@/features/materials/components/CodeEditor';
 import InfoTooltip from '@/shared/components/ui/InfoTooltip';
-import { normalizarHashtags } from '@/shared/lib/hashtags';
+import { normalizarHashtags, validarHashtags } from '@/shared/lib/hashtags';
+import Campo from '@/shared/components/form/Campo';
+import { inputClasses } from '@/shared/components/form/inputClasses';
+import HashtagsInput from '@/shared/components/form/HashtagsInput';
+import ArchivosInput from '@/shared/components/form/ArchivosInput';
+import { useArchivosForm } from '@/shared/hooks/useArchivosForm';
+import { metaDeArchivo } from '@/features/materials/utils/fileMeta';
 import CharCounter from '@/shared/components/ui/CharCounter';
 import {
   TITULO_MIN,
@@ -18,11 +24,8 @@ import {
   MAX_ARCHIVOS,
   MAX_TAMANIO_MB,
   MAX_TAMANIO_BYTES,
+  ADJUNTOS_EXTENSIONES,
 } from '@/features/materials/utils/limites';
-import {
-  agregarArchivosSinDuplicar,
-  claveArchivo,
-} from '@/shared/lib/archivos';
 import { normalizarLinks } from '@/features/materials/utils/normalizarLinks';
 import { mensajeDeError } from '@/shared/lib/errores';
 
@@ -34,6 +37,10 @@ const TIPOS = [
 
 const FUENTES_INICIALES = { file: false, link: false, snippet: false };
 
+// File.type es el MIME que informa el navegador; si viene vacío, ícono genérico
+const iconoDeArchivo = (archivo) =>
+  metaDeArchivo({ tipo_mime: archivo.type }).icon;
+
 export default function UploadModal({ open, onClose, carreraId }) {
   const [fuentes, setFuentes] = useState(FUENTES_INICIALES);
   const [titulo, setTitulo] = useState('');
@@ -44,9 +51,18 @@ export default function UploadModal({ open, onClose, carreraId }) {
   const [links, setLinks] = useState(['']);
   const [codigoSnippet, setCodigoSnippet] = useState('');
   const [lenguajeSnippet, setLenguajeSnippet] = useState('texto');
-  const [archivos, setArchivos] = useState([]);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(null);
+  const adjuntos = useArchivosForm({
+    max: MAX_ARCHIVOS,
+    maxBytes: MAX_TAMANIO_BYTES,
+    extensiones: ADJUNTOS_EXTENSIONES,
+    singular: 'archivo',
+    plural: 'archivos',
+  });
+
+  const hashtags = normalizarHashtags(hashtagsTexto);
+  const errorHashtags = validarHashtags(hashtags);
 
   const qc = useQueryClient();
 
@@ -76,16 +92,6 @@ export default function UploadModal({ open, onClose, carreraId }) {
     );
   }
 
-  function handleSeleccionarArchivos(e) {
-    const nuevos = Array.from(e.target.files); // primero capturar, después vaciar
-    setArchivos((prev) => agregarArchivosSinDuplicar(prev, nuevos));
-    e.target.value = ''; // permite volver a elegir el mismo archivo
-  }
-
-  function quitarArchivo(index) {
-    setArchivos((prev) => prev.filter((_, i) => i !== index));
-  }
-
   function resetForm() {
     setFuentes(FUENTES_INICIALES);
     setTitulo('');
@@ -95,7 +101,7 @@ export default function UploadModal({ open, onClose, carreraId }) {
     setLinks(['']);
     setCodigoSnippet('');
     setLenguajeSnippet('texto');
-    setArchivos([]);
+    adjuntos.reiniciar();
     setError(null);
   }
 
@@ -117,26 +123,18 @@ export default function UploadModal({ open, onClose, carreraId }) {
       setError(`El título debe tener al menos ${TITULO_MIN} caracteres.`);
       return;
     }
+    if (errorHashtags) {
+      setError(errorHashtags);
+      return;
+    }
     if (!fuentes.file && !fuentes.link && !fuentes.snippet) {
       setError(
         'Selecciona al menos un tipo de contenido: archivo, link o snippet.',
       );
       return;
     }
-    if (fuentes.file && archivos.length > MAX_ARCHIVOS) {
-      setError(`No puedes subir más de ${MAX_ARCHIVOS} archivos.`);
-      return;
-    }
-    const archivoDemasiadoGrande = archivos.find(
-      (f) => f.size > MAX_TAMANIO_BYTES,
-    );
-    if (fuentes.file && archivoDemasiadoGrande) {
-      setError(
-        `"${archivoDemasiadoGrande.name}" supera el límite de ${MAX_TAMANIO_MB}MB por archivo.`,
-      );
-      return;
-    }
-    if (fuentes.file && archivos.length === 0) {
+    // cupo, tamaño y extensión ya se validan al elegir cada archivo
+    if (fuentes.file && adjuntos.nuevos.length === 0) {
       setError('Selecciona al menos un archivo.');
       return;
     }
@@ -160,12 +158,12 @@ export default function UploadModal({ open, onClose, carreraId }) {
           titulo,
           descripcion,
           ramo_id: ramoId,
-          hashtags: normalizarHashtags(hashtagsTexto),
+          hashtags,
           links: fuentes.link ? normalizarLinks(links) : undefined,
           codigo_snippet: fuentes.snippet ? codigoSnippet : undefined,
           lenguaje_snippet: fuentes.snippet ? lenguajeSnippet : undefined,
         },
-        fuentes.file ? archivos : [],
+        fuentes.file ? adjuntos.nuevos : [],
       );
 
       await qc.invalidateQueries({ queryKey: ['apunte', 'list'] });
@@ -219,6 +217,24 @@ export default function UploadModal({ open, onClose, carreraId }) {
           Puedes combinar más de uno (ej: archivo + link).
         </p>
 
+        <Campo label='Ramo'>
+          <select
+            value={ramoId}
+            onChange={(e) => setRamoId(e.target.value)}
+            className={inputClasses}
+          >
+            <option value=''>Selecciona un ramo...</option>
+            {ramosOpciones.map((ramo) => (
+              <option
+                key={ramo.id}
+                value={ramo.id}
+              >
+                {ramo.nombre}
+              </option>
+            ))}
+          </select>
+        </Campo>
+
         <Campo
           label='Título'
           extra={
@@ -256,79 +272,25 @@ export default function UploadModal({ open, onClose, carreraId }) {
           />
         </Campo>
 
-        <Campo label='Ramo'>
-          <select
-            value={ramoId}
-            onChange={(e) => setRamoId(e.target.value)}
-            className={inputClasses}
-          >
-            <option value=''>Selecciona un ramo...</option>
-            {ramosOpciones.map((ramo) => (
-              <option
-                key={ramo.id}
-                value={ramo.id}
-              >
-                {ramo.nombre}
-              </option>
-            ))}
-          </select>
-        </Campo>
-
-        <Campo label='Tags (separados por espacio o coma)'>
-          <input
-            value={hashtagsTexto}
-            onChange={(e) => setHashtagsTexto(e.target.value)}
-            placeholder='#certamen1 #derivadas #integrales'
-            className={inputClasses}
-          />
-        </Campo>
+        <HashtagsInput
+          value={hashtagsTexto}
+          onChange={setHashtagsTexto}
+          error={errorHashtags}
+          placeholder='#certamen1 #derivadas #integrales'
+        />
 
         {fuentes.file && (
-          <Campo
+          <ArchivosInput
+            control={adjuntos}
             label={
               <span className='flex items-center gap-1.5'>
                 Archivos (puedes seleccionar varios)
                 <InfoTooltip texto='¿No ves tu tipo de archivo? Comprímelo en .zip y súbelo.' />
               </span>
             }
-          >
-            <input
-              type='file'
-              multiple
-              onChange={handleSeleccionarArchivos}
-              className='text-[12.5px] text-neutral-400 file:mr-3 file:rounded-md file:border-0 file:bg-pink-500/10 file:px-3 file:py-1.5 file:text-[11.5px] file:font-semibold file:text-pink-500'
-            />
-            <p className='mt-1 text-[11px] text-neutral-600'>
-              Mantén Ctrl (Windows/Linux) o Cmd (Mac) presionado para
-              seleccionar varios archivos a la vez.
-            </p>
-            {archivos.length > 0 && (
-              <div className='mt-2 flex flex-col gap-1.5'>
-                <p className='text-[11px] text-neutral-500'>
-                  {archivos.length}/{MAX_ARCHIVOS} archivo(s) seleccionado(s)
-                </p>
-                {archivos.map((archivo, i) => (
-                  <div
-                    key={claveArchivo(archivo)}
-                    className='flex items-center gap-2 rounded-md border border-white/[0.07] bg-white/[0.03] px-2.5 py-1.5'
-                  >
-                    <i className='ti ti-file text-[13px] text-neutral-500' />
-                    <span className='flex-1 truncate text-[11.5px] text-neutral-300'>
-                      {archivo.name}
-                    </span>
-                    <button
-                      type='button'
-                      onClick={() => quitarArchivo(i)}
-                      className='flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-neutral-500 hover:bg-white/[0.06] hover:text-red-400'
-                      title='Quitar archivo'
-                    >
-                      <i className='ti ti-x text-[13px]' />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Campo>
+            ayuda={`PDF, Word, PowerPoint, Excel, TXT, ZIP o imágenes · hasta ${MAX_TAMANIO_MB} MB cada uno.`}
+            iconoDe={iconoDeArchivo}
+          />
         )}
 
         {fuentes.link && (
@@ -414,22 +376,5 @@ export default function UploadModal({ open, onClose, carreraId }) {
         </div>
       </form>
     </Modal>
-  );
-}
-
-const inputClasses =
-  'w-full rounded-[10px] border border-white/[0.07] bg-[#111114] px-3 py-2 text-[13px] text-neutral-100 outline-none transition-colors placeholder-neutral-600 focus:border-pink-500/40';
-
-function Campo({ label, extra, children }) {
-  return (
-    <div className='flex flex-col gap-1.5'>
-      <div className='flex items-center justify-between'>
-        <span className='text-[11.5px] font-semibold text-neutral-500'>
-          {label}
-        </span>
-        {extra}
-      </div>
-      {children}
-    </div>
   );
 }
