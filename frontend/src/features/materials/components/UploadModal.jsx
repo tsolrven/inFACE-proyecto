@@ -28,6 +28,7 @@ import {
 } from '@/features/materials/utils/limites';
 import { normalizarLinks } from '@/features/materials/utils/normalizarLinks';
 import { mensajeDeError } from '@/shared/lib/errores';
+import ConfirmDialog from '@/shared/components/ui/ConfirmDialog';
 
 const TIPOS = [
   { value: 'file', icon: 'ti-upload', label: 'Archivo' },
@@ -53,6 +54,7 @@ export default function UploadModal({ open, onClose, carreraId }) {
   const [lenguajeSnippet, setLenguajeSnippet] = useState('texto');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(null);
+  const [confirmandoSalir, setConfirmandoSalir] = useState(false);
   const adjuntos = useArchivosForm({
     max: MAX_ARCHIVOS,
     maxBytes: MAX_TAMANIO_BYTES,
@@ -109,6 +111,26 @@ export default function UploadModal({ open, onClose, carreraId }) {
     if (enviando) return;
     resetForm();
     onClose();
+  }
+
+  // cambiar el tipo o el ramo no se considera trabajo perdido
+  const hayCambios =
+    titulo.trim() !== '' ||
+    descripcion.trim() !== '' ||
+    hashtagsTexto.trim() !== '' ||
+    links.some((l) => l.trim() !== '') ||
+    codigoSnippet.trim() !== '' ||
+    adjuntos.hayCambios;
+
+  function intentarCerrar() {
+    if (enviando) return;
+    if (hayCambios) setConfirmandoSalir(true);
+    else handleClose();
+  }
+
+  function descartar() {
+    setConfirmandoSalir(false);
+    handleClose();
   }
 
   async function handleSubmit(e) {
@@ -179,202 +201,215 @@ export default function UploadModal({ open, onClose, carreraId }) {
   }
 
   return (
-    <Modal
-      open={open}
-      onClose={handleClose}
-      maxWidth='560px'
-    >
-      <ModalHeader onClose={handleClose}>
-        <span className='text-[15px] font-semibold text-neutral-100'>
-          Subir material
-        </span>
-      </ModalHeader>
-
-      <form
-        onSubmit={handleSubmit}
-        className='flex flex-col gap-3.5 p-5'
+    <>
+      <Modal
+        open={open}
+        onClose={intentarCerrar}
+        maxWidth='560px'
       >
-        {/* selector de tipo (múltiple: se puede combinar más de uno) */}
-        <div className='flex gap-2'>
-          {TIPOS.map((t) => (
-            <button
-              key={t.value}
-              type='button'
-              aria-pressed={fuentes[t.value]}
-              onClick={() => toggleFuente(t.value)}
-              className={`flex flex-1 flex-col items-center gap-1 rounded-[10px] border py-2.5 text-[11.5px] font-medium transition-colors ${
-                fuentes[t.value]
-                  ? 'border-pink-500/40 bg-pink-500/10 text-pink-500'
-                  : 'border-white/[0.07] text-neutral-500 hover:border-white/[0.18] hover:text-neutral-200'
-              }`}
-            >
-              <i className={`ti ${t.icon} text-lg`} />
-              {t.label}
-            </button>
-          ))}
-        </div>
-        <p className='-mt-2 text-[11px] text-neutral-600'>
-          Puedes combinar más de uno (ej: archivo + link).
-        </p>
+        <ModalHeader onClose={intentarCerrar}>
+          <span className='text-[15px] font-semibold text-neutral-100'>
+            Subir material
+          </span>
+        </ModalHeader>
 
-        <Campo label='Ramo'>
-          <select
-            value={ramoId}
-            onChange={(e) => setRamoId(e.target.value)}
-            className={inputClasses}
-          >
-            <option value=''>Selecciona un ramo...</option>
-            {ramosOpciones.map((ramo) => (
-              <option
-                key={ramo.id}
-                value={ramo.id}
+        <form
+          onSubmit={handleSubmit}
+          className='flex flex-col gap-3.5 p-5'
+        >
+          {/* selector de tipo (múltiple: se puede combinar más de uno) */}
+          <div className='flex gap-2'>
+            {TIPOS.map((t) => (
+              <button
+                key={t.value}
+                type='button'
+                aria-pressed={fuentes[t.value]}
+                onClick={() => toggleFuente(t.value)}
+                className={`flex flex-1 flex-col items-center gap-1 rounded-[10px] border py-2.5 text-[11.5px] font-medium transition-colors ${
+                  fuentes[t.value]
+                    ? 'border-pink-500/40 bg-pink-500/10 text-pink-500'
+                    : 'border-white/[0.07] text-neutral-500 hover:border-white/[0.18] hover:text-neutral-200'
+                }`}
               >
-                {ramo.nombre}
-              </option>
+                <i className={`ti ${t.icon} text-lg`} />
+                {t.label}
+              </button>
             ))}
-          </select>
-        </Campo>
+          </div>
+          <p className='-mt-2 text-[11px] text-neutral-600'>
+            Puedes combinar más de uno (ej: archivo + link).
+          </p>
 
-        <Campo
-          label='Título'
-          extra={
-            <CharCounter
-              value={titulo}
-              max={TITULO_MAX}
-            />
-          }
-        >
-          <input
-            value={titulo}
-            onChange={(e) => setTitulo(e.target.value)}
-            placeholder='Ej: Resumen completo Certamen 1...'
-            maxLength={TITULO_MAX}
-            className={inputClasses}
-          />
-        </Campo>
-
-        <Campo
-          label='Descripción (opcional)'
-          extra={
-            <CharCounter
-              value={descripcion}
-              max={DESCRIPCION_MAX}
-            />
-          }
-        >
-          <textarea
-            value={descripcion}
-            onChange={(e) => setDescripcion(e.target.value)}
-            rows={3}
-            placeholder='Cuenta de qué se trata este material...'
-            maxLength={DESCRIPCION_MAX}
-            className={`${inputClasses} resize-none`}
-          />
-        </Campo>
-
-        <HashtagsInput
-          value={hashtagsTexto}
-          onChange={setHashtagsTexto}
-          error={errorHashtags}
-          placeholder='#certamen1 #derivadas #integrales'
-        />
-
-        {fuentes.file && (
-          <ArchivosInput
-            control={adjuntos}
-            label={
-              <span className='flex items-center gap-1.5'>
-                Archivos (puedes seleccionar varios)
-                <InfoTooltip texto='¿No ves tu tipo de archivo? Comprímelo en .zip y súbelo.' />
-              </span>
-            }
-            ayuda={`PDF, Word, PowerPoint, Excel, TXT, ZIP o imágenes · hasta ${MAX_TAMANIO_MB} MB cada uno.`}
-            iconoDe={iconoDeArchivo}
-          />
-        )}
-
-        {fuentes.link && (
-          <Campo label='Links'>
-            <div className='flex flex-col gap-1.5'>
-              {links.map((link, i) => (
-                <div
-                  key={i}
-                  className='flex items-center gap-1.5'
+          <Campo label='Ramo'>
+            <select
+              value={ramoId}
+              onChange={(e) => setRamoId(e.target.value)}
+              className={inputClasses}
+            >
+              <option value=''>Selecciona un ramo...</option>
+              {ramosOpciones.map((ramo) => (
+                <option
+                  key={ramo.id}
+                  value={ramo.id}
                 >
-                  <input
-                    value={link}
-                    onChange={(e) => actualizarLink(i, e.target.value)}
-                    placeholder='https://...'
-                    maxLength={LINK_MAX}
-                    className={inputClasses}
-                  />
-                  {links.length > 1 && (
-                    <button
-                      type='button'
-                      onClick={() => quitarLink(i)}
-                      className='flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md text-neutral-500 hover:bg-white/[0.06] hover:text-neutral-200'
-                    >
-                      <i className='ti ti-x text-sm' />
-                    </button>
-                  )}
-                </div>
+                  {ramo.nombre}
+                </option>
               ))}
-              {links.length < LINKS_MAX && (
-                <button
-                  type='button'
-                  onClick={agregarLink}
-                  className='self-start text-[11.5px] font-semibold text-pink-500 hover:opacity-75'
-                >
-                  <i className='ti ti-plus text-[12px]' /> Agregar otro link
-                </button>
-              )}
-            </div>
+            </select>
           </Campo>
-        )}
 
-        {fuentes.snippet && (
           <Campo
-            label='Código'
+            label='Título'
             extra={
               <CharCounter
-                value={codigoSnippet}
-                max={SNIPPET_MAX}
+                value={titulo}
+                max={TITULO_MAX}
               />
             }
           >
-            <CodeEditor
-              value={codigoSnippet}
-              onChange={setCodigoSnippet}
-              lenguaje={lenguajeSnippet}
-              onLenguajeChange={setLenguajeSnippet}
+            <input
+              value={titulo}
+              onChange={(e) => setTitulo(e.target.value)}
+              placeholder='Ej: Resumen completo Certamen 1...'
+              maxLength={TITULO_MAX}
+              className={inputClasses}
             />
           </Campo>
-        )}
 
-        {error && (
-          <p className='rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2 text-[12px] text-red-400'>
-            {error}
-          </p>
-        )}
+          <Campo
+            label='Descripción (opcional)'
+            extra={
+              <CharCounter
+                value={descripcion}
+                max={DESCRIPCION_MAX}
+              />
+            }
+          >
+            <textarea
+              value={descripcion}
+              onChange={(e) => setDescripcion(e.target.value)}
+              rows={3}
+              placeholder='Cuenta de qué se trata este material...'
+              maxLength={DESCRIPCION_MAX}
+              className={`${inputClasses} resize-none`}
+            />
+          </Campo>
 
-        <div className='mt-1 flex justify-end gap-2'>
-          <Button
-            type='button'
-            variant='ghost'
-            onClick={handleClose}
-            disabled={enviando}
-          >
-            Cancelar
-          </Button>
-          <Button
-            type='submit'
-            variant='primary'
-            loading={enviando}
-          >
-            Publicar
-          </Button>
-        </div>
-      </form>
-    </Modal>
+          <HashtagsInput
+            value={hashtagsTexto}
+            onChange={setHashtagsTexto}
+            error={errorHashtags}
+            placeholder='#certamen1 #derivadas #integrales'
+          />
+
+          {fuentes.file && (
+            <ArchivosInput
+              control={adjuntos}
+              label={
+                <span className='flex items-center gap-1.5'>
+                  Archivos (puedes seleccionar varios)
+                  <InfoTooltip texto='¿No ves tu tipo de archivo? Comprímelo en .zip y súbelo.' />
+                </span>
+              }
+              ayuda={`PDF, Word, PowerPoint, Excel, TXT, ZIP o imágenes · hasta ${MAX_TAMANIO_MB} MB cada uno.`}
+              iconoDe={iconoDeArchivo}
+            />
+          )}
+
+          {fuentes.link && (
+            <Campo label='Links'>
+              <div className='flex flex-col gap-1.5'>
+                {links.map((link, i) => (
+                  <div
+                    key={i}
+                    className='flex items-center gap-1.5'
+                  >
+                    <input
+                      value={link}
+                      onChange={(e) => actualizarLink(i, e.target.value)}
+                      placeholder='https://...'
+                      maxLength={LINK_MAX}
+                      className={inputClasses}
+                    />
+                    {links.length > 1 && (
+                      <button
+                        type='button'
+                        onClick={() => quitarLink(i)}
+                        className='flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md text-neutral-500 hover:bg-white/[0.06] hover:text-neutral-200'
+                      >
+                        <i className='ti ti-x text-sm' />
+                      </button>
+                    )}
+                  </div>
+                ))}
+                {links.length < LINKS_MAX && (
+                  <button
+                    type='button'
+                    onClick={agregarLink}
+                    className='self-start text-[11.5px] font-semibold text-pink-500 hover:opacity-75'
+                  >
+                    <i className='ti ti-plus text-[12px]' /> Agregar otro link
+                  </button>
+                )}
+              </div>
+            </Campo>
+          )}
+
+          {fuentes.snippet && (
+            <Campo
+              label='Código'
+              extra={
+                <CharCounter
+                  value={codigoSnippet}
+                  max={SNIPPET_MAX}
+                />
+              }
+            >
+              <CodeEditor
+                value={codigoSnippet}
+                onChange={setCodigoSnippet}
+                lenguaje={lenguajeSnippet}
+                onLenguajeChange={setLenguajeSnippet}
+              />
+            </Campo>
+          )}
+
+          {error && (
+            <p className='rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2 text-[12px] text-red-400'>
+              {error}
+            </p>
+          )}
+
+          <div className='mt-1 flex justify-end gap-2'>
+            <Button
+              type='button'
+              variant='ghost'
+              onClick={intentarCerrar}
+              disabled={enviando}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type='submit'
+              variant='primary'
+              loading={enviando}
+            >
+              Publicar
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      <ConfirmDialog
+        open={confirmandoSalir}
+        title='¿Descartar el material?'
+        message='Tienes cambios sin publicar. Si sales ahora, se perderán.'
+        confirmLabel='Descartar'
+        cancelLabel='Seguir editando'
+        danger
+        onConfirm={descartar}
+        onCancel={() => setConfirmandoSalir(false)}
+      />
+    </>
   );
 }
