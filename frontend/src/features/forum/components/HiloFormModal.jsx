@@ -2,6 +2,7 @@ import { lazy, Suspense, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Modal, { ModalHeader } from '@/shared/components/ui/Modal';
 import Campo from '@/shared/components/form/Campo';
+import HashtagsInput from '@/shared/components/form/HashtagsInput';
 import { inputClasses } from '@/shared/components/form/inputClasses';
 import Button from '@/shared/components/ui/Button';
 import CharCounter from '@/shared/components/ui/CharCounter';
@@ -342,17 +343,11 @@ export default function HiloFormModal({
             </Suspense>
           </Campo>
 
-          <Campo label='Hashtags (opcional, separados por espacio o coma)'>
-            <input
-              value={hashtagsTexto}
-              onChange={(e) => setHashtagsTexto(e.target.value)}
-              placeholder='#calculo #integrales'
-              className={inputClasses}
-            />
-            {errorHashtags && (
-              <p className='text-[11px] text-red-400'>{errorHashtags}</p>
-            )}
-          </Campo>
+          <HashtagsInput
+            value={hashtagsTexto}
+            onChange={setHashtagsTexto}
+            error={errorHashtags}
+          />
 
           <Campo
             label='Imágenes (opcional)'
