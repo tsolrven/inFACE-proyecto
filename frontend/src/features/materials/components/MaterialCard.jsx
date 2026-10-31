@@ -16,6 +16,7 @@ import ShareButton from '@/shared/post/share/ShareButton';
 import CodeViewer from '@/features/materials/components/CodeViewer';
 import { rutaHashtag } from '@/shared/lib/hashtags';
 import QuitarGuardadoButton from '@/shared/post/bookmarks/QuitarGuardadoButton';
+import { extractoPlano } from '@/shared/markdown/extractoPlano';
 
 export default function MaterialCard({ apunte, enGuardados = false }) {
   const navigate = useNavigate();
@@ -23,6 +24,7 @@ export default function MaterialCard({ apunte, enGuardados = false }) {
   const votarMut = useVotar('apunte');
 
   const ramoColor = colorPorRamo(apunte.ramo?.id);
+  const extracto = extractoPlano(apunte.descripcion ?? '');
 
   function abrirDetalle() {
     navigate(`/repositorio-materiales/${apunte.id}`, {
@@ -88,9 +90,9 @@ export default function MaterialCard({ apunte, enGuardados = false }) {
 
         <BadgesPrincipales etiquetas={badgesDeApunte(apunte)} />
 
-        {apunte.descripcion && (
+        {extracto && (
           <p className='mb-1.5 line-clamp-2 text-xs leading-relaxed text-neutral-400'>
-            {apunte.descripcion}
+            {extracto}
           </p>
         )}
 

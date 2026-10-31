@@ -62,8 +62,8 @@ function Separador() {
  * - max: límite de caracteres del markdown (el padre decide si bloquea el envío).
  * - ariaLabel: nombre accesible del área de escritura.
  * - placeholder: texto gris mientras el editor está vacío (se lee al montar).
- * - barra: 'completa' | 'reducida'. La reducida quita tachado, títulos, cita y
- *   línea horizontal (botones Y extensiones). Se lee al montar.
+ * - barra: 'completa' | 'reducida'. La reducida quita tachado, títulos, cita,
+ *   línea horizontal, enlace y bloque de código (botones Y extensiones). Se lee al montar.
  */
 export default function MarkdownEditor({
   valorInicial = '',
@@ -122,17 +122,19 @@ export default function MarkdownEditor({
       return {
         negrita: ed.isActive('bold'),
         cursiva: ed.isActive('italic'),
-        tachado: ed.isActive('strike'),
+        tachado: !reducida && ed.isActive('strike'),
         codigo: ed.isActive('code'),
-        h2: ed.isActive('heading', { level: 2 }),
-        h3: ed.isActive('heading', { level: 3 }),
+        h2: !reducida && ed.isActive('heading', { level: 2 }),
+        h3: !reducida && ed.isActive('heading', { level: 3 }),
         vinetas: ed.isActive('bulletList'),
         numerada: ed.isActive('orderedList'),
-        cita: ed.isActive('blockquote'),
-        bloque: ed.isActive('codeBlock'),
-        enlace: ed.isActive('link'),
+        cita: !reducida && ed.isActive('blockquote'),
+        bloque: !reducida && ed.isActive('codeBlock'),
+        enlace: !reducida && ed.isActive('link'),
         seleccionVacia: ed.state.selection.empty,
-        lenguaje: ed.getAttributes('codeBlock').language ?? '',
+        lenguaje: reducida
+          ? ''
+          : (ed.getAttributes('codeBlock').language ?? ''),
         puedeDeshacer: ed.can().undo(),
         puedeRehacer: ed.can().redo(),
       };
@@ -201,13 +203,15 @@ export default function MarkdownEditor({
           disabled={disabled}
           onClick={() => run().toggleCode().run()}
         />
-        <Boton
-          icono='ti-link'
-          titulo='Enlace (selecciona texto primero)'
-          activo={estado.enlace}
-          disabled={disabled || (estado.seleccionVacia && !estado.enlace)}
-          onClick={abrirEnlace}
-        />
+        {!reducida && (
+          <Boton
+            icono='ti-link'
+            titulo='Enlace (selecciona texto primero)'
+            activo={estado.enlace}
+            disabled={disabled || (estado.seleccionVacia && !estado.enlace)}
+            onClick={abrirEnlace}
+          />
+        )}
 
         <Separador />
 
@@ -254,13 +258,15 @@ export default function MarkdownEditor({
             onClick={() => run().toggleBlockquote().run()}
           />
         )}
-        <Boton
-          icono='ti-source-code'
-          titulo='Bloque de código'
-          activo={estado.bloque}
-          disabled={disabled}
-          onClick={() => run().toggleCodeBlock().run()}
-        />
+        {!reducida && (
+          <Boton
+            icono='ti-source-code'
+            titulo='Bloque de código'
+            activo={estado.bloque}
+            disabled={disabled}
+            onClick={() => run().toggleCodeBlock().run()}
+          />
+        )}
         {!reducida && (
           <Boton
             icono='ti-separator-horizontal'
@@ -285,7 +291,7 @@ export default function MarkdownEditor({
           onClick={() => run().redo().run()}
         />
 
-        {estado.bloque && (
+        {!reducida && estado.bloque && (
           <select
             aria-label='Lenguaje del bloque de código'
             value={estado.lenguaje}

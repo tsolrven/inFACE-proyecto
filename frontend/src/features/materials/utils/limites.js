@@ -1,7 +1,7 @@
 // Deben coincidir con materials.validation.js y multer.helper.js (backend)
 export const TITULO_MIN = 3;
 export const TITULO_MAX = 150;
-export const DESCRIPCION_MAX = 2000;
+export const DESCRIPCION_MAX = 2000; // se mide sobre el markdown serializado
 export const SNIPPET_MAX = 20000;
 export const LINKS_MAX = 5;
 export const LINK_MAX = 2048;

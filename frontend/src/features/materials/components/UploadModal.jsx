@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import Modal, { ModalHeader } from '@/shared/components/ui/Modal';
 import Button from '@/shared/components/ui/Button';
 import { listarRamosPorCarrera } from '@/shared/api/catalog.api';
@@ -29,6 +29,9 @@ import {
 import { normalizarLinks } from '@/features/materials/utils/normalizarLinks';
 import { mensajeDeError } from '@/shared/lib/errores';
 import ConfirmDialog from '@/shared/components/ui/ConfirmDialog';
+
+// Tiptap + ProseMirror solo se descargan al abrir el formulario
+const MarkdownEditor = lazy(() => import('@/shared/editor/MarkdownEditor'));
 
 const TIPOS = [
   { value: 'file', icon: 'ti-upload', label: 'Archivo' },
@@ -139,6 +142,12 @@ export default function UploadModal({ open, onClose, carreraId }) {
     }
     if (titulo.trim().length < TITULO_MIN) {
       setError(`El título debe tener al menos ${TITULO_MIN} caracteres.`);
+      return;
+    }
+    if (descripcion.length > DESCRIPCION_MAX) {
+      setError(
+        `La descripción no puede superar ${DESCRIPCION_MAX} caracteres (tiene ${descripcion.length}).`,
+      );
       return;
     }
     if (errorHashtags) {
@@ -272,23 +281,23 @@ export default function UploadModal({ open, onClose, carreraId }) {
             />
           </Campo>
 
-          <Campo
-            label='Descripción (opcional)'
-            extra={
-              <CharCounter
-                value={descripcion}
+          <Campo label='Descripción (opcional)'>
+            <Suspense
+              fallback={
+                <div className='flex h-[180px] items-center justify-center rounded-[10px] border border-white/[0.09] bg-[#17171B] text-neutral-600'>
+                  <i className='ti ti-loader-2 animate-spin text-xl' />
+                </div>
+              }
+            >
+              <MarkdownEditor
+                valorInicial={descripcion}
+                onChange={setDescripcion}
                 max={DESCRIPCION_MAX}
+                barra='reducida'
+                ariaLabel='Descripción del material'
+                placeholder='Cuenta de qué se trata este material...'
               />
-            }
-          >
-            <textarea
-              value={descripcion}
-              onChange={(e) => setDescripcion(e.target.value)}
-              rows={3}
-              placeholder='Cuenta de qué se trata este material...'
-              maxLength={DESCRIPCION_MAX}
-              className={`${inputClasses} resize-none`}
-            />
+            </Suspense>
           </Campo>
 
           <HashtagsInput

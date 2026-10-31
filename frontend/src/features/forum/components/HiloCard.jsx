@@ -6,7 +6,7 @@ import VotePill from '@/shared/post/votes/VotePill';
 import ShareButton from '@/shared/post/share/ShareButton';
 import PortadaImagen from '@/shared/post/images/PortadaImagen';
 import HiloMenu from '@/features/forum/components/HiloMenu';
-import { extractoPlano } from '@/features/forum/utils/extractoPlano';
+import { extractoPlano } from '@/shared/markdown/extractoPlano';
 import { rutaHashtag } from '@/shared/lib/hashtags';
 import QuitarGuardadoButton from '@/shared/post/bookmarks/QuitarGuardadoButton';
 

@@ -19,6 +19,7 @@ import VotePill from '@/shared/post/votes/VotePill';
 import ShareButton from '@/shared/post/share/ShareButton';
 import CodeViewer from '@/features/materials/components/CodeViewer';
 import { rutaHashtag } from '@/shared/lib/hashtags';
+import MarkdownView from '@/shared/markdown/MarkdownView';
 
 export default function MaterialDetailModal() {
   const { id } = useParams();
@@ -120,9 +121,9 @@ export default function MaterialDetailModal() {
             </div>
 
             {apunte.descripcion && (
-              <p className='mb-4 text-[13.5px] leading-relaxed text-neutral-400'>
-                {apunte.descripcion}
-              </p>
+              <div className='mb-4'>
+                <MarkdownView contenido={apunte.descripcion} />
+              </div>
             )}
 
             <DetalleArchivos apunte={apunte} />

@@ -13,6 +13,7 @@ export function extractoPlano(markdown = '', truncado = false) {
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ')
     .replace(/&amp;/g, '&') // siempre al final, para no decodificar dos veces
     .replace(/\s+/g, ' ')
     .trim();

@@ -46,9 +46,12 @@ export const EXTENSIONES_EDITOR = [
   Markdown,
 ];
 
-// Barra reducida (descripciones cortas): además de ocultar los botones, se
-// desactivan las extensiones, para que ni los atajos de teclado, ni escribir
-// "## " / "> " / "---", ni pegar contenido puedan crearlos.
+// Barra reducida (descripciones cortas, ej. Materiales, que ya tiene campos
+// propios para links y código): además de ocultar los botones, se desactivan
+// las extensiones, para que ni los atajos de teclado, ni escribir "## ", "> ",
+// "---" o "```", ni pegar contenido, ni escribir una URL puedan crearlos.
+// Sin BLOQUE_CODIGO ni enlaces: esa sintaxis queda como texto plano.
+// El código en línea se conserva.
 export const EXTENSIONES_EDITOR_REDUCIDO = [
   StarterKit.configure({
     heading: false,
@@ -57,8 +60,7 @@ export const EXTENSIONES_EDITOR_REDUCIDO = [
     strike: false,
     underline: false,
     codeBlock: false,
-    link: LINK,
+    link: false, // verificado en @tiptap/starter-kit 3.32.0: acepta false
   }),
-  BLOQUE_CODIGO,
   Markdown,
 ];
