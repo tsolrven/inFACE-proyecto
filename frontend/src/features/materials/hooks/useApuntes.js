@@ -15,7 +15,11 @@ import {
   parchearContenido,
   quitarContenido,
 } from '@/shared/post/cache';
-import { sincronizarArchivos } from '@/shared/api/archivos.api';
+import {
+  eliminarArchivo,
+  sincronizarArchivos,
+  subirArchivos,
+} from '@/shared/api/archivos.api';
 
 export const apunteKeys = {
   list: (filtros) => ['apunte', 'list', filtros],
@@ -64,15 +68,47 @@ export function useEditarApunte() {
       nuevos = [],
       subirPrimero = false,
     }) => {
-      // 1. Texto: si falla, no se toca nada más
-      const actualizado = payload ? await actualizarApunte(id, payload) : null;
+      // El backend exige que el material conserve al menos un archivo, link o
+      // snippet en cada paso. Si este PATCH toca links o snippet y además hay
+      // archivos nuevos (ej: se quita el único link y se sube un archivo), los
+      // archivos tienen que existir ANTES del PATCH.
+      const tocaLinksOSnippet =
+        payload?.links !== undefined || payload?.codigo_snippet !== undefined;
+      const subirAntesDelTexto =
+        subirPrimero && nuevos.length > 0 && tocaLinksOSnippet;
 
-      // 2. Archivos
+      // 0. Solo en ese caso: archivos nuevos primero
+      const subidosAntes = subirAntesDelTexto
+        ? await subirArchivos('apunte', id, nuevos)
+        : null;
+
+      // 1. Texto: si falla, no se toca nada más (y se deshacen las subidas
+      // de antes, para que un reintento no deje archivos duplicados)
+      let actualizado = null;
+      if (payload) {
+        try {
+          actualizado = await actualizarApunte(id, payload);
+        } catch (error) {
+          if (subidosAntes) {
+            await Promise.allSettled(
+              subidosAntes.exitosos.map((archivo) =>
+                eliminarArchivo(archivo.id),
+              ),
+            );
+          }
+          throw error;
+        }
+      }
+
+      // 2. Archivos que faltan (los nuevos ya subidos no se vuelven a subir)
       const { fallidosQuitar, fallidosSubir } = await sincronizarArchivos(
         'apunte',
         id,
-        { quitar, nuevos, subirPrimero },
+        { quitar, nuevos: subidosAntes ? [] : nuevos, subirPrimero },
       );
+      const sinSubir = subidosAntes
+        ? subidosAntes.fallidos.length
+        : fallidosSubir.length;
 
       // 3. La respuesta del PATCH trae los archivos de ANTES de sincronizar:
       // si cambiaron, se pide el apunte de nuevo. Si eso falla, null = se
@@ -88,7 +124,7 @@ export function useEditarApunte() {
 
       return {
         apunte,
-        fallos: { quitar: fallidosQuitar.length, subir: fallidosSubir.length },
+        fallos: { quitar: fallidosQuitar.length, subir: sinSubir },
       };
     },
     onSuccess: ({ apunte }, { id }) => {
