@@ -9,6 +9,8 @@ import logger from '../../lib/logger.js';
 import {
   obtenerPropietarioContenido,
   obtenerConfigAdjuntos,
+  bloquearContenido,
+  ejecutarAlQuitarArchivo,
 } from '../content/contentRegistry.js';
 import { resolverRutaFisica } from './uploadsPath.js';
 import { esStaff } from '../auth/permissions.js';
@@ -118,7 +120,19 @@ async function eliminarArchivo(id, usuario_id, rol) {
     throw new ForbiddenError('No tienes permiso para eliminar este archivo');
   }
 
-  await prisma.archivo.delete({ where: { id } });
+  await prisma.$transaction(async (tx) => {
+    // bloquea el contenido: serializa contra PATCH y otros borrados/subidas
+    await bloquearContenido(archivo.tipo_contenido, archivo.contenido_id, tx);
+
+    // otro borrado simultáneo pudo quitarlo mientras esperaba el bloqueo
+    const vigente = await tx.archivo.findUnique({ where: { id } });
+    if (!vigente) throw new NotFoundError('Archivo');
+
+    await ejecutarAlQuitarArchivo(tx, vigente);
+    await tx.archivo.delete({ where: { id } });
+  });
+
+  // después del commit: si el disco falla, la BD ya quedó consistente
   await borrarArchivosFisicos([archivo]);
 
   return { mensaje: 'Archivo eliminado' };

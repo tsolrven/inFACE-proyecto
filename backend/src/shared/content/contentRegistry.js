@@ -162,6 +162,18 @@ async function ejecutarAlEliminarComentario(tx, comentario) {
   if (hook) await hook(tx, comentario);
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
+// Cada módulo puede impedir que se quite un archivo de SU contenido (ej: el apunte
+// no puede quedar vacío). Corre dentro de la transacción de eliminarArchivo, con el
+// contenido bloqueado. Recibe (tx, archivo) y lanza un error para rechazar.
+function registrarAlQuitarArchivo(tipo_contenido, hook) {
+  obtenerEntradaRegistro(tipo_contenido).alQuitarArchivo = hook;
+}
+
+async function ejecutarAlQuitarArchivo(tx, archivo) {
+  const hook = CONTENT_REGISTRY[archivo.tipo_contenido]?.alQuitarArchivo;
+  if (hook) await hook(tx, archivo);
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
 function tiposContenidoValidos() {
   return Object.keys(CONTENT_REGISTRY);
 }
@@ -189,6 +201,8 @@ export {
   hidratarGuardados,
   registrarAlEliminarComentario,
   ejecutarAlEliminarComentario,
+  registrarAlQuitarArchivo,
+  ejecutarAlQuitarArchivo,
   tiposContenidoValidos,
   admiteComentarios,
   obtenerConfigAdjuntos,
