@@ -12,8 +12,8 @@ export async function subirArchivo(tipoContenido, contenidoId, file) {
   return res.data;
 }
 
-// Uno tras otro, a propósito: el backend cuenta los archivos sin transacción,
-// y en paralelo dos subidas podrían pasar el límite a la vez.
+// Uno tras otro, a propósito: así se conserva el orden en que se eligieron
+// (el backend ya serializa el tope de archivos con un bloqueo).
 export async function subirArchivos(tipoContenido, contenidoId, files) {
   const exitosos = [];
   const fallidos = [];

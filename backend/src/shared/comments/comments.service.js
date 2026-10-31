@@ -7,6 +7,7 @@ import {
 } from '../../errors/appError.js';
 import {
   verificarContenidoExiste,
+  bloquearContenido,
   registrarHidratadorGuardados,
   obtenerPreviewsContenido,
   ejecutarAlEliminarComentario,
@@ -255,43 +256,49 @@ async function crearComentario({
 }) {
   await verificarContenidoExiste(tipo_contenido, contenido_id);
 
-  let nivel = 0;
-  if (padre_id) {
-    const padre = await prisma.comentario.findUnique({
-      where: { id: padre_id },
-    });
-    if (!padre) throw new NotFoundError('Comentario padre');
-    if (padre.eliminado) {
-      throw new BadRequestError(
-        'No puedes responder a un comentario eliminado',
-      );
-    }
-    if (
-      padre.tipo_contenido !== tipo_contenido ||
-      padre.contenido_id !== contenido_id
-    ) {
-      throw new BadRequestError(
-        'El comentario padre no pertenece a este contenido',
-      );
-    }
-    nivel = padre.nivel + 1;
-    if (nivel > MAX_NIVEL_COMENTARIO) {
-      throw new BadRequestError(
-        `Se alcanzó el máximo de ${MAX_NIVEL_COMENTARIO} niveles de respuestas`,
-      );
-    }
-  }
+  const comentario = await prisma.$transaction(async (tx) => {
+    let nivel = 0;
+    if (padre_id) {
+      // bloquea al padre: si el autor lo está borrando, esperamos a que termine
+      // (y lo vemos eliminado o inexistente); y si lo borra después, su conteo
+      // de respuestas ya incluye esta (si no, la FK la dejaría huérfana)
+      await bloquearContenido('comentario', padre_id, tx);
 
-  const comentario = await prisma.comentario.create({
-    data: {
-      autor_id,
-      tipo_contenido,
-      contenido_id,
-      contenido,
-      padre_id: padre_id || null,
-      nivel,
-    },
-    include: INCLUDE_COMENTARIO,
+      const padre = await tx.comentario.findUnique({
+        where: { id: padre_id },
+      });
+      if (padre.eliminado) {
+        throw new BadRequestError(
+          'No puedes responder a un comentario eliminado',
+        );
+      }
+      if (
+        padre.tipo_contenido !== tipo_contenido ||
+        padre.contenido_id !== contenido_id
+      ) {
+        throw new BadRequestError(
+          'El comentario padre no pertenece a este contenido',
+        );
+      }
+      nivel = padre.nivel + 1;
+      if (nivel > MAX_NIVEL_COMENTARIO) {
+        throw new BadRequestError(
+          `Se alcanzó el máximo de ${MAX_NIVEL_COMENTARIO} niveles de respuestas`,
+        );
+      }
+    }
+
+    return tx.comentario.create({
+      data: {
+        autor_id,
+        tipo_contenido,
+        contenido_id,
+        contenido,
+        padre_id: padre_id || null,
+        nivel,
+      },
+      include: INCLUDE_COMENTARIO,
+    });
   });
 
   return formatearComentario(comentario);
@@ -337,6 +344,18 @@ async function eliminarComentario(comentario_id, usuario_id, rol) {
 
   // todo en una transacción: el conteo de respuestas y el borrado ven lo mismo
   return prisma.$transaction(async (tx) => {
+    // bloquea el comentario: si alguien le está respondiendo, esperamos a que
+    // termine y el conteo ya incluye esa respuesta (si no, el borrado real
+    // la dejaría huérfana)
+    await bloquearContenido('comentario', comentario_id, tx);
+    const vigente = await tx.comentario.findUnique({
+      where: { id: comentario_id },
+      select: { eliminado: true },
+    });
+    if (vigente.eliminado) {
+      throw new BadRequestError('Este comentario ya fue eliminado');
+    }
+
     const cantidadRespuestas = await tx.comentario.count({
       where: { padre_id: comentario_id },
     });

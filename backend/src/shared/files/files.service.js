@@ -59,15 +59,24 @@ async function subirArchivo({
     );
   }
 
-  const cantidadActual = await prisma.archivo.count({
-    where: { tipo_contenido, contenido_id },
-  });
-  if (cantidadActual >= max) {
-    throw new BadRequestError(`No puedes subir más de ${max} archivos`);
-  }
+  // puede lanzar 400 (tipo no reconocido): antes de abrir la transacción
+  const datos = datosArchivo(file);
 
-  const archivo = await prisma.archivo.create({
-    data: { tipo_contenido, contenido_id, ...datosArchivo(file) },
+  const archivo = await prisma.$transaction(async (tx) => {
+    // bloquea el contenido: dos subidas simultáneas se ejecutan una tras otra
+    // y el tope de archivos no se puede pasar
+    await bloquearContenido(tipo_contenido, contenido_id, tx);
+
+    const cantidadActual = await tx.archivo.count({
+      where: { tipo_contenido, contenido_id },
+    });
+    if (cantidadActual >= max) {
+      throw new BadRequestError(`No puedes subir más de ${max} archivos`);
+    }
+
+    return tx.archivo.create({
+      data: { tipo_contenido, contenido_id, ...datos },
+    });
   });
 
   logger.info('Archivo subido', {
