@@ -70,6 +70,7 @@ const tituloSchema = z
 // Markdown: el límite se mide sobre el texto serializado; vacío -> null
 const descripcionSchema = crearMarkdownSchema(2000, {
   mensajeMax: ERROR_MESSAGES.descripcion.max,
+  preset: 'reducido',
 });
 
 const tipoSchema = z.enum(TIPOS_APUNTE, { error: ERROR_MESSAGES.tipo.invalid });
