@@ -25,12 +25,12 @@ function tokensProhibidos(markdown) {
   return encontrados;
 }
 // ─────────────────────────────────────────────────────────────────────────────
-// Vacío -> null. Opcional: el contenido puede no venir.
-function crearMarkdownSchema(max) {
+// `mensajeMax` (opcional) reemplaza el mensaje por defecto del límite de caracteres.
+function crearMarkdownSchema(max, { mensajeMax } = {}) {
   return z
     .string()
     .trim()
-    .max(max, ERROR_MESSAGES.max(max))
+    .max(max, mensajeMax ?? ERROR_MESSAGES.max(max))
     .superRefine((markdown, ctx) => {
       for (const tipo of tokensProhibidos(markdown)) {
         ctx.addIssue({ code: 'custom', message: ERROR_MESSAGES[tipo] });

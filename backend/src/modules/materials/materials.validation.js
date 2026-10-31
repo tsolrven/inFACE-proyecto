@@ -5,6 +5,7 @@ import {
   hashtagsSchema,
   hashtagFiltroSchema,
 } from '../../shared/hashtags/hashtags.validation.js';
+import { crearMarkdownSchema } from '../../shared/validation/markdown.validation.js';
 // ─────────────────────────────────────────────────────────────────────────────
 const TIPOS_APUNTE = ['apunte', 'codigo', 'guia', 'ejercicio', 'otro'];
 const LENGUAJES_SNIPPET = [
@@ -66,13 +67,10 @@ const tituloSchema = z
   .min(3, ERROR_MESSAGES.titulo.min)
   .max(150, ERROR_MESSAGES.titulo.max);
 
-const descripcionSchema = z
-  .string()
-  .trim()
-  .max(2000, ERROR_MESSAGES.descripcion.max)
-  .transform((d) => (d === '' ? null : d))
-  .optional()
-  .nullable();
+// Markdown: el límite se mide sobre el texto serializado; vacío -> null
+const descripcionSchema = crearMarkdownSchema(2000, {
+  mensajeMax: ERROR_MESSAGES.descripcion.max,
+});
 
 const tipoSchema = z.enum(TIPOS_APUNTE, { error: ERROR_MESSAGES.tipo.invalid });
 
