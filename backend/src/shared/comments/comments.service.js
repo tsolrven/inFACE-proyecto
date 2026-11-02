@@ -11,6 +11,7 @@ import {
   registrarHidratadorGuardados,
   obtenerPreviewsContenido,
   ejecutarAlEliminarComentario,
+  notificarInteraccion,
 } from '../content/contentRegistry.js';
 import { eliminarInteracciones } from '../content/contentCleanup.js';
 import { obtenerMisInteracciones } from '../content/contentEnrichment.js';
@@ -299,6 +300,12 @@ async function crearComentario({
       },
       include: INCLUDE_COMENTARIO,
     });
+  });
+
+  await notificarInteraccion(tipo_contenido, {
+    clase: 'comentario',
+    usuario_id: autor_id,
+    contenido_id,
   });
 
   return formatearComentario(comentario);

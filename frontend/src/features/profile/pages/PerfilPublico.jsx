@@ -9,6 +9,7 @@ import {
   etiquetaColor,
 } from '@/shared/lib/matchHelpers';
 import PerfilTabs from '@/features/profile/components/PerfilTabs';
+import ConDescripcion from '@/shared/components/ConDescripcion';
 // TODO(Silvana): importar aquí su servicio, ej:
 // import { listarApuntesDeUsuario, listarRespuestasDeUsuario } from '../services/apunte';;
 
@@ -239,12 +240,17 @@ export default function PerfilPublico() {
               {perfil.intereses.map((et) => {
                 const c = etiquetaColor(et.nombre);
                 return (
-                  <span
+                  <ConDescripcion
                     key={et.id}
-                    className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${c.bg} ${c.text} ${c.border}`}
+                    nombre={et.nombre}
+                    descripcion={et.descripcion}
                   >
-                    {et.nombre}
-                  </span>
+                    <span
+                      className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${c.bg} ${c.text} ${c.border}`}
+                    >
+                      {et.nombre}
+                    </span>
+                  </ConDescripcion>
                 );
               })}
             </div>

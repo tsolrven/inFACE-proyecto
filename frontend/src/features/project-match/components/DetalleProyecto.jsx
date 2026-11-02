@@ -8,6 +8,13 @@ import {
   ModalidadChip,
   formatFecha,
 } from '@/shared/lib/matchHelpers';
+import VotoProyecto from './VotoProyecto';
+import ProyectoComentarios from './ProyectoComentarios';
+import {
+  useInteraccionesProyecto,
+  useValoresProyecto,
+} from '@/features/project-match/store/interaccionesStore';
+import ConDescripcion from '@/shared/components/ConDescripcion';
 
 // las etiquetas vienen con el nombre real del tipo (tal como está en la BD);
 // acá se traducen a las etiquetas que se le muestran al usuario y se fija el orden.
@@ -65,6 +72,8 @@ export default function DetalleProyecto({
   const [error, setError] = useState(null);
   const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState(false);
+  const { comentarios_count: totalComentarios } = useValoresProyecto(proyecto);
+  const actualizarInteracciones = useInteraccionesProyecto((s) => s.actualizar);
 
   const av = avatarColor(proyecto.creador?.id);
   const cupos = proyecto.maximo_integrantes
@@ -172,12 +181,17 @@ export default function DetalleProyecto({
                       {etiquetas.map((et) => {
                         const c = etiquetaColor(et.nombre);
                         return (
-                          <span
+                          <ConDescripcion
                             key={et.id}
-                            className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${c.bg} ${c.text} ${c.border}`}
+                            nombre={et.nombre}
+                            descripcion={et.descripcion}
                           >
-                            {et.nombre}
-                          </span>
+                            <span
+                              className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${c.bg} ${c.text} ${c.border}`}
+                            >
+                              {et.nombre}
+                            </span>
+                          </ConDescripcion>
                         );
                       })}
                     </div>
@@ -447,6 +461,28 @@ export default function DetalleProyecto({
               </form>
             )}
           </div>
+
+          <div className='mt-4 flex flex-wrap items-center gap-2 border-t border-white/[0.06] pt-3 text-[11.5px] text-neutral-500'>
+            <VotoProyecto proyecto={proyecto} />
+            <a
+              href='#comentarios-proyecto'
+              className='flex items-center gap-1.5 rounded-full bg-white/[0.06] px-3 py-1.5 transition-colors hover:bg-white/[0.1] hover:text-neutral-200'
+            >
+              <i className='ti ti-message-circle-2 text-[13px]' />{' '}
+              {totalComentarios}
+            </a>
+          </div>
+        </div>
+
+        <div id='comentarios-proyecto'>
+          <ProyectoComentarios
+            key={proyecto.id}
+            proyectoId={proyecto.id}
+            total={totalComentarios}
+            onConteoCambio={(n) =>
+              actualizarInteracciones(proyecto.id, { comentarios_count: n })
+            }
+          />
         </div>
       </div>
     </div>

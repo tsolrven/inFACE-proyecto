@@ -6,6 +6,7 @@ import {
   ModalidadChip,
   tiempoRelativo,
 } from '@/shared/lib/matchHelpers';
+import ConDescripcion from '@/shared/components/ConDescripcion';
 
 const TABS = [
   { id: 'proyectos', label: 'Proyectos', icon: 'ti-puzzle' },
@@ -169,12 +170,17 @@ function ProyectosTab({ creados, participa }) {
                   {p.etiquetas.slice(0, 4).map((et) => {
                     const c = etiquetaColor(et.nombre);
                     return (
-                      <span
+                      <ConDescripcion
                         key={et.id}
-                        className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${c.bg} ${c.text} ${c.border}`}
+                        nombre={et.nombre}
+                        descripcion={et.descripcion}
                       >
-                        {et.nombre}
-                      </span>
+                        <span
+                          className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${c.bg} ${c.text} ${c.border}`}
+                        >
+                          {et.nombre}
+                        </span>
+                      </ConDescripcion>
                     );
                   })}
                 </div>

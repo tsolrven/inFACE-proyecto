@@ -27,11 +27,14 @@ import {
 } from '@/shared/lib/matchHelpers';
 import ProyectoFormModal from '@/features/project-match/components/ProyectoFormModal';
 import DetalleProyecto from '@/features/project-match/components/DetalleProyecto';
+import VotoProyecto from '@/features/project-match/components/VotoProyecto';
+import { useValoresProyecto } from '@/features/project-match/store/interaccionesStore';
 import PostularModal from '@/features/project-match/components/PostularModal';
 import PostulacionesModal from '@/features/project-match/components/PostulacionesModal';
 import IntegrantesModal from '@/features/project-match/components/IntegrantesModal';
 import DescubrirTab from '@/features/project-match/components/DescubrirTab';
 import ConfirmDialog from '@/shared/components/ui/ConfirmDialog';
+import ConDescripcion from '@/shared/components/ConDescripcion';
 
 const TABS = [
   { id: 'descubrir', label: 'Descubrir', icon: 'ti-flame' },
@@ -440,7 +443,6 @@ export default function MatchProyectos() {
           }}
         />
       )}
-
       {modalIntegrantes && (
         <IntegrantesModal
           proyecto={modalIntegrantes}
@@ -726,20 +728,25 @@ function EtiquetaFilterDropdown({ selectedIds, onChange }) {
                       const c = etiquetaColor(et.nombre);
                       const seleccionada = selectedIds.includes(et.id);
                       return (
-                        <button
+                        <ConDescripcion
                           key={et.id}
-                          onClick={() => toggle(et.id)}
-                          className={`rounded-full border px-2 py-1 text-[11px] font-medium transition ${
-                            seleccionada
-                              ? `${c.bg} ${c.text} ${c.border}`
-                              : 'border-white/[0.07] text-neutral-400 hover:border-white/[0.16] hover:text-neutral-100'
-                          }`}
+                          nombre={et.nombre}
+                          descripcion={et.descripcion}
                         >
-                          {seleccionada && (
-                            <i className='ti ti-check mr-1 text-[10px]' />
-                          )}
-                          {et.nombre}
-                        </button>
+                          <button
+                            onClick={() => toggle(et.id)}
+                            className={`rounded-full border px-2 py-1 text-[11px] font-medium transition ${
+                              seleccionada
+                                ? `${c.bg} ${c.text} ${c.border}`
+                                : 'border-white/[0.07] text-neutral-400 hover:border-white/[0.16] hover:text-neutral-100'
+                            }`}
+                          >
+                            {seleccionada && (
+                              <i className='ti ti-check mr-1 text-[10px]' />
+                            )}
+                            {et.nombre}
+                          </button>
+                        </ConDescripcion>
                       );
                     })}
                   </div>
@@ -972,6 +979,7 @@ function TarjetaProyectoBase({ proyecto: p, extra, accionesDerecha }) {
     ? p.maximo_integrantes - p.total_integrantes
     : null;
   const { icono, clase, titulo } = iconoYColorEstado(p.estado);
+  const { comentarios_count: comentariosCount } = useValoresProyecto(p);
 
   return (
     <div className='flex overflow-hidden rounded-2xl border border-white/[0.06] bg-[#1E1E24] transition hover:border-white/[0.12]'>
@@ -1013,12 +1021,17 @@ function TarjetaProyectoBase({ proyecto: p, extra, accionesDerecha }) {
             {p.etiquetas.slice(0, 6).map((et) => {
               const c = etiquetaColor(et.nombre);
               return (
-                <span
+                <ConDescripcion
                   key={et.id}
-                  className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${c.bg} ${c.text} ${c.border}`}
+                  nombre={et.nombre}
+                  descripcion={et.descripcion}
                 >
-                  {et.nombre}
-                </span>
+                  <span
+                    className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${c.bg} ${c.text} ${c.border}`}
+                  >
+                    {et.nombre}
+                  </span>
+                </ConDescripcion>
               );
             })}
           </div>
@@ -1028,11 +1041,13 @@ function TarjetaProyectoBase({ proyecto: p, extra, accionesDerecha }) {
 
         <div className='flex flex-wrap items-center justify-between gap-2.5 border-t border-white/[0.06] pt-3'>
           <div className='flex items-center gap-4 text-[11.5px] text-neutral-600'>
+            <VotoProyecto proyecto={p} />
             <span
-              title='Comentarios: próximamente'
+              title='Comentarios'
               className='inline-flex items-center gap-1'
             >
-              <i className='ti ti-message-circle text-[14px]' /> 0
+              <i className='ti ti-message-circle text-[14px]' />{' '}
+              {comentariosCount}
             </span>
             <span className='inline-flex items-center gap-1'>
               <i className='ti ti-users text-[14px]' />

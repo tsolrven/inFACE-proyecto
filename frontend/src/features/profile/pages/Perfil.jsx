@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   obtenerMiPerfil,
   actualizarMiPerfil,
@@ -13,6 +14,7 @@ import {
 import Modal, { ModalHeader, ModalBody } from '@/shared/components/ui/Modal';
 import EtiquetasPicker from '@/shared/components/EtiquetasPicker';
 import PerfilTabs from '@/features/profile/components/PerfilTabs';
+import ConDescripcion from '@/shared/components/ConDescripcion';
 // TODO(Silvana): importar aquí tu servicio de apuntes, ej:
 // import { listarMisApuntes, listarMisRespuestas } from '../services/apunte';
 
@@ -44,7 +46,10 @@ export default function Perfil() {
   const [error, setError] = useState(null);
 
   const [modalEditar, setModalEditar] = useState(false);
-  const [modalIntereses, setModalIntereses] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [modalIntereses, setModalIntereses] = useState(
+    () => searchParams.get('editar') === 'intereses',
+  );
 
   // datos de las pestañas (conexión con otros módulos)
   const [proyectosCreados, setProyectosCreados] = useState([]);
@@ -55,6 +60,14 @@ export default function Perfil() {
   // const [apuntes, setApuntes] = useState([]);
   // const [respuestas, setRespuestas] = useState([]);
 
+  function cerrarModalIntereses() {
+    setModalIntereses(false);
+    if (searchParams.get('editar')) {
+      const params = new URLSearchParams(searchParams);
+      params.delete('editar');
+      setSearchParams(params, { replace: true });
+    }
+  }
   async function cargar() {
     setCargando(true);
     setError(null);
@@ -247,12 +260,17 @@ export default function Perfil() {
               {perfil.intereses.map((et) => {
                 const c = etiquetaColor(et.nombre);
                 return (
-                  <span
+                  <ConDescripcion
                     key={et.id}
-                    className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${c.bg} ${c.text} ${c.border}`}
+                    nombre={et.nombre}
+                    descripcion={et.descripcion}
                   >
-                    {et.nombre}
-                  </span>
+                    <span
+                      className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${c.bg} ${c.text} ${c.border}`}
+                    >
+                      {et.nombre}
+                    </span>
+                  </ConDescripcion>
                 );
               })}
             </div>
@@ -286,10 +304,10 @@ export default function Perfil() {
       {modalIntereses && (
         <EditarInteresesModal
           perfil={perfil}
-          onClose={() => setModalIntereses(false)}
+          onClose={cerrarModalIntereses}
           onGuardado={(actualizado) => {
             setPerfil(actualizado);
-            setModalIntereses(false);
+            cerrarModalIntereses();
           }}
         />
       )}
@@ -454,7 +472,7 @@ function EditarInteresesModal({ perfil, onClose, onGuardado }) {
     <Modal
       open
       onClose={onClose}
-      maxWidth='520px'
+      maxWidth='820px'
     >
       <ModalHeader
         title='Editar intereses'

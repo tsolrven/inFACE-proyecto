@@ -15,6 +15,7 @@ import {
   ModalidadChip,
   formatFecha,
 } from '@/shared/lib/matchHelpers';
+import ConDescripcion from '@/shared/components/ConDescripcion';
 import Modal, { ModalHeader, ModalBody } from '@/shared/components/ui/Modal';
 import armadilloArma from '@/assets/armadillo.png';
 
@@ -427,14 +428,35 @@ export default function DescubrirTab({
             <h3 className='mb-1 text-[15px] font-bold text-neutral-300'>
               ¡Viste todas las recomendaciones!
             </h3>
-            <p className='mb-5 max-w-[280px] text-[13px] leading-relaxed text-neutral-600'>
-              Puedes revisar los que te interesaron en "Guardados" o explorar
-              todos los proyectos abiertos.
+            <p className='mb-4 max-w-[340px] text-[13px] leading-relaxed text-neutral-600'>
+              Puedes revisar los que guardaste en "Guardados" o explorar todos
+              los proyectos abiertos.
             </p>
-            <div className='flex gap-2'>
+            <div className='mb-5 flex w-full max-w-[400px] items-start gap-3 rounded-2xl border border-white/[0.06] bg-[#1E1E24] p-4 text-left'>
+              <div className='flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] bg-pink-500/10'>
+                <i className='ti ti-bulb text-[18px] text-pink-400' />
+              </div>
+              <div>
+                <div className='mb-0.5 text-[13px] font-bold text-neutral-100'>
+                  ¿No te aparecen proyectos de tu interés?
+                </div>
+                <p className='text-[12px] leading-relaxed text-neutral-500'>
+                  Puede que tus etiquetas estén desactualizadas o no representen
+                  bien lo que buscas. Revísalas y edítalas para mejorar tus
+                  recomendaciones.
+                </p>
+              </div>
+            </div>
+            <div className='flex flex-wrap justify-center gap-2'>
+              <Link
+                to='/perfil?editar=intereses'
+                className='inline-flex items-center gap-1.5 rounded-[10px] bg-pink-500 px-4 py-2 text-[12.5px] font-semibold text-white transition hover:bg-pink-600'
+              >
+                <i className='ti ti-tag text-[14px]' /> Editar mis etiquetas
+              </Link>
               <button
                 onClick={onIrExplorar}
-                className='inline-flex items-center gap-1.5 rounded-[10px] bg-pink-500 px-4 py-2 text-[12.5px] font-semibold text-white transition hover:bg-pink-600'
+                className='inline-flex items-center gap-1.5 rounded-[10px] border border-white/[0.07] px-4 py-2 text-[12.5px] font-medium text-neutral-400 transition hover:text-neutral-100'
               >
                 <i className='ti ti-compass text-[14px]' /> Ir a Explorar
               </button>
@@ -442,7 +464,6 @@ export default function DescubrirTab({
           </div>
         )}
       </div>
-
       {/* COLUMNA DERECHA — mis intereses + perfiles similares + habilidades en demanda, todo en un solo bloque, solo escritorio */}
       <div className='hidden lg:block'>
         <div className='sticky top-[70px] divide-y divide-white/[0.06] overflow-hidden rounded-2xl border border-white/[0.06] bg-[#1E1E24]'>
@@ -577,12 +598,17 @@ function MisInteresesPanel({ misIntereses, cargando, sinBorde = false }) {
           {misIntereses.map((et) => {
             const c = etiquetaColor(et.nombre);
             return (
-              <span
+              <ConDescripcion
                 key={et.id}
-                className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${c.bg} ${c.text} ${c.border}`}
+                nombre={et.nombre}
+                descripcion={et.descripcion}
               >
-                {et.nombre}
-              </span>
+                <span
+                  className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${c.bg} ${c.text} ${c.border}`}
+                >
+                  {et.nombre}
+                </span>
+              </ConDescripcion>
             );
           })}
         </div>
@@ -628,21 +654,26 @@ function HabilidadesPanel({ habilidades, cargando, sinBorde = false }) {
               return (
                 <div key={h.id}>
                   <div className='mb-1 flex items-center justify-between gap-2'>
-                    <span
-                      className={`inline-flex items-center gap-1.5 text-[12px] font-medium ${c.text}`}
+                    <ConDescripcion
+                      nombre={h.nombre}
+                      descripcion={h.descripcion}
                     >
                       <span
-                        className='h-2 w-2 flex-shrink-0 rounded-full'
-                        style={{ background: c.hex }}
-                      />
-                      {h.nombre}
-                      {h.es_interes_propio && (
-                        <i
-                          title='Ya está entre tus intereses'
-                          className='ti ti-check text-[11px]'
+                        className={`inline-flex items-center gap-1.5 text-[12px] font-medium ${c.text}`}
+                      >
+                        <span
+                          className='h-2 w-2 flex-shrink-0 rounded-full'
+                          style={{ background: c.hex }}
                         />
-                      )}
-                    </span>
+                        {h.nombre}
+                        {h.es_interes_propio && (
+                          <i
+                            title='Ya está entre tus intereses'
+                            className='ti ti-check text-[11px]'
+                          />
+                        )}
+                      </span>
+                    </ConDescripcion>
                     <span className='flex-shrink-0 text-[11px] text-neutral-600'>
                       {h.total_proyectos} proyecto
                       {h.total_proyectos === 1 ? '' : 's'}
@@ -771,7 +802,7 @@ function TarjetaProyecto({ proyecto: p, interesesIds }) {
       <div className='grid min-h-0 flex-1 grid-cols-1 items-center gap-6 md:grid-cols-[minmax(0,1fr)_200px_200px]'>
         {/* INFO */}
         <div className='flex min-w-0 flex-col justify-center gap-2.5'>
-          <div className='line-clamp-2 text-[19px] font-bold leading-tight text-neutral-100 md:text-[21px]'>
+          <div className='line-clamp-2 pr-10 text-[19px] font-bold leading-tight text-neutral-100 md:pr-0 md:text-[21px]'>
             {p.titulo}
           </div>
 
@@ -790,17 +821,24 @@ function TarjetaProyecto({ proyecto: p, interesesIds }) {
                 const coincide = interesesIds.has(et.id);
                 const c = etiquetaColor(et.nombre);
                 return (
-                  <span
+                  <ConDescripcion
                     key={et.id}
-                    className={`rounded-full border px-2.5 py-1 text-[10.5px] font-semibold ${c.bg} ${c.text} ${
-                      coincide
-                        ? `${c.border} ring-1 ring-inset ring-current`
-                        : 'border-transparent'
-                    }`}
+                    nombre={et.nombre}
+                    descripcion={et.descripcion}
                   >
-                    {coincide && <i className='ti ti-check mr-1 text-[9px]' />}
-                    {et.nombre}
-                  </span>
+                    <span
+                      className={`rounded-full border px-2.5 py-1 text-[10.5px] font-semibold ${c.bg} ${c.text} ${
+                        coincide
+                          ? `${c.border} ring-1 ring-inset ring-current`
+                          : 'border-transparent'
+                      }`}
+                    >
+                      {coincide && (
+                        <i className='ti ti-check mr-1 text-[9px]' />
+                      )}
+                      {et.nombre}
+                    </span>
+                  </ConDescripcion>
                 );
               })}
             </div>

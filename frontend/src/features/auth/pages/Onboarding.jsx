@@ -41,7 +41,7 @@ export default function Onboarding() {
           'radial-gradient(ellipse 80% 60% at 50% -10%, rgba(232,84,106,.10) 0%, transparent 60%), #0B0B0E',
       }}
     >
-      <div className='w-full max-w-lg'>
+      <div className='w-full max-w-3xl'>
         <div className='mb-6 text-center'>
           <span className='inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-widest text-pink-400'>
             <i className='ti ti-affiliate text-[13px]' /> UBB · Inface

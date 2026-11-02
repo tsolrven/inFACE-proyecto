@@ -288,6 +288,7 @@ function formatearProyecto(p, opciones = {}) {
     fecha_inicio: p.fecha_inicio,
     fecha_fin: p.fecha_fin,
     fecha_creacion: p.fecha_creacion,
+        votos_neto: p.votos_neto ?? 0,
     creador: {
       id: p.creador?.id,
       nombre_usuario: p.creador?.perfil?.nombre_usuario,
@@ -501,13 +502,11 @@ function manejarErrorController(err, res) {
     error: err.message,
     stack: err.stack,
   });
-  return res
-    .status(500)
-    .json({
-      ok: false,
-      codigo: 'INTERNAL_ERROR',
-      mensaje: 'Error interno del servidor',
-    });
+  return res.status(500).json({
+    ok: false,
+    codigo: 'INTERNAL_ERROR',
+    mensaje: 'Error interno del servidor',
+  });
 }
 
 //──────────────────────────────────────────────────────────────────────────────
