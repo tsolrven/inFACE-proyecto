@@ -19,7 +19,12 @@ function toInputDate(fecha) {
   return new Date(fecha).toISOString().slice(0, 10);
 }
 
-export default function ProyectoFormModal({ proyecto, onClose, onSubmit }) {
+export default function ProyectoFormModal({
+  proyecto,
+  onClose,
+  onSubmit,
+  onEntregables,
+}) {
   const esEdicion = Boolean(proyecto);
 
   const [form, setForm] = useState({
@@ -183,11 +188,10 @@ export default function ProyectoFormModal({ proyecto, onClose, onSubmit }) {
                   onClick={() =>
                     setForm((f) => ({ ...f, modalidad_proyecto: m.value }))
                   }
-                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-medium transition ${
-                    form.modalidad_proyecto === m.value
-                      ? MODALIDAD_COLORES[m.value]
-                      : 'border-white/[0.07] text-neutral-400 hover:text-neutral-100'
-                  }`}
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-medium transition ${form.modalidad_proyecto === m.value
+                    ? MODALIDAD_COLORES[m.value]
+                    : 'border-white/[0.07] text-neutral-400 hover:text-neutral-100'
+                    }`}
                 >
                   <i className={`ti ${m.icon} text-[13px]`} />
                   {m.label}
@@ -258,6 +262,28 @@ export default function ProyectoFormModal({ proyecto, onClose, onSubmit }) {
               />
             </div>
           </div>
+
+          {esEdicion && proyecto.estado === 'cerrado' && onEntregables && (
+            <button
+              type='button'
+              onClick={onEntregables}
+              className='group flex w-full items-center gap-3 rounded-xl border border-pink-500/30 bg-gradient-to-r from-pink-500/[0.12] via-pink-500/[0.05] to-transparent px-3.5 py-3 text-left transition hover:border-pink-500/50'
+            >
+              <div className='flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[11px] bg-pink-500/15 text-pink-400'>
+                <i className='ti ti-trophy text-[20px]' />
+              </div>
+              <div className='min-w-0 flex-1'>
+                <div className='text-[13px] font-bold text-neutral-100'>
+                  Trabajo final
+                </div>
+                <div className='text-[11.5px] leading-relaxed text-neutral-400'>
+                  Añade o cambia el informe (PDF), video de YouTube, GitHub y
+                  LinkedIn.
+                </div>
+              </div>
+              <i className='ti ti-arrow-right text-[17px] text-pink-400 transition group-hover:translate-x-0.5' />
+            </button>
+          )}
 
           <div className='mt-2 flex justify-end gap-2 border-t border-white/[0.07] pt-4'>
             <button

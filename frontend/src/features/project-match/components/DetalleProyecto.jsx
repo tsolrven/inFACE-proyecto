@@ -10,14 +10,13 @@ import {
 } from '@/shared/lib/matchHelpers';
 import VotoProyecto from './VotoProyecto';
 import ProyectoComentarios from './ProyectoComentarios';
+import EntregablesProyecto from './EntregablesProyecto';
 import {
   useInteraccionesProyecto,
   useValoresProyecto,
 } from '@/features/project-match/store/interaccionesStore';
 import ConDescripcion from '@/shared/components/ConDescripcion';
 
-// las etiquetas vienen con el nombre real del tipo (tal como está en la BD);
-// acá se traducen a las etiquetas que se le muestran al usuario y se fija el orden.
 const ORDEN_TIPOS = [
   'Área de Interés',
   'Habilidad',
@@ -65,6 +64,7 @@ export default function DetalleProyecto({
   onVerIntegrantes,
   onVerPostulaciones,
   onVerHistorialPostulaciones,
+  onEntregablesActualizados,
   esVistaExterna = false,
 }) {
   const [mostrarForm, setMostrarForm] = useState(false);
@@ -323,6 +323,14 @@ export default function DetalleProyecto({
               })}
             </div>
           </div>
+
+          {proyecto.estado === 'cerrado' && (
+            <EntregablesProyecto
+              proyecto={proyecto}
+              esCreador={esCreador}
+              onActualizado={onEntregablesActualizados}
+            />
+          )}
 
           <div className='border-t border-white/[0.07] pt-4'>
             {enviado && proyecto.fui_expulsado && (

@@ -11,6 +11,7 @@ import {
 
 import {
   incluirProyectoCompleto,
+  calcularEstadoEfectivo,
   formatearProyecto,
   formatearProyectos,
   formatearPostulacion,
@@ -38,6 +39,13 @@ import {
   crearRng,
 } from './recomendador.service.js';
 
+import {
+  formatearArchivo,
+  borrarArchivosFisicos,
+} from '../../shared/files/files.service.js';
+
+import { normalizarEntregables } from './matchingProyecto.validation.js';
+
 //──────────────────────────────────────────────────────────────────────────────
 // VOTOS Y COMENTARIOS (módulo compartido: shared/votes y shared/comments)
 //──────────────────────────────────────────────────────────────────────────────
@@ -52,9 +60,15 @@ async function agregarInteracciones(proyectosFormateados, usuario_id) {
     ids,
     usuario_id,
   );
+  const conInforme = await prisma.archivo.findMany({
+    where: { tipo_contenido: 'proyecto', contenido_id: { in: ids } },
+    select: { contenido_id: true },
+  });
+  const idsConInforme = new Set(conInforme.map((a) => a.contenido_id));
   for (const p of proyectosFormateados) {
     p.mi_voto = mapVotos.get(p.id) ?? null;
     p.comentarios_count = mapComentarios.get(p.id) ?? 0;
+    p.tiene_informe = idsConInforme.has(p.id);
   }
   return proyectosFormateados;
 }
@@ -188,16 +202,17 @@ async function obtenerProyectoPorId(id, usuario_id) {
   const formateado = formatearProyecto(proyecto);
   await agregarInteracciones([formateado], usuario_id);
 
-  //* total histórico de PERSONAS distintas que se han postulado (no de filas: alguien
-  //* rechazado antes puede volver a postularse, y eso no debería contarse dos veces),
-  //* separado del conteo de pendientes que ya trae `total_postulaciones` — solo se pide
-  //* en el detalle, no en listados, para no sumar una consulta extra por cada tarjeta.
   const postulantesDistintos = await prisma.postulacionProyecto.findMany({
     where: { proyecto_id: id },
     select: { postulante_id: true },
     distinct: ['postulante_id'],
   });
   formateado.total_postulaciones_historico = postulantesDistintos.length;
+
+  const informe = await prisma.archivo.findFirst({
+    where: { tipo_contenido: 'proyecto', contenido_id: id },
+  });
+  formateado.informe = informe ? formatearArchivo(informe) : null;
 
   if (usuario_id) {
     const fueExpulsado = await prisma.integranteProyecto.findFirst({
@@ -242,6 +257,35 @@ async function actualizarProyecto(id, usuario_id, rol, datos) {
 
 // ╰─────────────────────────────✧────────────────────────────────╮
 
+async function guardarEntregables(id, usuario_id, rol, datos) {
+  const proyecto = await prisma.proyecto.findUnique({ where: { id } });
+
+  if (!proyecto) throw new NotFoundError('Proyecto');
+  if (proyecto.creador_id !== usuario_id && rol !== 'superadmin')
+    throw new ForbiddenError('No tienes permiso para editar este proyecto');
+
+  const estado = calcularEstadoEfectivo(
+    proyecto.estado_proyecto,
+    proyecto.fecha_inicio,
+    proyecto.fecha_fin,
+  );
+  if (estado !== 'cerrado')
+    throw new BadRequestError(
+      'Solo puedes agregar los entregables finales cuando el proyecto esté cerrado',
+    );
+
+  const actualizado = await prisma.proyecto.update({
+    where: { id },
+    data: normalizarEntregables(datos),
+    include: incluirProyectoCompleto(),
+  });
+
+  logger.info('Entregables del proyecto actualizados', { proyecto_id: id });
+  return formatearProyecto(actualizado);
+}
+
+// ╰─────────────────────────────✧────────────────────────────────╮
+
 async function eliminarProyecto(id, usuario_id, rol) {
   const proyecto = await prisma.proyecto.findUnique({ where: { id } });
 
@@ -249,18 +293,18 @@ async function eliminarProyecto(id, usuario_id, rol) {
   if (proyecto.creador_id !== usuario_id && rol !== 'superadmin')
     throw new ForbiddenError('No tienes permiso para eliminar este proyecto');
 
-  //* todo en una transacción: si algo falla no queda el proyecto a medias.
-  //* eliminarContenido borra comentarios, votos y reportes del proyecto
-  //* (tablas polimórficas sin FK, no se borran solas).
-  await prisma.$transaction(async (tx) => {
-    await eliminarContenido(tx, 'proyecto', id);
+  const archivos = await prisma.$transaction(async (tx) => {
+    const { archivos } = await eliminarContenido(tx, 'proyecto', id);
     await tx.proyectoEtiqueta.deleteMany({ where: { proyecto_id: id } });
     await tx.postulacionProyecto.deleteMany({ where: { proyecto_id: id } });
     await tx.integranteProyecto.deleteMany({ where: { proyecto_id: id } });
     await tx.favoritoProyecto.deleteMany({ where: { proyecto_id: id } });
     await tx.descarteProyecto.deleteMany({ where: { proyecto_id: id } });
     await tx.proyecto.delete({ where: { id } });
+    return archivos;
   });
+
+  await borrarArchivosFisicos(archivos);
 
   logger.info('Proyecto eliminado', {
     proyecto_id: id,
@@ -422,13 +466,13 @@ async function obtenerPostulacionesUsuario(usuario_id) {
 
   const integracionesActivas = proyectosAceptados.length
     ? await prisma.integranteProyecto.findMany({
-        where: {
-          usuario_id,
-          proyecto_id: { in: proyectosAceptados },
-          fue_expulsado: false,
-        },
-        select: { proyecto_id: true },
-      })
+      where: {
+        usuario_id,
+        proyecto_id: { in: proyectosAceptados },
+        fue_expulsado: false,
+      },
+      select: { proyecto_id: true },
+    })
     : [];
   const proyectosDondeSigoActivo = new Set(
     integracionesActivas.map((i) => i.proyecto_id),
@@ -1012,4 +1056,5 @@ export {
   descartarProyecto,
   obtenerHabilidadesEnDemanda,
   obtenerUsuariosSimilares,
+  guardarEntregables,
 };

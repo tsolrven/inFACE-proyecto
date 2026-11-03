@@ -49,8 +49,6 @@ function esquemaCrearProyecto(body) {
   if (fecha_inicio && !isNaN(Date.parse(fecha_inicio))) {
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
-    // "fecha_inicio" llega como 'YYYY-MM-DD': hay que interpretarlo en hora LOCAL
-    // (new Date('YYYY-MM-DD') lo toma como UTC y podía quedar "antes de hoy" por el huso horario)
     const inicioLocal = new Date(`${fecha_inicio}T00:00:00`);
     if (inicioLocal <= hoy) {
       errores.push(
@@ -185,6 +183,81 @@ function esquemaResponderPostulacion(body) {
 }
 
 //──────────────────────────────────────────────────────────────────────────────
+// ENTREGABLES FINALES (solo cuando el proyecto está cerrado)
+//──────────────────────────────────────────────────────────────────────────────
+
+const LARGO_MAX_LINK = 2048;
+const HOSTS_YOUTUBE = [
+  'youtube.com',
+  'www.youtube.com',
+  'm.youtube.com',
+  'youtu.be',
+];
+const HOSTS_GITHUB = ['github.com', 'www.github.com'];
+const esHostLinkedin = (host) =>
+  host === 'linkedin.com' || host.endsWith('.linkedin.com');
+
+function parsearUrlWeb(texto) {
+  try {
+    const url = new URL(texto);
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url : null;
+  } catch {
+    return null;
+  }
+}
+
+const textoLimpio = (valor) => (typeof valor === 'string' ? valor.trim() : '');
+
+function normalizarEntregables({ video_url, github_url, linkedin_url } = {}) {
+  return {
+    video_url: textoLimpio(video_url) || null,
+    repositorio_url: textoLimpio(github_url) || null,
+    linkedin_url: textoLimpio(linkedin_url) || null,
+  };
+}
+
+function esquemaEntregables(body = {}) {
+  const errores = [];
+  const { video_url, repositorio_url, linkedin_url } =
+    normalizarEntregables(body);
+
+  const tipoValido = (valor) =>
+    valor === undefined || valor === null || typeof valor === 'string';
+  if (
+    !tipoValido(body.video_url) ||
+    !tipoValido(body.github_url) ||
+    !tipoValido(body.linkedin_url)
+  )
+    errores.push('Los links deben ser texto');
+
+  const revisar = (link, hostValido, mensaje) => {
+    if (!link) return;
+    const url = parsearUrlWeb(link);
+    if (link.length > LARGO_MAX_LINK) errores.push(`${mensaje} (muy largo)`);
+    else if (!url || !hostValido(url.hostname.toLowerCase()))
+      errores.push(mensaje);
+  };
+
+  revisar(
+    video_url,
+    (h) => HOSTS_YOUTUBE.includes(h),
+    'El video de presentación debe ser un link de YouTube',
+  );
+  revisar(
+    repositorio_url,
+    (h) => HOSTS_GITHUB.includes(h),
+    'El repositorio debe ser un link de GitHub',
+  );
+  revisar(
+    linkedin_url,
+    esHostLinkedin,
+    'El link de LinkedIn debe ser de linkedin.com',
+  );
+
+  return errores;
+}
+
+//──────────────────────────────────────────────────────────────────────────────
 // EXPORTS
 //──────────────────────────────────────────────────────────────────────────────
 
@@ -192,3 +265,5 @@ export const validarCrearProyecto = validar(esquemaCrearProyecto);
 export const validarActualizarProyecto = validar(esquemaActualizarProyecto);
 export const validarPostular = validar(esquemaPostular);
 export const validarResponderPostulacion = validar(esquemaResponderPostulacion);
+export { normalizarEntregables };
+export const validarEntregables = validar(esquemaEntregables);

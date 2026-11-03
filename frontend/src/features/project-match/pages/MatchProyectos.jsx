@@ -27,6 +27,7 @@ import {
 } from '@/shared/lib/matchHelpers';
 import ProyectoFormModal from '@/features/project-match/components/ProyectoFormModal';
 import DetalleProyecto from '@/features/project-match/components/DetalleProyecto';
+import { EntregablesModal } from '@/features/project-match/components/EntregablesProyecto';
 import VotoProyecto from '@/features/project-match/components/VotoProyecto';
 import { useValoresProyecto } from '@/features/project-match/store/interaccionesStore';
 import PostularModal from '@/features/project-match/components/PostularModal';
@@ -48,19 +49,14 @@ export default function MatchProyectos() {
   const usuario = useAuthStore((s) => s.usuario);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  // se inicializa desde la URL para que sobreviva a un remount (ej. volver de ver
-  // el perfil de alguien), en vez de resetearse siempre a 'descubrir'.
   const [tab, setTabState] = useState(
     () => searchParams.get('tab') || 'descubrir',
   );
   const [search, setSearch] = useState('');
-  // mientras esto es true no se muestra nada (ni tabs ni detalle), para evitar el "flash"
-  // de Descubrir antes de resolver un ?proyecto=ID que venga en la URL al montar.
   const [resolviendoDetalleInicial, setResolviendoDetalleInicial] = useState(
     () => !!searchParams.get('proyecto'),
   );
 
-  // datos globales usados por varias pestañas
   const [favoritos, setFavoritos] = useState([]);
   const [favoritosLoaded, setFavoritosLoaded] = useState(false);
   const [misPostulaciones, setMisPostulaciones] = useState([]);
@@ -74,6 +70,7 @@ export default function MatchProyectos() {
   const [modalIntegrantes, setModalIntegrantes] = useState(null);
   const [confirmEliminarDetalle, setConfirmEliminarDetalle] = useState(null);
   const [avisoError, setAvisoError] = useState(null);
+  const [modalEntregables, setModalEntregables] = useState(null);
 
   const favoritosIds = useMemo(
     () => new Set(favoritos.map((p) => p.id)),
@@ -85,7 +82,7 @@ export default function MatchProyectos() {
       const data = await listarFavoritos();
       setFavoritos(data);
     } catch {
-      // silencioso: no bloquea el resto de la página
+
     } finally {
       setFavoritosLoaded(true);
     }
@@ -96,7 +93,7 @@ export default function MatchProyectos() {
       const data = await listarMisPostulaciones();
       setMisPostulaciones(data);
     } catch {
-      // silencioso
+
     } finally {
       setMisPostulacionesLoaded(true);
     }
@@ -139,9 +136,6 @@ export default function MatchProyectos() {
     recargarMisPostulaciones();
   }
 
-  // abre el detalle de un proyecto como una navegación real (queda en el historial de
-  // verdad), así "Volver" y el botón "atrás" del navegador siempre funcionan como se
-  // espera, incluso después de salir a ver el perfil de alguien y regresar.
   function abrirDetalle(proyectoId, { conIntegrantes = false } = {}) {
     const params = new URLSearchParams();
     params.set('proyecto', proyectoId);
@@ -150,7 +144,7 @@ export default function MatchProyectos() {
   }
 
   function handleVerDetalle(proyecto) {
-    setProyectoDetalle(proyecto); // optimista: se muestra al toque, sin esperar el fetch
+    setProyectoDetalle(proyecto);
     abrirDetalle(proyecto.id);
   }
 
@@ -186,9 +180,6 @@ export default function MatchProyectos() {
     }
   }
 
-  // vuelve a pedir el proyecto y refresca lo que esté mostrando ahora mismo (detalle
-  // y/o modal de integrantes), sin navegar a ningún lado — para usar después de editar,
-  // aceptar/rechazar postulaciones, o expulsar/agregar integrantes.
   async function refrescarDetalle(proyectoId) {
     try {
       const p = await obtenerProyecto(proyectoId);
@@ -196,13 +187,20 @@ export default function MatchProyectos() {
       setProyectoDetalle((actual) => (actual?.id === proyectoId ? p : actual));
       setModalIntegrantes((actual) => (actual?.id === proyectoId ? p : actual));
     } catch {
-      // ignorar
+
     }
   }
 
-  // el estado de la vista (qué detalle está abierto, si el modal de integrantes está
-  // abierto encima) vive en la URL en vez de solo en memoria, así sobrevive a salir a
-  // ver el perfil de alguien y volver con "atrás" (o remontar el componente).
+  async function abrirEntregables(proyecto) {
+    try {
+      const completo = await obtenerProyecto(proyecto.id);
+      setModalCrear(null);
+      setModalEntregables(completo);
+    } catch (err) {
+      setAvisoError(err.message);
+    }
+  }
+
   useEffect(() => {
     const proyectoId = searchParams.get('proyecto');
     const panel = searchParams.get('panel');
@@ -239,7 +237,7 @@ export default function MatchProyectos() {
 
   return (
     <div>
-      {/* HEADER (mismo estilo que Repositorio de materiales) */}
+      {/* HEADER */}
       <div className='px-4 pt-6 sm:px-[26px]'>
         <div className='mb-4 flex items-center gap-1.5 text-[12px] text-neutral-500'>
           <span>Inicio</span>
@@ -285,11 +283,10 @@ export default function MatchProyectos() {
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`-mb-px flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-[12.5px] font-medium transition sm:px-4 sm:py-3 sm:text-[13px] ${
-                tab === t.id
-                  ? 'border-pink-500 font-semibold text-pink-500'
-                  : 'border-transparent text-neutral-500 hover:text-neutral-300'
-              }`}
+              className={`-mb-px flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-[12.5px] font-medium transition sm:px-4 sm:py-3 sm:text-[13px] ${tab === t.id
+                ? 'border-pink-500 font-semibold text-pink-500'
+                : 'border-transparent text-neutral-500 hover:text-neutral-300'
+                }`}
             >
               <i className={`ti ${t.icon} text-[15px]`} />
               {t.label}
@@ -324,13 +321,12 @@ export default function MatchProyectos() {
               setVerTodasPostulaciones(true);
               setModalPostulaciones(proyectoDetalle);
             }}
+            onEntregablesActualizados={() =>
+              refrescarDetalle(proyectoDetalle.id)
+            }
           />
         )}
 
-        {/* las 5 pestañas quedan SIEMPRE montadas (solo se ocultan con CSS) para que su estado
-            y sus datos ya cargados no se pierdan/reinicien al cambiar de pestaña, ver el detalle
-            de un proyecto, o volver a Descubrir — antes esta sección se desmontaba por completo
-            cada vez que se abría un detalle, reiniciando la cola de swipes de Descubrir */}
         <div
           style={{
             display:
@@ -377,6 +373,7 @@ export default function MatchProyectos() {
               usuario={usuario}
               onCrear={() => setModalCrear('crear')}
               onEditar={(p) => setModalCrear(p)}
+              onAgregarEntregables={abrirEntregables}
               onVerPostulaciones={(p) => setModalPostulaciones(p)}
               onVerIntegrantes={(p) =>
                 abrirDetalle(p.id, { conIntegrantes: true })
@@ -401,6 +398,11 @@ export default function MatchProyectos() {
         <ProyectoFormModal
           proyecto={modalCrear === 'crear' ? null : modalCrear}
           onClose={() => setModalCrear(null)}
+          onEntregables={
+            modalCrear === 'crear'
+              ? undefined
+              : () => abrirEntregables(modalCrear)
+          }
           onSubmit={async (payload) => {
             if (modalCrear === 'crear') {
               await crearProyecto(payload);
@@ -413,6 +415,20 @@ export default function MatchProyectos() {
             window.dispatchEvent(
               new Event('inface:mis-proyectos-actualizados'),
             );
+          }}
+        />
+      )}
+
+      {modalEntregables && (
+        <EntregablesModal
+          proyecto={modalEntregables}
+          onClose={() => setModalEntregables(null)}
+          onGuardado={() => {
+            window.dispatchEvent(
+              new Event('inface:mis-proyectos-actualizados'),
+            );
+            if (proyectoDetalle?.id === modalEntregables.id)
+              refrescarDetalle(modalEntregables.id);
           }}
         />
       )}
@@ -485,7 +501,7 @@ export default function MatchProyectos() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// FILA DE BÚSQUEDA + FILTROS (compartida entre pestañas)
+// FILA DE BÚSQUEDA + FILTROS 
 // ─────────────────────────────────────────────────────────────────────────────
 
 function FilterRow({ children }) {
@@ -505,12 +521,8 @@ function FilterDropdown({
 
   function calcularPosicion() {
     const rect = btnRef.current.getBoundingClientRect();
-    // por defecto se alinea a la derecha del botón, pero si el botón está muy cerca
-    // del borde izquierdo (ej. con el sidebar colapsado) eso deja el menú con
-    // coordenada negativa y se corta; en ese caso se alinea a la izquierda del botón.
     let left = rect.right - MENU_WIDTH;
     if (left < 8) left = rect.left;
-    // tampoco debe salirse por la derecha de la ventana
     if (left + MENU_WIDTH > window.innerWidth - 8)
       left = window.innerWidth - MENU_WIDTH - 8;
     return { top: rect.bottom + 6, left };
@@ -579,11 +591,10 @@ function FilterDropdown({
                       sec.onSelect(opt.value);
                       setOpen(false);
                     }}
-                    className={`flex cursor-pointer items-center gap-2 px-3.5 py-2 text-[13px] transition hover:bg-white/[0.04] ${
-                      sec.selected === opt.value
-                        ? 'text-pink-500'
-                        : 'text-neutral-400'
-                    }`}
+                    className={`flex cursor-pointer items-center gap-2 px-3.5 py-2 text-[13px] transition hover:bg-white/[0.04] ${sec.selected === opt.value
+                      ? 'text-pink-500'
+                      : 'text-neutral-400'
+                      }`}
                   >
                     {opt.label}
                     {sec.selected === opt.value && (
@@ -735,11 +746,10 @@ function EtiquetaFilterDropdown({ selectedIds, onChange }) {
                         >
                           <button
                             onClick={() => toggle(et.id)}
-                            className={`rounded-full border px-2 py-1 text-[11px] font-medium transition ${
-                              seleccionada
-                                ? `${c.bg} ${c.text} ${c.border}`
-                                : 'border-white/[0.07] text-neutral-400 hover:border-white/[0.16] hover:text-neutral-100'
-                            }`}
+                            className={`rounded-full border px-2 py-1 text-[11px] font-medium transition ${seleccionada
+                              ? `${c.bg} ${c.text} ${c.border}`
+                              : 'border-white/[0.07] text-neutral-400 hover:border-white/[0.16] hover:text-neutral-100'
+                              }`}
                           >
                             {seleccionada && (
                               <i className='ti ti-check mr-1 text-[10px]' />
@@ -969,9 +979,7 @@ function iconoYColorEstado(estado) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TARJETA BASE (estilo "post" de feed): columna de acento a la izquierda + contenido
-// a lo ancho + footer con meta a la izquierda y acciones a la derecha. La misma
-// estructura se reutiliza en Explorar, Guardados, Mis proyectos y Mis postulaciones.
+// TARJETA BASE 
 // ─────────────────────────────────────────────────────────────────────────────
 
 function TarjetaProyectoBase({ proyecto: p, extra, accionesDerecha }) {
@@ -983,7 +991,6 @@ function TarjetaProyectoBase({ proyecto: p, extra, accionesDerecha }) {
 
   return (
     <div className='flex overflow-hidden rounded-2xl border border-white/[0.06] bg-[#1E1E24] transition hover:border-white/[0.12]'>
-      {/* columna de acento */}
       <div className='flex w-[54px] flex-shrink-0 flex-col items-center gap-2 border-r border-white/[0.06] bg-white/[0.015] py-4'>
         <div
           title={titulo}
@@ -994,7 +1001,6 @@ function TarjetaProyectoBase({ proyecto: p, extra, accionesDerecha }) {
       </div>
 
       <div className='min-w-0 flex-1 p-4'>
-        {/* meta: modalidad · creador · tiempo */}
         <div className='mb-2.5 flex flex-wrap items-center gap-1.5 text-[11.5px] text-neutral-500'>
           <ModalidadChip modalidad={p.modalidad} />
           <span>·</span>
@@ -1124,11 +1130,10 @@ function ProyectoCard({
           )}
           <button
             onClick={onToggleFavorito}
-            className={`inline-flex items-center gap-1.5 rounded-[10px] border px-3.5 py-1.5 text-[12px] font-medium transition ${
-              esFavorito
-                ? 'border-pink-500/40 bg-pink-500/10 text-pink-500'
-                : 'border-white/[0.07] text-neutral-400 hover:text-neutral-100'
-            }`}
+            className={`inline-flex items-center gap-1.5 rounded-[10px] border px-3.5 py-1.5 text-[12px] font-medium transition ${esFavorito
+              ? 'border-pink-500/40 bg-pink-500/10 text-pink-500'
+              : 'border-white/[0.07] text-neutral-400 hover:text-neutral-100'
+              }`}
           >
             <i className='ti ti-bookmark text-[13px]' />
             {esFavorito ? 'Guardado' : 'Guardar'}
@@ -1215,6 +1220,7 @@ function MisProyectosTab({
   usuario,
   onCrear,
   onEditar,
+  onAgregarEntregables,
   onVerPostulaciones,
   onVerIntegrantes,
   onVerDetalle,
@@ -1288,21 +1294,19 @@ function MisProyectosTab({
         <div className='flex gap-1 rounded-[10px] border border-white/[0.07] bg-[#1E1E24] p-1'>
           <button
             onClick={() => setSub('creados')}
-            className={`rounded-[8px] px-3.5 py-1.5 text-[12.5px] font-medium transition ${
-              sub === 'creados'
-                ? 'bg-pink-500 text-white'
-                : 'text-neutral-400 hover:text-neutral-100'
-            }`}
+            className={`rounded-[8px] px-3.5 py-1.5 text-[12.5px] font-medium transition ${sub === 'creados'
+              ? 'bg-pink-500 text-white'
+              : 'text-neutral-400 hover:text-neutral-100'
+              }`}
           >
             Creados <span className='opacity-70'>({creados.length})</span>
           </button>
           <button
             onClick={() => setSub('participa')}
-            className={`rounded-[8px] px-3.5 py-1.5 text-[12.5px] font-medium transition ${
-              sub === 'participa'
-                ? 'bg-pink-500 text-white'
-                : 'text-neutral-400 hover:text-neutral-100'
-            }`}
+            className={`rounded-[8px] px-3.5 py-1.5 text-[12.5px] font-medium transition ${sub === 'participa'
+              ? 'bg-pink-500 text-white'
+              : 'text-neutral-400 hover:text-neutral-100'
+              }`}
           >
             Participo <span className='opacity-70'>({participa.length})</span>
           </button>
@@ -1351,6 +1355,7 @@ function MisProyectosTab({
               proyecto={p}
               onVerDetalle={() => onVerDetalle(p)}
               onEditar={() => onEditar(p)}
+              onAgregarEntregables={() => onAgregarEntregables(p)}
               onEliminar={() => handleEliminar(p)}
               onVerPostulaciones={() => onVerPostulaciones(p)}
               onVerIntegrantes={() => onVerIntegrantes(p)}
@@ -1369,9 +1374,9 @@ function MisProyectosTab({
               esIntegrante
               esFavorito={false}
               yaPostulado={false}
-              onToggleFavorito={() => {}}
+              onToggleFavorito={() => { }}
               onVerDetalle={() => onVerDetalle(p)}
-              onPostularClick={() => {}}
+              onPostularClick={() => { }}
             />
           ))}
         </div>
@@ -1408,6 +1413,7 @@ function MiProyectoCard({
   proyecto: p,
   onVerDetalle,
   onEditar,
+  onAgregarEntregables,
   onEliminar,
   onVerPostulaciones,
   onVerIntegrantes,
@@ -1415,46 +1421,72 @@ function MiProyectoCard({
   const cupos = p.maximo_integrantes
     ? p.maximo_integrantes - p.total_integrantes
     : null;
+  const faltaTrabajoFinal =
+    p.estado === 'cerrado' &&
+    !p.tiene_informe &&
+    !p.video_url &&
+    !p.github_url &&
+    !p.linkedin_url;
 
   return (
     <TarjetaProyectoBase
       proyecto={p}
       extra={
-        <div className='mb-3 flex gap-3 rounded-[10px] bg-[#2A2A32] px-3.5 py-2.5'>
-          <div className='flex flex-1 items-center gap-2.5'>
-            <i className='ti ti-armchair text-xl text-pink-500' />
-            <div>
-              <div className='text-[16px] font-bold leading-none text-neutral-100'>
-                {cupos !== null ? Math.max(cupos, 0) : '∞'}
+        <>
+          {faltaTrabajoFinal && (
+            <button
+              type='button'
+              onClick={onAgregarEntregables}
+              className='group mb-3 flex w-full items-center gap-3 rounded-xl border border-pink-500/30 bg-gradient-to-r from-pink-500/[0.12] via-pink-500/[0.05] to-transparent px-3.5 py-2.5 text-left transition hover:border-pink-500/50'
+            >
+              <div className='flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] bg-pink-500/15 text-pink-400'>
+                <i className='ti ti-trophy text-[18px]' />
               </div>
-              <div className='mt-0.5 text-[10px] text-neutral-500'>
-                Cupos disponibles
+              <span className='min-w-0 flex-1 text-[12.5px] leading-relaxed text-neutral-400'>
+                <strong className='block text-[13px] text-neutral-100'>
+                  Tu proyecto está cerrado
+                </strong>
+                Haz click para añadir el trabajo final.
+              </span>
+              <i className='ti ti-arrow-right text-[17px] text-pink-400 transition group-hover:translate-x-0.5' />
+            </button>
+          )}
+          <div className='mb-3 flex gap-3 rounded-[10px] bg-[#2A2A32] px-3.5 py-2.5'>
+            <div className='flex flex-1 items-center gap-2.5'>
+              <i className='ti ti-armchair text-xl text-pink-500' />
+              <div>
+                <div className='text-[16px] font-bold leading-none text-neutral-100'>
+                  {cupos !== null ? Math.max(cupos, 0) : '∞'}
+                </div>
+                <div className='mt-0.5 text-[10px] text-neutral-500'>
+                  Cupos disponibles
+                </div>
+              </div>
+            </div>
+            <div className='flex flex-1 items-center gap-2.5'>
+              <i className='ti ti-inbox text-xl text-pink-500' />
+              <div>
+                <div className='text-[16px] font-bold leading-none text-neutral-100'>
+                  {p.total_postulaciones}
+                </div>
+                <div className='mt-0.5 text-[10px] text-neutral-500'>
+                  Pendientes
+                </div>
+              </div>
+            </div>
+            <div className='flex flex-1 items-center gap-2.5'>
+              <i className='ti ti-users text-xl text-pink-500' />
+              <div>
+                <div className='text-[16px] font-bold leading-none text-neutral-100'>
+                  {p.total_integrantes}
+                </div>
+                <div className='mt-0.5 text-[10px] text-neutral-500'>
+                  Integrantes
+                </div>
               </div>
             </div>
           </div>
-          <div className='flex flex-1 items-center gap-2.5'>
-            <i className='ti ti-inbox text-xl text-pink-500' />
-            <div>
-              <div className='text-[16px] font-bold leading-none text-neutral-100'>
-                {p.total_postulaciones}
-              </div>
-              <div className='mt-0.5 text-[10px] text-neutral-500'>
-                Pendientes
-              </div>
-            </div>
-          </div>
-          <div className='flex flex-1 items-center gap-2.5'>
-            <i className='ti ti-users text-xl text-pink-500' />
-            <div>
-              <div className='text-[16px] font-bold leading-none text-neutral-100'>
-                {p.total_integrantes}
-              </div>
-              <div className='mt-0.5 text-[10px] text-neutral-500'>
-                Integrantes
-              </div>
-            </div>
-          </div>
-        </div>
+        </>
       }
       accionesDerecha={
         <>
@@ -1579,21 +1611,21 @@ function MisPostulacionesTab({
           const { icono, clase, titulo } =
             p.estado === 'aceptada'
               ? {
-                  icono: 'ti-circle-check',
-                  clase: 'bg-emerald-400/10 text-emerald-400',
-                  titulo: 'Aceptada',
-                }
+                icono: 'ti-circle-check',
+                clase: 'bg-emerald-400/10 text-emerald-400',
+                titulo: 'Aceptada',
+              }
               : p.estado === 'rechazada'
                 ? {
-                    icono: 'ti-x',
-                    clase: 'bg-red-500/10 text-red-400',
-                    titulo: 'Rechazada',
-                  }
+                  icono: 'ti-x',
+                  clase: 'bg-red-500/10 text-red-400',
+                  titulo: 'Rechazada',
+                }
                 : {
-                    icono: 'ti-clock',
-                    clase: 'bg-amber-400/10 text-amber-400',
-                    titulo: 'Pendiente',
-                  };
+                  icono: 'ti-clock',
+                  clase: 'bg-amber-400/10 text-amber-400',
+                  titulo: 'Pendiente',
+                };
 
           return (
             <div
