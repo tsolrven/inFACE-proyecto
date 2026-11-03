@@ -6,6 +6,15 @@ import { BadRequestError } from '../../errors/appError.js';
 import { obtenerConfigAdjuntos } from '../content/contentRegistry.js';
 import { EXTENSIONES_PERMITIDAS } from './fileMime.helper.js';
 
+// La parte numérica del nombre nunca se repite ni retrocede dentro del proceso.
+// Date.now() solo no basta: varios archivos de una misma petición pueden llegar
+// en el mismo milisegundo, y entonces el orden quedaría decidido por el azar.
+let ultimaMarca = 0;
+function marcaDeTiempo() {
+  ultimaMarca = Math.max(Date.now(), ultimaMarca + 1);
+  return ultimaMarca;
+}
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     if (!fs.existsSync(UPLOADS_DIR))
@@ -14,7 +23,7 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
-    const nombre = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+    const nombre = `${marcaDeTiempo()}-${Math.round(Math.random() * 1e9)}${ext}`;
     cb(null, nombre);
   },
 });

@@ -1,5 +1,5 @@
 import express from 'express';
-import { subir, eliminar, descargar } from './files.controller.js';
+import { subir, eliminar, descargar, ver } from './files.controller.js';
 import { autenticar } from '../../middlewares/auth.middleware.js';
 import { upload } from './multer.helper.js';
 import { validarContenidoReal } from './fileSignature.helper.js';
@@ -40,5 +40,6 @@ router.get(
   validate(idParamSchema, 'params'),
   descargar,
 );
+router.get('/:id/ver', autenticar, validate(idParamSchema, 'params'), ver);
 
 export default router;

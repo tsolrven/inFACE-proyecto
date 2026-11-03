@@ -95,9 +95,18 @@ export const protectedRoutes = [
   },
 ];
 
-// rutas que existen pero no van en el sidebar (se llega a ellas navegando, por ej. al hacer click en un hashtag dentro del repositorio de materiales)
+// rutas que existen pero no van en el sidebar (se llega a ellas navegando, por ej. al hacer click en un hashtag)
 export const extraRoutes = [
-  { path: '/repositorio-materiales/tag/:hashtag', component: MaterialsPage },
+  {
+    path: '/hashtag/:nombre',
+    component: lazy(() => import('@/features/hashtags/pages/HashtagPage')),
+  },
+  {
+    path: '/repositorio-materiales/tag/:hashtag',
+    component: lazy(
+      () => import('@/features/hashtags/pages/TagMaterialesRedirect'),
+    ),
+  },
   {
     path: '/perfil',
     component: lazy(() => import('@/features/profile/pages/Perfil')),
@@ -112,6 +121,10 @@ export const extraRoutes = [
       () => import('@/features/materials/pages/MaterialDetailPage'),
     ),
   },
+  {
+    path: '/foro-por-ramos/:id',
+    component: lazy(() => import('@/features/forum/pages/HiloDetailPage')),
+  },
 ];
 
 // rutas que se renderizan COMO MODAL, pero que también funcionan como página normal si alguien entra directo al link.
@@ -120,6 +133,12 @@ export const modalRoutes = [
     path: '/repositorio-materiales/:id',
     component: lazy(
       () => import('@/features/materials/components/MaterialDetailModal'),
+    ),
+  },
+  {
+    path: '/foro-por-ramos/:id',
+    component: lazy(
+      () => import('@/features/forum/components/HiloDetailModal'),
     ),
   },
 ];

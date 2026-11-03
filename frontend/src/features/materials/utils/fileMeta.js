@@ -102,6 +102,12 @@ export function metaDeArchivo(archivo) {
   return DEFS[categoriaDeMime(archivo?.tipo_mime)] ?? DEFS.default;
 }
 
+// Para ArchivosInput: sirve para archivos ya guardados (tipo_mime) y para los
+// File recién elegidos (type).
+export function iconoDeAdjunto(archivo) {
+  return metaDeArchivo({ tipo_mime: archivo.tipo_mime ?? archivo.type }).icon;
+}
+
 const DOMINIOS_LINK = {
   'github.com': DEFS.github,
   'gitlab.com': { ...DEFS.link, icon: 'ti-brand-gitlab', label: 'GitLab' },
@@ -199,11 +205,4 @@ export function badgesDeApunte({
   if (codigo_snippet?.trim()) presentes.add('codigo');
   if (links.some(esLinkGithub)) presentes.add('github');
   return ORDEN_BADGES.filter((b) => presentes.has(b)); // orden estable
-}
-
-export function formatearTamanio(bytes) {
-  if (!bytes && bytes !== 0) return '';
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }

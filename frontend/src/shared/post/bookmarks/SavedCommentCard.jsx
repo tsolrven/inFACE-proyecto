@@ -1,37 +1,28 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
-import { useGuardar } from '@/shared/post/bookmarks/useGuardar';
+import QuitarGuardadoButton from '@/shared/post/bookmarks/QuitarGuardadoButton';
 
-// Tipo de contenido -> ruta. Cuando exista el foro o los anuncios, se agrega una línea acá.
-const RUTAS_CONTENIDO = {
-  apunte: (id) => `/repositorio-materiales/${id}`,
-};
-
-export default function SavedCommentCard({ comentario }) {
+// `rutaDe(padre)` la define cada módulo: recibe la publicación a la que pertenece
+// el comentario ({ id, tipo_contenido, titulo }) y devuelve su ruta, o null.
+export default function SavedCommentCard({ comentario, rutaDe }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const guardarMut = useGuardar('comentario');
 
   const padre = comentario.contenido_padre;
+  const ruta = padre ? (rutaDe?.(padre) ?? null) : null;
 
   function irAlPost() {
-    const ruta = padre && RUTAS_CONTENIDO[padre.tipo_contenido];
     if (!ruta) return;
-    navigate(ruta(padre.id), {
+    navigate(`${ruta}?comentario=${comentario.id}`, {
       state: { backgroundLocation: location },
     });
-  }
-
-  function handleQuitar(e) {
-    e.stopPropagation();
-    guardarMut.mutate({ id: comentario.id, guardar: false });
   }
 
   return (
     <div
       onClick={irAlPost}
       className={`mb-2 flex flex-col gap-1.5 rounded-[14px] border border-white/[0.06] bg-[#1E1E24] p-3 transition-colors hover:border-white/[0.12] ${
-        padre ? 'cursor-pointer' : 'cursor-default opacity-70'
+        ruta ? 'cursor-pointer' : 'cursor-default opacity-70'
       }`}
     >
       <div className='flex items-center justify-between gap-2'>
@@ -41,15 +32,10 @@ export default function SavedCommentCard({ comentario }) {
             {padre?.titulo ?? 'una publicación eliminada'}
           </b>
         </span>
-        <button
-          type='button'
-          onClick={handleQuitar}
-          disabled={guardarMut.isPending}
-          title='Quitar de guardados'
-          className='flex-shrink-0 text-neutral-600 transition-colors hover:text-pink-400 disabled:opacity-50'
-        >
-          <i className='ti ti-bookmark-off text-[14px]' />
-        </button>
+        <QuitarGuardadoButton
+          tipo='comentario'
+          id={comentario.id}
+        />
       </div>
 
       <div className='flex items-center gap-1.5 text-[11.5px] text-neutral-600'>

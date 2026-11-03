@@ -69,6 +69,8 @@ export default function CommentActions({
         </button>
       )}
 
+      {acciones.extra?.(comentario)}
+
       <PostActionsMenu
         items={items}
         label='Más acciones del comentario'

@@ -7,17 +7,19 @@ import {
   metaDeArchivo,
   metaDeBadge,
   metaDeLink,
-  formatearTamanio,
   badgesDeApunte,
 } from '@/features/materials/utils/fileMeta';
+import { formatearTamanio } from '@/shared/lib/archivos';
 import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
-import { descargarArchivo } from '@/features/materials/api/files.api';
+import { descargarArchivo } from '@/shared/api/archivos.api';
 import { useApunte } from '@/features/materials/hooks/useApuntes';
 import { useVotar } from '@/shared/post/votes/useVotar';
 import ApunteMenu from '@/features/materials/components/ApunteMenu';
 import VotePill from '@/shared/post/votes/VotePill';
 import ShareButton from '@/shared/post/share/ShareButton';
 import CodeViewer from '@/features/materials/components/CodeViewer';
+import { rutaHashtag } from '@/shared/lib/hashtags';
+import MarkdownView from '@/shared/markdown/MarkdownView';
 
 export default function MaterialDetailModal() {
   const { id } = useParams();
@@ -119,9 +121,9 @@ export default function MaterialDetailModal() {
             </div>
 
             {apunte.descripcion && (
-              <p className='mb-4 text-[13.5px] leading-relaxed text-neutral-400'>
-                {apunte.descripcion}
-              </p>
+              <div className='mb-4'>
+                <MarkdownView contenido={apunte.descripcion} />
+              </div>
             )}
 
             <DetalleArchivos apunte={apunte} />
@@ -131,9 +133,7 @@ export default function MaterialDetailModal() {
                 {apunte.hashtags.map((tag) => (
                   <span
                     key={tag}
-                    onClick={() =>
-                      navigate(`/repositorio-materiales/tag/${tag}`)
-                    }
+                    onClick={() => navigate(rutaHashtag(tag))}
                     className='cursor-pointer text-[11.5px] text-blue-400 hover:underline'
                   >
                     #{tag}

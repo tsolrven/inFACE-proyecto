@@ -7,8 +7,10 @@ import {
 } from '../../errors/appError.js';
 import {
   verificarContenidoExiste,
+  bloquearContenido,
   registrarHidratadorGuardados,
   obtenerPreviewsContenido,
+  ejecutarAlEliminarComentario,
   notificarInteraccion,
 } from '../content/contentRegistry.js';
 import { eliminarInteracciones } from '../content/contentCleanup.js';
@@ -81,6 +83,22 @@ async function listarRespuestas({
     cursor,
     usuario_id,
   });
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+// Un comentario con sus respuestas precargadas (mismo formato que la lista).
+// Lo usa el foro para mostrar la respuesta aceptada fijada arriba del hilo.
+async function obtenerComentarioConArbol(
+  comentario_id,
+  usuario_id,
+  orden = 'mejores',
+) {
+  const { items } = await paginarComentarios({
+    filtro: { id: comentario_id },
+    orden,
+    limite: 1,
+    usuario_id,
+  });
+  return items[0] ?? null;
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function paginarComentarios({
@@ -239,43 +257,49 @@ async function crearComentario({
 }) {
   await verificarContenidoExiste(tipo_contenido, contenido_id);
 
-  let nivel = 0;
-  if (padre_id) {
-    const padre = await prisma.comentario.findUnique({
-      where: { id: padre_id },
-    });
-    if (!padre) throw new NotFoundError('Comentario padre');
-    if (padre.eliminado) {
-      throw new BadRequestError(
-        'No puedes responder a un comentario eliminado',
-      );
-    }
-    if (
-      padre.tipo_contenido !== tipo_contenido ||
-      padre.contenido_id !== contenido_id
-    ) {
-      throw new BadRequestError(
-        'El comentario padre no pertenece a este contenido',
-      );
-    }
-    nivel = padre.nivel + 1;
-    if (nivel > MAX_NIVEL_COMENTARIO) {
-      throw new BadRequestError(
-        `Se alcanzó el máximo de ${MAX_NIVEL_COMENTARIO} niveles de respuestas`,
-      );
-    }
-  }
+  const comentario = await prisma.$transaction(async (tx) => {
+    let nivel = 0;
+    if (padre_id) {
+      // bloquea al padre: si el autor lo está borrando, esperamos a que termine
+      // (y lo vemos eliminado o inexistente); y si lo borra después, su conteo
+      // de respuestas ya incluye esta (si no, la FK la dejaría huérfana)
+      await bloquearContenido('comentario', padre_id, tx);
 
-  const comentario = await prisma.comentario.create({
-    data: {
-      autor_id,
-      tipo_contenido,
-      contenido_id,
-      contenido,
-      padre_id: padre_id || null,
-      nivel,
-    },
-    include: INCLUDE_COMENTARIO,
+      const padre = await tx.comentario.findUnique({
+        where: { id: padre_id },
+      });
+      if (padre.eliminado) {
+        throw new BadRequestError(
+          'No puedes responder a un comentario eliminado',
+        );
+      }
+      if (
+        padre.tipo_contenido !== tipo_contenido ||
+        padre.contenido_id !== contenido_id
+      ) {
+        throw new BadRequestError(
+          'El comentario padre no pertenece a este contenido',
+        );
+      }
+      nivel = padre.nivel + 1;
+      if (nivel > MAX_NIVEL_COMENTARIO) {
+        throw new BadRequestError(
+          `Se alcanzó el máximo de ${MAX_NIVEL_COMENTARIO} niveles de respuestas`,
+        );
+      }
+    }
+
+    return tx.comentario.create({
+      data: {
+        autor_id,
+        tipo_contenido,
+        contenido_id,
+        contenido,
+        padre_id: padre_id || null,
+        nivel,
+      },
+      include: INCLUDE_COMENTARIO,
+    });
   });
 
   await notificarInteraccion(tipo_contenido, {
@@ -327,6 +351,18 @@ async function eliminarComentario(comentario_id, usuario_id, rol) {
 
   // todo en una transacción: el conteo de respuestas y el borrado ven lo mismo
   return prisma.$transaction(async (tx) => {
+    // bloquea el comentario: si alguien le está respondiendo, esperamos a que
+    // termine y el conteo ya incluye esa respuesta (si no, el borrado real
+    // la dejaría huérfana)
+    await bloquearContenido('comentario', comentario_id, tx);
+    const vigente = await tx.comentario.findUnique({
+      where: { id: comentario_id },
+      select: { eliminado: true },
+    });
+    if (vigente.eliminado) {
+      throw new BadRequestError('Este comentario ya fue eliminado');
+    }
+
     const cantidadRespuestas = await tx.comentario.count({
       where: { padre_id: comentario_id },
     });
@@ -335,6 +371,7 @@ async function eliminarComentario(comentario_id, usuario_id, rol) {
     if (esAutor && cantidadRespuestas === 0) {
       await eliminarInteracciones(tx, 'comentario', [comentario_id]);
       await tx.comentario.delete({ where: { id: comentario_id } });
+      await ejecutarAlEliminarComentario(tx, comentario);
       const podados = await podarAncestrosEliminados(tx, comentario.padre_id);
       return {
         eliminado_permanente: true,
@@ -360,6 +397,7 @@ async function eliminarComentario(comentario_id, usuario_id, rol) {
       },
       include: INCLUDE_COMENTARIO,
     });
+    await ejecutarAlEliminarComentario(tx, comentario);
     return {
       eliminado_permanente: false,
       comentario: formatearComentario(actualizado),
@@ -401,6 +439,61 @@ async function podarAncestrosEliminados(tx, padre_id) {
     actualId = padre.padre_id;
   }
   return podados;
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+// Un comentario con el camino hasta su raíz (como el enlace permanente de Reddit):
+// ancestros + el comentario + sus mejores respuestas. Los hermanos no se incluyen:
+// cada ancestro trae `respuestas_count` para que "Ver más respuestas" los cargue.
+async function obtenerContextoComentario({
+  comentario_id,
+  usuario_id,
+  orden = 'mejores',
+}) {
+  // raíz -> comentario, en una sola consulta (la profundidad máxima es MAX_NIVEL_COMENTARIO)
+  const cadena = await prisma.$queryRaw`
+    WITH RECURSIVE cadena AS (
+      SELECT id, padre_id, 0 AS distancia
+      FROM comentarios WHERE id = ${comentario_id}
+      UNION ALL
+      SELECT c.id, c.padre_id, cadena.distancia + 1
+      FROM comentarios c JOIN cadena ON c.id = cadena.padre_id
+    )
+    SELECT id FROM cadena ORDER BY distancia DESC`;
+  if (cadena.length === 0) throw new NotFoundError('Comentario');
+
+  const ids = cadena.map((f) => f.id);
+  const filas = await prisma.comentario.findMany({
+    where: { id: { in: ids } },
+    include: INCLUDE_COMENTARIO,
+  });
+  const porId = new Map(filas.map((f) => [f.id, f]));
+  const objetivo = porId.get(comentario_id);
+  if (!objetivo) throw new NotFoundError('Comentario');
+
+  const ancestros = ids
+    .slice(0, -1)
+    .map((id) => porId.get(id))
+    .filter(Boolean);
+
+  // el comentario con sus respuestas precargadas, igual que en la lista
+  const desdeObjetivo = await agregarRespuestasPrecargadas([objetivo], orden);
+  const todas = [...ancestros, ...desdeObjetivo];
+
+  const { mapVotos, setGuardados } = await obtenerMisInteracciones(
+    'comentario',
+    todas.map((c) => c.id),
+    usuario_id,
+  );
+  const [raiz] = construirArbolComentarios(todas, mapVotos, setGuardados);
+
+  return {
+    raiz,
+    ruta: ids, // ids de la raíz al comentario
+    contenido: {
+      tipo_contenido: objetivo.tipo_contenido,
+      contenido_id: objetivo.contenido_id,
+    },
+  };
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function hidratarComentariosGuardados(ids, usuario_id) {
@@ -505,8 +598,10 @@ registrarHidratadorGuardados('comentario', hidratarComentariosGuardados);
 export {
   listarComentarios,
   listarRespuestas,
+  obtenerComentarioConArbol,
   crearComentario,
   editarComentario,
   eliminarComentario,
+  obtenerContextoComentario,
   formatearComentario,
 };

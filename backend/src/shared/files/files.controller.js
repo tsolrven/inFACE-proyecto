@@ -6,6 +6,7 @@ import {
 } from './files.service.js';
 import ApiResponse from '../../utils/apiResponse.js';
 import { BadRequestError } from '../../errors/appError.js';
+import { obtenerImagenParaVer } from './files.service.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function subir(req, res, next) {
   try {
@@ -48,4 +49,16 @@ async function descargar(req, res, next) {
   }
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-export { subir, eliminar, descargar };
+async function ver(req, res, next) {
+  try {
+    const { rutaFisica, tipo_mime } = await obtenerImagenParaVer(req.params.id);
+    res.type(tipo_mime);
+    res.set('Cache-Control', 'private, max-age=3600');
+    // dotfiles: 'allow' evita un 404 si alguna carpeta de la ruta empieza con "."
+    return res.sendFile(rutaFisica, { dotfiles: 'allow' });
+  } catch (err) {
+    next(err);
+  }
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+export { subir, eliminar, descargar, ver };

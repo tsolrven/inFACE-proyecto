@@ -1,18 +1,38 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { useParams } from 'react-router-dom';
 import { useFiltrosStore } from '@/features/materials/store/filtrosStore';
 import { useApuntesFeed } from '@/features/materials/hooks/useApuntes';
 import FeedTopbar from '@/features/materials/components/FeedTopbar';
 import QuickUploadBox from '@/features/materials/components/QuickUploadBox';
 import MaterialCard from '@/features/materials/components/MaterialCard';
 
-export default function MaterialFeed({ carreraId, onAbrirSubida }) {
-  const { hashtag } = useParams();
+export default function MaterialFeed({
+  carreraId,
+  hashtag = null,
+  onAbrirSubida,
+}) {
   const filtrosStore = useFiltrosStore((s) => s.filtros);
   const filtros = useMemo(
-    () => ({ ...filtrosStore, hashtag: hashtag ?? null }),
+    () => ({ ...filtrosStore, hashtag }),
     [filtrosStore, hashtag],
   );
+
+  const hayOtrosFiltros = !!(filtros.ramo_id || filtros.tipo_archivo);
+  const textoVacio = hashtag
+    ? {
+        titulo: `No hay materiales con #${hashtag}`,
+        detalle: hayOtrosFiltros
+          ? 'Prueba quitando algún filtro.'
+          : 'Nadie ha usado este hashtag en materiales de tu carrera.',
+      }
+    : hayOtrosFiltros
+      ? {
+          titulo: 'No hay materiales con estos filtros',
+          detalle: 'Prueba quitando algún filtro.',
+        }
+      : {
+          titulo: 'No hay materiales todavía',
+          detalle: 'Sé el primero en compartir algo con la comunidad.',
+        };
 
   const {
     data,
@@ -46,7 +66,7 @@ export default function MaterialFeed({ carreraId, onAbrirSubida }) {
         carreraId={carreraId}
         onAbrirSubida={onAbrirSubida}
       />
-      <QuickUploadBox onClick={onAbrirSubida} />
+      {onAbrirSubida && <QuickUploadBox onClick={onAbrirSubida} />}
 
       {error && (
         <div className='mb-3 rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2 text-[12.5px] text-red-400'>
@@ -64,10 +84,10 @@ export default function MaterialFeed({ carreraId, onAbrirSubida }) {
         <div className='flex flex-col items-center justify-center py-16 text-center select-none'>
           <i className='ti ti-mood-empty mb-3 block text-5xl text-neutral-700' />
           <p className='text-sm font-semibold text-neutral-300'>
-            No hay materiales todavía
+            {textoVacio.titulo}
           </p>
           <p className='mt-1.5 text-xs text-neutral-600'>
-            Sé el primero en compartir algo con la comunidad.
+            {textoVacio.detalle}
           </p>
         </div>
       )}

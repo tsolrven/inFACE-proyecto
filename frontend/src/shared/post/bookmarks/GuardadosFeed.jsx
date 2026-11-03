@@ -1,28 +1,16 @@
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useState } from 'react';
 import { useGuardados } from '@/shared/post/bookmarks/useGuardados';
-import MaterialCard from '@/features/materials/components/MaterialCard';
-import SavedCommentCard from '@/features/materials/components/SavedCommentCard';
+import { useCentinela } from '@/shared/hooks/useCentinela';
 
-const TIPOS = [
-  {
-    valor: 'apunte',
-    label: 'Materiales',
-    icono: 'ti-file-text',
-    plural: 'materiales',
-    singular: 'publicación',
-  },
-  {
-    valor: 'comentario',
-    label: 'Comentarios',
-    icono: 'ti-message-circle-2',
-    plural: 'comentarios',
-    singular: 'comentario',
-  },
-];
-
-export default function GuardadosFeed() {
-  const [tipo, setTipo] = useState('apunte');
-  const actual = TIPOS.find((t) => t.valor === tipo);
+// Lista de guardados con pestañas. Cada módulo decide qué pestañas muestra y
+// cómo se dibuja cada tarjeta:
+//   tipos = [{ valor, padre?, label, icono, plural, singular, renderItem }]
+// `valor` es el tipo guardado ('apunte', 'hilo', 'comentario') y debe ser único
+// dentro del arreglo; `padre` filtra los comentarios por el tipo de contenido
+// al que pertenecen; `renderItem(item)` devuelve la tarjeta.
+export default function GuardadosFeed({ tipos }) {
+  const [valor, setValor] = useState(tipos[0].valor);
+  const actual = tipos.find((t) => t.valor === valor) ?? tipos[0];
 
   const {
     data,
@@ -31,35 +19,27 @@ export default function GuardadosFeed() {
     hasNextPage,
     fetchNextPage,
     isFetchingNextPage,
-  } = useGuardados(tipo);
+  } = useGuardados(actual.valor, { padre: actual.padre });
 
   const items = data?.pages.flatMap((p) => p.items) ?? [];
   const total = data?.pages.at(-1)?.meta?.total;
 
-  const centinelaRef = useRef(null);
-  useEffect(() => {
-    const el = centinelaRef.current;
-    if (!el || !hasNextPage || isFetchingNextPage) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) fetchNextPage();
-      },
-      { rootMargin: '200px' },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  const centinelaRef = useCentinela({
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  });
 
   return (
     <div className='flex-1 overflow-y-auto p-4'>
       <div className='mb-3 flex gap-1'>
-        {TIPOS.map((t) => (
+        {tipos.map((t) => (
           <button
             key={t.valor}
             type='button'
-            onClick={() => setTipo(t.valor)}
+            onClick={() => setValor(t.valor)}
             className={`flex items-center gap-1 rounded-[10px] px-2.5 py-1.5 text-xs font-medium transition-colors ${
-              tipo === t.valor
+              actual.valor === t.valor
                 ? 'border border-white/[0.07] bg-[#1E1E24] text-neutral-100'
                 : 'text-neutral-500 hover:bg-white/[0.04] hover:text-neutral-200'
             }`}
@@ -94,19 +74,9 @@ export default function GuardadosFeed() {
         </div>
       )}
 
-      {tipo === 'apunte'
-        ? items.map((apunte) => (
-            <MaterialCard
-              key={apunte.id}
-              apunte={apunte}
-            />
-          ))
-        : items.map((comentario) => (
-            <SavedCommentCard
-              key={comentario.id}
-              comentario={comentario}
-            />
-          ))}
+      {items.map((item) => (
+        <Fragment key={item.id}>{actual.renderItem(item)}</Fragment>
+      ))}
 
       <div
         ref={centinelaRef}

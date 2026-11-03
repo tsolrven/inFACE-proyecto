@@ -12,17 +12,37 @@ import {
   datosArchivo,
 } from '../../shared/files/files.service.js';
 import { eliminarContenido } from '../../shared/content/contentCleanup.js';
-import { registrarHidratadorGuardados } from '../../shared/content/contentRegistry.js';
+import {
+  bloquearContenido,
+  registrarHidratadorGuardados,
+  registrarAlQuitarArchivo,
+} from '../../shared/content/contentRegistry.js';
 import { obtenerEnriquecimiento } from '../../shared/content/contentEnrichment.js';
 import { esStaff } from '../../shared/auth/permissions.js';
 import { AUTOR_PUBLICO_SELECT } from '../../shared/content/selects.js';
+import {
+  INCLUDE_HASHTAGS,
+  resolverHashtags,
+  filtroPorHashtag,
+  nombresDeHashtags,
+} from '../../shared/hashtags/hashtags.service.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 // relaciones que siempre se piden junto con un apunte
 const INCLUDE_APUNTE = {
   autor: { select: AUTOR_PUBLICO_SELECT },
   ramo: { select: { id: true, nombre: true, codigo: true, semestre: true } },
-  hashtags: { include: { hashtag: { select: { nombre: true } } } },
+  hashtags: INCLUDE_HASHTAGS,
 };
+// ────────────────────────────────────────────────────────────────────────────────────────
+const MENSAJE_SIN_CONTENIDO =
+  'El material debe incluir al menos un archivo, un link o un snippet de código';
+
+// Invariante: un material siempre tiene al menos un archivo, un link o un snippet.
+function tieneContenido({ cantidadArchivos, links, codigo_snippet }) {
+  return (
+    cantidadArchivos > 0 || (links?.length ?? 0) > 0 || !!codigo_snippet?.trim()
+  );
+}
 // ────────────────────────────────────────────────────────────────────────────────────────
 // Único lugar donde se arma el apunte "completo" para un usuario
 // (feed, detalle, guardados y edición pasan todos por acá).
@@ -62,7 +82,7 @@ async function listarApuntes({
   if (ramo_id) where.ramo_id = ramo_id;
   if (tipo) where.tipo = tipo;
   if (hashtag) {
-    where.hashtags = { some: { hashtag: { nombre: hashtag } } };
+    where.hashtags = filtroPorHashtag(hashtag);
   }
 
   if (tipo_archivo && MIME_MAP[tipo_archivo]) {
@@ -132,12 +152,14 @@ async function crearApunte({
   hashtags = [],
   archivos = [],
 }) {
-  const tieneContenido =
-    archivos.length > 0 || links.length > 0 || !!codigo_snippet?.trim();
-  if (!tieneContenido) {
-    throw new BadRequestError(
-      'El material debe incluir al menos un archivo, un link o un snippet de código',
-    );
+  if (
+    !tieneContenido({
+      cantidadArchivos: archivos.length,
+      links,
+      codigo_snippet,
+    })
+  ) {
+    throw new BadRequestError(MENSAJE_SIN_CONTENIDO);
   }
 
   const ramo = await prisma.ramo.findUnique({
@@ -231,27 +253,55 @@ async function actualizarApunte(id, usuario_id, datos) {
     }
   }
 
-  const apunteActualizado = await prisma.apunte.update({
-    where: { id },
-    data: {
-      editado_en: new Date(),
-      ...(ramo_id && { ramo_id }),
-      ...(titulo && { titulo }),
-      ...(descripcion !== undefined && { descripcion }),
-      ...(tipo && { tipo }),
-      ...(links !== undefined && { links }),
-      ...(codigo_snippet !== undefined && {
-        codigo_snippet,
-        lenguaje_snippet: codigo_snippet ? lenguaje_snippet : null,
-      }),
-      ...(hashtags && {
-        hashtags: {
-          deleteMany: {},
-          create: await resolverHashtags(hashtags),
-        },
-      }),
-    },
-    include: INCLUDE_APUNTE,
+  // lo que puede fallar por datos inválidos, antes de abrir la transacción
+  const hashtagsCreate = hashtags ? await resolverHashtags(hashtags) : null;
+
+  const apunteActualizado = await prisma.$transaction(async (tx) => {
+    // bloquea el apunte: serializa contra DELETE /archivos/:id y otros PATCH
+    await bloquearContenido('apunte', id, tx);
+
+    // el invariante solo se revisa si este PATCH toca links o snippet; se lee
+    // el estado vigente porque pudo cambiar entre la primera lectura y el bloqueo
+    if (links !== undefined || codigo_snippet !== undefined) {
+      const vigente = await tx.apunte.findUnique({
+        where: { id },
+        select: { links: true, codigo_snippet: true },
+      });
+      const cantidadArchivos = await tx.archivo.count({
+        where: { tipo_contenido: 'apunte', contenido_id: id },
+      });
+      const final = {
+        cantidadArchivos,
+        links: links !== undefined ? links : vigente.links,
+        codigo_snippet:
+          codigo_snippet !== undefined
+            ? codigo_snippet
+            : vigente.codigo_snippet,
+      };
+      if (!tieneContenido(final)) {
+        throw new BadRequestError(MENSAJE_SIN_CONTENIDO);
+      }
+    }
+
+    return tx.apunte.update({
+      where: { id },
+      data: {
+        editado_en: new Date(),
+        ...(ramo_id && { ramo_id }),
+        ...(titulo && { titulo }),
+        ...(descripcion !== undefined && { descripcion }),
+        ...(tipo && { tipo }),
+        ...(links !== undefined && { links }),
+        ...(codigo_snippet !== undefined && {
+          codigo_snippet,
+          lenguaje_snippet: codigo_snippet ? lenguaje_snippet : null,
+        }),
+        ...(hashtags && {
+          hashtags: { deleteMany: {}, create: hashtagsCreate },
+        }),
+      },
+      include: INCLUDE_APUNTE,
+    });
   });
 
   const [apunteFormateado] = await formatearApuntes(
@@ -295,19 +345,6 @@ async function hidratarApuntesGuardados(ids, usuario_id) {
   return formatearApuntes(ordenados, usuario_id);
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-async function resolverHashtags(hashtags) {
-  return Promise.all(
-    hashtags.map(async (nombre) => {
-      const tag = await prisma.hashtag.upsert({
-        where: { nombre },
-        update: {},
-        create: { nombre },
-      });
-      return { hashtag_id: tag.id };
-    }),
-  );
-}
-// ────────────────────────────────────────────────────────────────────────────────────────
 function formatearApunte(
   apunte,
   {
@@ -341,7 +378,7 @@ function formatearApunte(
       codigo: apunte.ramo.codigo,
       semestre: apunte.ramo.semestre,
     },
-    hashtags: apunte.hashtags.map((h) => h.hashtag.nombre),
+    hashtags: nombresDeHashtags(apunte.hashtags),
     archivos: archivos.map(formatearArchivo),
     comentarios_count: comentarios,
     descargas: archivos.reduce(
@@ -352,6 +389,28 @@ function formatearApunte(
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 registrarHidratadorGuardados('apunte', hidratarApuntesGuardados);
+// ────────────────────────────────────────────────────────────────────────────────────────
+
+// Quitar un archivo no puede dejar el material vacío. Corre dentro de la
+// transacción de eliminarArchivo, con el apunte ya bloqueado.
+registrarAlQuitarArchivo('apunte', async (tx, archivo) => {
+  const apunte = await tx.apunte.findUnique({
+    where: { id: archivo.contenido_id },
+    select: { links: true, codigo_snippet: true },
+  });
+  const otrosArchivos = await tx.archivo.count({
+    where: {
+      tipo_contenido: 'apunte',
+      contenido_id: archivo.contenido_id,
+      id: { not: archivo.id },
+    },
+  });
+  if (!tieneContenido({ cantidadArchivos: otrosArchivos, ...apunte })) {
+    throw new BadRequestError(
+      'No puedes quitar el único contenido del material: agrega antes un link, un snippet u otro archivo',
+    );
+  }
+});
 // ────────────────────────────────────────────────────────────────────────────────────────
 export {
   listarApuntes,

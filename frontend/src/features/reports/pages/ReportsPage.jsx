@@ -27,7 +27,6 @@ export default function Reportes() {
 
   useEffect(() => {
     let cancelado = false;
-    setCargando(true);
     listarMisReportes()
       .then((data) => !cancelado && setReportes(data))
       .catch(

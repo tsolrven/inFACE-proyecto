@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import RightPanel from '@/shared/components/layout/RightPanel';
 import RpCard from '@/shared/components/layout/RpCard';
 import RpRules from '@/shared/components/layout/RpRules';
 import PageBanner from '@/shared/components/layout/PageBanner';
+import Pestanas from '@/shared/components/ui/Pestanas';
 import MaterialFeed from '@/features/materials/components/MaterialFeed';
-import GuardadosFeed from '@/features/materials/components/GuardadosFeed';
+import MaterialGuardados from '@/features/materials/components/MaterialGuardados';
 import UploadModal from '@/features/materials/components/UploadModal';
 import { useAuthStore } from '@/shared/auth/authStore';
 import {
@@ -13,6 +14,7 @@ import {
   listarHashtagsPopulares,
 } from '@/features/materials/api/statistics.api';
 import armadilloRepositorio from '@/assets/armadillo-repositorio-materiales.png';
+import { rutaHashtag } from '@/shared/lib/hashtags';
 
 const COLORES_COLABORADOR = [
   'bg-amber-400/10 text-amber-400',
@@ -40,6 +42,11 @@ const rules = [
   'El repositorio es un bien común: cuídalo y contribuye activamente.',
 ];
 
+const VISTAS = [
+  { id: 'publicaciones', label: 'Publicaciones', icono: 'ti-layout-grid' },
+  { id: 'guardados', label: 'Guardados', icono: 'ti-bookmark' },
+];
+
 export default function RepositorioMateriales() {
   const usuario = useAuthStore((s) => s.usuario);
   const carreraId = usuario?.carrera_id ?? null;
@@ -49,8 +56,6 @@ export default function RepositorioMateriales() {
 
   const [colaboradores, setColaboradores] = useState([]);
   const [tagsPopulares, setTagsPopulares] = useState([]);
-
-  const { hashtag } = useParams();
 
   useEffect(() => {
     if (!carreraId) return;
@@ -62,26 +67,15 @@ export default function RepositorioMateriales() {
       .catch(() => setTagsPopulares([]));
   }, [carreraId]);
 
-  const banner = hashtag
-    ? {
-        title: `#${hashtag}`,
-        subtitle: `Publicaciones con #${hashtag} en ${carreraNombre}`,
-        breadcrumb: [
-          { label: 'Inicio', to: '/' },
-          { label: 'Académico' },
-          { label: 'Repositorio de materiales', to: '/repositorio-materiales' },
-          { label: `#${hashtag}` },
-        ],
-      }
-    : {
-        title: 'Repositorio de materiales',
-        subtitle: `${carreraNombre} · Materiales compartidos por la comunidad`,
-        breadcrumb: [
-          { label: 'Inicio', to: '/' },
-          { label: 'Académico' },
-          { label: 'Repositorio de materiales' },
-        ],
-      };
+  const banner = {
+    title: 'Repositorio de materiales',
+    subtitle: `${carreraNombre} · Materiales compartidos por la comunidad`,
+    breadcrumb: [
+      { label: 'Inicio', to: '/' },
+      { label: 'Académico' },
+      { label: 'Repositorio de materiales' },
+    ],
+  };
 
   return (
     <div className='flex flex-1 overflow-hidden h-full'>
@@ -97,9 +91,11 @@ export default function RepositorioMateriales() {
           breadcrumb={banner.breadcrumb}
         />
 
-        <MaterialSectionTabs
-          vista={vista}
+        <Pestanas
+          pestanas={VISTAS}
+          activa={vista}
           onCambiar={setVista}
+          acento='border-blue-400'
         />
 
         {vista === 'publicaciones' ? (
@@ -108,7 +104,7 @@ export default function RepositorioMateriales() {
             onAbrirSubida={() => setUploadAbierto(true)}
           />
         ) : (
-          <GuardadosFeed />
+          <MaterialGuardados />
         )}
       </div>
 
@@ -181,7 +177,7 @@ export default function RepositorioMateriales() {
               {tagsPopulares.map(({ nombre }) => (
                 <Link
                   key={nombre}
-                  to={`/repositorio-materiales/tag/${nombre}`}
+                  to={rutaHashtag(nombre)}
                   className='cursor-pointer rounded-full border border-transparent bg-[#2A2A32] px-2.5 py-0.5 text-[11px] text-neutral-500 transition-colors hover:border-white/[0.07] hover:bg-white/[0.06] hover:text-neutral-100'
                 >
                   #{nombre}
@@ -205,35 +201,6 @@ export default function RepositorioMateriales() {
         onClose={() => setUploadAbierto(false)}
         carreraId={carreraId}
       />
-    </div>
-  );
-}
-
-function MaterialSectionTabs({ vista, onCambiar }) {
-  return (
-    <div className='flex gap-1 border-b border-white/[0.06] px-4 pt-2'>
-      <button
-        type='button'
-        onClick={() => onCambiar('publicaciones')}
-        className={`flex items-center gap-1.5 border-b-2 px-3 py-2 text-[13px] font-semibold transition-colors ${
-          vista === 'publicaciones'
-            ? 'border-blue-400 text-neutral-100'
-            : 'border-transparent text-neutral-500 hover:text-neutral-200'
-        }`}
-      >
-        <i className='ti ti-layout-grid text-[15px]' /> Publicaciones
-      </button>
-      <button
-        type='button'
-        onClick={() => onCambiar('guardados')}
-        className={`flex items-center gap-1.5 border-b-2 px-3 py-2 text-[13px] font-semibold transition-colors ${
-          vista === 'guardados'
-            ? 'border-blue-400 text-neutral-100'
-            : 'border-transparent text-neutral-500 hover:text-neutral-200'
-        }`}
-      >
-        <i className='ti ti-bookmark text-[15px]' /> Guardados
-      </button>
     </div>
   );
 }
