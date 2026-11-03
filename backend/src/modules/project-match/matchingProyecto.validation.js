@@ -181,6 +181,22 @@ function esquemaResponderPostulacion(body) {
 
   return errores;
 }
+// ╰─────────────────────────────✧────────────────────────────────╮
+const hoyEnChile = () =>
+  new Date().toLocaleDateString('en-CA', { timeZone: 'America/Santiago' });
+
+function esquemaInicioFuturo({ fecha_inicio } = {}) {
+  if (
+    typeof fecha_inicio !== 'string' ||
+    !/^\d{4}-\d{2}-\d{2}/.test(fecha_inicio)
+  )
+    return [];
+  return fecha_inicio.slice(0, 10) <= hoyEnChile()
+    ? [
+      'La fecha de inicio no puede ser hoy ni una fecha pasada: elige una fecha futura para tu proyecto',
+    ]
+    : [];
+}
 
 //──────────────────────────────────────────────────────────────────────────────
 // ENTREGABLES FINALES (solo cuando el proyecto está cerrado)
@@ -267,3 +283,7 @@ export const validarPostular = validar(esquemaPostular);
 export const validarResponderPostulacion = validar(esquemaResponderPostulacion);
 export { normalizarEntregables };
 export const validarEntregables = validar(esquemaEntregables);
+export const validarCamposObligatorios = validar((body = {}) => [
+  ...esquemaCamposObligatorios(body),
+  ...esquemaInicioFuturo(body),
+]);
