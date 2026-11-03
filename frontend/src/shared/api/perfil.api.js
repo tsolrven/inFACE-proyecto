@@ -36,3 +36,40 @@ export async function actualizarMisIntereses(etiqueta_ids) {
   });
   return data.data;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ELIMINACIÓN DE CUENTA
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function solicitarEliminacionCuenta(contrasena) {
+  const data = await request('/perfil/me/eliminacion', {
+    method: 'POST',
+    body: { contrasena },
+  });
+  return data.data; // { eliminacion_programada_en, dias }
+}
+
+export async function cancelarEliminacionCuenta() {
+  const data = await request('/perfil/me/eliminacion', { method: 'DELETE' });
+  return data.data;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AJUSTES DE CUENTA
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function cambiarContrasena(actual, nueva) {
+  const data = await request('/perfil/me/contrasena', {
+    method: 'PUT',
+    body: { actual, nueva },
+  });
+  return data.data;
+}
+
+export async function actualizarConsentimientoInvestigacion(acepta) {
+  const data = await request('/perfil/me/consentimiento', {
+    method: 'PUT',
+    body: { consentimiento_investigacion: acepta },
+  });
+  return data.data;
+}

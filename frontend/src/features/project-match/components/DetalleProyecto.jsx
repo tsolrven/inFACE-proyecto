@@ -57,11 +57,13 @@ export default function DetalleProyecto({
   esCreador,
   esIntegrante,
   yaPostulado,
+  fueRechazado = false,
   puedePostular,
   onVolver,
   onPostular,
   onEditar,
   onEliminar,
+  onSalir,
   onVerIntegrantes,
   onVerPostulaciones,
   onVerHistorialPostulaciones,
@@ -391,11 +393,39 @@ export default function DetalleProyecto({
             )}
 
             {esIntegrante && !esCreador && !enviado && (
-              <div className='flex items-center gap-2.5 rounded-[10px] bg-emerald-400/[0.08] px-3.5 py-2.5 text-[12.5px] text-emerald-400'>
-                <i className='ti ti-circle-check text-base' />
-                Ya formas parte de este equipo.
+              <div className='flex flex-wrap items-center justify-between gap-3 rounded-[10px] bg-emerald-400/[0.08] px-3.5 py-2.5 text-[12.5px] text-emerald-400'>
+                <span className='flex items-center gap-2.5'>
+                  <i className='ti ti-circle-check text-base' />
+                  Ya formas parte de este equipo.
+                </span>
+                {onSalir && (
+                  <button
+                    type='button'
+                    onClick={onSalir}
+                    className='inline-flex items-center gap-1.5 rounded-[9px] border border-red-500/30 px-3 py-1.5 text-[12px] font-medium text-red-400 transition hover:bg-red-500/10'
+                  >
+                    <i className='ti ti-door-exit text-[14px]' /> Salirme del
+                    proyecto
+                  </button>
+                )}
               </div>
             )}
+
+            {fueRechazado &&
+              !yaPostulado &&
+              !esIntegrante &&
+              !esCreador &&
+              !enviado && (
+                <div className='flex items-start gap-2.5 rounded-[10px] bg-red-500/[0.07] px-3.5 py-2.5 text-[12.5px] text-red-400'>
+                  <i className='ti ti-circle-x mt-px text-base' />
+                  <span>
+                    Tu postulación anterior fue rechazada por el creador.
+                    {puedePostular
+                      ? ' Si quieres, puedes volver a postularte.'
+                      : ''}
+                  </span>
+                </div>
+              )}
 
             {proyecto.fui_expulsado &&
               !esIntegrante &&
@@ -423,8 +453,10 @@ export default function DetalleProyecto({
                 onClick={() => setMostrarForm(true)}
                 className='inline-flex items-center gap-1.5 rounded-[10px] bg-pink-500 px-4 py-2 text-[12.5px] font-semibold text-white transition hover:bg-pink-600'
               >
-                <i className='ti ti-send text-[14px]' /> Postularme a este
-                proyecto
+                <i className='ti ti-send text-[14px]' />{' '}
+                {fueRechazado
+                  ? 'Postularme de nuevo'
+                  : 'Postularme a este proyecto'}
               </button>
             )}
 

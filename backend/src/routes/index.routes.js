@@ -12,6 +12,7 @@ import proyectoRoutes from '../modules/project-match/matchingProyecto.routes.js'
 import etiquetaRoutes from '../modules/identity/etiqueta.routes.js';
 import perfilRoutes from '../modules/identity/perfil.routes.js';
 import hiloRoutes from '../modules/forum/forum.routes.js';
+import notificacionRoutes from '../shared/notifications/notifications.routes.js';
 
 function routerApi(app) {
   const router = Router();
@@ -39,6 +40,9 @@ function routerApi(app) {
   router.use('/proyecto', proyectoRoutes);
   router.use('/etiquetas', etiquetaRoutes);
   router.use('/perfil', perfilRoutes);
+
+  // notificaciones (transversal)
+  router.use('/notificaciones', notificacionRoutes);
 }
 
 export { routerApi };

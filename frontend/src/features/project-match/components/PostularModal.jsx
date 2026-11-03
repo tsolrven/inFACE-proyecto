@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Modal, { ModalHeader, ModalBody } from '@/shared/components/ui/Modal';
+import ErrorModal from './ErrorModal';
 
 export default function PostularModal({ proyecto, onClose, onPostular }) {
   const [mensaje, setMensaje] = useState('');

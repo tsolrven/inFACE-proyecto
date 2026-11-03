@@ -12,6 +12,7 @@ import {
   responderPostulacion,
   eliminarPostulacionRechazada,
 } from '@/features/project-match/api/matchingProyecto.api';
+import ErrorModal from './ErrorModal';
 
 export default function PostulacionesModal({
   proyecto,

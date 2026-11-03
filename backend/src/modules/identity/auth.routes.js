@@ -13,16 +13,34 @@ import {
   loginSchema,
   aceptarTerminosSchema,
 } from './auth.validation.js';
+import { olvideContrasena, restablecer } from './recuperacion.controller.js';
+import {
+  olvideContrasenaSchema,
+  restablecerContrasenaSchema,
+} from './recuperacion.validation.js';
 import { autenticar } from '../../middlewares/auth.middleware.js';
 import {
   loginLimiter,
   registerLimiter,
+  recuperacionLimiter,
 } from '../../middlewares/rateLimiter.js';
 
 const router = express.Router();
 
 router.post('/register', registerLimiter, validate(registerSchema), register);
 router.post('/login', loginLimiter, validate(loginSchema), login);
+router.post(
+  '/olvide-contrasena',
+  recuperacionLimiter,
+  validate(olvideContrasenaSchema),
+  olvideContrasena,
+);
+router.post(
+  '/restablecer-contrasena',
+  recuperacionLimiter,
+  validate(restablecerContrasenaSchema),
+  restablecer,
+);
 router.post('/refresh', refresh);
 router.post('/logout', logout);
 router.get('/me', autenticar, me);

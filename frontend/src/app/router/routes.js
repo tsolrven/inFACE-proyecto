@@ -95,7 +95,6 @@ export const protectedRoutes = [
   },
 ];
 
-// rutas que existen pero no van en el sidebar (se llega a ellas navegando, por ej. al hacer click en un hashtag)
 export const extraRoutes = [
   {
     path: '/hashtag/:nombre',
@@ -110,6 +109,10 @@ export const extraRoutes = [
   {
     path: '/perfil',
     component: lazy(() => import('@/features/profile/pages/Perfil')),
+  },
+  {
+    path: '/ajustes',
+    component: lazy(() => import('@/features/settings/pages/Ajustes')),
   },
   {
     path: '/perfil/usuario/:nombreUsuario',
@@ -127,7 +130,6 @@ export const extraRoutes = [
   },
 ];
 
-// rutas que se renderizan COMO MODAL, pero que también funcionan como página normal si alguien entra directo al link.
 export const modalRoutes = [
   {
     path: '/repositorio-materiales/:id',

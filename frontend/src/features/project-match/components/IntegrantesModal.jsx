@@ -12,6 +12,7 @@ import {
   listarIntegrantes,
   expulsarIntegrante,
 } from '@/features/project-match/api/matchingProyecto.api';
+import ErrorModal from './ErrorModal';
 
 export default function IntegrantesModal({
   proyecto,

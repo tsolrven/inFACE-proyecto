@@ -23,16 +23,18 @@ function formatearPerfil(usuario, stats = {}) {
     correo: usuario.correo,
     rol: usuario.rol,
     creado_en: usuario.creado_en,
+    eliminacion_programada_en: usuario.eliminacion_programada_en ?? null,
+    consentimiento_investigacion: usuario.consentimiento_investigacion ?? false,
     nombre_usuario: usuario.perfil?.nombre_usuario ?? null,
     nombre_completo: usuario.perfil?.nombre_completo ?? null,
     biografia: usuario.perfil?.biografia ?? null,
     campus: usuario.perfil?.campus ?? null,
     carrera: primeraCarrera
       ? {
-          id: primeraCarrera.id,
-          nombre: primeraCarrera.nombre,
-          codigo: primeraCarrera.codigo,
-        }
+        id: primeraCarrera.id,
+        nombre: primeraCarrera.nombre,
+        codigo: primeraCarrera.codigo,
+      }
       : null,
     intereses: (usuario.usuario_etiquetas || []).map((ue) => ({
       id: ue.etiqueta.id,
@@ -156,11 +158,11 @@ async function actualizarMisEtiquetas(usuario_id, etiqueta_ids = []) {
     prisma.usuarioEtiqueta.deleteMany({ where: { usuario_id } }),
     ...(unicos.length
       ? [
-          prisma.usuarioEtiqueta.createMany({
-            data: unicos.map((etiqueta_id) => ({ usuario_id, etiqueta_id })),
-            skipDuplicates: true,
-          }),
-        ]
+        prisma.usuarioEtiqueta.createMany({
+          data: unicos.map((etiqueta_id) => ({ usuario_id, etiqueta_id })),
+          skipDuplicates: true,
+        }),
+      ]
       : []),
   ]);
 

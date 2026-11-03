@@ -14,6 +14,7 @@ import {
   toggleFavorito,
   listarFavoritos,
   obtenerProyecto,
+  salirDeProyecto,
 } from '@/features/project-match/api/matchingProyecto.api';
 import { listarEtiquetas } from '@/shared/api/etiqueta.api';
 import {
@@ -49,10 +50,12 @@ export default function MatchProyectos() {
   const usuario = useAuthStore((s) => s.usuario);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+
   const [tab, setTabState] = useState(
     () => searchParams.get('tab') || 'descubrir',
   );
   const [search, setSearch] = useState('');
+
   const [resolviendoDetalleInicial, setResolviendoDetalleInicial] = useState(
     () => !!searchParams.get('proyecto'),
   );
@@ -69,6 +72,7 @@ export default function MatchProyectos() {
   const [verTodasPostulaciones, setVerTodasPostulaciones] = useState(false);
   const [modalIntegrantes, setModalIntegrantes] = useState(null);
   const [confirmEliminarDetalle, setConfirmEliminarDetalle] = useState(null);
+  const [confirmSalir, setConfirmSalir] = useState(null);
   const [avisoError, setAvisoError] = useState(null);
   const [modalEntregables, setModalEntregables] = useState(null);
 
@@ -180,6 +184,19 @@ export default function MatchProyectos() {
     }
   }
 
+  async function ejecutarSalirDelProyecto() {
+    const proyecto = confirmSalir;
+    setConfirmSalir(null);
+    try {
+      await salirDeProyecto(proyecto.id);
+      window.dispatchEvent(new Event('inface:mis-proyectos-actualizados'));
+      await recargarMisPostulaciones();
+      await refrescarDetalle(proyecto.id);
+    } catch (err) {
+      setAvisoError(err.message);
+    }
+  }
+
   async function refrescarDetalle(proyectoId) {
     try {
       const p = await obtenerProyecto(proyectoId);
@@ -237,7 +254,7 @@ export default function MatchProyectos() {
 
   return (
     <div>
-      {/* HEADER */}
+      {/* HEADER (mismo estilo que Repositorio de materiales) */}
       <div className='px-4 pt-6 sm:px-[26px]'>
         <div className='mb-4 flex items-center gap-1.5 text-[12px] text-neutral-500'>
           <span>Inicio</span>
@@ -310,6 +327,12 @@ export default function MatchProyectos() {
               (i) => i.usuario_id === usuario?.id,
             )}
             yaPostulado={postuladosActivos.has(proyectoDetalle.id)}
+            fueRechazado={misPostulaciones.some(
+              (p) =>
+                p.proyecto_id === proyectoDetalle.id &&
+                p.estado === 'rechazada',
+            )}
+            onSalir={() => setConfirmSalir(proyectoDetalle)}
             puedePostular={proyectoDetalle.estado === 'abierto'}
             onVolver={handleVolverDetalle}
             onPostular={handlePostular}
@@ -488,6 +511,20 @@ export default function MatchProyectos() {
       />
 
       <ConfirmDialog
+        open={!!confirmSalir}
+        title='Salirme del proyecto'
+        message={
+          confirmSalir
+            ? `¿Quieres salirte de "${confirmSalir.titulo}"? Dejarás de ser integrante y podrás volver a postularte si el proyecto sigue abierto.`
+            : ''
+        }
+        confirmLabel='Salirme'
+        danger
+        onConfirm={ejecutarSalirDelProyecto}
+        onCancel={() => setConfirmSalir(null)}
+      />
+
+      <ConfirmDialog
         open={!!avisoError}
         title='Ocurrió un error'
         message={avisoError || ''}
@@ -501,7 +538,7 @@ export default function MatchProyectos() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// FILA DE BÚSQUEDA + FILTROS 
+// FILA DE BÚSQUEDA + FILTROS (compartida entre pestañas)
 // ─────────────────────────────────────────────────────────────────────────────
 
 function FilterRow({ children }) {
@@ -991,6 +1028,7 @@ function TarjetaProyectoBase({ proyecto: p, extra, accionesDerecha }) {
 
   return (
     <div className='flex overflow-hidden rounded-2xl border border-white/[0.06] bg-[#1E1E24] transition hover:border-white/[0.12]'>
+      {/* columna de acento */}
       <div className='flex w-[54px] flex-shrink-0 flex-col items-center gap-2 border-r border-white/[0.06] bg-white/[0.015] py-4'>
         <div
           title={titulo}
@@ -1001,6 +1039,7 @@ function TarjetaProyectoBase({ proyecto: p, extra, accionesDerecha }) {
       </div>
 
       <div className='min-w-0 flex-1 p-4'>
+        {/* meta: modalidad · creador · tiempo */}
         <div className='mb-2.5 flex flex-wrap items-center gap-1.5 text-[11.5px] text-neutral-500'>
           <ModalidadChip modalidad={p.modalidad} />
           <span>·</span>
