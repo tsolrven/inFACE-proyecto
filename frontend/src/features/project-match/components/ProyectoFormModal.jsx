@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Modal, { ModalHeader, ModalBody } from '@/shared/components/ui/Modal';
 import EtiquetasPicker from '@/shared/components/EtiquetasPicker';
+import ErrorModal from './ErrorModal';
 
 const MODALIDAD_COLORES = {
   presencial: 'border-sky-400/25 bg-sky-400/10 text-sky-400',
@@ -78,10 +79,10 @@ export default function ProyectoFormModal({
     }
 
     if (!esEdicion && form.fecha_inicio) {
-      const hoyStr = new Date().toLocaleDateString('en-CA'); // 'YYYY-MM-DD' en hora local, comparable como texto
+      const hoyStr = new Date().toLocaleDateString('en-CA');
       if (form.fecha_inicio <= hoyStr) {
         errs.push(
-          'La fecha de inicio no puede ser hoy: elige una fecha futura para tu proyecto',
+          'La fecha de inicio no puede ser hoy ni una fecha pasada: elige una fecha futura para tu proyecto',
         );
       }
     }
@@ -133,15 +134,6 @@ export default function ProyectoFormModal({
           onSubmit={handleSubmit}
           className='flex flex-col gap-4'
         >
-          {errores.length > 0 && (
-            <div className='rounded-[10px] border border-red-500/30 bg-red-500/10 px-4 py-3 text-[12.5px] text-red-400'>
-              <ul className='list-disc space-y-0.5 pl-4'>
-                {errores.map((e, i) => (
-                  <li key={i}>{e}</li>
-                ))}
-              </ul>
-            </div>
-          )}
 
           <div>
             <label className='mb-1.5 block text-[11px] font-medium text-neutral-500'>
@@ -307,6 +299,10 @@ export default function ProyectoFormModal({
           </div>
         </form>
       </ModalBody>
+      <ErrorModal
+        errores={errores}
+        onClose={() => setErrores([])}
+      />
     </Modal>
   );
 }

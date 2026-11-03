@@ -11,6 +11,7 @@ import {
 import VotoProyecto from './VotoProyecto';
 import ProyectoComentarios from './ProyectoComentarios';
 import EntregablesProyecto from './EntregablesProyecto';
+import ErrorModal from './ErrorModal';
 import {
   useInteraccionesProyecto,
   useValoresProyecto,
@@ -432,11 +433,10 @@ export default function DetalleProyecto({
                 onSubmit={handleEnviar}
                 className='flex flex-col gap-2.5'
               >
-                {error && (
-                  <div className='rounded-[10px] border border-red-500/30 bg-red-500/10 px-3.5 py-2 text-[12px] text-red-400'>
-                    {error}
-                  </div>
-                )}
+                <ErrorModal
+                  errores={error}
+                  onClose={() => setError(null)}
+                />
                 <label className='text-[11px] font-medium text-neutral-500'>
                   Cuéntale al creador por qué te gustaría unirte
                 </label>

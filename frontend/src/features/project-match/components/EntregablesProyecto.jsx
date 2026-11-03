@@ -7,6 +7,7 @@ import {
     sincronizarArchivos,
 } from '@/shared/api/archivos.api';
 import { mostrarToast } from '@/shared/stores/toastStore';
+import ErrorModal from './ErrorModal';
 
 const MAX_PDF_MB = 20;
 const HOSTS_YOUTUBE = [
@@ -537,16 +538,6 @@ export function EntregablesModal({ proyecto, onClose, onGuardado }) {
                     onSubmit={handleSubmit}
                     className='flex flex-col gap-4'
                 >
-                    {errores.length > 0 && (
-                        <div className='rounded-[10px] border border-red-500/30 bg-red-500/10 px-4 py-3 text-[12.5px] text-red-400'>
-                            <ul className='list-disc space-y-0.5 pl-4'>
-                                {errores.map((er, i) => (
-                                    <li key={i}>{er}</li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
-
                     <div>
                         <label className={CLASE_LABEL}>Informe final (PDF)</label>
                         {informeActual && !archivoNuevo && (
@@ -653,6 +644,10 @@ export function EntregablesModal({ proyecto, onClose, onGuardado }) {
                     </div>
                 </form>
             </ModalBody>
+            <ErrorModal
+                errores={errores}
+                onClose={() => setErrores([])}
+            />
         </Modal>
     );
 }
