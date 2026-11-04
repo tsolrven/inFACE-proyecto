@@ -43,6 +43,7 @@ model Usuario {
   favoritos_proyecto   FavoritoProyecto[]
   descartes_proyecto   DescarteProyecto[]
   hilos Hilo[]
+  anuncios Anuncio[]
 
   @@map("usuarios")
 }
@@ -124,6 +125,8 @@ model Carrera {
 
   usuario_carrera UsuarioCarrera[]
   ramo_carrera    RamoCarrera[]
+  anuncios        Anuncio[]
+  flairs          Flair[]
 
   @@map("carreras")
 }
@@ -153,6 +156,7 @@ model Hashtag {
 
   apuntes ApunteHashtag[]
   hilos HiloHashtag[]
+  anuncios AnuncioHashtag[]
 
   @@map("hashtags")
 }
@@ -340,6 +344,62 @@ model HiloHashtag {
   @@id([hilo_id, hashtag_id])
   @@index([hashtag_id])
   @@map("hilos_hashtags")
+}
+//───────────────────────────────────────────────────────────────────────────────
+// MÓDULO 3: ANUNCIOS OFICIALES
+//───────────────────────────────────────────────────────────────────────────────
+
+model Anuncio {
+  id             String    @id @default(uuid())
+  autor_id       String
+  carrera_id     String
+  flair_id       String?
+  titulo         String
+  contenido      String?   // markdown
+  votos_neto     Int       @default(0)
+  creado_en      DateTime  @default(now())
+  actualizado_en DateTime  @updatedAt
+  editado_en     DateTime?
+
+  autor    Usuario          @relation(fields: [autor_id], references: [id])
+  carrera  Carrera          @relation(fields: [carrera_id], references: [id])
+  flair    Flair?           @relation(fields: [flair_id], references: [id], onDelete: SetNull)
+  hashtags AnuncioHashtag[]
+
+  @@index([carrera_id, creado_en])
+  @@index([carrera_id, votos_neto])
+  @@index([flair_id])
+  @@index([autor_id])
+  @@map("anuncios")
+}
+
+model AnuncioHashtag {
+  anuncio_id String
+  hashtag_id String
+
+  anuncio Anuncio @relation(fields: [anuncio_id], references: [id], onDelete: Cascade)
+  hashtag Hashtag @relation(fields: [hashtag_id], references: [id])
+
+  @@id([anuncio_id, hashtag_id])
+  @@index([hashtag_id])
+  @@map("anuncios_hashtags")
+}
+
+// Etiqueta tipo "flair" de Reddit: propia de una carrera, creada por CEE/tutores.
+// `color` guarda una clave de paleta fija (la valida la aplicación).
+model Flair {
+  id                 String   @id @default(uuid())
+  carrera_id         String
+  nombre             String   @db.VarChar(30)
+  nombre_normalizado String   @db.VarChar(30)
+  color              String   @db.VarChar(20)
+  creado_en          DateTime @default(now())
+
+  carrera  Carrera   @relation(fields: [carrera_id], references: [id])
+  anuncios Anuncio[]
+
+  @@unique([carrera_id, nombre_normalizado])
+  @@map("flairs")
 }
 //───────────────────────────────────────────────────────────────────────────────
 // MÓDULO 4: MATCH DE PROYECTOS

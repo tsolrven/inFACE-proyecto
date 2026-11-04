@@ -40,6 +40,39 @@ const usuarios = [
     carrera: 'ICO',
     campus: 'Concepción',
   },
+  // ── Roles para probar anuncios (módulo 3) ──
+  {
+    correo: 'cee_ieci@alumnos.ubiobio.cl',
+    contrasena: 'Test1234',
+    rol: 'cee',
+    nombre_usuario: 'cee_ieci',
+    carrera: 'IECI',
+    campus: 'Concepción',
+  },
+  {
+    correo: 'tutor_ieci@alumnos.ubiobio.cl',
+    contrasena: 'Test1234',
+    rol: 'tutor',
+    nombre_usuario: 'tutor_ieci',
+    carrera: 'IECI',
+    campus: 'Concepción',
+  },
+  {
+    correo: 'cee_der@alumnos.ubiobio.cl',
+    contrasena: 'Test1234',
+    rol: 'cee',
+    nombre_usuario: 'cee_der',
+    carrera: 'DER',
+    campus: 'Concepción',
+  },
+  {
+    correo: 'admin@ubiobio.cl',
+    contrasena: 'Test1234',
+    rol: 'superadmin',
+    nombre_usuario: 'admin',
+    carrera: 'IECI',
+    campus: 'Concepción',
+  },
 ];
 
 //* SEED BASE ──────────────────────────────────────────────────────────────────────────────────────────────────────────
