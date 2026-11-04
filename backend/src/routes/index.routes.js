@@ -13,6 +13,7 @@ import etiquetaRoutes from '../modules/identity/etiqueta.routes.js';
 import perfilRoutes from '../modules/identity/perfil.routes.js';
 import hiloRoutes from '../modules/forum/forum.routes.js';
 import anuncioRoutes from '../modules/announcements/announcements.routes.js';
+import flairRoutes from '../modules/announcements/flairs.routes.js';
 
 function routerApi(app) {
   const router = Router();
@@ -36,6 +37,7 @@ function routerApi(app) {
 
   // módulo 3: Anuncios oficiales
   router.use('/anuncios', anuncioRoutes);
+  router.use('/flairs', flairRoutes);
 
   // moderación (transversal a todos los módulos)
   router.use('/reportes', reporteRoutes);
