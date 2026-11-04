@@ -17,7 +17,7 @@ async function subir(req, res, next) {
       tipo_contenido: req.params.tipo,
       contenido_id: req.params.id,
       file: req.file,
-      usuario_id: req.usuario.id,
+      usuario: req.usuario,
     });
     return ApiResponse.created(res, archivo);
   } catch (err) {
@@ -30,7 +30,7 @@ async function subir(req, res, next) {
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function eliminar(req, res, next) {
   try {
-    await eliminarArchivo(req.params.id, req.usuario.id, req.usuario.rol);
+    await eliminarArchivo(req.params.id, req.usuario);
     return ApiResponse.noContent(res);
   } catch (err) {
     next(err);

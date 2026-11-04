@@ -182,6 +182,27 @@ async function ejecutarAlQuitarArchivo(tx, archivo) {
   if (hook) await hook(tx, archivo);
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
+// Cada módulo puede imponer su propia regla sobre quién sube o elimina archivos de
+// SU contenido. El hook recibe (usuario, contenido_id, accion), con accion 'subir' o
+// 'eliminar', y devuelve true/false (puede lanzar NotFoundError si el contenido no
+// existe). Si el tipo no registra ninguno, files.service aplica la regla general:
+// sube el autor; elimina el autor o el staff.
+function registrarPermisoAdjuntos(tipo_contenido, hook) {
+  obtenerEntradaRegistro(tipo_contenido).permisoAdjuntos = hook;
+}
+
+// true/false según el hook del tipo, o null si el tipo no definió regla
+async function evaluarPermisoAdjuntos(
+  tipo_contenido,
+  contenido_id,
+  usuario,
+  accion,
+) {
+  const hook = CONTENT_REGISTRY[tipo_contenido]?.permisoAdjuntos;
+  if (!hook) return null;
+  return hook(usuario, contenido_id, accion);
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
 const OYENTES_INTERACCION = new Map();
 
 function registrarOyenteInteraccion(tipo_contenido, oyente) {
@@ -226,6 +247,8 @@ export {
   ejecutarAlEliminarComentario,
   registrarAlQuitarArchivo,
   ejecutarAlQuitarArchivo,
+  registrarPermisoAdjuntos,
+  evaluarPermisoAdjuntos,
   registrarOyenteInteraccion,
   notificarInteraccion,
   tiposContenidoValidos,

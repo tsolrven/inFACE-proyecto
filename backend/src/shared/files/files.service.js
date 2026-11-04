@@ -11,6 +11,7 @@ import {
   obtenerConfigAdjuntos,
   bloquearContenido,
   ejecutarAlQuitarArchivo,
+  evaluarPermisoAdjuntos,
 } from '../content/contentRegistry.js';
 import { resolverRutaFisica } from './uploadsPath.js';
 import { esStaff } from '../auth/permissions.js';
@@ -41,19 +42,24 @@ function datosArchivo(file) {
   };
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-async function subirArchivo({
-  tipo_contenido,
-  contenido_id,
-  file,
-  usuario_id,
-}) {
+async function subirArchivo({ tipo_contenido, contenido_id, file, usuario }) {
   const { max } = obtenerConfigAdjuntos(tipo_contenido);
-  const autor_id = await obtenerPropietarioContenido(
+
+  // regla propia del tipo si la definió; si no, solo el autor sube
+  let permitido = await evaluarPermisoAdjuntos(
     tipo_contenido,
     contenido_id,
+    usuario,
+    'subir',
   );
-
-  if (autor_id !== usuario_id) {
+  if (permitido === null) {
+    const autor_id = await obtenerPropietarioContenido(
+      tipo_contenido,
+      contenido_id,
+    );
+    permitido = autor_id === usuario.id;
+  }
+  if (!permitido) {
     throw new ForbiddenError(
       'Solo el autor puede subir archivos a este contenido',
     );
@@ -116,16 +122,25 @@ async function descargarArchivo(id) {
   };
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-async function eliminarArchivo(id, usuario_id, rol) {
+async function eliminarArchivo(id, usuario) {
   const archivo = await prisma.archivo.findUnique({ where: { id } });
   if (!archivo) throw new NotFoundError('Archivo');
 
-  const autor_id = await obtenerPropietarioContenido(
+  // regla propia del tipo si la definió; si no, el autor o el staff
+  let permitido = await evaluarPermisoAdjuntos(
     archivo.tipo_contenido,
     archivo.contenido_id,
+    usuario,
+    'eliminar',
   );
-
-  if (autor_id !== usuario_id && !esStaff(rol)) {
+  if (permitido === null) {
+    const autor_id = await obtenerPropietarioContenido(
+      archivo.tipo_contenido,
+      archivo.contenido_id,
+    );
+    permitido = autor_id === usuario.id || esStaff(usuario.rol);
+  }
+  if (!permitido) {
     throw new ForbiddenError('No tienes permiso para eliminar este archivo');
   }
 

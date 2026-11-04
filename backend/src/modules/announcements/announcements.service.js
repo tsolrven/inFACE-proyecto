@@ -13,6 +13,7 @@ import {
 import { eliminarContenido } from '../../shared/content/contentCleanup.js';
 import {
   registrarHidratadorGuardados,
+  registrarPermisoAdjuntos,
   bloquearContenido,
 } from '../../shared/content/contentRegistry.js';
 import { obtenerEnriquecimiento } from '../../shared/content/contentEnrichment.js';
@@ -137,6 +138,26 @@ function puedeAdministrarAnuncio(usuario, anuncio) {
     puedePublicarAnuncioEn(usuario, anuncio.carrera_id)
   );
 }
+// ────────────────────────────────────────────────────────────────────────────────────────
+// Regla de archivos del anuncio (la consulta files.service):
+// - subir: solo el autor, mientras siga pudiendo publicar en la carrera
+//   (el superadmin que no es el autor no sube)
+// - eliminar: el superadmin, o el autor con ese permiso
+registrarPermisoAdjuntos('anuncio', async (usuario, anuncio_id, accion) => {
+  const anuncio = await prisma.anuncio.findUnique({
+    where: { id: anuncio_id },
+    select: { autor_id: true, carrera_id: true },
+  });
+  if (!anuncio) throw new NotFoundError('Anuncio');
+
+  if (accion === 'subir') {
+    return (
+      anuncio.autor_id === usuario.id &&
+      puedePublicarAnuncioEn(usuario, anuncio.carrera_id)
+    );
+  }
+  return puedeAdministrarAnuncio(usuario, anuncio);
+});
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function crearAnuncio({
   usuario,
