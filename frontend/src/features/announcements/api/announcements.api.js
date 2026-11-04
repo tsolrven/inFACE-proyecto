@@ -21,3 +21,8 @@ export async function listarAnuncios({
   const res = await apiFetch(`/anuncios${qs ? `?${qs}` : ''}`, { signal });
   return { anuncios: res.data, meta: res.meta };
 }
+
+export async function obtenerAnuncio(id, { signal } = {}) {
+  const res = await apiFetch(`/anuncios/${id}`, { signal });
+  return res.data;
+}

@@ -125,6 +125,12 @@ export const extraRoutes = [
     path: '/foro-por-ramos/:id',
     component: lazy(() => import('@/features/forum/pages/HiloDetailPage')),
   },
+  {
+    path: '/anuncios-oficiales/:id',
+    component: lazy(
+      () => import('@/features/announcements/pages/AnuncioDetailPage'),
+    ),
+  },
 ];
 
 // rutas que se renderizan COMO MODAL, pero que también funcionan como página normal si alguien entra directo al link.
@@ -139,6 +145,12 @@ export const modalRoutes = [
     path: '/foro-por-ramos/:id',
     component: lazy(
       () => import('@/features/forum/components/HiloDetailModal'),
+    ),
+  },
+  {
+    path: '/anuncios-oficiales/:id',
+    component: lazy(
+      () => import('@/features/announcements/components/AnuncioDetailModal'),
     ),
   },
 ];

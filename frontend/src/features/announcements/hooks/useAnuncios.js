@@ -1,10 +1,19 @@
-import { useInfiniteQuery } from '@tanstack/react-query';
-import { listarAnuncios } from '@/features/announcements/api/announcements.api';
+import {
+  useInfiniteQuery,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
+import {
+  listarAnuncios,
+  obtenerAnuncio,
+} from '@/features/announcements/api/announcements.api';
+import { buscarContenido } from '@/shared/post/cache';
 
-// La clave empieza con 'anuncio': así votos y guardados (shared/post/cache.js)
-// actualizan estas listas sin código extra.
+// Las claves empiezan con 'anuncio': así votos y guardados (shared/post/cache.js)
+// actualizan listas y detalle sin código extra.
 export const anuncioKeys = {
   list: (filtros) => ['anuncio', 'list', filtros],
+  detail: (id) => ['anuncio', 'detail', id],
 };
 // ────────────────────────────────────────────────────────────────────────────────────────
 export function useAnunciosFeed(filtros) {
@@ -21,5 +30,16 @@ export function useAnunciosFeed(filtros) {
     },
     getNextPageParam: (ultima) =>
       ultima.meta?.hasNext ? ultima.meta.page + 1 : undefined,
+  });
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+export function useAnuncio(id) {
+  const qc = useQueryClient();
+  return useQuery({
+    queryKey: anuncioKeys.detail(id),
+    queryFn: ({ signal }) => obtenerAnuncio(id, { signal }),
+    // al abrir desde la lista se muestra al instante lo que ya se conoce
+    // (OJO: en la lista el contenido viene recortado, ver contenido_truncado)
+    placeholderData: () => buscarContenido(qc, 'anuncio', id) ?? undefined,
   });
 }

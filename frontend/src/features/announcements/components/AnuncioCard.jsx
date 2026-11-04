@@ -1,6 +1,5 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/shared/auth/authStore';
-import { ROLES } from '@/shared/auth/roles';
 import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
 import { useVotar } from '@/shared/post/votes/useVotar';
 import VotePill from '@/shared/post/votes/VotePill';
@@ -10,12 +9,7 @@ import QuitarGuardadoButton from '@/shared/post/bookmarks/QuitarGuardadoButton';
 import { extractoPlano } from '@/shared/markdown/extractoPlano';
 import { rutaHashtag } from '@/shared/lib/hashtags';
 import FlairChip from '@/features/announcements/components/FlairChip';
-
-const INSIGNIA_ROL = {
-  [ROLES.CEE]: 'CEE',
-  [ROLES.TUTOR]: 'Tutor',
-  [ROLES.SUPERADMIN]: 'Admin',
-};
+import { INSIGNIA_ROL } from '@/features/announcements/utils/insigniaRol';
 
 export default function AnuncioCard({ anuncio, enGuardados = false }) {
   const navigate = useNavigate();
