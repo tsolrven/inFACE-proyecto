@@ -12,6 +12,7 @@ import proyectoRoutes from '../modules/project-match/matchingProyecto.routes.js'
 import etiquetaRoutes from '../modules/identity/etiqueta.routes.js';
 import perfilRoutes from '../modules/identity/perfil.routes.js';
 import hiloRoutes from '../modules/forum/forum.routes.js';
+import anuncioRoutes from '../modules/announcements/announcements.routes.js';
 
 function routerApi(app) {
   const router = Router();
@@ -32,6 +33,9 @@ function routerApi(app) {
 
   // módulo 2: Foro por ramos
   router.use('/hilos', hiloRoutes);
+
+  // módulo 3: Anuncios oficiales
+  router.use('/anuncios', anuncioRoutes);
 
   // moderación (transversal a todos los módulos)
   router.use('/reportes', reporteRoutes);
