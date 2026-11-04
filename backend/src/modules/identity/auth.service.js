@@ -14,6 +14,7 @@ import {
 } from '../../errors/appError.js';
 import { derivarNombreDesdeCorreo } from './nombre.helper.js';
 import { VERSION_TERMINOS } from './terminos.constants.js';
+import { ORDEN_CARRERAS_USUARIO } from '../../shared/auth/carreraPrincipal.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 function determinarRolPorCorreo(correo) {
   if (correo.endsWith('@alumnos.ubiobio.cl')) {
@@ -127,7 +128,10 @@ async function iniciarSesion({ correo, contrasena }) {
     where: { correo },
     include: {
       perfil: true,
-      usuario_carrera: { include: { carrera: true } },
+      usuario_carrera: {
+        include: { carrera: true },
+        orderBy: ORDEN_CARRERAS_USUARIO,
+      },
       usuario_etiquetas: true,
     },
   });
@@ -163,7 +167,7 @@ async function refrescarToken(token) {
 
   const usuario = await prisma.usuario.findUnique({
     where: { id: payload.id },
-    include: { usuario_carrera: true },
+    include: { usuario_carrera: { orderBy: ORDEN_CARRERAS_USUARIO } },
   });
 
   if (!usuario || !usuario.esta_activo) {
@@ -211,7 +215,10 @@ async function obtenerUsuarioActual(id) {
     where: { id },
     include: {
       perfil: true,
-      usuario_carrera: { include: { carrera: true } },
+      usuario_carrera: {
+        include: { carrera: true },
+        orderBy: ORDEN_CARRERAS_USUARIO,
+      },
       usuario_etiquetas: true,
     },
   });
