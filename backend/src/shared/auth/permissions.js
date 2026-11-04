@@ -20,10 +20,20 @@ function puedePublicarAnuncios(rol) {
   return ROLES_ANUNCIANTES.includes(rol);
 }
 
+// Quién puede publicar (y administrar flairs) en la carrera `carrera_id`.
+// El superadmin en cualquiera; CEE y tutores solo en su carrera.
+// `usuario` es req.usuario (id, rol, carrera_id).
+function puedePublicarAnuncioEn(usuario, carrera_id) {
+  if (!puedePublicarAnuncios(usuario?.rol)) return false;
+  if (esStaff(usuario.rol)) return true;
+  return !!carrera_id && usuario.carrera_id === carrera_id;
+}
+
 export {
   ROLES,
   ROLES_STAFF,
   ROLES_ANUNCIANTES,
   esStaff,
   puedePublicarAnuncios,
+  puedePublicarAnuncioEn,
 };

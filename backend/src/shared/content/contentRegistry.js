@@ -29,6 +29,20 @@ const CONTENT_REGISTRY = {
       extensiones: ['.jpg', '.jpeg', '.png', '.webp', '.gif'],
     },
   },
+  anuncio: {
+    modelName: 'anuncio',
+    tableName: 'anuncios',
+    label: 'Anuncio',
+    ownerField: 'autor_id',
+    votesField: 'votos_neto',
+    previewField: 'titulo',
+    allowsComments: true,
+    // imágenes (afiches) y PDF (calendarios, reglamentos)
+    adjuntos: {
+      max: 10,
+      extensiones: ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.pdf'],
+    },
+  },
   comentario: {
     modelName: 'comentario',
     tableName: 'comentarios',
