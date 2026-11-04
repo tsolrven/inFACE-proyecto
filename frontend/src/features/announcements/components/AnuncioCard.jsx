@@ -9,6 +9,7 @@ import QuitarGuardadoButton from '@/shared/post/bookmarks/QuitarGuardadoButton';
 import { extractoPlano } from '@/shared/markdown/extractoPlano';
 import { rutaHashtag } from '@/shared/lib/hashtags';
 import FlairChip from '@/features/announcements/components/FlairChip';
+import AnuncioMenu from '@/features/announcements/components/AnuncioMenu';
 import { INSIGNIA_ROL } from '@/features/announcements/utils/insigniaRol';
 
 export default function AnuncioCard({ anuncio, enGuardados = false }) {
@@ -45,18 +46,22 @@ export default function AnuncioCard({ anuncio, enGuardados = false }) {
       onClick={abrirDetalle}
       className='relative mb-2 flex cursor-pointer overflow-hidden rounded-[14px] border border-white/[0.06] bg-[#1E1E24] transition-colors hover:border-white/[0.12]'
     >
-      {enGuardados && (
+      {enGuardados ? (
         <QuitarGuardadoButton
           tipo='anuncio'
           id={anuncio.id}
           className='absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full hover:bg-white/[0.08]'
         />
+      ) : (
+        <AnuncioMenu
+          anuncio={anuncio}
+          className='absolute right-2 top-2 z-10'
+          triggerClassName='flex h-7 w-7 items-center justify-center rounded-full text-base text-neutral-500 transition-colors hover:bg-white/[0.08] hover:text-neutral-200'
+        />
       )}
 
       <div className='min-w-0 flex-1 p-3'>
-        <div
-          className={`mb-1.5 flex flex-wrap items-center gap-1.5 ${enGuardados ? 'pr-8' : ''}`}
-        >
+        <div className='mb-1.5 flex flex-wrap items-center gap-1.5 pr-8'>
           {anuncio.flair && <FlairChip flair={anuncio.flair} />}
           {deOtraCarrera && anuncio.carrera && (
             <span className='rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] font-bold text-neutral-400'>

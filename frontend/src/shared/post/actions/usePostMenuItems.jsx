@@ -11,11 +11,15 @@ export default function usePostMenuItems({
   onEditar,
   onEliminar,
   onReportar,
+  permitirEditar,
+  permitirEliminar,
   iconSize = 13,
 }) {
   const usuario = useAuthStore((s) => s.usuario);
   const esAutor = puedeEditar(usuario, autorId);
-  const puedeBorrar = puedeEliminar(usuario, autorId);
+  // el llamador puede imponer su propia regla (ej: anuncios)
+  const puedeBorrar = permitirEliminar ?? puedeEliminar(usuario, autorId);
+  const puedeModificar = permitirEditar ?? esAutor;
   const esModerador = esStaff(usuario?.rol);
   const estiloIcono = { fontSize: iconSize };
 
@@ -42,7 +46,7 @@ export default function usePostMenuItems({
         />
       ),
       onClick: onEditar,
-      hidden: !esAutor,
+      hidden: !puedeModificar,
     },
     {
       key: 'eliminar',

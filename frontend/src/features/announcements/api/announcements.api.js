@@ -26,3 +26,7 @@ export async function obtenerAnuncio(id, { signal } = {}) {
   const res = await apiFetch(`/anuncios/${id}`, { signal });
   return res.data;
 }
+
+export async function eliminarAnuncio(id) {
+  return apiFetch(`/anuncios/${id}`, { method: 'DELETE' });
+}

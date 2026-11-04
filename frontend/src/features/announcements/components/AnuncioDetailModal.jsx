@@ -14,6 +14,7 @@ import { useAnuncio } from '@/features/announcements/hooks/useAnuncios';
 import { INSIGNIA_ROL } from '@/features/announcements/utils/insigniaRol';
 import FlairChip from '@/features/announcements/components/FlairChip';
 import AdjuntosPdf from '@/features/announcements/components/AdjuntosPdf';
+import AnuncioMenu from '@/features/announcements/components/AnuncioMenu';
 
 export default function AnuncioDetailModal() {
   const { id } = useParams();
@@ -58,7 +59,16 @@ export default function AnuncioDetailModal() {
 
       {anuncio && (
         <>
-          <ModalHeader onClose={handleClose}>
+          <ModalHeader
+            onClose={handleClose}
+            rightContent={
+              <AnuncioMenu
+                anuncio={anuncio}
+                triggerClassName='flex h-[30px] w-[30px] items-center justify-center rounded-lg text-base text-neutral-400 transition-colors hover:bg-white/[0.06] hover:text-neutral-100'
+                onEliminado={handleClose}
+              />
+            }
+          >
             <button
               type='button'
               onClick={handleClose}
