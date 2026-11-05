@@ -5,8 +5,12 @@ import Button from '@/shared/components/ui/Button';
 import { useAnunciosFiltrosStore } from '@/features/announcements/store/anunciosFiltrosStore';
 import { useFlairs } from '@/features/announcements/hooks/useFlairs';
 import { clasesFlair } from '@/features/announcements/utils/flairColors';
-import { puedeCrearAnuncio } from '@/features/announcements/utils/permisos';
+import {
+  puedeCrearAnuncio,
+  puedeEliminarFlair,
+} from '@/features/announcements/utils/permisos';
 import AnuncioFormModal from '@/features/announcements/components/AnuncioFormModal';
+import AdministrarFlairsModal from '@/features/announcements/components/AdministrarFlairsModal';
 
 const ORDENES = [
   { valor: 'recientes', label: 'Recientes', icono: 'ti-clock' },
@@ -22,6 +26,7 @@ export default function AnnouncementsTopbar({ carreraId }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [creando, setCreando] = useState(false);
+  const [administrando, setAdministrando] = useState(false);
 
   const { data: flairs = [], isSuccess } = useFlairs(carreraId);
 
@@ -70,6 +75,16 @@ export default function AnnouncementsTopbar({ carreraId }) {
             Nuevo anuncio
           </Button>
         )}
+
+        {puedeEliminarFlair(usuario, carreraId) && (
+          <Button
+            variant='secondary'
+            icon='ti-tags'
+            onClick={() => setAdministrando(true)}
+          >
+            Flairs
+          </Button>
+        )}
       </div>
 
       {flairs.length > 0 && (
@@ -109,6 +124,13 @@ export default function AnnouncementsTopbar({ carreraId }) {
           carreraId={carreraId}
           onClose={() => setCreando(false)}
           onGuardado={alCrear}
+        />
+      )}
+
+      {administrando && (
+        <AdministrarFlairsModal
+          carreraId={carreraId}
+          onClose={() => setAdministrando(false)}
         />
       )}
     </div>

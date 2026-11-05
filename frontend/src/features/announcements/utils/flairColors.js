@@ -14,3 +14,6 @@ export const FLAIR_COLORES = {
 export function clasesFlair(color) {
   return FLAIR_COLORES[color] ?? FLAIR_COLORES.gris;
 }
+
+// Claves de la paleta, en el orden en que se muestran
+export const COLORES_FLAIR = Object.keys(FLAIR_COLORES);

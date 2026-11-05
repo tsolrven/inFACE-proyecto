@@ -13,3 +13,4 @@ export const ADJUNTOS_EXTENSIONES = [
 ]; // contentRegistry: anuncio.adjuntos.extensiones
 export const ADJUNTO_MAX_MB = 20; // multer.helper.js (backend)
 export const ADJUNTO_MAX_BYTES = ADJUNTO_MAX_MB * 1024 * 1024;
+export const FLAIR_NOMBRE_MAX = 30; // flairs.validation.js (NOMBRE_MAX)

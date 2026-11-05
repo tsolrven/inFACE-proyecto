@@ -27,3 +27,15 @@ export function puedeEditarAnuncio(usuario, anuncio) {
 export function puedeEliminarAnuncio(usuario, anuncio) {
   return esStaff(usuario?.rol) || puedeEditarAnuncio(usuario, anuncio);
 }
+
+// Crear, renombrar y cambiar el color de un flair: igual que publicar
+// (CEE o tutor de la carrera). Debe coincidir con crearFlair y actualizarFlair
+// del backend (flairs.service.js).
+export function puedeGestionarFlairs(usuario, carreraId) {
+  return puedeCrearAnuncio(usuario, carreraId);
+}
+
+// Eliminar un flair: además, el superadmin (moderación).
+export function puedeEliminarFlair(usuario, carreraId) {
+  return esStaff(usuario?.rol) || puedeGestionarFlairs(usuario, carreraId);
+}
