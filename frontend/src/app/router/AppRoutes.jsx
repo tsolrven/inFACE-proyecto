@@ -1,5 +1,5 @@
 import { Suspense, lazy } from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import {
   Login,
   Register,
@@ -9,13 +9,19 @@ import {
   ResetPassword,
 } from '@/features/auth';
 import Layout from '@/app/layout/Layout';
-import { protectedRoutes, extraRoutes, modalRoutes } from '@/app/router/routes';
+import {
+  protectedRoutes,
+  extraRoutes,
+  modalRoutes,
+  adminRoutes,
+} from '@/app/router/routes';
 import NotFound from '@/pages/NotFoundPage';
 import {
   ProtectedRoute,
   OnboardingRoute,
   GuestRoute,
   TermsRoute,
+  AdminRoute,
 } from '@/app/router/guards';
 
 const TerminosPublico = lazy(() => import('@/pages/legal/UserAgreementPage'));
@@ -122,6 +128,26 @@ export default function AppRoutes() {
                 />
               ),
           )}
+          <Route
+            path='/admin'
+            element={
+              <Navigate
+                to='/admin/reportes'
+                replace
+              />
+            }
+          />
+          {adminRoutes.map(({ path, component: Page }) => (
+            <Route
+              key={path}
+              path={path}
+              element={
+                <AdminRoute>
+                  <Page />
+                </AdminRoute>
+              }
+            />
+          ))}
         </Route>
 
         <Route

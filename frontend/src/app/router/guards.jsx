@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/shared/auth/authStore';
+import { ROLES } from '@/shared/auth/roles';
 import Landing from '@/pages/LandingPage';
 
 export function ProtectedRoute({ children }) {
@@ -105,4 +106,19 @@ export function GuestRoute({ children }) {
       replace
     />
   );
+}
+
+// Solo superadmin. La seguridad real está en el backend: esto evita mostrar
+// pantallas que no podrían cargar datos.
+export function AdminRoute({ children }) {
+  const esSuperadmin = useAuthStore((s) => s.usuario?.rol === ROLES.SUPERADMIN);
+  if (!esSuperadmin) {
+    return (
+      <Navigate
+        to='/'
+        replace
+      />
+    );
+  }
+  return children;
 }

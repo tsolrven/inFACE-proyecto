@@ -1,5 +1,8 @@
 import { NavLink } from 'react-router-dom';
 import { navSections, footerLinks } from '@/shared/config/navigation';
+import { navAdmin } from '@/shared/config/navAdmin';
+import { useAuthStore } from '@/shared/auth/authStore';
+import { ROLES } from '@/shared/auth/roles';
 import { useUiStore } from '@/shared/stores/uiStore';
 
 const baseItemClasses =
@@ -57,6 +60,18 @@ export default function Sidebar() {
   const toggleSidebar = useUiStore((s) => s.toggleSidebar);
   const abiertoMovil = useUiStore((s) => s.sidebarMovilAbierto);
   const cerrarSidebarMovil = useUiStore((s) => s.cerrarSidebarMovil);
+  // El superadmin ve «Administración» y no «Reportes» dentro de Recursos
+  // (esa entrada es «Mis reportes», que él no usa).
+  const esSuperadmin = useAuthStore((s) => s.usuario?.rol === ROLES.SUPERADMIN);
+  const secciones = esSuperadmin
+    ? [
+      navAdmin,
+      ...navSections.map((s) => ({
+        ...s,
+        items: s.items.filter((i) => i.path !== '/reportes'),
+      })),
+    ]
+    : navSections;
 
   // en mobile el sidebar se comporta como un cajón que se cierra solo al navegar
   const onNavigate = () => cerrarSidebarMovil();
@@ -111,7 +126,7 @@ export default function Sidebar() {
           onNavigate={onNavigate}
         />
 
-        {navSections.map((section) => (
+        {secciones.map((section) => (
           <div key={section.title}>
             <div className='my-1.5 mx-4 h-px bg-white/[0.07]' />
             {!colapsado && (

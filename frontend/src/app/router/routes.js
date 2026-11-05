@@ -156,3 +156,11 @@ export const modalRoutes = [
     ),
   },
 ];
+
+// Rutas de Administración (solo superadmin; AppRoutes las envuelve en AdminRoute)
+export const adminRoutes = [
+  {
+    path: '/admin/reportes',
+    component: lazy(() => import('@/features/reports/pages/ModeracionPage')),
+  },
+];
