@@ -320,7 +320,10 @@ async function eliminarApunte(id, usuario_id, rol) {
   }
 
   const archivos = await prisma.$transaction(async (tx) => {
-    const { archivos } = await eliminarContenido(tx, 'apunte', id);
+    const { archivos } = await eliminarContenido(tx, 'apunte', id, {
+      por_moderacion: esStaff(rol),
+      revisor_id: usuario_id,
+    });
     await tx.apunte.delete({ where: { id } });
     return archivos;
   });

@@ -210,7 +210,10 @@ async function eliminarHilo(id, usuario_id, rol) {
   }
 
   const archivos = await prisma.$transaction(async (tx) => {
-    const { archivos } = await eliminarContenido(tx, 'hilo', id);
+    const { archivos } = await eliminarContenido(tx, 'hilo', id, {
+      por_moderacion: esStaff(rol),
+      revisor_id: usuario_id,
+    });
     await tx.hilo.delete({ where: { id } }); // HiloHashtag cae por cascade
     return archivos;
   });

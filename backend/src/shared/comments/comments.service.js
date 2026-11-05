@@ -14,6 +14,7 @@ import {
   notificarInteraccion,
 } from '../content/contentRegistry.js';
 import { eliminarInteracciones } from '../content/contentCleanup.js';
+import { cerrarReportesPorEliminacion } from '../moderation/reports.closure.js';
 import { obtenerMisInteracciones } from '../content/contentEnrichment.js';
 import { esStaff } from '../auth/permissions.js';
 import { AUTOR_PUBLICO_SELECT } from '../content/selects.js';
@@ -110,11 +111,11 @@ async function paginarComentarios({
 }) {
   const where = cursor
     ? {
-        AND: [
-          filtro,
-          condicionDespuesDe(orden, decodificarCursor(cursor, orden)),
-        ],
-      }
+      AND: [
+        filtro,
+        condicionDespuesDe(orden, decodificarCursor(cursor, orden)),
+      ],
+    }
     : filtro;
 
   // se pide uno de más para saber si hay página siguiente sin hacer un count
@@ -142,10 +143,10 @@ async function paginarComentarios({
       hasNext: hayMas,
       nextCursor: hayMas
         ? codificarCursor({
-            v: ultimo.votos_neto,
-            c: ultimo.creado_en.toISOString(),
-            id: ultimo.id,
-          })
+          v: ultimo.votos_neto,
+          c: ultimo.creado_en.toISOString(),
+          id: ultimo.id,
+        })
         : null,
     },
   };
@@ -369,6 +370,11 @@ async function eliminarComentario(comentario_id, usuario_id, rol) {
 
     // borrado real: solo el autor, y solo si nadie respondió
     if (esAutor && cantidadRespuestas === 0) {
+      await cerrarReportesPorEliminacion(tx, {
+        tipo_contenido: 'comentario',
+        ids: [comentario_id],
+        por_moderacion: false,
+      });
       await eliminarInteracciones(tx, 'comentario', [comentario_id]);
       await tx.comentario.delete({ where: { id: comentario_id } });
       await ejecutarAlEliminarComentario(tx, comentario);
@@ -379,6 +385,14 @@ async function eliminarComentario(comentario_id, usuario_id, rol) {
         ids_eliminados: [comentario_id, ...podados],
       };
     }
+
+    // antes de vaciar el texto: el snapshot de los reportes lo lee
+    await cerrarReportesPorEliminacion(tx, {
+      tipo_contenido: 'comentario',
+      ids: [comentario_id],
+      por_moderacion: !esAutor,
+      revisor_id: usuario_id,
+    });
 
     // borrado lógico: queda como fantasma para no romper el hilo.
     // El autor vacía su texto; si modera el staff, el texto se conserva como
@@ -433,6 +447,11 @@ async function podarAncestrosEliminados(tx, padre_id) {
       (!padre.eliminado_por_id || padre.eliminado_por_id === padre.autor_id);
     if (!podable) break;
 
+    await cerrarReportesPorEliminacion(tx, {
+      tipo_contenido: 'comentario',
+      ids: [padre.id],
+      por_moderacion: false,
+    });
     await eliminarInteracciones(tx, 'comentario', [padre.id]);
     await tx.comentario.delete({ where: { id: padre.id } });
     podados.push(padre.id);
@@ -538,10 +557,10 @@ async function hidratarComentariosGuardados(ids, usuario_id) {
         }),
         contenido_padre: previews.has(clave)
           ? {
-              tipo_contenido: c.tipo_contenido,
-              id: c.contenido_id,
-              titulo: previews.get(clave),
-            }
+            tipo_contenido: c.tipo_contenido,
+            id: c.contenido_id,
+            titulo: previews.get(clave),
+          }
           : null,
       };
     });
@@ -566,7 +585,7 @@ function formatearComentario(
       eliminado: true,
       eliminado_por:
         comentario.eliminado_por_id &&
-        comentario.eliminado_por_id !== comentario.autor_id
+          comentario.eliminado_por_id !== comentario.autor_id
           ? 'moderacion'
           : 'autor',
       autor: null,

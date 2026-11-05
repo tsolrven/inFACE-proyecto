@@ -238,6 +238,7 @@ function obtenerConfigAdjuntos(tipo_contenido) {
 // ────────────────────────────────────────────────────────────────────────────────────────
 export {
   verificarContenidoExiste,
+  obtenerEntradaRegistro,
   obtenerPropietarioContenido,
   actualizarVotosNetoContenido,
   bloquearContenido,

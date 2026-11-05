@@ -269,7 +269,10 @@ async function eliminarAnuncio(id, usuario) {
     // crearComentario también bloquee el contenido (parte B6b)
     await bloquearContenido('anuncio', id, tx);
 
-    const { archivos } = await eliminarContenido(tx, 'anuncio', id);
+    const { archivos } = await eliminarContenido(tx, 'anuncio', id, {
+      por_moderacion: esStaff(usuario.rol),
+      revisor_id: usuario.id,
+    });
     await tx.anuncio.delete({ where: { id } }); // AnuncioHashtag cae por cascade
     return archivos;
   });
