@@ -13,6 +13,7 @@ export default function CommentActions({
   onReportar,
 }) {
   const usuario = useAuthStore((s) => s.usuario);
+  const puedeVotar = puedeEscribir(usuario);
   const items = usePostMenuItems({
     autorId: comentario.autor?.id,
     guardado: comentario.esta_guardado,
@@ -35,12 +36,12 @@ export default function CommentActions({
       <div className='flex items-center gap-1'>
         <button
           type='button'
+          disabled={!puedeVotar}
           onClick={() => votar('up')}
           aria-label='Votar a favor'
           aria-pressed={comentario.mi_voto === 'up'}
-          className={`flex items-center transition-colors hover:text-[#FF6B35] ${
-            comentario.mi_voto === 'up' ? 'text-[#FF6B35]' : 'text-neutral-600'
-          }`}
+          className={`flex items-center transition-colors enabled:hover:text-[#FF6B35] disabled:cursor-not-allowed disabled:opacity-50 ${comentario.mi_voto === 'up' ? 'text-[#FF6B35]' : 'text-neutral-600'
+            }`}
         >
           <i className='ti ti-arrow-big-up text-[13px]' />
         </button>
@@ -49,10 +50,11 @@ export default function CommentActions({
         </span>
         <button
           type='button'
+          disabled={!puedeVotar}
           onClick={() => votar('down')}
           aria-label='Votar en contra'
           aria-pressed={comentario.mi_voto === 'down'}
-          className={`flex items-center transition-colors hover:text-[#7B8CDE] ${
+          className={`flex items-center transition-colors enabled:hover:text-[#7B8CDE] disabled:cursor-not-allowed disabled:opacity-50 ${
             comentario.mi_voto === 'down'
               ? 'text-[#7B8CDE]'
               : 'text-neutral-600'

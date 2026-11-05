@@ -1,3 +1,6 @@
+import { useAuthStore } from '@/shared/auth/authStore';
+import { puedeEscribir } from '@/shared/auth/roles';
+
 function FlechaVoto({ direccion, activo, className }) {
   const d =
     direccion === 'up'
@@ -20,6 +23,10 @@ function FlechaVoto({ direccion, activo, className }) {
 }
 
 export default function VotePill({ miVoto, votosNeto, onVotar }) {
+  // el superadmin solo elimina: ve los votos pero no puede votar
+  const puedeVotar = useAuthStore((s) => puedeEscribir(s.usuario));
+  const titulo = puedeVotar ? undefined : 'El superadmin no puede votar';
+
   const colorClase =
     miVoto === 'up'
       ? 'bg-[#FF6B35] text-white'
@@ -33,8 +40,10 @@ export default function VotePill({ miVoto, votosNeto, onVotar }) {
     >
       <button
         type='button'
+        disabled={!puedeVotar}
+        title={titulo}
         onClick={(e) => onVotar(e, 'up')}
-        className='flex h-[20px] w-[20px] items-center justify-center transition-colors hover:text-[#FFB340]'
+        className='flex h-[20px] w-[20px] items-center justify-center transition-colors enabled:hover:text-[#FFB340] disabled:cursor-not-allowed disabled:opacity-50'
       >
         <FlechaVoto
           direccion='up'
@@ -47,8 +56,10 @@ export default function VotePill({ miVoto, votosNeto, onVotar }) {
       </span>
       <button
         type='button'
+        disabled={!puedeVotar}
+        title={titulo}
         onClick={(e) => onVotar(e, 'down')}
-        className='flex h-[20px] w-[20px] items-center justify-center transition-colors hover:text-[#5EC8F2]'
+        className='flex h-[20px] w-[20px] items-center justify-center transition-colors enabled:hover:text-[#5EC8F2] disabled:cursor-not-allowed disabled:opacity-50'
       >
         <FlechaVoto
           direccion='down'

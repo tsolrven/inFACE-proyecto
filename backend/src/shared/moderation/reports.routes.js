@@ -1,6 +1,9 @@
 import express from 'express';
 import { reportarContenido, listarMisReportes } from './reports.controller.js';
-import { autenticar } from '../../middlewares/auth.middleware.js';
+import {
+  autenticar,
+  exigirEscritura,
+} from '../../middlewares/auth.middleware.js';
 import validate from '../../middlewares/validate.js';
 import { crearReporteSchema } from './reports.validation.js';
 import { contenidoParamSchema } from '../validation/common.schemas.js';
@@ -13,6 +16,7 @@ router.get('/me', autenticar, listarMisReportes);
 router.post(
   '/:tipo/:id',
   autenticar,
+  exigirEscritura,
   reporteLimiter,
   validate(contenidoParamSchema, 'params'),
   validate(crearReporteSchema),
