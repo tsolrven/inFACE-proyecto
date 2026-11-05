@@ -129,49 +129,44 @@ async function exigirFlairDeLaCarrera(flair_id, carrera_id) {
   }
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-// Editar o eliminar: el superadmin, o el autor mientras siga pudiendo publicar
-// en la carrera del anuncio (si le quitan el rol, pierde el control).
-function puedeAdministrarAnuncio(usuario, anuncio) {
-  if (esStaff(usuario.rol)) return true;
+// Editar: solo el autor, mientras siga pudiendo publicar en la carrera del
+// anuncio (si le quitan el rol, pierde el control). El superadmin no edita.
+function puedeEditarAnuncio(usuario, anuncio) {
   return (
     anuncio.autor_id === usuario.id &&
     puedePublicarAnuncioEn(usuario, anuncio.carrera_id)
   );
 }
+
+// Eliminar: el superadmin (moderación) o quien puede editar.
+function puedeEliminarAnuncio(usuario, anuncio) {
+  return esStaff(usuario.rol) || puedeEditarAnuncio(usuario, anuncio);
+}
 // ────────────────────────────────────────────────────────────────────────────────────────
-// Regla de archivos del anuncio (la consulta files.service):
-// - subir: solo el autor, mientras siga pudiendo publicar en la carrera
-//   (el superadmin que no es el autor no sube)
-// - eliminar: el superadmin, o el autor con ese permiso
-registrarPermisoAdjuntos('anuncio', async (usuario, anuncio_id, accion) => {
+// Archivos del anuncio (los consulta files.service): subir y eliminar archivos
+// sueltos es editar, así que solo el autor con permiso. El superadmin elimina
+// la publicación entera, y con ella sus archivos.
+registrarPermisoAdjuntos('anuncio', async (usuario, anuncio_id) => {
   const anuncio = await prisma.anuncio.findUnique({
     where: { id: anuncio_id },
     select: { autor_id: true, carrera_id: true },
   });
   if (!anuncio) throw new NotFoundError('Anuncio');
 
-  if (accion === 'subir') {
-    return (
-      anuncio.autor_id === usuario.id &&
-      puedePublicarAnuncioEn(usuario, anuncio.carrera_id)
-    );
-  }
-  return puedeAdministrarAnuncio(usuario, anuncio);
+  return puedeEditarAnuncio(usuario, anuncio);
 });
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function crearAnuncio({
   usuario,
-  carrera_id,
   titulo,
   contenido,
   flair_id,
   hashtags = [],
   archivos = [],
 }) {
-  // CEE y tutores no eligen carrera: es la suya. El superadmin sí puede elegir.
-  const destino = carrera_id ?? usuario.carrera_id;
-  if (!destino)
-    throw new BadRequestError('Debes indicar la carrera del anuncio');
+  // la carrera es siempre la del usuario: no viaja en el body
+  const destino = usuario.carrera_id;
+  if (!destino) throw new BadRequestError('No tienes una carrera asignada');
   if (!puedePublicarAnuncioEn(usuario, destino)) {
     throw new ForbiddenError(
       'No tienes permiso para publicar anuncios en esta carrera',
@@ -227,7 +222,7 @@ async function actualizarAnuncio(id, usuario, datos) {
   });
   if (!anuncio) throw new NotFoundError('Anuncio');
 
-  if (!puedeAdministrarAnuncio(usuario, anuncio)) {
+  if (!puedeEditarAnuncio(usuario, anuncio)) {
     throw new ForbiddenError('No tienes permiso para editar este anuncio');
   }
 
@@ -265,7 +260,7 @@ async function eliminarAnuncio(id, usuario) {
   });
   if (!anuncio) throw new NotFoundError('Anuncio');
 
-  if (!puedeAdministrarAnuncio(usuario, anuncio)) {
+  if (!puedeEliminarAnuncio(usuario, anuncio)) {
     throw new ForbiddenError('No tienes permiso para eliminar este anuncio');
   }
 

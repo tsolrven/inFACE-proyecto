@@ -6,11 +6,12 @@ const ROLES = Object.freeze({
   SUPERADMIN: 'superadmin',
 });
 
-// Pueden moderar contenido ajeno (editar/eliminar apuntes, archivos y comentarios de otros).
+// Pueden moderar contenido ajeno: SOLO eliminar publicaciones y comentarios.
+// Nunca crean ni editan (ver puedeEscribirContenido).
 const ROLES_STAFF = [ROLES.SUPERADMIN];
 
-// Pueden publicar anuncios oficiales (módulo 3).
-const ROLES_ANUNCIANTES = [ROLES.CEE, ROLES.TUTOR, ROLES.SUPERADMIN];
+// Pueden publicar anuncios oficiales (módulo 3). El superadmin no: solo elimina.
+const ROLES_ANUNCIANTES = [ROLES.CEE, ROLES.TUTOR];
 
 function esStaff(rol) {
   return ROLES_STAFF.includes(rol);
@@ -20,13 +21,17 @@ function puedePublicarAnuncios(rol) {
   return ROLES_ANUNCIANTES.includes(rol);
 }
 
-// Quién puede publicar (y administrar flairs) en la carrera `carrera_id`.
-// El superadmin en cualquiera; CEE y tutores solo en su carrera.
+// Quién puede publicar anuncios y crear/editar flairs en la carrera `carrera_id`:
+// CEE y tutores, solo en su carrera. El superadmin no: solo elimina.
 // `usuario` es req.usuario (id, rol, carrera_id).
 function puedePublicarAnuncioEn(usuario, carrera_id) {
   if (!puedePublicarAnuncios(usuario?.rol)) return false;
-  if (esStaff(usuario.rol)) return true;
   return !!carrera_id && usuario.carrera_id === carrera_id;
+}
+
+// Crear y editar (publicaciones, comentarios, archivos): todos menos el superadmin.
+function puedeEscribirContenido(rol) {
+  return rol !== ROLES.SUPERADMIN;
 }
 
 export {
@@ -36,4 +41,5 @@ export {
   esStaff,
   puedePublicarAnuncios,
   puedePublicarAnuncioEn,
+  puedeEscribirContenido
 };

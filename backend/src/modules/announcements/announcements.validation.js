@@ -38,10 +38,8 @@ const flairIdSchema = z
   .nullable()
   .optional();
 // ─────────────────────────────────────────────────────────────────────────────
-// `carrera_id` solo lo usa el superadmin: CEE y tutores publican siempre en su
-// carrera (el servicio rechaza cualquier otra).
+// La carrera no viaja en el body: es la del usuario (z.object descarta cualquier `carrera_id`).
 const crearAnuncioSchema = z.object({
-  carrera_id: z.string().uuid(ERROR_MESSAGES.carrera.invalid).optional(),
   titulo: tituloSchema,
   contenido: contenidoSchema,
   flair_id: flairIdSchema,

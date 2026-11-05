@@ -14,7 +14,6 @@ import {
   evaluarPermisoAdjuntos,
 } from '../content/contentRegistry.js';
 import { resolverRutaFisica } from './uploadsPath.js';
-import { esStaff } from '../auth/permissions.js';
 import { obtenerMimePorExtension } from './fileMime.helper.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 // solo lo que el cliente necesita: la ruta física y el vínculo polimórfico
@@ -126,7 +125,8 @@ async function eliminarArchivo(id, usuario) {
   const archivo = await prisma.archivo.findUnique({ where: { id } });
   if (!archivo) throw new NotFoundError('Archivo');
 
-  // regla propia del tipo si la definió; si no, el autor o el staff
+  // regla propia del tipo si la definió; si no, solo el autor (el superadmin
+  // elimina la publicación entera, no archivos sueltos)
   let permitido = await evaluarPermisoAdjuntos(
     archivo.tipo_contenido,
     archivo.contenido_id,
@@ -138,7 +138,7 @@ async function eliminarArchivo(id, usuario) {
       archivo.tipo_contenido,
       archivo.contenido_id,
     );
-    permitido = autor_id === usuario.id || esStaff(usuario.rol);
+    permitido = autor_id === usuario.id;
   }
   if (!permitido) {
     throw new ForbiddenError('No tienes permiso para eliminar este archivo');

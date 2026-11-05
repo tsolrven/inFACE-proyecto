@@ -6,7 +6,10 @@ import {
   ConflictError,
 } from '../../errors/appError.js';
 import logger from '../../lib/logger.js';
-import { puedePublicarAnuncioEn } from '../../shared/auth/permissions.js';
+import {
+  esStaff,
+  puedePublicarAnuncioEn,
+} from '../../shared/auth/permissions.js';
 import { normalizarNombreFlair } from './flairs.validation.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 const MENSAJE_DUPLICADO = 'Ya existe un flair con ese nombre en esta carrera';
@@ -39,10 +42,10 @@ async function listarFlairs({ carrera_id }) {
   return flairs.map(formatearFlair);
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-async function crearFlair({ usuario, carrera_id, nombre, color }) {
-  // CEE y tutores no eligen carrera: es la suya. El superadmin sí puede elegir.
-  const destino = carrera_id ?? usuario.carrera_id;
-  if (!destino) throw new BadRequestError('Debes indicar la carrera del flair');
+async function crearFlair({ usuario, nombre, color }) {
+  // la carrera es siempre la del usuario: no viaja en el body
+  const destino = usuario.carrera_id;
+  if (!destino) throw new BadRequestError('No tienes una carrera asignada');
   if (!puedePublicarAnuncioEn(usuario, destino)) {
     throw new ForbiddenError(
       'No tienes permiso para administrar flairs en esta carrera',
@@ -70,11 +73,16 @@ async function crearFlair({ usuario, carrera_id, nombre, color }) {
   }
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-async function exigirPermisoSobreFlair(id, usuario) {
+// Crear/editar: CEE o tutor de la carrera del flair. Eliminar (soloEliminar):
+// además el superadmin, como moderación.
+async function exigirPermisoSobreFlair(id, usuario, { eliminar = false } = {}) {
   const flair = await prisma.flair.findUnique({ where: { id } });
   if (!flair) throw new NotFoundError('Flair');
 
-  if (!puedePublicarAnuncioEn(usuario, flair.carrera_id)) {
+  const permitido =
+    (eliminar && esStaff(usuario.rol)) ||
+    puedePublicarAnuncioEn(usuario, flair.carrera_id);
+  if (!permitido) {
     throw new ForbiddenError(
       'No tienes permiso para administrar flairs en esta carrera',
     );
@@ -106,7 +114,7 @@ async function actualizarFlair(id, usuario, { nombre, color }) {
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function eliminarFlair(id, usuario) {
-  await exigirPermisoSobreFlair(id, usuario);
+  await exigirPermisoSobreFlair(id, usuario, { eliminar: true });
 
   // los anuncios que lo usaban quedan sin flair (onDelete: SetNull en el esquema)
   await prisma.flair.delete({ where: { id } });

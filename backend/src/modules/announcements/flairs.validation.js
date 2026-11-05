@@ -54,9 +54,8 @@ const colorSchema = z.enum(COLORES_FLAIR, {
   error: ERROR_MESSAGES.color.invalid,
 });
 // ─────────────────────────────────────────────────────────────────────────────
-// `carrera_id` solo lo usa el superadmin: CEE y tutores crean siempre en su carrera.
+// La carrera no viaja en el body: es la del usuario.
 const crearFlairSchema = z.object({
-  carrera_id: z.string().uuid(ERROR_MESSAGES.carrera.invalid).optional(),
   nombre: nombreSchema,
   color: colorSchema,
 });

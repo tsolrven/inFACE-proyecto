@@ -9,7 +9,7 @@ import {
 } from './flairs.validation.js';
 import { idParamSchema } from '../../shared/validation/common.schemas.js';
 import { publicacionLimiter } from '../../middlewares/rateLimiter.js';
-import { ROLES_ANUNCIANTES } from '../../shared/auth/permissions.js';
+import { ROLES, ROLES_ANUNCIANTES } from '../../shared/auth/permissions.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 const router = express.Router();
 
@@ -35,7 +35,7 @@ router.patch(
 router.delete(
   '/:id',
   autenticar,
-  autorizar(...ROLES_ANUNCIANTES),
+  autorizar(...ROLES_ANUNCIANTES, ROLES.SUPERADMIN),
   validate(idParamSchema, 'params'),
   eliminar,
 );

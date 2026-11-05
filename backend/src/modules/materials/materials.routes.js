@@ -6,7 +6,10 @@ import {
   actualizar,
   eliminar,
 } from './materials.controller.js';
-import { autenticar } from '../../middlewares/auth.middleware.js';
+import {
+  autenticar,
+  exigirEscritura,
+} from '../../middlewares/auth.middleware.js';
 import validate from '../../middlewares/validate.js';
 import {
   crearApunteSchema,
@@ -42,6 +45,7 @@ router.get('/:id', autenticar, validate(idParamSchema, 'params'), detalle);
 router.post(
   '/',
   autenticar,
+  exigirEscritura,
   publicacionLimiter,
   comoApunte,
   limpiarArchivosSiFalla,
@@ -54,6 +58,7 @@ router.post(
 router.patch(
   '/:id',
   autenticar,
+  exigirEscritura,
   validate(idParamSchema, 'params'),
   validate(actualizarApunteSchema),
   actualizar,
