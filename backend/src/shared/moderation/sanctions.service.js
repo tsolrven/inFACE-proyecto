@@ -15,6 +15,7 @@ import {
   DIAS_MAX,
   MS_DIA,
 } from './sanctions.constants.js';
+import { notificarSancion } from './sanctions.notifications.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 // Vigente = no revocada y sin fecha de término o con término futuro.
 // Sin cron: el vencimiento se evalúa al consultar.
@@ -87,7 +88,7 @@ async function crearSancion({
     );
   }
 
-  return prisma.$transaction(async (tx) => {
+  const sancion = await prisma.$transaction(async (tx) => {
     // Bloquea la fila del usuario: dos sanciones simultáneas no pueden saltarse
     // la comprobación de «ya tiene una vigente».
     await tx.$queryRaw`SELECT id FROM "usuarios" WHERE id = ${usuario_id} FOR UPDATE`;
@@ -132,6 +133,10 @@ async function crearSancion({
       },
     });
   });
+
+  // después del commit y sin esperar: un fallo de aviso no afecta la sanción
+  notificarSancion(sancion);
+  return sancion;
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 // Solo se revoca lo que sigue en pie: no revocada y sin haber vencido.
