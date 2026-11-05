@@ -3,12 +3,12 @@ import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
 import { mensajeDeError } from '@/shared/lib/errores';
 import { mostrarToast } from '@/shared/stores/toastStore';
 import Button from '@/shared/components/ui/Button';
-import { useReintentarCorreo } from '@/features/reports/hooks/useReportes';
+import { useReintentarCorreo } from '@/features/admin/hooks/useModeracion';
 import {
   ESTADO_BADGE,
   ESTADO_LABEL_MODERACION,
   nombreDeUsuario,
-} from '@/features/reports/utils/reportUi';
+} from '@/shared/moderation/reportUi';
 
 const CORREO = {
   pendiente: {

@@ -161,6 +161,6 @@ export const modalRoutes = [
 export const adminRoutes = [
   {
     path: '/admin/reportes',
-    component: lazy(() => import('@/features/reports/pages/ModeracionPage')),
+    component: lazy(() => import('@/features/admin/pages/ModeracionPage')),
   },
 ];

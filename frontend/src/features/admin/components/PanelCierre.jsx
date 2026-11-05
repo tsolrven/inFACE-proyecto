@@ -8,8 +8,8 @@ import { mostrarToast } from '@/shared/stores/toastStore';
 import {
   useCerrarReportes,
   useRespuestasPredeterminadas,
-} from '@/features/reports/hooks/useReportes';
-import { ETIQUETA_TIPO } from '@/features/reports/utils/reportUi';
+} from '@/features/admin/hooks/useModeracion';
+import { ETIQUETA_TIPO } from '@/shared/moderation/reportUi';
 
 const RESPUESTA_MIN = 5;
 const RESPUESTA_MAX = 500; // igual que el backend (Reporte.nota_resolucion)

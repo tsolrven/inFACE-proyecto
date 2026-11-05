@@ -4,7 +4,7 @@ import {
   ETIQUETA_TIPO,
   ICONO_POR_TIPO,
   ESTADO_BADGE,
-} from '@/features/reports/utils/reportUi';
+} from '@/shared/moderation/reportUi';
 
 const ESTADO_LABEL = {
   resuelto: 'Resuelto',

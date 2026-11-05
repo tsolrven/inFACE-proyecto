@@ -9,7 +9,7 @@ import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
 import {
   ICONO_POR_TIPO,
   ESTADO_BADGE,
-} from '@/features/reports/utils/reportUi';
+} from '@/shared/moderation/reportUi';
 
 const ESTADO_LABEL = {
   pendiente: 'En revisión',

@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import Pestanas from '@/shared/components/ui/Pestanas';
 import Button from '@/shared/components/ui/Button';
-import FilaCola from '@/features/reports/components/FilaCola';
-import ReportesContenidoModal from '@/features/reports/components/ReportesContenidoModal';
-import { useColaReportes } from '@/features/reports/hooks/useReportes';
-import { ETIQUETA_TIPO } from '@/features/reports/utils/reportUi';
+import FilaCola from '@/features/admin/components/FilaCola';
+import ReportesContenidoModal from '@/features/admin/components/ReportesContenidoModal';
+import { useColaReportes } from '@/features/admin/hooks/useModeracion';
+import { ETIQUETA_TIPO } from '@/shared/moderation/reportUi';
 
 const PESTANAS = [
   { id: 'pendientes', label: 'Pendientes', icono: 'ti-flag' },

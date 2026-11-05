@@ -1,0 +1,1 @@
+export { default as ModeracionPage } from './pages/ModeracionPage';

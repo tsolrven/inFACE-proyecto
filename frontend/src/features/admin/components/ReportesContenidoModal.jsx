@@ -1,15 +1,15 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import Modal, { ModalHeader, ModalBody } from '@/shared/components/ui/Modal';
 import Button from '@/shared/components/ui/Button';
-import PanelCierre from '@/features/reports/components/PanelCierre';
-import ReporteItem from '@/features/reports/components/ReporteItem';
-import { useReportesDeContenido } from '@/features/reports/hooks/useReportes';
+import PanelCierre from '@/features/admin/components/PanelCierre';
+import ReporteItem from '@/features/admin/components/ReporteItem';
+import { useReportesDeContenido } from '@/features/admin/hooks/useModeracion';
 import {
   ETIQUETA_TIPO,
   ICONO_POR_TIPO,
   nombreDeUsuario,
   rutaDeContenido,
-} from '@/features/reports/utils/reportUi';
+} from '@/shared/moderation/reportUi';
 
 export default function ReportesContenidoModal({ tipo, id, onClose }) {
   const navigate = useNavigate();
