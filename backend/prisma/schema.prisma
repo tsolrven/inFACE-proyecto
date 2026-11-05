@@ -601,22 +601,36 @@ model InteraccionProyecto {
 //───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 model Reporte {
-  id             String   @id @default(uuid())
+  id             String    @id @default(uuid())
   reportado_por  String
-  tipo_contenido String  
+  tipo_contenido String
   contenido_id   String
-  motivo         String  
+  motivo         String
   detalle        String?
-  estado         String   @default("pendiente") 
+  estado         String    @default("pendiente") @db.VarChar(20)
   revisado_por   String?
   revisado_en    DateTime?
-  creado_en      DateTime @default(now())
+  creado_en      DateTime  @default(now())
+
+  // Cierre del reporte: lo escribe el superadmin, o el borrado del contenido
+  nota_resolucion         String?  @db.VarChar(500)
+  respuesta_personalizada Boolean  @default(false)
+
+  // Correo al reportante. null = el reporte sigue abierto.
+  // Valores: pendiente | enviada | fallida | omitida
+  notificacion_estado     String?   @db.VarChar(20)
+  notificacion_intentos   Int       @default(0)
+  notificacion_error      String?   @db.VarChar(300)
+  notificacion_enviada_en DateTime?
+
+  // Copia mínima del contenido, tomada al eliminarlo (sin cuerpo ni archivos)
+  contenido_snapshot Json?
 
   reportador Usuario  @relation("ReporteCreadoPor", fields: [reportado_por], references: [id])
   revisor    Usuario? @relation("ReporteRevisadoPor", fields: [revisado_por], references: [id])
 
   @@index([tipo_contenido, contenido_id])
-  @@index([estado])
+  @@index([estado, notificacion_estado])
   @@index([reportado_por])
   @@map("reportes")
 }
