@@ -27,6 +27,22 @@ export async function obtenerAnuncio(id, { signal } = {}) {
   return res.data;
 }
 
+export async function crearAnuncio(payload, archivos = []) {
+  const formData = new FormData();
+  formData.append('datos', JSON.stringify(payload));
+  archivos.forEach((f) => formData.append('archivos', f));
+  const res = await apiFetch('/anuncios', { method: 'POST', body: formData });
+  return res.data;
+}
+
+export async function actualizarAnuncio(id, payload) {
+  const res = await apiFetch(`/anuncios/${id}`, {
+    method: 'PATCH',
+    body: payload,
+  });
+  return res.data;
+}
+
 export async function eliminarAnuncio(id) {
   return apiFetch(`/anuncios/${id}`, { method: 'DELETE' });
 }

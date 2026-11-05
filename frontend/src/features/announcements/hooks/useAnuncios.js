@@ -7,9 +7,16 @@ import {
 import {
   listarAnuncios,
   obtenerAnuncio,
+  crearAnuncio,
+  actualizarAnuncio,
   eliminarAnuncio,
 } from '@/features/announcements/api/announcements.api';
-import { buscarContenido, quitarContenido } from '@/shared/post/cache';
+import { sincronizarArchivos } from '@/shared/api/archivos.api';
+import {
+  buscarContenido,
+  parchearContenido,
+  quitarContenido,
+} from '@/shared/post/cache';
 
 // Las claves empiezan con 'anuncio': así votos y guardados (shared/post/cache.js)
 // actualizan listas y detalle sin código extra.
@@ -43,6 +50,68 @@ export function useAnuncio(id) {
     // al abrir desde la lista se muestra al instante lo que ya se conoce
     // (OJO: en la lista el contenido viene recortado, ver contenido_truncado)
     placeholderData: () => buscarContenido(qc, 'anuncio', id) ?? undefined,
+  });
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+export function useCrearAnuncio() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ payload, archivos }) => crearAnuncio(payload, archivos),
+    onSuccess: (anuncio) => {
+      // la respuesta tiene la misma forma que el detalle
+      qc.setQueryData(anuncioKeys.detail(anuncio.id), anuncio);
+      qc.invalidateQueries({ queryKey: ['anuncio', 'list'] });
+    },
+  });
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+// `quitar`: ids de archivos a eliminar. `nuevos`: File[] a subir.
+// `payload` null = solo cambian los archivos (el PATCH marca "editado", así que
+// no se llama si no cambió ningún campo). En el payload solo viajan los campos
+// modificados; `flair_id: null` quita el flair.
+// Devuelve { anuncio, fallos: { quitar, subir } }: cuántas operaciones de
+// archivos fallaron (los campos ya quedaron guardados, ver orden abajo).
+export function useEditarAnuncio() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, payload = null, quitar = [], nuevos = [] }) => {
+      // 1. Campos: si falla, no se toca nada más
+      const actualizado = payload ? await actualizarAnuncio(id, payload) : null;
+
+      // 2. Archivos: quitar ANTES de subir (ver sincronizarArchivos)
+      const { fallidosQuitar, fallidosSubir } = await sincronizarArchivos(
+        'anuncio',
+        id,
+        { quitar, nuevos },
+      );
+
+      // 3. Si cambiaron los archivos, la lista real se pide de nuevo.
+      // Si esto falla no es grave: los cambios ya están guardados.
+      let anuncio = actualizado;
+      if (!actualizado || quitar.length > 0 || nuevos.length > 0) {
+        try {
+          anuncio = await obtenerAnuncio(id);
+        } catch {
+          // se recarga al invalidar (onSuccess)
+        }
+      }
+
+      return {
+        anuncio,
+        fallos: { quitar: fallidosQuitar.length, subir: fallidosSubir.length },
+      };
+    },
+    onSuccess: ({ anuncio }, { id, payload }) => {
+      if (!anuncio) {
+        qc.invalidateQueries({ queryKey: ['anuncio'] });
+        return;
+      }
+      parchearContenido(qc, 'anuncio', id, anuncio);
+      // un feed filtrado por flair podría quedar con un anuncio que ya no cumple
+      if (payload && 'flair_id' in payload) {
+        qc.invalidateQueries({ queryKey: ['anuncio', 'list'] });
+      }
+    },
   });
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
