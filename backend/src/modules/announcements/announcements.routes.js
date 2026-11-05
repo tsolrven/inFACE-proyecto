@@ -7,6 +7,7 @@ import {
   eliminar,
 } from './announcements.controller.js';
 import { autenticar, autorizar } from '../../middlewares/auth.middleware.js';
+import { exigirSinRestriccion } from '../../middlewares/restriction.middleware.js';
 import validate from '../../middlewares/validate.js';
 import {
   crearAnuncioSchema,
@@ -46,6 +47,7 @@ router.post(
   '/',
   autenticar,
   autorizar(...ROLES_ANUNCIANTES),
+  exigirSinRestriccion,
   publicacionLimiter,
   comoAnuncio,
   limpiarArchivosSiFalla,
@@ -58,6 +60,7 @@ router.post(
 router.patch(
   '/:id',
   autenticar,
+  exigirSinRestriccion,
   validate(idParamSchema, 'params'),
   validate(actualizarAnuncioSchema),
   actualizar,

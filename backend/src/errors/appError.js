@@ -41,6 +41,20 @@ class ValidationError extends AppError {
     this.details = details;
   }
 }
+
+// Cuenta con una restricción temporal vigente: no puede crear ni editar contenido.
+// Al cliente solo le llegan el motivo y el término, no el resto de la sanción.
+class AccountRestrictedError extends AppError {
+  constructor(restriccion) {
+    super(
+      'Tu cuenta tiene una restricción temporal: no puedes crear ni editar contenido mientras dure.',
+      403,
+      'CUENTA_RESTRINGIDA',
+    );
+    this.details = { motivo: restriccion.motivo, hasta: restriccion.hasta };
+  }
+}
+
 class InternalError extends AppError {
   constructor(message = 'Error interno del servidor') {
     super(message, 500, 'INTERNAL_ERROR');
@@ -55,5 +69,6 @@ export {
   NotFoundError,
   ConflictError,
   ValidationError,
+  AccountRestrictedError,
   InternalError,
 };

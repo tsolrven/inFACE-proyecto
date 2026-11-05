@@ -11,6 +11,7 @@ import {
   autenticar,
   exigirEscritura,
 } from '../../middlewares/auth.middleware.js';
+import { exigirSinRestriccion } from '../../middlewares/restriction.middleware.js';
 import validate from '../../middlewares/validate.js';
 import {
   contenidoComentableParamSchema,
@@ -53,6 +54,7 @@ router.post(
   '/:tipo/:id',
   autenticar,
   exigirEscritura,
+  exigirSinRestriccion,
   publicacionLimiter,
   validate(contenidoComentableParamSchema, 'params'),
   validate(crearComentarioSchema),
@@ -64,6 +66,7 @@ router.patch(
   '/:comentario_id',
   autenticar,
   exigirEscritura,
+  exigirSinRestriccion,
   validate(comentarioIdParamSchema, 'params'),
   validate(editarComentarioSchema),
   editar,

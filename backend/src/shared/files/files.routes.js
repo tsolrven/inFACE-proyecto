@@ -4,6 +4,7 @@ import {
   autenticar,
   exigirEscritura,
 } from '../../middlewares/auth.middleware.js';
+import { exigirSinRestriccion } from '../../middlewares/restriction.middleware.js';
 import { upload } from './multer.helper.js';
 import { validarContenidoReal } from './fileSignature.helper.js';
 import { subidaLimiter } from '../../middlewares/rateLimiter.js';
@@ -30,6 +31,7 @@ router.post(
   '/:tipo/:id',
   autenticar,
   exigirEscritura,
+  exigirSinRestriccion,
   validate(contenidoParamSchema, 'params'),
   exigirAdjuntos,
   subidaLimiter,
@@ -37,7 +39,13 @@ router.post(
   validarContenidoReal,
   subir,
 );
-router.delete('/:id', autenticar, validate(idParamSchema, 'params'), eliminar);
+router.delete(
+  '/:id',
+  autenticar,
+  exigirSinRestriccion,
+  validate(idParamSchema, 'params'),
+  eliminar,
+);
 router.get(
   '/:id/descargar',
   autenticar,

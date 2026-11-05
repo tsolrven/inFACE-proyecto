@@ -12,6 +12,7 @@ import {
   autenticar,
   exigirEscritura,
 } from '../../middlewares/auth.middleware.js';
+import { exigirSinRestriccion } from '../../middlewares/restriction.middleware.js';
 import validate from '../../middlewares/validate.js';
 import {
   crearHiloSchema,
@@ -44,6 +45,7 @@ router.post(
   '/',
   autenticar,
   exigirEscritura,
+  exigirSinRestriccion,
   publicacionLimiter,
   comoHilo,
   limpiarArchivosSiFalla,
@@ -57,6 +59,7 @@ router.patch(
   '/:id',
   autenticar,
   exigirEscritura,
+  exigirSinRestriccion,
   validate(idParamSchema, 'params'),
   validate(actualizarHiloSchema),
   actualizar,
