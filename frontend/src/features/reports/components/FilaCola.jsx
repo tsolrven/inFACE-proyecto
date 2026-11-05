@@ -15,7 +15,7 @@ const ESTADO_LABEL = {
 const MAX_MOTIVOS_VISIBLES = 3;
 
 // Una fila de la cola: un contenido con todos sus reportes de esa vista.
-export default function FilaCola({ grupo }) {
+export default function FilaCola({ grupo, onAbrir }) {
   const {
     tipo_contenido,
     titulo,
@@ -31,7 +31,11 @@ export default function FilaCola({ grupo }) {
   const resultados = Object.keys(estados).filter((e) => e !== 'pendiente');
 
   return (
-    <div className='rounded-[12px] border border-white/[0.06] bg-[#1E1E24] p-4'>
+    <button
+      type='button'
+      onClick={onAbrir}
+      className='w-full rounded-[12px] border border-white/[0.06] bg-[#1E1E24] p-4 text-left transition-colors hover:border-white/[0.16]'
+    >
       <div className='mb-1.5 flex items-start justify-between gap-3'>
         <div className='flex min-w-0 items-center gap-2'>
           <i
@@ -100,6 +104,6 @@ export default function FilaCola({ grupo }) {
         )}
         <span>{formatearTiempoRelativo(ultimo_en)}</span>
       </div>
-    </div>
+    </button>
   );
 }

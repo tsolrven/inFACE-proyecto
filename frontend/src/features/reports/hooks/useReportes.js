@@ -74,6 +74,9 @@ export function useCerrarReportes() {
         qc.invalidateQueries({ queryKey: ['guardados', tipo] });
       }
     },
+    // si falla (p. ej. 409 porque otro moderador ya cerró), la pantalla se
+    // actualiza con el estado real
+    onError: () => qc.invalidateQueries({ queryKey: ['reporte'] }),
   });
 }
 // ────────────────────────────────────────────────────────────────────────────────────────

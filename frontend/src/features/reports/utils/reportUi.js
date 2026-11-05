@@ -20,3 +20,27 @@ export const ESTADO_BADGE = {
   descartado: 'bg-neutral-500/10 text-neutral-500',
   contenido_eliminado: 'bg-neutral-500/10 text-neutral-500',
 };
+
+export const ESTADO_LABEL_MODERACION = {
+  pendiente: 'Pendiente',
+  resuelto: 'Resuelto',
+  descartado: 'Descartado',
+  contenido_eliminado: 'Contenido eliminado',
+};
+
+// Rutas de detalle que se abren como modal sobre la página actual. `proyecto`
+// no tiene (es del trabajo de la compañera): sin ruta no hay enlace.
+const RUTAS_DETALLE = {
+  apunte: '/repositorio-materiales',
+  hilo: '/foro-por-ramos',
+  anuncio: '/anuncios-oficiales',
+};
+
+export function rutaDeContenido(tipo, id) {
+  const base = RUTAS_DETALLE[tipo];
+  return base ? `${base}/${id}` : null;
+}
+
+export function nombreDeUsuario(usuario) {
+  return usuario?.perfil?.nombre_usuario ?? 'Usuario';
+}

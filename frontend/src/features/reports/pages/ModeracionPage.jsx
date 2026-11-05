@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import Pestanas from '@/shared/components/ui/Pestanas';
 import Button from '@/shared/components/ui/Button';
 import FilaCola from '@/features/reports/components/FilaCola';
+import ReportesContenidoModal from '@/features/reports/components/ReportesContenidoModal';
 import { useColaReportes } from '@/features/reports/hooks/useReportes';
 import { ETIQUETA_TIPO } from '@/features/reports/utils/reportUi';
 
@@ -33,6 +35,16 @@ function textoTotal(vista, total) {
 export default function ModeracionPage() {
   const [vista, setVista] = useState('pendientes');
   const [tipo, setTipo] = useState(null);
+
+  const [abierto, setAbierto] = useState(null);
+  const qc = useQueryClient();
+
+  // al cerrar el detalle se refresca todo: el moderador pudo haber cerrado
+  // reportes o eliminado el contenido desde "Ver contenido"
+  function cerrarDetalle() {
+    setAbierto(null);
+    qc.invalidateQueries({ queryKey: ['reporte'] });
+  }
 
   const {
     data,
@@ -121,6 +133,12 @@ export default function ModeracionPage() {
               <FilaCola
                 key={`${grupo.tipo_contenido}:${grupo.contenido_id}`}
                 grupo={grupo}
+                onAbrir={() =>
+                  setAbierto({
+                    tipo: grupo.tipo_contenido,
+                    id: grupo.contenido_id,
+                  })
+                }
               />
             ))}
           </div>
@@ -138,6 +156,15 @@ export default function ModeracionPage() {
           )}
         </>
       )}
+
+      {abierto && (
+        <ReportesContenidoModal
+          tipo={abierto.tipo}
+          id={abierto.id}
+          onClose={cerrarDetalle}
+        />
+      )}
+      
     </div>
   );
 }
