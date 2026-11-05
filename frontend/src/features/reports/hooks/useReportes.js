@@ -4,7 +4,10 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
-import { listarMisReportes } from '@/shared/moderation/reports.api';
+import {
+  listarMisReportes,
+  ocultarMiReporte,
+} from '@/shared/moderation/reports.api';
 import {
   listarReportesModeracion,
   obtenerRespuestasPredeterminadas,
@@ -85,5 +88,16 @@ export function useReintentarCorreo() {
   return useMutation({
     mutationFn: (reporteId) => reintentarCorreoReporte(reporteId),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['reporte'] }),
+  });
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+// «Quitar de mi lista»: solo oculta (no borra). onSettled y no onSuccess: si
+// da 404/409 (reporte ya no es suyo o sigue pendiente) la lista se refresca
+// con el estado real.
+export function useOcultarReporte() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (reporteId) => ocultarMiReporte(reporteId),
+    onSettled: () => qc.invalidateQueries({ queryKey: ['reporte'] }),
   });
 }

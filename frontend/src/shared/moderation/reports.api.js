@@ -12,3 +12,10 @@ export async function listarMisReportes() {
   const res = await apiFetch('/reportes/me');
   return res.data;
 }
+
+export async function ocultarMiReporte(reporteId) {
+  const res = await apiFetch(`/reportes/me/${reporteId}/ocultar`, {
+    method: 'POST',
+  });
+  return res.data;
+}
