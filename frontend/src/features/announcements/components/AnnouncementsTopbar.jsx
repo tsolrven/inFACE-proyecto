@@ -1,7 +1,12 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useAuthStore } from '@/shared/auth/authStore';
+import Button from '@/shared/components/ui/Button';
 import { useAnunciosFiltrosStore } from '@/features/announcements/store/anunciosFiltrosStore';
 import { useFlairs } from '@/features/announcements/hooks/useFlairs';
 import { clasesFlair } from '@/features/announcements/utils/flairColors';
+import { puedeCrearAnuncio } from '@/features/announcements/utils/permisos';
+import AnuncioFormModal from '@/features/announcements/components/AnuncioFormModal';
 
 const ORDENES = [
   { valor: 'recientes', label: 'Recientes', icono: 'ti-clock' },
@@ -13,6 +18,11 @@ export default function AnnouncementsTopbar({ carreraId }) {
   const orden = useAnunciosFiltrosStore((s) => s.filtros.orden);
   const setFiltro = useAnunciosFiltrosStore((s) => s.setFiltro);
 
+  const usuario = useAuthStore((s) => s.usuario);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [creando, setCreando] = useState(false);
+
   const { data: flairs = [], isSuccess } = useFlairs(carreraId);
 
   // Si el flair elegido no existe en esta carrera (lo eliminaron o el filtro
@@ -22,6 +32,14 @@ export default function AnnouncementsTopbar({ carreraId }) {
       setFiltro('flair_id', null);
     }
   }, [isSuccess, flairs, flairId, setFiltro]);
+
+  // Publicado: se abre su detalle como modal sobre el feed (igual que AnuncioCard)
+  function alCrear(anuncio) {
+    setCreando(false);
+    navigate(`/anuncios-oficiales/${anuncio.id}`, {
+      state: { backgroundLocation: location },
+    });
+  }
 
   return (
     <div className='mb-3'>
@@ -42,6 +60,16 @@ export default function AnnouncementsTopbar({ carreraId }) {
             </button>
           ))}
         </div>
+
+        {puedeCrearAnuncio(usuario, carreraId) && (
+          <Button
+            variant='primary'
+            icon='ti-plus'
+            onClick={() => setCreando(true)}
+          >
+            Nuevo anuncio
+          </Button>
+        )}
       </div>
 
       {flairs.length > 0 && (
@@ -74,6 +102,14 @@ export default function AnnouncementsTopbar({ carreraId }) {
             </button>
           ))}
         </div>
+      )}
+
+      {creando && (
+        <AnuncioFormModal
+          carreraId={carreraId}
+          onClose={() => setCreando(false)}
+          onGuardado={alCrear}
+        />
       )}
     </div>
   );
