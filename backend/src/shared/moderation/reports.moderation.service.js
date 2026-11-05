@@ -108,11 +108,15 @@ async function listarReportesAgrupados({ vista, tipo, pagina, limite }) {
     const motivos = {};
     const estados = {};
     let correos_con_problema = 0;
+    let correos_enviados = 0;
     for (const r of propios) {
       motivos[r.motivo] = (motivos[r.motivo] ?? 0) + 1;
       estados[r.estado] = (estados[r.estado] ?? 0) + 1;
       if (CORREO_CON_PROBLEMA.includes(r.notificacion_estado)) {
         correos_con_problema += 1;
+      }
+      if (r.notificacion_estado === ESTADOS_NOTIFICACION.ENVIADA) {
+        correos_enviados += 1;
       }
     }
 
@@ -131,6 +135,7 @@ async function listarReportesAgrupados({ vista, tipo, pagina, limite }) {
         .sort((a, b) => b.cantidad - a.cantidad),
       estados,
       correos_con_problema,
+      correos_enviados,
       contenido_existe: existe,
       titulo: existe
         ? extracto(vivo.texto)

@@ -24,6 +24,7 @@ export default function FilaCola({ grupo, onAbrir }) {
     motivos,
     estados,
     correos_con_problema,
+    correos_enviados,
     ultimo_en,
   } = grupo;
 
@@ -98,6 +99,15 @@ export default function FilaCola({ grupo, onAbrir }) {
             title='Hay correos a reportantes sin confirmar. Revisa el detalle.'
           >
             <i className='ti ti-mail-exclamation' /> Correo sin confirmar
+          </span>
+        ) : correos_enviados > 0 ? (
+          <span className='flex items-center gap-1 text-emerald-400'>
+            <i className='ti ti-mail-check' />
+            {correos_enviados === total_reportes
+              ? total_reportes === 1
+                ? 'Correo enviado'
+                : 'Correos enviados'
+              : `Correo enviado (${correos_enviados}/${total_reportes})`}
           </span>
         ) : (
           <span />
