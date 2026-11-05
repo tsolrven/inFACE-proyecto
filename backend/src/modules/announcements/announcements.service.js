@@ -29,6 +29,7 @@ import {
   filtroPorHashtag,
   nombresDeHashtags,
 } from '../../shared/hashtags/hashtags.service.js';
+import { notificarReportesCerrados } from '../../shared/moderation/reports.notifications.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 // En las listas el contenido viaja recortado; el detalle lo trae completo.
 const EXTRACTO_MAX = 300;
@@ -264,20 +265,23 @@ async function eliminarAnuncio(id, usuario) {
     throw new ForbiddenError('No tienes permiso para eliminar este anuncio');
   }
 
-  const archivos = await prisma.$transaction(async (tx) => {
-    // el bloqueo va primero. Solo evita carreras con comentarios nuevos cuando
-    // crearComentario también bloquee el contenido (parte B6b)
-    await bloquearContenido('anuncio', id, tx);
+  const { archivos, reportes_a_notificar } = await prisma.$transaction(
+    async (tx) => {
+      // el bloqueo va primero. Solo evita carreras con comentarios nuevos cuando
+      // crearComentario también bloquee el contenido (parte B6b)
+      await bloquearContenido('anuncio', id, tx);
 
-    const { archivos } = await eliminarContenido(tx, 'anuncio', id, {
-      por_moderacion: esStaff(usuario.rol),
-      revisor_id: usuario.id,
-    });
-    await tx.anuncio.delete({ where: { id } }); // AnuncioHashtag cae por cascade
-    return archivos;
-  });
+      const resultado = await eliminarContenido(tx, 'anuncio', id, {
+        por_moderacion: esStaff(usuario.rol),
+        revisor_id: usuario.id,
+      });
+      await tx.anuncio.delete({ where: { id } }); // AnuncioHashtag cae por cascade
+      return resultado;
+    },
+  );
 
-  // después del commit: si el disco falla, la BD ya quedó consistente
+  // después del commit: ni el correo ni el disco pueden revertir el borrado
+  notificarReportesCerrados(reportes_a_notificar);
   await borrarArchivosFisicos(archivos);
 
   logger.info('Anuncio eliminado', {

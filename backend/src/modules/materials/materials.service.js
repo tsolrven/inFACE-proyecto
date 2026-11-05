@@ -26,6 +26,7 @@ import {
   filtroPorHashtag,
   nombresDeHashtags,
 } from '../../shared/hashtags/hashtags.service.js';
+import { notificarReportesCerrados } from '../../shared/moderation/reports.notifications.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 // relaciones que siempre se piden junto con un apunte
 const INCLUDE_APUNTE = {
@@ -319,16 +320,19 @@ async function eliminarApunte(id, usuario_id, rol) {
     throw new ForbiddenError('No tienes permiso para eliminar este apunte');
   }
 
-  const archivos = await prisma.$transaction(async (tx) => {
-    const { archivos } = await eliminarContenido(tx, 'apunte', id, {
-      por_moderacion: esStaff(rol),
-      revisor_id: usuario_id,
-    });
-    await tx.apunte.delete({ where: { id } });
-    return archivos;
-  });
+  const { archivos, reportes_a_notificar } = await prisma.$transaction(
+    async (tx) => {
+      const resultado = await eliminarContenido(tx, 'apunte', id, {
+        por_moderacion: esStaff(rol),
+        revisor_id: usuario_id,
+      });
+      await tx.apunte.delete({ where: { id } });
+      return resultado;
+    },
+  );
 
-  // después del commit: si el disco falla, la BD ya quedó consistente
+  // después del commit: ni el correo ni el disco pueden revertir el borrado
+  notificarReportesCerrados(reportes_a_notificar);
   await borrarArchivosFisicos(archivos);
 
   logger.info('Apunte eliminado', { apunte_id: id, eliminado_por: usuario_id });

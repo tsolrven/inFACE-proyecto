@@ -26,6 +26,7 @@ import {
   filtroPorHashtag,
   nombresDeHashtags,
 } from '../../shared/hashtags/hashtags.service.js';
+import { notificarReportesCerrados } from '../../shared/moderation/reports.notifications.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 // En las listas el contenido viaja recortado (hasta 20 hilos x 10000 caracteres
 // pesarían demasiado); el detalle lo trae completo.
@@ -209,16 +210,19 @@ async function eliminarHilo(id, usuario_id, rol) {
     throw new ForbiddenError('No tienes permiso para eliminar este hilo');
   }
 
-  const archivos = await prisma.$transaction(async (tx) => {
-    const { archivos } = await eliminarContenido(tx, 'hilo', id, {
-      por_moderacion: esStaff(rol),
-      revisor_id: usuario_id,
-    });
-    await tx.hilo.delete({ where: { id } }); // HiloHashtag cae por cascade
-    return archivos;
-  });
+  const { archivos, reportes_a_notificar } = await prisma.$transaction(
+    async (tx) => {
+      const resultado = await eliminarContenido(tx, 'hilo', id, {
+        por_moderacion: esStaff(rol),
+        revisor_id: usuario_id,
+      });
+      await tx.hilo.delete({ where: { id } }); // HiloHashtag cae por cascade
+      return resultado;
+    },
+  );
 
-  // después del commit: si el disco falla, la BD ya quedó consistente
+  // después del commit: ni el correo ni el disco pueden revertir el borrado
+  notificarReportesCerrados(reportes_a_notificar);
   await borrarArchivosFisicos(archivos);
 
   logger.info('Hilo eliminado', { hilo_id: id, eliminado_por: usuario_id });
