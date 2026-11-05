@@ -5,7 +5,11 @@ import { useCentinela } from '@/shared/hooks/useCentinela';
 import AnnouncementsTopbar from '@/features/announcements/components/AnnouncementsTopbar';
 import AnuncioCard from '@/features/announcements/components/AnuncioCard';
 
-export default function AnnouncementsFeed({ carreraId, hashtag = null }) {
+export default function AnnouncementsFeed({
+  carreraId,
+  hashtag = null,
+  permitirCrear = true,
+}) {
   const flairId = useAnunciosFiltrosStore((s) => s.filtros.flair_id);
   const orden = useAnunciosFiltrosStore((s) => s.filtros.orden);
 
@@ -52,7 +56,10 @@ export default function AnnouncementsFeed({ carreraId, hashtag = null }) {
   return (
     <div className='flex-1 overflow-y-auto p-4'>
       <div className='mx-auto w-full max-w-[720px]'>
-        <AnnouncementsTopbar carreraId={carreraId} />
+        <AnnouncementsTopbar
+          carreraId={carreraId}
+          permitirCrear={permitirCrear}
+        />
 
         {error && (
           <div className='mb-3 rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2 text-[12.5px] text-red-400'>

@@ -3,13 +3,25 @@ import PageBanner from '@/shared/components/layout/PageBanner';
 import Pestanas from '@/shared/components/ui/Pestanas';
 import { MaterialFeed } from '@/features/materials';
 import { ForumFeed } from '@/features/forum';
+import { AnnouncementsFeed } from '@/features/announcements';
 import { useAuthStore } from '@/shared/auth/authStore';
 import { normalizarHashtag, rutaHashtag } from '@/shared/lib/hashtags';
 
 const PESTANAS = [
   { id: 'materiales', label: 'Materiales', icono: 'ti-books' },
   { id: 'foro', label: 'Foro', icono: 'ti-message-circle-2' },
+  { id: 'anuncios', label: 'Anuncios', icono: 'ti-speakerphone' },
 ];
+
+// Módulo al que pertenece cada pestaña (para el breadcrumb)
+const MODULOS = {
+  materiales: {
+    label: 'Repositorio de materiales',
+    to: '/repositorio-materiales',
+  },
+  foro: { label: 'Foro por ramos', to: '/foro-por-ramos' },
+  anuncios: { label: 'Anuncios oficiales', to: '/anuncios-oficiales' },
+};
 
 export default function HashtagPage() {
   const { nombre = '' } = useParams();
@@ -19,12 +31,10 @@ export default function HashtagPage() {
   const carreraNombre = usuario?.carreras?.[0]?.nombre ?? 'tu carrera';
 
   const hashtag = normalizarHashtag(nombre);
-  const pestana = params.get('pestana') === 'foro' ? 'foro' : 'materiales';
-
-  const modulo =
-    pestana === 'foro'
-      ? { label: 'Foro por ramos', to: '/foro-por-ramos' }
-      : { label: 'Repositorio de materiales', to: '/repositorio-materiales' };
+  // una pestaña desconocida (?pestana=xyz) cae en Materiales
+  const pedida = params.get('pestana');
+  const pestana = PESTANAS.some((p) => p.id === pedida) ? pedida : 'materiales';
+  const modulo = MODULOS[pestana];
 
   // /hashtag/Cálculo -> /hashtag/calculo (la misma forma que guarda el backend)
   if (!hashtag)
@@ -67,13 +77,21 @@ export default function HashtagPage() {
         onCambiar={cambiarPestana}
       />
 
-      {pestana === 'materiales' ? (
+      {pestana === 'materiales' && (
         <MaterialFeed
           carreraId={carreraId}
           hashtag={hashtag}
         />
-      ) : (
+      )}
+      {pestana === 'foro' && (
         <ForumFeed
+          carreraId={carreraId}
+          hashtag={hashtag}
+          permitirCrear={false}
+        />
+      )}
+      {pestana === 'anuncios' && (
+        <AnnouncementsFeed
           carreraId={carreraId}
           hashtag={hashtag}
           permitirCrear={false}

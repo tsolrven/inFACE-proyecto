@@ -17,7 +17,10 @@ const ORDENES = [
   { valor: 'populares', label: 'Más votados', icono: 'ti-flame' },
 ];
 
-export default function AnnouncementsTopbar({ carreraId }) {
+export default function AnnouncementsTopbar({
+  carreraId,
+  permitirCrear = true,
+}) {
   const flairId = useAnunciosFiltrosStore((s) => s.filtros.flair_id);
   const orden = useAnunciosFiltrosStore((s) => s.filtros.orden);
   const setFiltro = useAnunciosFiltrosStore((s) => s.setFiltro);
@@ -66,7 +69,7 @@ export default function AnnouncementsTopbar({ carreraId }) {
           ))}
         </div>
 
-        {puedeCrearAnuncio(usuario, carreraId) && (
+        {permitirCrear && puedeCrearAnuncio(usuario, carreraId) && (
           <Button
             variant='primary'
             icon='ti-plus'
@@ -76,7 +79,7 @@ export default function AnnouncementsTopbar({ carreraId }) {
           </Button>
         )}
 
-        {puedeEliminarFlair(usuario, carreraId) && (
+        {permitirCrear && puedeEliminarFlair(usuario, carreraId) && (
           <Button
             variant='secondary'
             icon='ti-tags'
