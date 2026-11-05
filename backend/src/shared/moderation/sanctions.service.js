@@ -135,7 +135,12 @@ async function crearSancion({
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 // Solo se revoca lo que sigue en pie: no revocada y sin haber vencido.
-async function revocarSancion({ sancion_id, revocada_por, motivo_revocacion }) {
+async function revocarSancion({
+  usuario_id,
+  sancion_id,
+  revocada_por,
+  motivo_revocacion,
+}) {
   const ahora = new Date();
   const texto = motivo_revocacion?.trim()
     ? limpiarTexto(motivo_revocacion, 'El motivo de revocación')
@@ -144,6 +149,7 @@ async function revocarSancion({ sancion_id, revocada_por, motivo_revocacion }) {
   const { count } = await prisma.sancion.updateMany({
     where: {
       id: sancion_id,
+      usuario_id,
       usuario: { anonimizado_en: null },
       ...filtroVigente(ahora),
     },
@@ -155,8 +161,8 @@ async function revocarSancion({ sancion_id, revocada_por, motivo_revocacion }) {
   });
 
   if (count === 0) {
-    const existente = await prisma.sancion.findUnique({
-      where: { id: sancion_id },
+    const existente = await prisma.sancion.findFirst({
+      where: { id: sancion_id, usuario_id },
       select: { usuario: { select: { anonimizado_en: true } } },
     });
     if (!existente) throw new NotFoundError('Sanción');
