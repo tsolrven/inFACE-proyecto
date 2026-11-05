@@ -72,7 +72,7 @@ async function crearReporte({
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function listarReportesPropios(usuario_id) {
   const reportes = await prisma.reporte.findMany({
-    where: { reportado_por: usuario_id },
+    where: { reportado_por: usuario_id, oculto_por_reportante: false },
     orderBy: { creado_en: 'desc' },
   });
 
