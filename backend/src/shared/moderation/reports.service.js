@@ -1,5 +1,10 @@
 import { prisma } from '../../config/configDb.js';
-import { BadRequestError, ConflictError } from '../../errors/appError.js';
+import {
+  BadRequestError,
+  ConflictError,
+  NotFoundError,
+} from '../../errors/appError.js';
+import { ESTADOS_REPORTE } from './reports.constants.js';
 import {
   verificarContenidoExiste,
   obtenerPropietarioContenido,
@@ -104,4 +109,29 @@ async function listarReportesPropios(usuario_id) {
   });
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-export { crearReporte, listarReportesPropios };
+// «Quitar de mi lista»: solo marca el reporte; nunca se borra. Únicamente los
+// cerrados (un reporte cerrado no vuelve a pendiente, así que no hay carrera).
+// Idempotente: repetirlo no falla.
+async function ocultarReportePropio({ usuario_id, reporte_id }) {
+  const { count } = await prisma.reporte.updateMany({
+    where: {
+      id: reporte_id,
+      reportado_por: usuario_id,
+      estado: { not: ESTADOS_REPORTE.PENDIENTE },
+    },
+    data: { oculto_por_reportante: true },
+  });
+  if (count > 0) return { mensaje: 'Reporte quitado de tu lista' };
+
+  // no se actualizó nada: o no es suyo / no existe, o sigue pendiente
+  const propio = await prisma.reporte.findFirst({
+    where: { id: reporte_id, reportado_por: usuario_id },
+    select: { id: true },
+  });
+  if (!propio) throw new NotFoundError('Reporte');
+  throw new ConflictError(
+    'Solo puedes quitar reportes que ya fueron cerrados',
+  );
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+export { crearReporte, listarReportesPropios, ocultarReportePropio };

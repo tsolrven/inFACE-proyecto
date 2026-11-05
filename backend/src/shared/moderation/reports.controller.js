@@ -1,4 +1,8 @@
-import { crearReporte, listarReportesPropios } from './reports.service.js';
+import {
+  crearReporte,
+  listarReportesPropios,
+  ocultarReportePropio,
+} from './reports.service.js';
 import ApiResponse from '../../utils/apiResponse.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function reportarContenido(req, res, next) {
@@ -29,4 +33,16 @@ async function listarMisReportes(req, res, next) {
   }
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-export { reportarContenido, listarMisReportes };
+async function ocultarMiReporte(req, res, next) {
+  try {
+    const resultado = await ocultarReportePropio({
+      usuario_id: req.usuario.id,
+      reporte_id: req.params.id,
+    });
+    return ApiResponse.success(res, resultado);
+  } catch (err) {
+    next(err);
+  }
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+export { reportarContenido, listarMisReportes, ocultarMiReporte };

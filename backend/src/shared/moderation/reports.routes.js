@@ -1,5 +1,9 @@
 import express from 'express';
-import { reportarContenido, listarMisReportes } from './reports.controller.js';
+import {
+  reportarContenido,
+  listarMisReportes,
+  ocultarMiReporte,
+} from './reports.controller.js';
 import {
   respuestasPredeterminadas,
   listarParaModeracion,
@@ -32,6 +36,13 @@ const router = express.Router();
 const soloSuperadmin = [autenticar, autorizar(ROLES.SUPERADMIN)];
 
 router.get('/me', autenticar, listarMisReportes);
+
+router.post(
+  '/me/:id/ocultar',
+  autenticar,
+  validate(idParamSchema, 'params'),
+  ocultarMiReporte,
+);
 
 // ── moderación (solo superadmin). Antes de /:tipo/:id para que no se confundan.
 router.get(
