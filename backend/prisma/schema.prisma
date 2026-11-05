@@ -625,6 +625,8 @@ model Reporte {
 
   // Copia mínima del contenido, tomada al eliminarlo (sin cuerpo ni archivos)
   contenido_snapshot Json?
+  contenido_autor_id    String?
+  oculto_por_reportante Boolean @default(false)
 
   reportador Usuario  @relation("ReporteCreadoPor", fields: [reportado_por], references: [id])
   revisor    Usuario? @relation("ReporteRevisadoPor", fields: [revisado_por], references: [id])
@@ -632,6 +634,7 @@ model Reporte {
   @@index([tipo_contenido, contenido_id])
   @@index([estado, notificacion_estado])
   @@index([reportado_por])
+  @@index([contenido_autor_id])
   @@map("reportes")
 }
 

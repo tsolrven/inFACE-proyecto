@@ -53,6 +53,7 @@ async function crearReporte({
       reportado_por: usuario_id,
       tipo_contenido,
       contenido_id,
+      contenido_autor_id: autor_id,
       motivo,
       detalle: construirDetalle({ objetivo, detalle }),
     },
