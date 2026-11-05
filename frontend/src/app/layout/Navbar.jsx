@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/shared/auth/authStore';
 import { useUiStore } from '@/shared/stores/uiStore';
+import NotificationBell from '@/shared/notifications/NotificationBell';
 
 function getInitials(nombreUsuario) {
   if (!nombreUsuario) return '?';
@@ -63,13 +64,7 @@ export default function Navbar() {
       </div>
 
       <div className='ml-auto flex flex-shrink-0 items-center gap-2'>
-        <button
-          type='button'
-          title='Notificaciones'
-          className='flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-[10px] border border-white/[0.07] bg-[#1E1E24] text-neutral-400 transition-colors hover:text-neutral-100'
-        >
-          <i className='ti ti-bell text-base' />
-        </button>
+        <NotificationBell />
 
         <div
           className='relative'
@@ -117,6 +112,10 @@ export default function Navbar() {
               <DropdownItem
                 icon='ti-settings'
                 label='Ajustes'
+                onClick={() => {
+                  setDropdownOpen(false);
+                  navigate('/ajustes');
+                }}
               />
               <button
                 type='button'

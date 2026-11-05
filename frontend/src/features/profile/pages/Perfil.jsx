@@ -317,8 +317,6 @@ export default function Perfil() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MODAL: EDITAR DATOS BÁSICOS DEL PERFIL
-// Solo nombre de usuario y biografía son editables. El nombre completo queda
-// fijo desde el registro (se validó contra el correo institucional).
 // ─────────────────────────────────────────────────────────────────────────────
 
 function EditarPerfilModal({ perfil, onClose, onGuardado }) {

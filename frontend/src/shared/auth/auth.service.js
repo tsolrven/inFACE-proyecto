@@ -1,4 +1,4 @@
-//! endpoints de autenticación (la mecánica de red y de token vive en api.js)
+
 import {
   apiFetch,
   setAccessToken,
@@ -50,7 +50,6 @@ export async function obtenerPerfilActual() {
   return data.data;
 }
 
-// para usuarios que ya existían o cuando cambia la versión de los términos
 export async function aceptarTerminos({
   acepta_terminos,
   acepta_investigacion,
@@ -60,4 +59,20 @@ export async function aceptarTerminos({
     body: { acepta_terminos, acepta_investigacion },
   });
   return data.data;
+}
+
+export function solicitarRecuperacion(correo) {
+  return apiFetch('/auth/olvide-contrasena', {
+    method: 'POST',
+    auth: false,
+    body: { correo },
+  });
+}
+
+export function restablecerContrasena(token, nueva) {
+  return apiFetch('/auth/restablecer-contrasena', {
+    method: 'POST',
+    auth: false,
+    body: { token, nueva },
+  });
 }

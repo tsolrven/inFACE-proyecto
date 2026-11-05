@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Modal, { ModalHeader, ModalBody } from '@/shared/components/ui/Modal';
 import EtiquetasPicker from '@/shared/components/EtiquetasPicker';
+import ErrorModal from './ErrorModal';
 
 const MODALIDAD_COLORES = {
   presencial: 'border-sky-400/25 bg-sky-400/10 text-sky-400',
@@ -19,7 +20,12 @@ function toInputDate(fecha) {
   return new Date(fecha).toISOString().slice(0, 10);
 }
 
-export default function ProyectoFormModal({ proyecto, onClose, onSubmit }) {
+export default function ProyectoFormModal({
+  proyecto,
+  onClose,
+  onSubmit,
+  onEntregables,
+}) {
   const esEdicion = Boolean(proyecto);
 
   const [form, setForm] = useState({
@@ -73,10 +79,10 @@ export default function ProyectoFormModal({ proyecto, onClose, onSubmit }) {
     }
 
     if (!esEdicion && form.fecha_inicio) {
-      const hoyStr = new Date().toLocaleDateString('en-CA'); // 'YYYY-MM-DD' en hora local, comparable como texto
+      const hoyStr = new Date().toLocaleDateString('en-CA');
       if (form.fecha_inicio <= hoyStr) {
         errs.push(
-          'La fecha de inicio no puede ser hoy: elige una fecha futura para tu proyecto',
+          'La fecha de inicio no puede ser hoy ni una fecha pasada: elige una fecha futura para tu proyecto',
         );
       }
     }
@@ -128,15 +134,6 @@ export default function ProyectoFormModal({ proyecto, onClose, onSubmit }) {
           onSubmit={handleSubmit}
           className='flex flex-col gap-4'
         >
-          {errores.length > 0 && (
-            <div className='rounded-[10px] border border-red-500/30 bg-red-500/10 px-4 py-3 text-[12.5px] text-red-400'>
-              <ul className='list-disc space-y-0.5 pl-4'>
-                {errores.map((e, i) => (
-                  <li key={i}>{e}</li>
-                ))}
-              </ul>
-            </div>
-          )}
 
           <div>
             <label className='mb-1.5 block text-[11px] font-medium text-neutral-500'>
@@ -183,11 +180,10 @@ export default function ProyectoFormModal({ proyecto, onClose, onSubmit }) {
                   onClick={() =>
                     setForm((f) => ({ ...f, modalidad_proyecto: m.value }))
                   }
-                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-medium transition ${
-                    form.modalidad_proyecto === m.value
-                      ? MODALIDAD_COLORES[m.value]
-                      : 'border-white/[0.07] text-neutral-400 hover:text-neutral-100'
-                  }`}
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-medium transition ${form.modalidad_proyecto === m.value
+                    ? MODALIDAD_COLORES[m.value]
+                    : 'border-white/[0.07] text-neutral-400 hover:text-neutral-100'
+                    }`}
                 >
                   <i className={`ti ${m.icon} text-[13px]`} />
                   {m.label}
@@ -259,6 +255,28 @@ export default function ProyectoFormModal({ proyecto, onClose, onSubmit }) {
             </div>
           </div>
 
+          {esEdicion && proyecto.estado === 'cerrado' && onEntregables && (
+            <button
+              type='button'
+              onClick={onEntregables}
+              className='group flex w-full items-center gap-3 rounded-xl border border-pink-500/30 bg-gradient-to-r from-pink-500/[0.12] via-pink-500/[0.05] to-transparent px-3.5 py-3 text-left transition hover:border-pink-500/50'
+            >
+              <div className='flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[11px] bg-pink-500/15 text-pink-400'>
+                <i className='ti ti-trophy text-[20px]' />
+              </div>
+              <div className='min-w-0 flex-1'>
+                <div className='text-[13px] font-bold text-neutral-100'>
+                  Trabajo final
+                </div>
+                <div className='text-[11.5px] leading-relaxed text-neutral-400'>
+                  Añade o cambia el informe (PDF), video de YouTube, GitHub y
+                  LinkedIn.
+                </div>
+              </div>
+              <i className='ti ti-arrow-right text-[17px] text-pink-400 transition group-hover:translate-x-0.5' />
+            </button>
+          )}
+
           <div className='mt-2 flex justify-end gap-2 border-t border-white/[0.07] pt-4'>
             <button
               type='button'
@@ -281,6 +299,10 @@ export default function ProyectoFormModal({ proyecto, onClose, onSubmit }) {
           </div>
         </form>
       </ModalBody>
+      <ErrorModal
+        errores={errores}
+        onClose={() => setErrores([])}
+      />
     </Modal>
   );
 }

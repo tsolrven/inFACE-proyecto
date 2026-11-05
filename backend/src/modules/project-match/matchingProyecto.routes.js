@@ -4,6 +4,7 @@ import {
   listar,
   obtenerUno,
   actualizar,
+  guardarEntregablesProyecto,
   eliminar,
   postular,
   listarMisProyectos,
@@ -24,6 +25,7 @@ import {
 } from './matchingProyecto.controller.js';
 import { autenticar, autorizar } from '../../middlewares/auth.middleware.js';
 import { verificarCreador } from './matchingProyecto.middleware.js';
+import { validarEntregables } from './matchingProyecto.validation.js';
 
 const router = express.Router();
 
@@ -46,6 +48,13 @@ router.get('/:id', autenticar, obtenerUno); // GET  /api/proyecto/:id
 
 router.put('/:id', autenticar, verificarCreador, actualizar); // PUT  /api/proyecto/:id
 router.delete('/:id', autenticar, verificarCreador, eliminar); // DEL  /api/proyecto/:id
+router.put(
+  '/:id/entregables',
+  autenticar,
+  verificarCreador,
+  validarEntregables,
+  guardarEntregablesProyecto,
+); // PUT  /api/proyecto/:id/entregables 
 
 //──────────────────────────────────────────────────────────────────────────────
 // POSTULACIONES

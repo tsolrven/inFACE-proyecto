@@ -21,6 +21,22 @@ const loginLimiter = rateLimit({
   },
 });
 
+// recuperación de contraseña: evita que usen el formulario para llenar de correos a alguien
+const recuperacionLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hora
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: {
+      code: 'TOO_MANY_REQUESTS',
+      message:
+        'Demasiadas solicitudes de recuperación. Intenta de nuevo en una hora.',
+    },
+  },
+});
+
 // límite más permisivo para registro
 const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hora
@@ -85,6 +101,7 @@ const reporteLimiter = crearLimiterPorUsuario({
 
 export {
   loginLimiter,
+  recuperacionLimiter,
   registerLimiter,
   interaccionLimiter,
   publicacionLimiter,

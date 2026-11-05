@@ -72,6 +72,17 @@ export async function actualizarProyecto(id, payload) {
   return data.data;
 }
 
+export async function guardarEntregables(
+  id,
+  { video_url, github_url, linkedin_url },
+) {
+  const data = await request(`/proyecto/${id}/entregables`, {
+    method: 'PUT',
+    body: { video_url, github_url, linkedin_url },
+  });
+  return data.data;
+}
+
 export async function eliminarProyecto(id) {
   const data = await request(`/proyecto/${id}`, { method: 'DELETE' });
   return data.mensaje;

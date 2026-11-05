@@ -2,10 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import armadillo from '@/assets/armadillo.png';
 
-/*
- * Envuelve una sección para que aparezca suavemente al entrar en el viewport.
- * Sin librerías externas: un IntersectionObserver + clases de Tailwind.
- */
 function Reveal({ children, className = '' }) {
   const ref = useRef(null);
   const [visible, setVisible] = useState(false);
@@ -30,19 +26,14 @@ function Reveal({ children, className = '' }) {
   return (
     <div
       ref={ref}
-      className={`transition-all duration-500 motion-reduce:transition-none motion-reduce:transform-none ${
-        visible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
-      } ${className}`}
+      className={`transition-all duration-500 motion-reduce:transition-none motion-reduce:transform-none ${visible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
+        } ${className}`}
     >
       {children}
     </div>
   );
 }
 
-/*
- * Flecha gorda para los botones de "Crear cuenta".
- * SVG propio (no icon-font) para poder controlar el grosor del trazo.
- */
 function ArrowRight({ className = 'h-4 w-4' }) {
   return (
     <svg
@@ -62,20 +53,158 @@ function ArrowRight({ className = 'h-4 w-4' }) {
   );
 }
 
-/*
- * Cajón de imagen provisorio: borde punteado + ícono + instrucción de reemplazo.
- * Cuando tengas el asset final, reemplaza el <div className="img-slot"> por:
- *   <img src="/ruta-del-archivo.png" alt="..." className="..." />
- */
-function ImgSlot({ icon, label, hint, className = '' }) {
+const FACETAS = [
+  {
+    icon: 'ti-school',
+    label: 'Académico',
+    angulo: 0,
+    clase: 'border-indigo-400/40 bg-indigo-500/15 text-indigo-300',
+  },
+  {
+    icon: 'ti-palette',
+    label: 'Artístico',
+    angulo: 120,
+    clase: 'border-pink-400/40 bg-pink-500/15 text-pink-300',
+  },
+  {
+    icon: 'ti-rocket',
+    label: 'Emprendedor',
+    angulo: 240,
+    clase: 'border-amber-400/40 bg-amber-500/15 text-amber-300',
+  },
+];
+
+function PerfilOrbita() {
   return (
     <div
-      className={`flex flex-col items-center justify-center gap-2 border-[1.5px] border-dashed border-white/[0.16] bg-white/[0.02] text-center text-white/30 ${className}`}
+      className='relative aspect-[4/3] w-full overflow-hidden rounded-2xl border border-white/[0.08] bg-[#121216]'
+      role='img'
+      aria-label='Ilustración: tu perfil en el centro, rodeado de tus facetas académica, artística y emprendedora'
     >
-      <i className={`ti ${icon}`} />
-      <div className='text-[12px] font-medium leading-relaxed'>
-        {label}
-        {hint && <div className='text-[11px]'>{hint}</div>}
+      <style>{`
+        @keyframes lp-orbit { to { transform: rotate(360deg); } }
+        @keyframes lp-counter {
+          from { transform: rotate(calc(var(--a) * -1)); }
+          to { transform: rotate(calc(var(--a) * -1 - 360deg)); }
+        }
+        @keyframes lp-float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-9px); }
+        }
+        @keyframes lp-ring {
+          0% { transform: scale(.85); opacity: .55; }
+          100% { transform: scale(1.7); opacity: 0; }
+        }
+        @keyframes lp-toast {
+          0%, 8% { opacity: 0; transform: translateY(14px) scale(.96); }
+          16%, 62% { opacity: 1; transform: translateY(0) scale(1); }
+          72%, 100% { opacity: 0; transform: translateY(-8px) scale(.98); }
+        }
+        .lp-orbit { animation: lp-orbit 32s linear infinite; }
+        .lp-counter { animation: lp-counter 32s linear infinite; }
+        .lp-float { animation: lp-float 5s ease-in-out infinite; }
+        .lp-ring { animation: lp-ring 3.2s ease-out infinite; }
+        .lp-toast { animation: lp-toast 9s ease-in-out infinite; }
+        @media (prefers-reduced-motion: reduce) {
+          .lp-orbit, .lp-counter, .lp-float, .lp-ring, .lp-toast { animation: none; }
+          .lp-toast { opacity: 1; }
+        }
+      `}</style>
+
+      {/* fondo: puntos + resplandores */}
+      <div
+        className='pointer-events-none absolute inset-0'
+        style={{
+          backgroundImage:
+            'radial-gradient(circle at 50% 50%, rgba(232,84,106,.16) 0%, transparent 52%), radial-gradient(circle at 92% 8%, rgba(99,102,241,.16) 0%, transparent 40%), radial-gradient(rgba(255,255,255,.07) 1px, transparent 1px)',
+          backgroundSize: 'auto, auto, 22px 22px',
+        }}
+      />
+
+      {/* órbita */}
+      <div className='absolute inset-0 flex items-center justify-center'>
+        <div className='relative aspect-square h-[74%]'>
+          <div className='absolute inset-0 rounded-full border border-dashed border-white/[0.14]' />
+          <div className='absolute inset-[17%] rounded-full border border-white/[0.06]' />
+
+          <div className='lp-orbit absolute inset-0'>
+            {FACETAS.map((f) => (
+              <div
+                key={f.label}
+                className='absolute inset-0'
+                style={{ transform: `rotate(${f.angulo}deg)` }}
+              >
+                <div
+                  className='lp-counter absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2'
+                  style={{ '--a': `${f.angulo}deg` }}
+                >
+                  <div className='flex flex-col items-center gap-1'>
+                    <div
+                      className={`flex h-11 w-11 items-center justify-center rounded-full border shadow-lg backdrop-blur-sm sm:h-12 sm:w-12 ${f.clase}`}
+                    >
+                      <i className={`ti ${f.icon} text-[20px]`} />
+                    </div>
+                    <span className='rounded-full bg-black/50 px-2 py-0.5 text-[9.5px] font-semibold text-neutral-300'>
+                      {f.label}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* perfil al centro */}
+          <div className='absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2'>
+            <div className='relative flex flex-col items-center'>
+              <span className='lp-ring absolute top-0 h-16 w-16 rounded-full border border-pink-400/50' />
+              <span
+                className='lp-ring absolute top-0 h-16 w-16 rounded-full border border-pink-400/40'
+                style={{ animationDelay: '1.6s' }}
+              />
+              <div className='relative flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-pink-500 to-indigo-500 shadow-[0_0_32px_rgba(232,84,106,.45)]'>
+                <i className='ti ti-user text-[28px] text-white' />
+              </div>
+              <div className='mt-2 text-[12.5px] font-bold text-neutral-100'>
+                Tu perfil
+              </div>
+              <div className='text-[10px] text-neutral-500'>
+                Intereses editables
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* intereses flotando */}
+      <span className='lp-float absolute left-[4%] top-[8%] rounded-full border border-indigo-400/30 bg-indigo-500/10 px-2.5 py-1 text-[10.5px] font-semibold text-indigo-300'>
+        # Desarrollo Web
+      </span>
+      <span
+        className='lp-float absolute right-[4%] top-[8%] hidden rounded-full border border-pink-400/30 bg-pink-500/10 px-2.5 py-1 text-[10.5px] font-semibold text-pink-300 sm:inline-block'
+        style={{ animationDelay: '1.4s' }}
+      >
+        # Design Thinking
+      </span>
+      <span
+        className='lp-float absolute bottom-[8%] left-[4%] hidden rounded-full border border-emerald-400/30 bg-emerald-500/10 px-2.5 py-1 text-[10.5px] font-semibold text-emerald-300 sm:inline-block'
+        style={{ animationDelay: '2.6s' }}
+      >
+        # Sustentabilidad
+      </span>
+
+      {/* aviso de match */}
+      <div className='lp-toast absolute bottom-[6%] right-[5%] flex items-center gap-2.5 rounded-xl border border-white/10 bg-[#1E1E24]/95 px-3 py-2 shadow-xl backdrop-blur'>
+        <div className='flex h-8 w-8 items-center justify-center rounded-lg bg-pink-500/15 text-pink-400'>
+          <i className='ti ti-flame text-[17px]' />
+        </div>
+        <div>
+          <div className='text-[11.5px] font-bold text-neutral-100'>
+            ¡Nuevo match!
+          </div>
+          <div className='text-[10px] text-neutral-500'>
+            Proyecto afín a tus intereses
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -103,8 +232,6 @@ function BadgePorImplementar() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PALETA DE COLORES POR MÓDULO/TECNOLOGÍA
-// Cada ítem desarrollado tiene un color distinto; los "por implementar"
-// se quedan siempre en gris neutro (no reciben color propio).
 // ─────────────────────────────────────────────────────────────────────────────
 
 const COLOR_CLASSES = {
@@ -219,29 +346,25 @@ const MODULOS = [
   },
 ];
 
-const TECNOLOGIA = [
+const MIS_INTERESES = [
+  'React',
+  'Machine Learning',
+  'Diseño UX',
+  'Emprendimiento',
+];
+
+const PROYECTOS_EJEMPLO = [
   {
-    icon: 'ti-search',
-    titulo: 'Búsqueda semántica',
-    texto:
-      'Encuentra contenido describiendo lo que necesitas, no adivinando la palabra exacta.',
-    color: 'indigo',
+    nombre: 'App de gestión para pymes',
+    etiquetas: ['React', 'Emprendimiento'],
+    afinidad: 92,
   },
   {
-    icon: 'ti-shield-lock',
-    titulo: 'Moderación automática',
-    texto:
-      'Contenido inapropiado y nombres de usuario ofensivos se filtran antes de publicarse.',
-    color: 'cyan',
+    nombre: 'Predicción de deserción',
+    etiquetas: ['Machine Learning'],
+    afinidad: 78,
   },
-  {
-    icon: 'ti-heart-handshake',
-    titulo: 'Recomendación por etiquetas',
-    texto:
-      'Cada proyecto y contenido se compara con tus intereses para sugerirte lo más afín.',
-    color: 'pink',
-    destacado: true,
-  },
+  { nombre: 'Feria de ciencias FACE', etiquetas: ['Eventos'], afinidad: 31 },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -316,17 +439,7 @@ export default function Landing() {
 
         <div className='relative mx-auto grid max-w-6xl grid-cols-1 items-center gap-14 px-5 pb-20 pt-16 md:pb-24 md:pt-20 lg:grid-cols-2'>
           <Reveal>
-            <span
-              className='inline-flex items-center gap-1.5 rounded-full border border-white/[0.09] bg-white/[0.03] px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-indigo-400'
-              style={{
-                fontFamily: "'Sora', ui-sans-serif, system-ui, sans-serif",
-              }}
-            >
-              <i className='ti ti-building-bank text-[13px]' /> Universidad del
-              Bío-Bío
-            </span>
-
-            <h1 className='mt-5 text-[36px] font-bold leading-[1.12] tracking-tight text-neutral-50 md:text-[46px]'>
+            <h1 className='text-[36px] font-bold leading-[1.12] tracking-tight text-neutral-50 md:text-[46px]'>
               La comunidad de tu facultad, ahora en un solo lugar.
             </h1>
 
@@ -334,7 +447,7 @@ export default function Landing() {
               Apuntes, dudas de ramos, anuncios oficiales, equipos de proyecto,
               expresiones artísticas y compraventa entre estudiantes. Todo
               centralizado, verificado con tu correo institucional y pensado
-              para las 5 carreras de la FACE.
+              para las 5 carreras de la Facultad de Ciencias Empresariales en la Universidad del Bío-Bío.
             </p>
 
             <div className='mt-8 flex flex-wrap items-center gap-3'>
@@ -379,14 +492,19 @@ export default function Landing() {
             { valor: '5', label: 'Carreras de la FACE' },
             { valor: '6', label: 'Módulos integrados' },
             { valor: '100%', label: 'Comunidad verificada', pink: true },
-            { valor: 'IA', label: 'Búsqueda y recomendación' },
+            {
+              valor: 'Machine Learning',
+              label: 'Búsqueda y recomendación',
+              largo: true,
+            },
           ].map((s) => (
             <Reveal
               key={s.label}
               className='px-6 py-8 text-center'
             >
               <div
-                className={`text-[26px] font-bold ${s.pink ? 'text-pink-500' : 'text-neutral-50'}`}
+                className={`flex min-h-[34px] items-center justify-center font-bold leading-tight ${s.largo ? 'text-[19px] md:text-[22px]' : 'text-[26px]'
+                  } ${s.pink ? 'text-pink-500' : 'text-neutral-50'}`}
               >
                 {s.valor}
               </div>
@@ -404,7 +522,8 @@ export default function Landing() {
         className='mx-auto max-w-6xl px-5 py-24'
       >
         <Reveal className='mb-14 max-w-xl'>
-          <span className='font-mono text-[10.5px] uppercase tracking-widest text-indigo-400'>
+          <span className='inline-flex items-center gap-2.5 text-[13px] font-semibold tracking-tight text-pink-400'>
+            <span className='h-px w-7 bg-gradient-to-r from-pink-500 to-transparent' />
             Cómo funciona
           </span>
           <h2 className='mt-3 text-[30px] font-bold tracking-tight text-neutral-50 md:text-[34px]'>
@@ -454,7 +573,8 @@ export default function Landing() {
         className='mx-auto max-w-6xl px-5 py-24'
       >
         <Reveal className='mb-14 max-w-xl'>
-          <span className='font-mono text-[10.5px] uppercase tracking-widest text-indigo-400'>
+          <span className='inline-flex items-center gap-2.5 text-[13px] font-semibold tracking-tight text-pink-400'>
+            <span className='h-px w-7 bg-gradient-to-r from-pink-500 to-transparent' />
             La plataforma
           </span>
           <h2 className='mt-3 text-[30px] font-bold tracking-tight text-neutral-50 md:text-[34px]'>
@@ -469,11 +589,10 @@ export default function Landing() {
             return (
               <Reveal key={m.titulo}>
                 <div
-                  className={`relative h-full overflow-hidden rounded-2xl border p-6 pt-[26px] transition ${c.border} ${c.wash} ${
-                    m.estado === 'pendiente'
-                      ? 'opacity-70 hover:opacity-100'
-                      : ''
-                  }`}
+                  className={`relative h-full overflow-hidden rounded-2xl border p-6 pt-[26px] transition ${c.border} ${c.wash} ${m.estado === 'pendiente'
+                    ? 'opacity-70 hover:opacity-100'
+                    : ''
+                    }`}
                 >
                   <div className={`absolute inset-x-0 top-0 h-1 ${c.bar}`} />
 
@@ -512,18 +631,13 @@ export default function Landing() {
       {/* ══════════════════════════ VISTA PREVIA DEL PRODUCTO ══════════════════════════ */}
       <section className='mx-auto max-w-6xl px-5 py-24'>
         <div className='grid grid-cols-1 items-center gap-14 lg:grid-cols-2'>
-          {/* SLOT CAPTURA — reemplaza por <img src="/captura-app.png" alt="Vista de InFACE" className="w-full rounded-2xl" /> */}
           <Reveal className='lg:order-2'>
-            <ImgSlot
-              icon='ti-device-desktop text-[44px]'
-              label='Espacio para captura de pantalla de la plataforma'
-              hint='(PNG/JPG, sugerido 1200×900px)'
-              className='aspect-[4/3] w-full rounded-2xl p-8'
-            />
+            <PerfilOrbita />
           </Reveal>
 
           <Reveal className='lg:order-1'>
-            <span className='font-mono text-[10.5px] uppercase tracking-widest text-indigo-400'>
+            <span className='inline-flex items-center gap-2.5 text-[13px] font-semibold tracking-tight text-pink-400'>
+              <span className='h-px w-7 bg-gradient-to-r from-pink-500 to-transparent' />
               Perfil integral
             </span>
             <h2 className='mt-3 text-[28px] font-bold tracking-tight text-neutral-50 md:text-[32px]'>
@@ -535,16 +649,22 @@ export default function Landing() {
               recibir mejores recomendaciones.
             </p>
             <ul className='mt-5 space-y-2.5 text-[13px] text-neutral-400'>
-              <li className='flex items-center gap-2'>
-                <i className='ti ti-check text-[15px] text-emerald-400' />
+              <li className='flex items-center gap-3'>
+                <span className='flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-pink-500/15 text-pink-400'>
+                  <i className='ti ti-check text-[12px]' />
+                </span>
                 Intereses editables que alimentan las recomendaciones
               </li>
-              <li className='flex items-center gap-2'>
-                <i className='ti ti-check text-[15px] text-emerald-400' />
+              <li className='flex items-center gap-3'>
+                <span className='flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-pink-500/15 text-pink-400'>
+                  <i className='ti ti-check text-[12px]' />
+                </span>
                 Historial de proyectos, apuntes y participación
               </li>
-              <li className='flex items-center gap-2'>
-                <i className='ti ti-check text-[15px] text-emerald-400' />
+              <li className='flex items-center gap-3'>
+                <span className='flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-pink-500/15 text-pink-400'>
+                  <i className='ti ti-check text-[12px]' />
+                </span>
                 Roles diferenciados: estudiante, tutor, CEE, administración
               </li>
             </ul>
@@ -557,38 +677,109 @@ export default function Landing() {
         id='tecnologia'
         className='mx-auto max-w-6xl px-5 py-24'
       >
-        <Reveal className='mb-14 max-w-xl'>
-          <span className='font-mono text-[10.5px] uppercase tracking-widest text-indigo-400'>
-            Bajo el capó
-          </span>
-          <h2 className='mt-3 text-[30px] font-bold tracking-tight text-neutral-50 md:text-[34px]'>
-            Con inteligencia artificial desde el diseño.
-          </h2>
-        </Reveal>
-
-        <div className='grid grid-cols-1 gap-5 md:grid-cols-3'>
-          {TECNOLOGIA.map((t) => {
-            const c = COLOR_CLASSES[t.color];
-            return (
-              <Reveal key={t.titulo}>
-                <div
-                  className={`h-full rounded-2xl border p-6 ${t.destacado ? `${c.border} ${c.wash}` : `${c.border} bg-[#1E1E24]`}`}
+        <div className='grid items-center gap-12 lg:grid-cols-[1fr_1.15fr]'>
+          <Reveal>
+            <span className='mb-4 inline-flex items-center gap-2.5 text-[13px] font-semibold tracking-tight text-pink-400'>
+              <span className='h-px w-8 bg-gradient-to-r from-transparent to-pink-400/70' />
+              Recomendación por etiquetas
+            </span>
+            <h2 className='text-[30px] font-bold leading-tight tracking-tight text-neutral-50 md:text-[36px]'>
+              Hecha para que encuentres lo que te sirve.
+            </h2>
+            <p className='mt-4 max-w-md text-[14.5px] leading-relaxed text-neutral-400'>
+              Cada proyecto y contenido se compara con tus intereses para
+              sugerirte lo más afín. Tú eliges tus etiquetas y InFACE ordena
+              primero lo que mejor calza contigo.
+            </p>
+            <ul className='mt-6 space-y-3 text-[13.5px] text-neutral-300'>
+              {[
+                'Elige tus intereses una sola vez',
+                'Cada proyecto recibe un porcentaje de afinidad',
+                'Lo más compatible aparece primero',
+              ].map((t) => (
+                <li
+                  key={t}
+                  className='flex items-center gap-3'
                 >
-                  <div
-                    className={`mb-4 flex h-10 w-10 items-center justify-center rounded-[10px] ${c.bg} ${c.text}`}
-                  >
-                    <i className={`ti ${t.icon} text-[18px]`} />
+                  <span className='flex h-5 w-5 items-center justify-center rounded-full bg-pink-500/15 text-pink-400'>
+                    <i className='ti ti-check text-[12px]' />
+                  </span>
+                  {t}
+                </li>
+              ))}
+            </ul>
+          </Reveal>
+
+          <Reveal>
+            <div className='relative'>
+              <div
+                className='pointer-events-none absolute -inset-6 -z-10 rounded-[32px]'
+                style={{
+                  background:
+                    'radial-gradient(ellipse 70% 70% at 50% 40%, rgba(232,84,106,.14) 0%, transparent 70%)',
+                }}
+              />
+              <div className='rounded-2xl border border-white/[0.08] bg-[#1E1E24] p-6 shadow-2xl shadow-black/40'>
+                <div className='mb-1 flex items-center gap-3'>
+                  <div className='flex h-10 w-10 items-center justify-center rounded-[10px] bg-pink-500/10 text-pink-400'>
+                    <i className='ti ti-heart-handshake text-[18px]' />
                   </div>
-                  <h3 className='mb-1.5 text-[14px] font-bold text-neutral-100'>
-                    {t.titulo}
+                  <h3 className='text-[15px] font-bold text-neutral-100'>
+                    Tus intereses
                   </h3>
-                  <p className='text-[12.5px] leading-relaxed text-neutral-500'>
-                    {t.texto}
-                  </p>
                 </div>
-              </Reveal>
-            );
-          })}
+                <div className='mt-4 flex flex-wrap gap-2'>
+                  {MIS_INTERESES.map((e) => (
+                    <span
+                      key={e}
+                      className='rounded-full border border-pink-500/25 bg-pink-500/10 px-3 py-1 text-[12px] font-medium text-pink-300'
+                    >
+                      {e}
+                    </span>
+                  ))}
+                </div>
+
+                <div className='my-5 h-px bg-white/[0.06]' />
+
+                <p className='mb-3 text-[12px] font-semibold text-neutral-500'>
+                  Proyectos sugeridos para ti
+                </p>
+                <div className='space-y-3'>
+                  {PROYECTOS_EJEMPLO.map((pr) => (
+                    <div
+                      key={pr.nombre}
+                      className='rounded-xl border border-white/[0.06] bg-white/[0.02] p-3.5'
+                    >
+                      <div className='mb-2 flex items-center justify-between gap-3'>
+                        <span className='text-[13px] font-semibold text-neutral-100'>
+                          {pr.nombre}
+                        </span>
+                        <span className='text-[12px] font-bold text-pink-400'>
+                          {pr.afinidad}%
+                        </span>
+                      </div>
+                      <div className='h-1.5 overflow-hidden rounded-full bg-white/[0.06]'>
+                        <div
+                          className='h-full rounded-full bg-gradient-to-r from-pink-500 to-pink-300'
+                          style={{ width: `${pr.afinidad}%` }}
+                        />
+                      </div>
+                      <div className='mt-2.5 flex flex-wrap gap-1.5'>
+                        {pr.etiquetas.map((e) => (
+                          <span
+                            key={e}
+                            className='rounded-md bg-white/[0.05] px-2 py-0.5 text-[11px] text-neutral-400'
+                          >
+                            {e}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </Reveal>
         </div>
       </section>
 

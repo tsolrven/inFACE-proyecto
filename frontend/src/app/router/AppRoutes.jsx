@@ -1,6 +1,13 @@
 import { Suspense, lazy } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
-import { Login, Register, Onboarding, AcceptTerms } from '@/features/auth';
+import {
+  Login,
+  Register,
+  Onboarding,
+  AcceptTerms,
+  ForgotPassword,
+  ResetPassword,
+} from '@/features/auth';
 import Layout from '@/app/layout/Layout';
 import { protectedRoutes, extraRoutes, modalRoutes } from '@/app/router/routes';
 import NotFound from '@/pages/NotFoundPage';
@@ -11,7 +18,6 @@ import {
   TermsRoute,
 } from '@/app/router/guards';
 
-// páginas legales PÚBLICAS: el registro las enlaza y quien aún no tiene cuenta debe poder leerlas
 const TerminosPublico = lazy(() => import('@/pages/legal/UserAgreementPage'));
 const PrivacidadPublico = lazy(() => import('@/pages/legal/PrivacyPolicyPage'));
 function LegalPublico({ children }) {
@@ -34,6 +40,22 @@ export default function AppRoutes() {
           element={
             <GuestRoute>
               <Login />
+            </GuestRoute>
+          }
+        />
+        <Route
+          path='/olvide-contrasena'
+          element={
+            <GuestRoute>
+              <ForgotPassword />
+            </GuestRoute>
+          }
+        />
+        <Route
+          path='/restablecer-contrasena'
+          element={
+            <GuestRoute>
+              <ResetPassword />
             </GuestRoute>
           }
         />

@@ -3,6 +3,7 @@ import {
   obtenerProyectos,
   obtenerProyectoPorId,
   actualizarProyecto,
+  guardarEntregables,
   eliminarProyecto,
   postularProyecto,
   obtenerPostulacionesProyecto,
@@ -98,6 +99,18 @@ async function obtenerUnoController(req, res) {
 
 async function actualizarController(req, res) {
   const proyecto = await actualizarProyecto(
+    req.params.id,
+    req.usuario.id,
+    req.usuario.rol,
+    req.body,
+  );
+  res.json({ ok: true, data: proyecto });
+}
+
+// ╰─────────────────────────────✧────────────────────────────────╮
+
+async function guardarEntregablesController(req, res) {
+  const proyecto = await guardarEntregables(
     req.params.id,
     req.usuario.id,
     req.usuario.rol,
@@ -282,6 +295,9 @@ export const listarMisProyectos = manejarController(
 );
 export const obtenerUno = manejarController(obtenerUnoController);
 export const actualizar = manejarController(actualizarController);
+export const guardarEntregablesProyecto = manejarController(
+  guardarEntregablesController,
+);
 export const eliminar = manejarController(eliminarController);
 export const postular = manejarController(postularController);
 export const listarPostulaciones = manejarController(

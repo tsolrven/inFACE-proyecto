@@ -26,6 +26,10 @@ model Usuario {
   consentimiento_investigacion   Boolean   @default(false)
   consentimiento_investigacion_en DateTime?
 
+  // Eliminación de cuenta (ver identity/cuentaEliminacion.service.js)
+  eliminacion_programada_en DateTime?  // cuando llega esta fecha, la cuenta se anonimiza sola
+  anonimizado_en            DateTime?  // ya anonimizada: sin datos personales
+
   // RELACIONES
   perfil           Perfil?
   usuario_carrera  UsuarioCarrera[]
@@ -44,6 +48,8 @@ model Usuario {
   descartes_proyecto   DescarteProyecto[]
   hilos Hilo[]
   anuncios Anuncio[]
+  notificaciones Notificacion[]
+  tokens_recuperacion TokenRecuperacion[]
 
   @@map("usuarios")
 }
@@ -418,6 +424,12 @@ model Proyecto {
   fecha_creacion       DateTime @default(now())
   votos_neto Int @default(0)
 
+  // entregables finales (solo se pueden agregar cuando el proyecto está cerrado);
+  // el informe final en PDF vive en la tabla archivos (tipo_contenido = 'proyecto')
+  video_url        String?
+  repositorio_url  String?
+  linkedin_url     String?
+
   creador              Usuario               @relation(fields: [creador_id], references: [id])
   postulaciones        PostulacionProyecto[]
   integrantes          IntegranteProyecto[]
@@ -607,4 +619,40 @@ model Reporte {
   @@index([estado])
   @@index([reportado_por])
   @@map("reportes")
+}
+
+// ╰─────────────────────────────✧────────────────────────────────╮
+// NOTIFICACIONES (transversal: las usan todos los módulos con notificar())
+
+model Notificacion {
+  id         String   @id @default(uuid())
+  usuario_id String   
+  tipo       String   @db.VarChar(50) 
+  titulo     String   @db.VarChar(150)
+  mensaje    String?  @db.VarChar(500)
+  enlace     String?  @db.VarChar(300) 
+  leida      Boolean  @default(false)
+  creado_en  DateTime @default(now())
+
+  usuario Usuario @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+
+  @@index([usuario_id, leida, creado_en])
+  @@map("notificaciones")
+}
+
+// ╰─────────────────────────────✧────────────────────────────────╮
+// RECUPERACIÓN DE CONTRASEÑA (el token real solo viaja por correo; aquí queda su hash)
+
+model TokenRecuperacion {
+  id         String    @id @default(uuid())
+  usuario_id String
+  token_hash String    @unique
+  expira_en  DateTime
+  usado_en   DateTime?
+  creado_en  DateTime  @default(now())
+
+  usuario Usuario @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+
+  @@index([usuario_id])
+  @@map("tokens_recuperacion")
 }

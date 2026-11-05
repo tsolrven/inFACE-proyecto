@@ -66,7 +66,7 @@ export default function PrivacyPolicyPage() {
         <p>
           Mientras tu cuenta esté activa. Al terminar el período de pruebas o
           cuando solicites eliminar tu cuenta, se eliminan o anonimizan en un
-          plazo de [COMPLETAR] días.
+          plazo de 30 días.
         </p>
       </Seccion>
       <Seccion titulo='6. Tus derechos'>

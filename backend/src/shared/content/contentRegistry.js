@@ -51,7 +51,7 @@ const CONTENT_REGISTRY = {
     votesField: 'votos_neto',
     previewField: 'contenido',
     allowsComments: false,
-    eliminadoField: 'eliminado', // borrado lógico: ya no admite interacciones
+    eliminadoField: 'eliminado',
   },
   proyecto: {
     modelName: 'proyecto',
@@ -61,6 +61,7 @@ const CONTENT_REGISTRY = {
     votesField: 'votos_neto',
     previewField: 'titulo_proyecto',
     allowsComments: true,
+    adjuntos: { max: 1, extensiones: ['.pdf'] },
   },
 };
 // ────────────────────────────────────────────────────────────────────────────────────────

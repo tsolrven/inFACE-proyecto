@@ -10,14 +10,14 @@ import {
 } from '@/shared/lib/matchHelpers';
 import VotoProyecto from './VotoProyecto';
 import ProyectoComentarios from './ProyectoComentarios';
+import EntregablesProyecto from './EntregablesProyecto';
+import ErrorModal from './ErrorModal';
 import {
   useInteraccionesProyecto,
   useValoresProyecto,
 } from '@/features/project-match/store/interaccionesStore';
 import ConDescripcion from '@/shared/components/ConDescripcion';
 
-// las etiquetas vienen con el nombre real del tipo (tal como está en la BD);
-// acá se traducen a las etiquetas que se le muestran al usuario y se fija el orden.
 const ORDEN_TIPOS = [
   'Área de Interés',
   'Habilidad',
@@ -57,14 +57,17 @@ export default function DetalleProyecto({
   esCreador,
   esIntegrante,
   yaPostulado,
+  fueRechazado = false,
   puedePostular,
   onVolver,
   onPostular,
   onEditar,
   onEliminar,
+  onSalir,
   onVerIntegrantes,
   onVerPostulaciones,
   onVerHistorialPostulaciones,
+  onEntregablesActualizados,
   esVistaExterna = false,
 }) {
   const [mostrarForm, setMostrarForm] = useState(false);
@@ -324,6 +327,14 @@ export default function DetalleProyecto({
             </div>
           </div>
 
+          {proyecto.estado === 'cerrado' && (
+            <EntregablesProyecto
+              proyecto={proyecto}
+              esCreador={esCreador}
+              onActualizado={onEntregablesActualizados}
+            />
+          )}
+
           <div className='border-t border-white/[0.07] pt-4'>
             {enviado && proyecto.fui_expulsado && (
               <div className='flex items-center gap-2.5 rounded-[10px] bg-amber-400/[0.08] px-3.5 py-2.5 text-[12.5px] text-amber-400'>
@@ -382,11 +393,39 @@ export default function DetalleProyecto({
             )}
 
             {esIntegrante && !esCreador && !enviado && (
-              <div className='flex items-center gap-2.5 rounded-[10px] bg-emerald-400/[0.08] px-3.5 py-2.5 text-[12.5px] text-emerald-400'>
-                <i className='ti ti-circle-check text-base' />
-                Ya formas parte de este equipo.
+              <div className='flex flex-wrap items-center justify-between gap-3 rounded-[10px] bg-emerald-400/[0.08] px-3.5 py-2.5 text-[12.5px] text-emerald-400'>
+                <span className='flex items-center gap-2.5'>
+                  <i className='ti ti-circle-check text-base' />
+                  Ya formas parte de este equipo.
+                </span>
+                {onSalir && (
+                  <button
+                    type='button'
+                    onClick={onSalir}
+                    className='inline-flex items-center gap-1.5 rounded-[9px] border border-red-500/30 px-3 py-1.5 text-[12px] font-medium text-red-400 transition hover:bg-red-500/10'
+                  >
+                    <i className='ti ti-door-exit text-[14px]' /> Salirme del
+                    proyecto
+                  </button>
+                )}
               </div>
             )}
+
+            {fueRechazado &&
+              !yaPostulado &&
+              !esIntegrante &&
+              !esCreador &&
+              !enviado && (
+                <div className='flex items-start gap-2.5 rounded-[10px] bg-red-500/[0.07] px-3.5 py-2.5 text-[12.5px] text-red-400'>
+                  <i className='ti ti-circle-x mt-px text-base' />
+                  <span>
+                    Tu postulación anterior fue rechazada por el creador.
+                    {puedePostular
+                      ? ' Si quieres, puedes volver a postularte.'
+                      : ''}
+                  </span>
+                </div>
+              )}
 
             {proyecto.fui_expulsado &&
               !esIntegrante &&
@@ -414,8 +453,10 @@ export default function DetalleProyecto({
                 onClick={() => setMostrarForm(true)}
                 className='inline-flex items-center gap-1.5 rounded-[10px] bg-pink-500 px-4 py-2 text-[12.5px] font-semibold text-white transition hover:bg-pink-600'
               >
-                <i className='ti ti-send text-[14px]' /> Postularme a este
-                proyecto
+                <i className='ti ti-send text-[14px]' />{' '}
+                {fueRechazado
+                  ? 'Postularme de nuevo'
+                  : 'Postularme a este proyecto'}
               </button>
             )}
 
@@ -424,11 +465,10 @@ export default function DetalleProyecto({
                 onSubmit={handleEnviar}
                 className='flex flex-col gap-2.5'
               >
-                {error && (
-                  <div className='rounded-[10px] border border-red-500/30 bg-red-500/10 px-3.5 py-2 text-[12px] text-red-400'>
-                    {error}
-                  </div>
-                )}
+                <ErrorModal
+                  errores={error}
+                  onClose={() => setError(null)}
+                />
                 <label className='text-[11px] font-medium text-neutral-500'>
                   Cuéntale al creador por qué te gustaría unirte
                 </label>

@@ -237,10 +237,10 @@ function extraerCarrera(usuario) {
   const uc = usuario?.usuario_carrera?.[0];
   return uc
     ? {
-        id: uc.carrera.id,
-        nombre: uc.carrera.nombre,
-        codigo: uc.carrera.codigo,
-      }
+      id: uc.carrera.id,
+      nombre: uc.carrera.nombre,
+      codigo: uc.carrera.codigo,
+    }
     : null;
 }
 
@@ -288,7 +288,10 @@ function formatearProyecto(p, opciones = {}) {
     fecha_inicio: p.fecha_inicio,
     fecha_fin: p.fecha_fin,
     fecha_creacion: p.fecha_creacion,
-        votos_neto: p.votos_neto ?? 0,
+    votos_neto: p.votos_neto ?? 0,
+    video_url: p.video_url ?? null,
+    github_url: p.repositorio_url ?? null,
+    linkedin_url: p.linkedin_url ?? null,
     creador: {
       id: p.creador?.id,
       nombre_usuario: p.creador?.perfil?.nombre_usuario,
@@ -349,19 +352,19 @@ function formatearPostulacion(p) {
     fecha_postulacion: p.fecha_postulacion,
     postulante: p.postulante
       ? {
-          id: p.postulante.id,
-          nombre_usuario: p.postulante.perfil?.nombre_usuario,
-          nombre_completo: p.postulante.perfil?.nombre_completo,
-          carrera: extraerCarrera(p.postulante),
-        }
+        id: p.postulante.id,
+        nombre_usuario: p.postulante.perfil?.nombre_usuario,
+        nombre_completo: p.postulante.perfil?.nombre_completo,
+        carrera: extraerCarrera(p.postulante),
+      }
       : undefined,
     creador: p.proyecto?.creador
       ? {
-          id: p.proyecto.creador.id,
-          nombre_usuario: p.proyecto.creador.perfil?.nombre_usuario,
-          nombre_completo: p.proyecto.creador.perfil?.nombre_completo,
-          carrera: extraerCarrera(p.proyecto.creador),
-        }
+        id: p.proyecto.creador.id,
+        nombre_usuario: p.proyecto.creador.perfil?.nombre_usuario,
+        nombre_completo: p.proyecto.creador.perfil?.nombre_completo,
+        carrera: extraerCarrera(p.proyecto.creador),
+      }
       : undefined,
   };
 }
@@ -589,6 +592,7 @@ export {
 
   // Proyectos
   incluirProyectoCompleto,
+  calcularEstadoEfectivo,
   formatearProyecto,
   formatearProyectos,
 

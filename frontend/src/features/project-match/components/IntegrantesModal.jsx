@@ -12,6 +12,7 @@ import {
   listarIntegrantes,
   expulsarIntegrante,
 } from '@/features/project-match/api/matchingProyecto.api';
+import ErrorModal from './ErrorModal';
 
 export default function IntegrantesModal({
   proyecto,
@@ -82,11 +83,10 @@ export default function IntegrantesModal({
             </p>
           )}
 
-          {error && (
-            <div className='mb-3 rounded-[10px] border border-red-500/30 bg-red-500/10 px-3 py-2 text-[12px] text-red-400'>
-              {error}
-            </div>
-          )}
+          <ErrorModal
+            errores={error}
+            onClose={() => setError(null)}
+          />
 
           {!loading && integrantes.length === 0 && !error && (
             <div className='flex flex-col items-center py-8 text-center'>
