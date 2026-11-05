@@ -6,12 +6,13 @@ import usePostMenuItems from '@/shared/post/actions/usePostMenuItems';
 import ConfirmDialog from '@/shared/components/ui/ConfirmDialog';
 import ReportModal from '@/shared/moderation/ReportModal';
 import { useEliminarAnuncio } from '@/features/announcements/hooks/useAnuncios';
-import { puedeAdministrarAnuncio } from '@/features/announcements/utils/permisos';
+import { puedeEliminarAnuncio } from '@/features/announcements/utils/permisos';
 
 /**
  * Menú ⋯ de un anuncio: guardar, eliminar y reportar.
- * "Eliminar" lo decide puedeAdministrarAnuncio (superadmin, o autor que
- * conserva el permiso de publicar). "Editar" se agrega en M3-7.
+ * "Eliminar" lo decide puedeEliminarAnuncio (superadmin, o autor que
+ * conserva el permiso de publicar). "Editar" se conecta en M3-7a con
+ * puedeEditarAnuncio; hasta entonces permitirEditar queda en false.
  */
 export default function AnuncioMenu({
   anuncio,
@@ -26,8 +27,7 @@ export default function AnuncioMenu({
   const [confirmandoEliminar, setConfirmandoEliminar] = useState(false);
   const [errorEliminar, setErrorEliminar] = useState(null);
   const [reportando, setReportando] = useState(false);
-
-  const puedeAdministrar = puedeAdministrarAnuncio(usuario, anuncio);
+  const puedeEliminar = puedeEliminarAnuncio(usuario, anuncio);
 
   const items = usePostMenuItems({
     autorId: anuncio.autor?.id,
@@ -37,7 +37,7 @@ export default function AnuncioMenu({
     onEliminar: () => setConfirmandoEliminar(true),
     onReportar: () => setReportando(true),
     permitirEditar: false,
-    permitirEliminar: puedeAdministrar,
+    permitirEliminar: puedeEliminar,
     iconSize: 14,
   });
 

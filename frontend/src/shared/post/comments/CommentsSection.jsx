@@ -13,6 +13,8 @@ import CommentItem from '@/shared/post/comments/CommentItem';
 import CommentComposer from '@/shared/post/comments/CommentComposer';
 import CommentSortSelect from '@/shared/post/comments/CommentSortSelect';
 import { mostrarToast } from '@/shared/stores/toastStore';
+import { useAuthStore } from '@/shared/auth/authStore';
+import { puedeEscribir } from '@/shared/auth/roles';
 
 // Al abrir un enlace a un comentario (?comentario=ID) se muestran hasta tantos
 // ancestros por encima, y el resaltado dura este tiempo.
@@ -41,6 +43,7 @@ export default function CommentsSection({
   accionExtra,
   alEliminarComentario,
 }) {
+  const usuario = useAuthStore((s) => s.usuario);
   const [orden, setOrden] = useState('mejores');
   const [focoId, setFocoId] = useState(null);
   const [resaltadoApagadoId, setResaltadoApagadoId] = useState(null);
@@ -203,13 +206,17 @@ export default function CommentsSection({
         {titulo} ({total})
       </h3>
 
-      <div className='mb-4'>
-        <CommentComposer
-          placeholder={placeholder}
-          pending={acciones.crear.isPending}
-          onSubmit={(texto) => acciones.crear.mutateAsync({ contenido: texto })}
-        />
-      </div>
+      {puedeEscribir(usuario) && (
+        <div className='mb-4'>
+          <CommentComposer
+            placeholder={placeholder}
+            pending={acciones.crear.isPending}
+            onSubmit={(texto) =>
+              acciones.crear.mutateAsync({ contenido: texto })
+            }
+          />
+        </div>
+      )}
 
       {objetivoId && !nodoFoco ? (
         <div>

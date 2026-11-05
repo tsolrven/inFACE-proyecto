@@ -6,6 +6,7 @@ import CommentsSection from '@/shared/post/comments/CommentsSection';
 import { colorPorRamo } from '@/shared/lib/courseColors';
 import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
 import { useAuthStore } from '@/shared/auth/authStore';
+import { puedeEditar } from '@/shared/auth/roles';
 import { useVotar } from '@/shared/post/votes/useVotar';
 import { parchearContenido } from '@/shared/post/cache';
 import VotePill from '@/shared/post/votes/VotePill';
@@ -41,7 +42,7 @@ export default function HiloDetailModal() {
     : (hilo?.respuesta_aceptada_id ?? null);
   const { data: raizAceptada } = useRespuestaAceptada(id, aceptadaId);
 
-  const esAutorHilo = !!usuario && usuario.id === hilo?.autor?.id;
+  const esAutorHilo = puedeEditar(usuario, hilo?.autor?.id);
 
   function handleClose() {
     if (location.state?.backgroundLocation) navigate(-1);

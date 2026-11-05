@@ -4,6 +4,8 @@ import FiltroRamo from '@/shared/components/FiltroRamo';
 import Button from '@/shared/components/ui/Button';
 import HiloFormModal from '@/features/forum/components/HiloFormModal';
 import { useForumFiltrosStore } from '@/features/forum/store/forumFiltrosStore';
+import { useAuthStore } from '@/shared/auth/authStore';
+import { puedeEscribir } from '@/shared/auth/roles';
 
 const ORDENES = [
   { valor: 'recientes', label: 'Recientes', icono: 'ti-clock' },
@@ -14,6 +16,7 @@ export default function ForumTopbar({ carreraId, permitirCrear = true }) {
   const ramoId = useForumFiltrosStore((s) => s.filtros.ramo_id);
   const orden = useForumFiltrosStore((s) => s.filtros.orden);
   const setFiltro = useForumFiltrosStore((s) => s.setFiltro);
+  const usuario = useAuthStore((s) => s.usuario);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -52,7 +55,7 @@ export default function ForumTopbar({ carreraId, permitirCrear = true }) {
         ))}
       </div>
 
-      {permitirCrear && (
+      {permitirCrear && puedeEscribir(usuario) && (
         <Button
           variant='primary'
           icon='ti-plus'

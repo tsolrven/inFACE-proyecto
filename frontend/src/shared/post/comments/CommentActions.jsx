@@ -1,5 +1,7 @@
 import PostActionsMenu from '@/shared/post/actions/PostActionsMenu';
 import usePostMenuItems from '@/shared/post/actions/usePostMenuItems';
+import { useAuthStore } from '@/shared/auth/authStore';
+import { puedeEscribir } from '@/shared/auth/roles';
 
 export default function CommentActions({
   comentario,
@@ -10,6 +12,7 @@ export default function CommentActions({
   onEliminar,
   onReportar,
 }) {
+  const usuario = useAuthStore((s) => s.usuario);
   const items = usePostMenuItems({
     autorId: comentario.autor?.id,
     guardado: comentario.esta_guardado,
@@ -59,7 +62,7 @@ export default function CommentActions({
         </button>
       </div>
 
-      {puedeResponder && (
+      {puedeResponder && puedeEscribir(usuario) && (
         <button
           type='button'
           onClick={onResponder}

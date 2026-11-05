@@ -15,6 +15,7 @@ import {
 } from '@/features/materials/api/statistics.api';
 import armadilloRepositorio from '@/assets/armadillo-repositorio-materiales.png';
 import { rutaHashtag } from '@/shared/lib/hashtags';
+import { puedeEscribir } from '@/shared/auth/roles';
 
 const COLORES_COLABORADOR = [
   'bg-amber-400/10 text-amber-400',
@@ -101,7 +102,9 @@ export default function RepositorioMateriales() {
         {vista === 'publicaciones' ? (
           <MaterialFeed
             carreraId={carreraId}
-            onAbrirSubida={() => setUploadAbierto(true)}
+            onAbrirSubida={
+              puedeEscribir(usuario) ? () => setUploadAbierto(true) : undefined
+            }
           />
         ) : (
           <MaterialGuardados />
