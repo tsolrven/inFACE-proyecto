@@ -93,6 +93,7 @@ async function listarReportesPropios(usuario_id) {
       motivo: r.motivo,
       detalle: r.detalle,
       estado: r.estado,
+      nota_resolucion: r.nota_resolucion,
       creado_en: r.creado_en,
       contenido_existe,
       contenido_preview: contenido_existe

@@ -15,6 +15,7 @@ import { eliminarContenido } from '../../shared/content/contentCleanup.js';
 import {
   bloquearContenido,
   registrarHidratadorGuardados,
+  registrarEliminadorModeracion,
   registrarAlQuitarArchivo,
 } from '../../shared/content/contentRegistry.js';
 import { obtenerEnriquecimiento } from '../../shared/content/contentEnrichment.js';
@@ -312,7 +313,7 @@ async function actualizarApunte(id, usuario_id, datos) {
   return apunteFormateado;
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-async function eliminarApunte(id, usuario_id, rol) {
+async function eliminarApunte(id, usuario_id, rol, { respuesta = null } = {}) {
   const apunte = await prisma.apunte.findUnique({ where: { id } });
   if (!apunte) throw new NotFoundError('Apunte');
 
@@ -325,6 +326,7 @@ async function eliminarApunte(id, usuario_id, rol) {
       const resultado = await eliminarContenido(tx, 'apunte', id, {
         por_moderacion: esStaff(rol),
         revisor_id: usuario_id,
+        respuesta,
       });
       await tx.apunte.delete({ where: { id } });
       return resultado;
@@ -418,6 +420,11 @@ registrarAlQuitarArchivo('apunte', async (tx, archivo) => {
     );
   }
 });
+// ────────────────────────────────────────────────────────────────────────────────────────
+// la pantalla de reportes elimina por moderación a través del registry
+registrarEliminadorModeracion('apunte', (id, usuario, respuesta) =>
+  eliminarApunte(id, usuario.id, usuario.rol, { respuesta }),
+);
 // ────────────────────────────────────────────────────────────────────────────────────────
 export {
   listarApuntes,

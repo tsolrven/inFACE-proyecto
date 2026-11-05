@@ -165,6 +165,28 @@ function registrarAlEliminarComentario(tipo_contenido, hook) {
   obtenerEntradaRegistro(tipo_contenido).alEliminarComentario = hook;
 }
 
+// Cada módulo registra cómo elimina un contenido por moderación. Lo usa la
+// pantalla de reportes: shared no puede importar de modules.
+// `respuesta` = { texto, personalizada }: el mensaje que recibe quien reportó.
+function registrarEliminadorModeracion(tipo_contenido, eliminador) {
+  obtenerEntradaRegistro(tipo_contenido).eliminarPorModeracion = eliminador;
+}
+
+async function eliminarPorModeracion(
+  tipo_contenido,
+  contenido_id,
+  usuario,
+  respuesta,
+) {
+  const entrada = obtenerEntradaRegistro(tipo_contenido);
+  if (!entrada.eliminarPorModeracion) {
+    throw new BadRequestError(
+      `"${entrada.label}" no se puede eliminar desde la pantalla de reportes`,
+    );
+  }
+  return entrada.eliminarPorModeracion(contenido_id, usuario, respuesta);
+}
+
 async function ejecutarAlEliminarComentario(tx, comentario) {
   const hook =
     CONTENT_REGISTRY[comentario.tipo_contenido]?.alEliminarComentario;
@@ -246,6 +268,8 @@ export {
   registrarHidratadorGuardados,
   hidratarGuardados,
   registrarAlEliminarComentario,
+  registrarEliminadorModeracion,
+  eliminarPorModeracion,
   ejecutarAlEliminarComentario,
   registrarAlQuitarArchivo,
   ejecutarAlQuitarArchivo,

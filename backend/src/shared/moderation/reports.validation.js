@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { paginacionQuerySchema } from '../validation/common.schemas.js';
+import { tiposContenidoValidos } from '../content/contentRegistry.js';
 // ─────────────────────────────────────────────────────────────────────────────
 const MOTIVOS_REPORTE = [
   'spam',
@@ -61,4 +63,59 @@ const crearReporteSchema = z
     },
   );
 // ─────────────────────────────────────────────────────────────────────────────
-export { crearReporteSchema, MOTIVOS_REPORTE };
+const RESULTADOS_CIERRE = ['resuelto', 'descartado', 'contenido_eliminado'];
+const RESPUESTA_MIN = 5;
+const RESPUESTA_MAX = 500; // coincide con Reporte.nota_resolucion (VarChar 500)
+
+const listarReportesQuerySchema = paginacionQuerySchema.extend({
+  vista: z
+    .enum(['pendientes', 'historial'], { error: 'Vista inválida' })
+    .default('pendientes'),
+  tipo: z
+    .string()
+    .refine(
+      (tipo) => tiposContenidoValidos().includes(tipo),
+      'Tipo de contenido inválido',
+    )
+    .optional(),
+});
+
+const cerrarReporteSchema = z.object({
+  resultado: z.enum(RESULTADOS_CIERRE, {
+    error: (issue) =>
+      issue.input === undefined
+        ? 'El resultado del cierre es requerido'
+        : 'Resultado de cierre inválido',
+  }),
+  respuesta: z.discriminatedUnion(
+    'tipo',
+    [
+      z.object({ tipo: z.literal('predeterminada') }),
+      z.object({
+        tipo: z.literal('personalizada'),
+        texto: z
+          .string({ error: 'El mensaje personalizado es requerido' })
+          .trim()
+          .min(
+            RESPUESTA_MIN,
+            `El mensaje debe tener al menos ${RESPUESTA_MIN} caracteres`,
+          )
+          .max(
+            RESPUESTA_MAX,
+            `El mensaje no puede superar ${RESPUESTA_MAX} caracteres`,
+          ),
+      }),
+    ],
+    {
+      error:
+        'Debes elegir una respuesta predeterminada o escribir una personalizada',
+    },
+  ),
+});
+// ─────────────────────────────────────────────────────────────────────────────
+export {
+  crearReporteSchema,
+  listarReportesQuerySchema,
+  cerrarReporteSchema,
+  MOTIVOS_REPORTE,
+};

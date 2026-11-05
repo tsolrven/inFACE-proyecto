@@ -27,7 +27,7 @@ async function eliminarContenido(
   tx,
   tipo_contenido,
   id,
-  { por_moderacion, revisor_id = null },
+  { por_moderacion, revisor_id = null, respuesta = null },
 ) {
   const [comentarios, archivos] = await Promise.all([
     tx.comentario.findMany({
@@ -44,6 +44,7 @@ async function eliminarContenido(
     ids: [id],
     por_moderacion,
     revisor_id,
+    respuesta,
   });
   // reportes de sus comentarios: caen por arrastre, nadie los revisó (sin correo)
   await cerrarReportesPorEliminacion(tx, {

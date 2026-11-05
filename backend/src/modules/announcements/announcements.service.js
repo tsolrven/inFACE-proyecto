@@ -15,6 +15,7 @@ import {
   registrarHidratadorGuardados,
   registrarPermisoAdjuntos,
   bloquearContenido,
+  registrarEliminadorModeracion,
 } from '../../shared/content/contentRegistry.js';
 import { obtenerEnriquecimiento } from '../../shared/content/contentEnrichment.js';
 import {
@@ -156,6 +157,11 @@ registrarPermisoAdjuntos('anuncio', async (usuario, anuncio_id) => {
 
   return puedeEditarAnuncio(usuario, anuncio);
 });
+
+// la pantalla de reportes elimina por moderación a través del registry
+registrarEliminadorModeracion('anuncio', (id, usuario, respuesta) =>
+  eliminarAnuncio(id, usuario, { respuesta }),
+);
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function crearAnuncio({
   usuario,
@@ -254,7 +260,7 @@ async function actualizarAnuncio(id, usuario, datos) {
   return formateado;
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-async function eliminarAnuncio(id, usuario) {
+async function eliminarAnuncio(id, usuario, { respuesta = null } = {}) {
   const anuncio = await prisma.anuncio.findUnique({
     where: { id },
     select: { autor_id: true, carrera_id: true },
@@ -274,6 +280,7 @@ async function eliminarAnuncio(id, usuario) {
       const resultado = await eliminarContenido(tx, 'anuncio', id, {
         por_moderacion: esStaff(usuario.rol),
         revisor_id: usuario.id,
+        respuesta,
       });
       await tx.anuncio.delete({ where: { id } }); // AnuncioHashtag cae por cascade
       return resultado;

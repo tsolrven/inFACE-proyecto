@@ -12,6 +12,7 @@ import {
   obtenerPreviewsContenido,
   ejecutarAlEliminarComentario,
   notificarInteraccion,
+  registrarEliminadorModeracion,
 } from '../content/contentRegistry.js';
 import { eliminarInteracciones } from '../content/contentCleanup.js';
 import { cerrarReportesPorEliminacion } from '../moderation/reports.closure.js';
@@ -337,7 +338,12 @@ async function editarComentario(comentario_id, usuario_id, contenido) {
   return formatearComentario(actualizado);
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-async function eliminarComentario(comentario_id, usuario_id, rol) {
+async function eliminarComentario(
+  comentario_id,
+  usuario_id,
+  rol,
+  { respuesta = null } = {},
+) {
   const comentario = await prisma.comentario.findUnique({
     where: { id: comentario_id },
   });
@@ -397,6 +403,7 @@ async function eliminarComentario(comentario_id, usuario_id, rol) {
       ids: [comentario_id],
       por_moderacion: !esAutor,
       revisor_id: usuario_id,
+      respuesta,
     });
     reportesANotificar = cierre.reportes_a_notificar;
 
@@ -620,6 +627,11 @@ function formatearComentario(
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 registrarHidratadorGuardados('comentario', hidratarComentariosGuardados);
+
+// la pantalla de reportes elimina por moderación a través del registry
+registrarEliminadorModeracion('comentario', (id, usuario, respuesta) =>
+  eliminarComentario(id, usuario.id, usuario.rol, { respuesta }),
+);
 // ────────────────────────────────────────────────────────────────────────────────────────
 export {
   listarComentarios,

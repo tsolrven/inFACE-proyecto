@@ -63,13 +63,14 @@ async function enviarNotificacion(reporte_id) {
         },
         {
           notificacion_estado: ESTADOS_NOTIFICACION.ENVIANDO,
-          revisado_en: { lt: atascadoDesde },
+          notificacion_enviada_en: { lt: atascadoDesde },
         },
       ],
     },
     data: {
       notificacion_estado: ESTADOS_NOTIFICACION.ENVIANDO,
       notificacion_intentos: { increment: 1 },
+      notificacion_enviada_en: new Date(), // mientras dura `enviando`: hora del reclamo
     },
   });
   if (reclamo.count === 0) return null;

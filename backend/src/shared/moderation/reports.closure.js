@@ -56,7 +56,7 @@ async function armarSnapshot(tx, tipo_contenido, contenido_id) {
 // Devuelve los ids de reportes cuyo correo hay que enviar tras el commit.
 async function cerrarReportesPorEliminacion(
   tx,
-  { tipo_contenido, ids, por_moderacion, revisor_id = null },
+  { tipo_contenido, ids, por_moderacion, revisor_id = null, respuesta = null },
 ) {
   const reportes_a_notificar = [];
   if (ids.length === 0) return { reportes_a_notificar };
@@ -109,7 +109,9 @@ async function cerrarReportesPorEliminacion(
           ? {
             revisado_por: revisor_id,
             nota_resolucion:
+              respuesta?.texto ??
               RESPUESTAS_PREDETERMINADAS[ESTADOS_REPORTE.CONTENIDO_ELIMINADO],
+            respuesta_personalizada: respuesta?.personalizada ?? false,
             notificacion_estado: ESTADOS_NOTIFICACION.PENDIENTE,
           }
           : { notificacion_estado: ESTADOS_NOTIFICACION.OMITIDA }),

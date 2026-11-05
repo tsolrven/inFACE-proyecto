@@ -14,6 +14,7 @@ import { eliminarContenido } from '../../shared/content/contentCleanup.js';
 import {
   registrarHidratadorGuardados,
   registrarAlEliminarComentario,
+  registrarEliminadorModeracion,
   bloquearContenido,
 } from '../../shared/content/contentRegistry.js';
 import { obtenerComentarioConArbol } from '../../shared/comments/comments.service.js';
@@ -202,7 +203,7 @@ async function actualizarHilo(id, usuario_id, datos) {
   return armarDetalle(actualizado, usuario_id);
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-async function eliminarHilo(id, usuario_id, rol) {
+async function eliminarHilo(id, usuario_id, rol, { respuesta = null } = {}) {
   const hilo = await prisma.hilo.findUnique({ where: { id } });
   if (!hilo) throw new NotFoundError('Hilo');
 
@@ -215,6 +216,7 @@ async function eliminarHilo(id, usuario_id, rol) {
       const resultado = await eliminarContenido(tx, 'hilo', id, {
         por_moderacion: esStaff(rol),
         revisor_id: usuario_id,
+        respuesta,
       });
       await tx.hilo.delete({ where: { id } }); // HiloHashtag cae por cascade
       return resultado;
@@ -362,6 +364,11 @@ function formatearHilo(
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 registrarHidratadorGuardados('hilo', hidratarHilosGuardados);
+
+// la pantalla de reportes elimina por moderación a través del registry
+registrarEliminadorModeracion('hilo', (id, usuario, respuesta) =>
+  eliminarHilo(id, usuario.id, usuario.rol, { respuesta }),
+);
 
 // Si se elimina el comentario aceptado (por su autor o por moderación), el hilo deja
 // de estar "resuelto". Corre dentro de la transacción del borrado (ver B1).
