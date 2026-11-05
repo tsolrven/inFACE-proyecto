@@ -1,15 +1,24 @@
 import { prisma } from '../../config/configDb.js';
 import logger from '../../lib/logger.js';
 import { enviarCorreo } from '../../lib/email/email.service.js';
-import { plantillaSancion } from '../../lib/email/sancion.plantilla.js';
+import {
+  plantillaSancion,
+  formatearFechaSancion,
+} from '../../lib/email/sancion.plantilla.js';
 import { TIPOS_SANCION } from './sanctions.constants.js';
 import { notificar } from '../notifications/notifications.service.js';
 
-// Qué tipos avisan y con qué texto. Los demás tipos se agregan acá cuando se
-// decida su canal (S1-4 restricción, S1-5 suspensión).
+// Qué tipos avisan y con qué texto. `titulo` puede ser una función de la
+// sanción (la restricción incluye su fecha de término). La suspensión se
+// agrega en S1-5 (solo correo, sin notificación).
 const NOTIFICACION_POR_TIPO = {
   [TIPOS_SANCION.ADVERTENCIA]: {
     titulo: 'Recibiste una advertencia',
+    enlace: '/reglas',
+  },
+  [TIPOS_SANCION.RESTRICCION]: {
+    titulo: (s) =>
+      `Restricción temporal hasta el ${formatearFechaSancion(s.hasta)}`,
     enlace: '/reglas',
   },
 };
@@ -32,7 +41,10 @@ async function notificarSancion(sancion) {
     await notificar({
       usuarioId: sancion.usuario_id,
       tipo: 'sancion',
-      titulo: config.titulo,
+      titulo:
+        typeof config.titulo === 'function'
+          ? config.titulo(sancion)
+          : config.titulo,
       mensaje: sancion.motivo,
       enlace: config.enlace,
     });
@@ -40,6 +52,7 @@ async function notificarSancion(sancion) {
     const correo = plantillaSancion({
       tipo: sancion.tipo,
       motivo: sancion.motivo,
+      hasta: sancion.hasta,
     });
     if (correo) {
       // enviarCorreo ya registra en el log si el envío falla
