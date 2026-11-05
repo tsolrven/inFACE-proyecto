@@ -40,6 +40,9 @@ model Usuario {
   guardados        Guardado[]
   reportes_creados Reporte[]  @relation("ReporteCreadoPor")
   reportes_revisados Reporte[] @relation("ReporteRevisadoPor")
+  sanciones_recibidas  Sancion[] @relation("SancionRecibida")
+  sanciones_aplicadas  Sancion[] @relation("SancionAplicada")
+  sanciones_revocadas  Sancion[] @relation("SancionRevocada")
   usuario_etiquetas    UsuarioEtiqueta[]
   proyectos_creados    Proyecto[]
   postulaciones        PostulacionProyecto[]
@@ -638,6 +641,39 @@ model Reporte {
   @@map("reportes")
 }
 
+// ╰─────────────────────────────✧────────────────────────────────╮
+// SANCIONES (las aplica el superadmin; historial completo, no se borran)
+
+model Sancion {
+  id         String @id @default(uuid())
+  usuario_id String
+  // advertencia | restriccion | suspension
+  tipo       String @db.VarChar(20)
+  // Texto que ve el usuario
+  motivo     String @db.VarChar(500)
+
+  // Contenido que originó la sanción (opcional). Sin FK, igual que
+  // Reporte.contenido_id. No apunta al reporte: la sanción es independiente.
+  contenido_tipo String? @db.VarChar(30)
+  contenido_id   String?
+
+  aplicada_por String
+  creado_en    DateTime @default(now())
+
+  // Fin de la sanción. null = sin término (advertencia o suspensión permanente).
+  hasta DateTime?
+
+  revocada_en       DateTime?
+  revocada_por      String?
+  motivo_revocacion String?   @db.VarChar(500)
+
+  usuario   Usuario  @relation("SancionRecibida", fields: [usuario_id], references: [id])
+  aplicador Usuario  @relation("SancionAplicada", fields: [aplicada_por], references: [id])
+  revocador Usuario? @relation("SancionRevocada", fields: [revocada_por], references: [id])
+
+  @@index([usuario_id, creado_en])
+  @@map("sanciones")
+}
 // ╰─────────────────────────────✧────────────────────────────────╮
 // NOTIFICACIONES (transversal: las usan todos los módulos con notificar())
 
