@@ -5,7 +5,7 @@ import {
   bloquearContenido,
   eliminarPorModeracion,
   obtenerEntradaRegistro,
-  obtenerPreviewsContenido,
+  obtenerVistasContenido,
 } from '../content/contentRegistry.js';
 import { AUTOR_PUBLICO_SELECT } from '../content/selects.js';
 import { recortar } from '../content/extracto.js';
@@ -94,7 +94,7 @@ async function listarReportesAgrupados({ vista, tipo, pagina, limite }) {
   const previewsPorTipo = {};
   await Promise.all(
     Object.entries(idsPorTipo).map(async ([t, ids]) => {
-      previewsPorTipo[t] = await obtenerPreviewsContenido(t, ids);
+      previewsPorTipo[t] = await obtenerVistasContenido(t, ids);
     }),
   );
 
@@ -119,7 +119,7 @@ async function listarReportesAgrupados({ vista, tipo, pagina, limite }) {
     const vivo = previewsPorTipo[g.tipo_contenido]?.get(g.contenido_id);
     const snapshot = propios.find((r) => r.contenido_snapshot)
       ?.contenido_snapshot;
-    const existe = vivo !== undefined;
+    const existe = !!vivo && !vivo.eliminado;
 
     return {
       tipo_contenido: g.tipo_contenido,
@@ -132,7 +132,9 @@ async function listarReportesAgrupados({ vista, tipo, pagina, limite }) {
       estados,
       correos_con_problema,
       contenido_existe: existe,
-      titulo: existe ? extracto(vivo) : (snapshot?.titulo ?? null),
+      titulo: existe
+        ? extracto(vivo.texto)
+        : (snapshot?.titulo ?? (vivo?.texto ? extracto(vivo.texto) : null)),
     };
   });
 
@@ -173,6 +175,9 @@ async function obtenerReportesDeContenido(tipo_contenido, contenido_id) {
   const snapshot =
     reportes.find((r) => r.contenido_snapshot)?.contenido_snapshot ?? null;
 
+  // un comentario eliminado lógicamente conserva su fila: no cuenta como existente
+  const existe =
+    !!fila && !(entrada.eliminadoField && fila[entrada.eliminadoField]);
   const autor_id = fila ? fila[entrada.ownerField] : snapshot?.autor_id;
   const autor = autor_id
     ? await prisma.usuario.findUnique({
@@ -193,8 +198,13 @@ async function obtenerReportesDeContenido(tipo_contenido, contenido_id) {
     tipo_contenido,
     contenido_id,
     contenido: {
-      existe: !!fila,
-      titulo: fila ? extracto(fila[entrada.previewField]) : (snapshot?.titulo ?? null),
+      existe,
+      titulo: existe
+        ? extracto(fila[entrada.previewField])
+        : (snapshot?.titulo ??
+          (fila?.[entrada.previewField]
+            ? extracto(fila[entrada.previewField])
+            : null)),
       autor,
       padre,
     },

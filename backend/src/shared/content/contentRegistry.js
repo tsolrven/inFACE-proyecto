@@ -132,6 +132,31 @@ async function bloquearContenido(
   );
   if (filas.length === 0) throw new NotFoundError(entrada.label);
 }
+
+// Como obtenerPreviewsContenido, pero indica también si el contenido está
+// eliminado lógicamente (comentarios): Map id → { texto, eliminado }.
+// Un comentario eliminado conserva su fila (y, si lo eliminó el staff, su texto).
+async function obtenerVistasContenido(tipo_contenido, ids, client = prisma) {
+  const entrada = obtenerEntradaRegistro(tipo_contenido);
+  const campo = entrada.eliminadoField;
+  const registros = await client[entrada.modelName].findMany({
+    where: { id: { in: ids } },
+    select: {
+      id: true,
+      [entrada.previewField]: true,
+      ...(campo && { [campo]: true }),
+    },
+  });
+  return new Map(
+    registros.map((r) => [
+      r.id,
+      {
+        texto: r[entrada.previewField],
+        eliminado: campo ? Boolean(r[campo]) : false,
+      },
+    ]),
+  );
+}
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function obtenerPreviewsContenido(tipo_contenido, ids, client = prisma) {
   const entrada = obtenerEntradaRegistro(tipo_contenido);
@@ -238,7 +263,7 @@ async function notificarInteraccion(tipo_contenido, datos) {
   if (!oyente) return;
   try {
     await oyente(datos);
-  } catch {}
+  } catch { }
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 function tiposContenidoValidos() {
@@ -265,6 +290,7 @@ export {
   actualizarVotosNetoContenido,
   bloquearContenido,
   obtenerPreviewsContenido,
+  obtenerVistasContenido,
   registrarHidratadorGuardados,
   hidratarGuardados,
   registrarAlEliminarComentario,

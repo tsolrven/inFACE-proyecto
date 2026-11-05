@@ -3,7 +3,7 @@ import { BadRequestError, ConflictError } from '../../errors/appError.js';
 import {
   verificarContenidoExiste,
   obtenerPropietarioContenido,
-  obtenerPreviewsContenido,
+  obtenerVistasContenido,
 } from '../content/contentRegistry.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 function construirDetalle({ objetivo, detalle }) {
@@ -79,13 +79,15 @@ async function listarReportesPropios(usuario_id) {
   const previewsPorTipo = {};
   await Promise.all(
     Object.entries(idsPorTipo).map(async ([tipo, ids]) => {
-      previewsPorTipo[tipo] = await obtenerPreviewsContenido(tipo, ids);
+      previewsPorTipo[tipo] = await obtenerVistasContenido(tipo, ids);
     }),
   );
 
   return reportes.map((r) => {
-    const previews = previewsPorTipo[r.tipo_contenido];
-    const contenido_existe = previews?.has(r.contenido_id) ?? false;
+    const vista = previewsPorTipo[r.tipo_contenido]?.get(r.contenido_id);
+    // "disponible" para quien reportó: existe y no fue eliminado. Un comentario
+    // eliminado conserva su fila, pero su texto no debe mostrarse.
+    const contenido_existe = !!vista && !vista.eliminado;
 
     return {
       id: r.id,
@@ -96,9 +98,7 @@ async function listarReportesPropios(usuario_id) {
       nota_resolucion: r.nota_resolucion,
       creado_en: r.creado_en,
       contenido_existe,
-      contenido_preview: contenido_existe
-        ? (previews.get(r.contenido_id) ?? null)
-        : null,
+      contenido_preview: contenido_existe ? vista.texto || null : null,
     };
   });
 }
