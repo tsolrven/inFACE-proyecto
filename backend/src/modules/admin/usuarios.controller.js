@@ -1,5 +1,9 @@
 import ApiResponse from '../../utils/apiResponse.js';
-import { buscarUsuarios, obtenerFichaUsuario } from './usuarios.service.js';
+import {
+  buscarUsuarios,
+  obtenerFichaUsuario,
+  listarReportesDeUsuario,
+} from './usuarios.service.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function buscar(req, res, next) {
   try {
@@ -19,4 +23,16 @@ async function obtenerFicha(req, res, next) {
   }
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-export { buscar, obtenerFicha };
+async function listarReportes(req, res, next) {
+  try {
+    const resultado = await listarReportesDeUsuario(
+      req.params.id,
+      req.query.lista,
+    );
+    return ApiResponse.success(res, resultado);
+  } catch (err) {
+    next(err);
+  }
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+export { buscar, obtenerFicha, listarReportes };

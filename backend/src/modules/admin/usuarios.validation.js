@@ -11,4 +11,15 @@ const buscarUsuariosQuerySchema = z.object({
     .max(BUSQUEDA_MAX, `No puede superar ${BUSQUEDA_MAX} caracteres`),
 });
 
-export { buscarUsuariosQuerySchema, BUSQUEDA_MIN, BUSQUEDA_MAX };
+const LISTAS_REPORTES = ['recibidos', 'realizados', 'eliminados'];
+
+const reportesUsuarioQuerySchema = z.object({
+  lista: z.enum(LISTAS_REPORTES, { error: 'La lista no es válida' }),
+});
+
+export {
+  buscarUsuariosQuerySchema,
+  reportesUsuarioQuerySchema,
+  BUSQUEDA_MIN,
+  BUSQUEDA_MAX,
+};
