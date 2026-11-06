@@ -55,6 +55,8 @@ export const useAuthStore = create((set) => ({
 
   actualizarUsuario: (usuario) => set({ usuario }),
 
+  limpiarSuspension: () => set({ suspension: null }),
+
   marcarInteresesConfigurados: () => {
     set((state) =>
       state.usuario

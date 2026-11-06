@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '@/shared/auth/authStore';
+import { mensajeDeError } from '@/shared/lib/errores';
 
 function parseApiError(err) {
   if (err.details && Array.isArray(err.details)) {
@@ -10,16 +11,28 @@ function parseApiError(err) {
     });
     return { fields: byField, general: null };
   }
-  return { fields: {}, general: err.message || 'Ocurrió un error inesperado' };
+  // mensajeDeError compone motivo y fecha en CUENTA_SUSPENDIDA; en el resto de
+  // los casos devuelve err.message como antes
+  return {
+    fields: {},
+    general: mensajeDeError(err, 'Ocurrió un error inesperado'),
+  };
 }
 
 export default function Login() {
-  const { login } = useAuthStore();
+  const { login, suspension, limpiarSuspension } = useAuthStore();
 
   const [form, setForm] = useState({ correo: '', contrasena: '' });
-  const [errors, setErrors] = useState({ fields: {}, general: null });
+  // Si la sesión se cerró por una suspensión, el aviso aparece desde el inicio
+  const [errors, setErrors] = useState({ fields: {}, general: suspension });
   const [loading, setLoading] = useState(false);
   const [mostrarContrasena, setMostrarContrasena] = useState(false);
+  
+  // El aviso se muestra una sola vez: ya está copiado en el estado local y no
+  // debe reaparecer más tarde con datos viejos (por ejemplo, tras una revocación)
+  useEffect(() => {
+    limpiarSuspension();
+  }, [limpiarSuspension]);
 
   function handleChange(e) {
     const { name, value } = e.target;
@@ -79,7 +92,7 @@ export default function Login() {
         {/* Card */}
         <div className='rounded-2xl border border-white/[0.07] bg-[#1E1E24] p-6'>
           {errors.general && (
-            <div className='mb-4 rounded-[10px] border border-red-500/30 bg-red-500/10 px-4 py-3 text-[12.5px] text-red-400'>
+            <div className='mb-4 w-full whitespace-pre-wrap rounded-[10px] border border-red-500/30 bg-red-500/10 px-4 py-3 text-[12.5px] text-red-400 [overflow-wrap:anywhere]'>
               {errors.general}
             </div>
           )}
