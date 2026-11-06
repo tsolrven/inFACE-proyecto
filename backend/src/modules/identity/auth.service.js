@@ -11,10 +11,12 @@ import {
   ForbiddenError,
   ValidationError,
   NotFoundError,
+  AccountSuspendedError,
 } from '../../errors/appError.js';
 import { derivarNombreDesdeCorreo } from './nombre.helper.js';
 import { VERSION_TERMINOS } from './terminos.constants.js';
 import { ORDEN_CARRERAS_USUARIO } from '../../shared/auth/carreraPrincipal.js';
+import { obtenerSancionesVigentes } from '../../shared/moderation/sanctions.service.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 function determinarRolPorCorreo(correo) {
   if (correo.endsWith('@alumnos.ubiobio.cl')) {
@@ -143,6 +145,11 @@ async function iniciarSesion({ correo, contrasena }) {
   // recién con la contraseña correcta se revela el estado de la cuenta
   if (!usuario.esta_activo) throw new ForbiddenError('Cuenta desactivada');
 
+  // igual que la desactivación: el motivo solo se revela con la contraseña
+  // correcta, para no delatar qué cuentas están suspendidas
+  const { suspension } = await obtenerSancionesVigentes(usuario.id);
+  if (suspension) throw new AccountSuspendedError(suspension);
+
   const carrera_id = usuario.usuario_carrera[0]?.carrera_id ?? null;
   const payload = { id: usuario.id, rol: usuario.rol, carrera_id };
 
@@ -178,6 +185,11 @@ async function refrescarToken(token) {
   if (payload.vt !== usuario.version_token) {
     throw new UnauthorizedError('Sesión cerrada, inicia sesión nuevamente');
   }
+
+  // sin cookie ni token nuevo; si la suspensión se revoca o vence, la misma
+  // sesión vuelve a refrescar sola
+  const { suspension } = await obtenerSancionesVigentes(usuario.id);
+  if (suspension) throw new AccountSuspendedError(suspension);
 
   const carrera_id = usuario.usuario_carrera[0]?.carrera_id ?? null;
 
