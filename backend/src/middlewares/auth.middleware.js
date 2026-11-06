@@ -4,7 +4,16 @@ import { prisma } from '../config/configDb.js';
 import { verificarAccessToken } from '../shared/auth/jwt.helper.js';
 import { ORDEN_CARRERAS_USUARIO } from '../shared/auth/carreraPrincipal.js';
 import { puedeEscribirContenido } from '../shared/auth/permissions.js';
-import { UnauthorizedError, ForbiddenError } from '../errors/appError.js';
+import {
+  UnauthorizedError,
+  ForbiddenError,
+  AccountSuspendedError,
+} from '../errors/appError.js';
+import { filtroVigente } from '../shared/moderation/sanctions.service.js';
+import {
+  TIPOS_SANCION,
+  TIPOS_CON_EFECTO,
+} from '../shared/moderation/sanctions.constants.js';
 
 // verifica que el token sea válido Y que el usuario siga existiendo y activo.
 // El rol y la carrera se leen de la BD en cada petición: el payload del token
@@ -35,6 +44,15 @@ async function autenticar(req, res, next) {
           orderBy: ORDEN_CARRERAS_USUARIO,
           take: 1,
         },
+        // sanciones con efecto vigentes (suspensión y restricción)
+        sanciones_recibidas: {
+          where: {
+            tipo: { in: TIPOS_CON_EFECTO },
+            ...filtroVigente(new Date()),
+          },
+          orderBy: { creado_en: 'desc' },
+          select: { tipo: true, motivo: true, hasta: true },
+        },
       },
     });
 
@@ -44,10 +62,20 @@ async function autenticar(req, res, next) {
       return next(new UnauthorizedError('Sesión no válida'));
     }
 
+    // 403 con código propio (no 401): ver AccountSuspendedError
+    const suspension = usuario.sanciones_recibidas.find(
+      (s) => s.tipo === TIPOS_SANCION.SUSPENSION,
+    );
+    if (suspension) return next(new AccountSuspendedError(suspension));
+
     req.usuario = {
       id: usuario.id,
       rol: usuario.rol,
       carrera_id: usuario.usuario_carrera[0]?.carrera_id ?? null,
+      restriccion:
+        usuario.sanciones_recibidas.find(
+          (s) => s.tipo === TIPOS_SANCION.RESTRICCION,
+        ) ?? null,
     };
     next();
   } catch (err) {

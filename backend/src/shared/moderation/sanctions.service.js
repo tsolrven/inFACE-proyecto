@@ -214,4 +214,5 @@ export {
   obtenerSancionesVigentes,
   listarSancionesDeUsuario,
   estadoDeSancion,
+  filtroVigente,
 };

@@ -55,6 +55,15 @@ class AccountRestrictedError extends AppError {
   }
 }
 
+// Cuenta suspendida: la reciben el login y las sesiones abiertas.
+// NO es 401: el cliente interpreta 401 como token vencido.
+class AccountSuspendedError extends AppError {
+  constructor(suspension) {
+    super('Tu cuenta está suspendida.', 403, 'CUENTA_SUSPENDIDA');
+    this.details = { motivo: suspension.motivo, hasta: suspension.hasta };
+  }
+}
+
 class InternalError extends AppError {
   constructor(message = 'Error interno del servidor') {
     super(message, 500, 'INTERNAL_ERROR');
@@ -70,5 +79,6 @@ export {
   ConflictError,
   ValidationError,
   AccountRestrictedError,
+  AccountSuspendedError,
   InternalError,
 };
