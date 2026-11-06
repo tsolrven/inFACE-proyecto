@@ -15,7 +15,10 @@ import {
   DIAS_MAX,
   MS_DIA,
 } from './sanctions.constants.js';
-import { notificarSancion } from './sanctions.notifications.js';
+import {
+  notificarSancion,
+  notificarRevocacion,
+} from './sanctions.notifications.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 // Vigente = no revocada y sin fecha de término o con término futuro.
 // Sin cron: el vencimiento se evalúa al consultar.
@@ -179,7 +182,13 @@ async function revocarSancion({
     throw new ConflictError('La sanción ya fue revocada o ya terminó');
   }
 
-  return prisma.sancion.findUnique({ where: { id: sancion_id } });
+  const sancion = await prisma.sancion.findUnique({
+    where: { id: sancion_id },
+  });
+
+  // después de la revocación y sin esperar: un fallo de aviso no la afecta
+  notificarRevocacion(sancion);
+  return sancion;
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 // Sanciones con efecto que están en pie ahora: { restriccion, suspension }.

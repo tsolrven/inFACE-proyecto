@@ -69,4 +69,52 @@ async function notificarSancion(sancion) {
   }
 }
 
-export { notificarSancion };
+// ────────────────────────────────────────────────────────────────────────────────────────
+// Avisos al revocar. Solo las sanciones con efecto avisan (la advertencia no
+// limitaba nada). No incluyen el motivo de revocación: es interno.
+const AVISO_REVOCACION = {
+  [TIPOS_SANCION.RESTRICCION]: {
+    titulo: 'Se levantó tu restricción temporal',
+    mensaje: 'Ya puedes crear y editar contenido nuevamente.',
+    enlace: '/reglas',
+  },
+  [TIPOS_SANCION.SUSPENSION]: { plantilla: 'suspension_revocada' },
+};
+
+// Igual que notificarSancion: DESPUÉS de la revocación, sin esperarla, nunca lanza.
+async function notificarRevocacion(sancion) {
+  try {
+    const config = AVISO_REVOCACION[sancion?.tipo];
+    if (!config) return;
+
+    const usuario = await prisma.usuario.findUnique({
+      where: { id: sancion.usuario_id },
+      select: { correo: true, esta_activo: true },
+    });
+    if (!usuario?.esta_activo) return;
+
+    if (config.titulo) {
+      await notificar({
+        usuarioId: sancion.usuario_id,
+        tipo: 'sancion',
+        titulo: config.titulo,
+        mensaje: config.mensaje,
+        enlace: config.enlace,
+      });
+    }
+
+    if (config.plantilla) {
+      const correo = plantillaSancion({ tipo: config.plantilla });
+      if (correo) {
+        await enviarCorreo({ para: usuario.correo, ...correo });
+      }
+    }
+  } catch (error) {
+    logger.error('Fallo inesperado al notificar una revocación', {
+      sancion_id: sancion?.id,
+      error: error.message,
+    });
+  }
+}
+
+export { notificarSancion, notificarRevocacion };
