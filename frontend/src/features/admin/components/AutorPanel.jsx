@@ -44,7 +44,11 @@ function mensajeConfirmacion(nombre, payload) {
 
 // `referencia` = { tipo, id } del contenido reportado, si el panel se abre
 // desde un reporte; permite asociar la sanción a ese contenido.
-export default function AutorPanel({ autor, referencia = null }) {
+export default function AutorPanel({
+  autor,
+  referencia = null,
+  titulo = 'Autor',
+}) {
   const [verHistorial, setVerHistorial] = useState(false);
   const [sancionando, setSancionando] = useState(false);
   const [pendiente, setPendiente] = useState(null);
@@ -98,7 +102,7 @@ export default function AutorPanel({ autor, referencia = null }) {
       <div className='flex items-start justify-between gap-3'>
         <div className='min-w-0'>
           <p className='text-[11px] font-semibold uppercase tracking-wide text-neutral-500'>
-            Autor
+            {titulo}
           </p>
           <p className='truncate text-[13px] font-semibold text-neutral-100'>
             {nombre}

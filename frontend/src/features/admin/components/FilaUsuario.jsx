@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import {
   ROL_LABEL,
   ESTADO_CUENTA_LABEL,
@@ -6,16 +7,14 @@ import {
 
 // Una fila de resultado de búsqueda de usuarios.
 export default function FilaUsuario({ usuario }) {
-  const {
-    nombre_usuario,
-    nombre_completo,
-    rol,
-    carreras,
-    estado_cuenta,
-  } = usuario;
+  const { id, nombre_usuario, nombre_completo, rol, carreras, estado_cuenta } =
+    usuario;
 
   return (
-    <div className='flex items-start justify-between gap-3 rounded-[12px] border border-white/[0.06] bg-[#1E1E24] p-4'>
+    <Link
+      to={`/admin/usuarios/${id}`}
+      className='flex items-start justify-between gap-3 rounded-[12px] border border-white/[0.06] bg-[#1E1E24] p-4 transition-colors hover:border-white/[0.16]'
+    >
       <div className='min-w-0'>
         <p className='truncate text-[13.5px] font-semibold text-neutral-100'>
           @{nombre_usuario}
@@ -46,6 +45,6 @@ export default function FilaUsuario({ usuario }) {
           </span>
         )}
       </div>
-    </div>
+    </Link>
   );
 }
