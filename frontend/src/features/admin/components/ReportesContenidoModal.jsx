@@ -3,11 +3,11 @@ import Modal, { ModalHeader, ModalBody } from '@/shared/components/ui/Modal';
 import Button from '@/shared/components/ui/Button';
 import PanelCierre from '@/features/admin/components/PanelCierre';
 import ReporteItem from '@/features/admin/components/ReporteItem';
+import AutorPanel from '@/features/admin/components/AutorPanel';
 import { useReportesDeContenido } from '@/features/admin/hooks/useModeracion';
 import {
   ETIQUETA_TIPO,
   ICONO_POR_TIPO,
-  nombreDeUsuario,
   rutaDeContenido,
 } from '@/shared/moderation/reportUi';
 
@@ -87,11 +87,8 @@ export default function ReportesContenidoModal({ tipo, id, onClose }) {
                   </span>
                 )}
               </p>
-              <div className='mt-2.5 flex items-center justify-between gap-3'>
-                <span className='text-[12px] text-neutral-500'>
-                  Autor: {nombreDeUsuario(contenido.autor)}
-                </span>
-                {ruta && (
+              {ruta && (
+                <div className='mt-2.5 flex justify-end'>
                   <Button
                     size='sm'
                     icon='ti-external-link'
@@ -101,9 +98,11 @@ export default function ReportesContenidoModal({ tipo, id, onClose }) {
                       ? 'Ver en su publicación'
                       : 'Ver contenido'}
                   </Button>
-                )}
-              </div>
+                </div>
+              )}
             </section>
+
+            <AutorPanel autor={contenido.autor} />
 
             <section>
               <h3 className='mb-2.5 text-[13px] font-bold text-neutral-100'>
