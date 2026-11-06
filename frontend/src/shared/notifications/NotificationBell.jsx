@@ -11,6 +11,7 @@ const ICONOS = {
   integrante_salio: 'ti-door-exit',
   entregables_actualizados: 'ti-trophy',
   proyecto_eliminado: 'ti-trash',
+  sancion: 'ti-alert-triangle',
 };
 
 function hace(fecha) {
