@@ -94,18 +94,40 @@ export function refrescarSesion() {
   return refreshPromise;
 }
 
+// Una suspensión no es una sesión vencida: se cierra la sesión local y se
+// avisa con el error original (motivo y fecha viajan en error.details).
+function avisarSuspension(error) {
+  clearAccessToken();
+  window.dispatchEvent(
+    new CustomEvent('auth:account-suspended', { detail: error }),
+  );
+}
+
 // ── petición con sesión: si el token venció, refresca y reintenta una vez ───
 export async function apiFetch(path, options = {}) {
   try {
     return await request(path, options);
   } catch (error) {
+    if (
+      options.auth !== false &&
+      error.status === 403 &&
+      error.code === 'CUENTA_SUSPENDIDA'
+    ) {
+      avisarSuspension(error);
+      throw error;
+    }
+
     if (error.status !== 401 || options.auth === false) throw error;
 
     try {
       await refrescarSesion();
-    } catch {
-      clearAccessToken();
-      window.dispatchEvent(new CustomEvent('auth:session-expired'));
+    } catch (refreshError) {
+      if (refreshError.code === 'CUENTA_SUSPENDIDA') {
+        avisarSuspension(refreshError);
+      } else {
+        clearAccessToken();
+        window.dispatchEvent(new CustomEvent('auth:session-expired'));
+      }
       throw error;
     }
     return request(path, options);

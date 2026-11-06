@@ -7,14 +7,17 @@ import {
 } from './auth.service';
 import { refrescarSesion, clearAccessToken } from '@/shared/api/client';
 import { queryClient } from '@/shared/api/queryClient';
+import { mensajeDeError } from '@/shared/lib/errores';
 
 export const useAuthStore = create((set) => ({
   usuario: null,
   cargando: true,
+  // Mensaje de suspensión (motivo y fecha) para mostrarlo en el login
+  suspension: null,
 
   login: async (credenciales) => {
     const data = await apiLogin(credenciales);
-    set({ usuario: data.usuario });
+    set({ usuario: data.usuario, suspension: null });
     return data;
   },
 
@@ -38,9 +41,13 @@ export const useAuthStore = create((set) => ({
       await refrescarSesion();
       const usuario = await obtenerPerfilActual();
       set({ usuario });
-    } catch {
+    } catch (err) {
       clearAccessToken();
-      set({ usuario: null });
+      set({
+        usuario: null,
+        suspension:
+          err?.code === 'CUENTA_SUSPENDIDA' ? mensajeDeError(err) : null,
+      });
     } finally {
       set({ cargando: false });
     }
@@ -60,4 +67,12 @@ export const useAuthStore = create((set) => ({
 window.addEventListener('auth:session-expired', () => {
   queryClient.clear();
   useAuthStore.setState({ usuario: null });
+});
+
+window.addEventListener('auth:account-suspended', (e) => {
+  queryClient.clear();
+  useAuthStore.setState({
+    usuario: null,
+    suspension: mensajeDeError(e.detail),
+  });
 });
