@@ -4,5 +4,8 @@
 
 export const navAdmin = {
   title: 'Administración',
-  items: [{ path: '/admin/reportes', label: 'Reportes', icon: 'ti-flag' }],
+  items: [
+    { path: '/admin/reportes', label: 'Reportes', icon: 'ti-flag' },
+    { path: '/admin/usuarios', label: 'Usuarios', icon: 'ti-users' },
+  ],
 };

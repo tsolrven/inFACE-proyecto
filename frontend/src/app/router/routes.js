@@ -163,4 +163,8 @@ export const adminRoutes = [
     path: '/admin/reportes',
     component: lazy(() => import('@/features/admin/pages/ModeracionPage')),
   },
+  {
+    path: '/admin/usuarios',
+    component: lazy(() => import('@/features/admin/pages/UsuariosPage')),
+  },
 ];
