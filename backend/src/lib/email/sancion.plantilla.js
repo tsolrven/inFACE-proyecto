@@ -16,7 +16,7 @@ function formatearFechaSancion(fecha) {
   return new Date(fecha).toLocaleString('es-CL', FORMATO_FECHA);
 }
 
-// Un bloque por tipo de sanción con correo (advertencia y restricción; la suspensión llega en S1-5).
+// Un bloque por tipo de sanción con correo (advertencia, restricción y suspensión).
 const CONTENIDO = {
   advertencia: {
     asunto: 'Recibiste una advertencia en InFACE',
@@ -38,6 +38,17 @@ const CONTENIDO = {
     cierre:
       'Mientras dure, no puedes crear ni editar publicaciones, comentarios, archivos ni etiquetas de anuncios. Sí puedes leer, votar, guardar contenido, reportar, eliminar tus propias publicaciones y editar tu perfil. Si estas conductas se repiten, podrían aplicarse otras medidas, como la suspensión de la cuenta. Puedes revisar las reglas de InFACE dentro de la plataforma.',
   },
+  suspension: {
+    asunto: 'Tu cuenta de InFACE fue suspendida',
+    etiqueta: 'Suspensión',
+    color: '#EF4444',
+    titulo: 'Tu cuenta fue suspendida',
+    intro:
+      'El equipo de moderación de InFACE suspendió tu cuenta por el siguiente motivo:',
+    sinTermino: 'Suspensión permanente',
+    cierre:
+      'Mientras dure la suspensión no podrás iniciar sesión ni usar la plataforma. Si la suspensión es temporal, tu acceso se restablece automáticamente al cumplirse la fecha indicada.',
+  },
 };
 
 // `motivo` lo escribe el superadmin: se escapa siempre, nunca va como HTML.
@@ -45,9 +56,11 @@ function plantillaSancion({ tipo, motivo, hasta }) {
   const c = CONTENIDO[tipo];
   if (!c) return null;
   const motivoHtml = escapar(motivo).replace(/\r?\n/g, '<br>');
-  const termino = hasta ? formatearFechaSancion(hasta) : null;
-  const terminoHtml = termino
-    ? `<p style="margin:0 0 18px 0;font-size:14px;line-height:1.6;color:#E4E4E7;">Vigente hasta: <strong>${termino}</strong></p>`
+  const lineaTermino = hasta
+    ? `Vigente hasta: ${formatearFechaSancion(hasta)}`
+    : (c.sinTermino ?? null);
+  const terminoHtml = lineaTermino
+    ? `<p style="margin:0 0 18px 0;font-size:14px;line-height:1.6;color:#E4E4E7;"><strong>${lineaTermino}</strong></p>`
     : '';
 
   const html = `<!doctype html>
@@ -86,7 +99,7 @@ function plantillaSancion({ tipo, motivo, hasta }) {
 </body>
 </html>`;
 
-  const texto = `${c.titulo}\n\n${c.intro}\n\n${motivo}\n\n${termino ? `Vigente hasta: ${termino}\n\n` : ''}${c.cierre}`;
+  const texto = `${c.titulo}\n\n${c.intro}\n\n${motivo}\n\n${lineaTermino ? `${lineaTermino}\n\n` : ''}${c.cierre}`;
 
   return { asunto: c.asunto, html, texto };
 }

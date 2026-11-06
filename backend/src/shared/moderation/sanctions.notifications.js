@@ -9,8 +9,8 @@ import { TIPOS_SANCION } from './sanctions.constants.js';
 import { notificar } from '../notifications/notifications.service.js';
 
 // Qué tipos avisan y con qué texto. `titulo` puede ser una función de la
-// sanción (la restricción incluye su fecha de término). La suspensión se
-// agrega en S1-5 (solo correo, sin notificación).
+// sanción (la restricción incluye su fecha de término). La suspensión solo
+// envía correo: quien está suspendido no verá la plataforma.
 const NOTIFICACION_POR_TIPO = {
   [TIPOS_SANCION.ADVERTENCIA]: {
     titulo: 'Recibiste una advertencia',
@@ -21,6 +21,7 @@ const NOTIFICACION_POR_TIPO = {
       `Restricción temporal hasta el ${formatearFechaSancion(s.hasta)}`,
     enlace: '/reglas',
   },
+  [TIPOS_SANCION.SUSPENSION]: { soloCorreo: true },
 };
 // ────────────────────────────────────────────────────────────────────────────────────────
 // Se llama DESPUÉS del commit y sin esperarla: un fallo acá (BD o SMTP) nunca
@@ -38,16 +39,18 @@ async function notificarSancion(sancion) {
     if (!usuario?.esta_activo) return;
 
     // notificar() nunca lanza: si falla, lo registra en el log
-    await notificar({
-      usuarioId: sancion.usuario_id,
-      tipo: 'sancion',
-      titulo:
-        typeof config.titulo === 'function'
-          ? config.titulo(sancion)
-          : config.titulo,
-      mensaje: sancion.motivo,
-      enlace: config.enlace,
-    });
+    if (!config.soloCorreo) {
+      await notificar({
+        usuarioId: sancion.usuario_id,
+        tipo: 'sancion',
+        titulo:
+          typeof config.titulo === 'function'
+            ? config.titulo(sancion)
+            : config.titulo,
+        mensaje: sancion.motivo,
+        enlace: config.enlace,
+      });
+    }
 
     const correo = plantillaSancion({
       tipo: sancion.tipo,
