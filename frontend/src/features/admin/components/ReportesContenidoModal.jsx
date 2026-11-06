@@ -102,7 +102,10 @@ export default function ReportesContenidoModal({ tipo, id, onClose }) {
               )}
             </section>
 
-            <AutorPanel autor={contenido.autor} />
+            <AutorPanel
+              autor={contenido.autor}
+              referencia={{ tipo, id }}
+            />
 
             <section>
               <h3 className='mb-2.5 text-[13px] font-bold text-neutral-100'>
