@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Button from '@/shared/components/ui/Button';
 import ConfirmDialog from '@/shared/components/ui/ConfirmDialog';
 import SancionForm from '@/shared/moderation/SancionForm';
+import RevocarSancion from '@/features/admin/components/RevocarSancion';
 import SancionesHistorial from '@/shared/moderation/SancionesHistorial';
 import { mensajeDeError } from '@/shared/lib/errores';
 import { mostrarToast } from '@/shared/stores/toastStore';
@@ -157,7 +158,15 @@ export default function AutorPanel({ autor, referencia = null }) {
 
       {verHistorial && data && (
         <div className='mt-3'>
-          <SancionesHistorial sanciones={data} />
+          <SancionesHistorial
+            sanciones={data}
+            acciones={(s) => (
+              <RevocarSancion
+                usuarioId={autor.id}
+                sancion={s}
+              />
+            )}
+          />
         </div>
       )}
 

@@ -8,7 +8,9 @@ import {
   formatearFechaSancion,
 } from '@/shared/moderation/sancionUi';
 
-export default function SancionesHistorial({ sanciones }) {
+// `acciones` (opcional): función (sancion) => nodo que se dibuja al final de
+// cada sanción, p. ej. el botón «Revocar» de Administración.
+export default function SancionesHistorial({ sanciones, acciones }) {
   if (sanciones.length === 0) {
     return (
       <p className='text-[12.5px] text-neutral-500'>
@@ -54,6 +56,7 @@ export default function SancionesHistorial({ sanciones }) {
                 {s.motivo_revocacion ? ` · ${s.motivo_revocacion}` : ''}
               </p>
             )}
+            {acciones?.(s)}
           </li>
         );
       })}
