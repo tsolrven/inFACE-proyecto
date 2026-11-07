@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useAnunciosFiltrosStore } from '@/features/announcements/store/anunciosFiltrosStore';
 import { useAnunciosFeed } from '@/features/announcements/hooks/useAnuncios';
 import { useCentinela } from '@/shared/hooks/useCentinela';
@@ -12,6 +12,12 @@ export default function AnnouncementsFeed({
 }) {
   const flairId = useAnunciosFiltrosStore((s) => s.filtros.flair_id);
   const orden = useAnunciosFiltrosStore((s) => s.filtros.orden);
+  const alinearCarrera = useAnunciosFiltrosStore((s) => s.alinearCarrera);
+
+  // los flairs pertenecen a una carrera: al cambiar de comunidad se reinician
+  useEffect(() => {
+    alinearCarrera(carreraId);
+  }, [carreraId, alinearCarrera]);
 
   const filtros = useMemo(
     () => ({ carrera_id: carreraId, flair_id: flairId, orden, hashtag }),

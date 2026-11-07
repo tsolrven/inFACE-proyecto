@@ -11,9 +11,17 @@ export default function MaterialFeed({
   onAbrirSubida,
 }) {
   const filtrosStore = useFiltrosStore((s) => s.filtros);
+  const alinearCarrera = useFiltrosStore((s) => s.alinearCarrera);
+
+  // los filtros (ramo) pertenecen a una carrera: al cambiar de comunidad se
+  // reinician para no arrastrar el ramo de otra carrera
+  useEffect(() => {
+    alinearCarrera(carreraId);
+  }, [carreraId, alinearCarrera]);
+
   const filtros = useMemo(
-    () => ({ ...filtrosStore, hashtag }),
-    [filtrosStore, hashtag],
+    () => ({ ...filtrosStore, hashtag, carrera_id: carreraId }),
+    [filtrosStore, hashtag, carreraId],
   );
 
   const hayOtrosFiltros = !!(filtros.ramo_id || filtros.tipo_archivo);

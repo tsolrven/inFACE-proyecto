@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useForumFiltrosStore } from '@/features/forum/store/forumFiltrosStore';
 import { useHilosFeed } from '@/features/forum/hooks/useHilos';
 import { useCentinela } from '@/shared/hooks/useCentinela';
@@ -11,11 +11,19 @@ export default function ForumFeed({
   permitirCrear = true,
 }) {
   const filtrosStore = useForumFiltrosStore((s) => s.filtros);
-  const filtros = useMemo(
-    () => ({ ...filtrosStore, hashtag }),
-    [filtrosStore, hashtag],
-  );
+  const alinearCarrera = useForumFiltrosStore((s) => s.alinearCarrera);
 
+  // los filtros (ramo) pertenecen a una carrera: al cambiar de comunidad se
+  // reinician para no arrastrar el ramo de otra carrera
+  useEffect(() => {
+    alinearCarrera(carreraId);
+  }, [carreraId, alinearCarrera]);
+
+  const filtros = useMemo(
+    () => ({ ...filtrosStore, hashtag, carrera_id: carreraId }),
+    [filtrosStore, hashtag, carreraId],
+  );
+  
   const {
     data,
     isPending,
