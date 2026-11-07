@@ -1,5 +1,5 @@
-import PlaceholderPage from '@/shared/components/PlaceholderPage';
+import ComunidadCarrera from '@/features/communities/components/ComunidadCarrera';
 
 export default function ContPublicoAuditor() {
-  return <PlaceholderPage title='Contador Público y Auditor' />;
+  return <ComunidadCarrera codigo='CPA' />;
 }

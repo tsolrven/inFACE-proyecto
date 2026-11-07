@@ -1,5 +1,5 @@
-import PlaceholderPage from '@/shared/components/PlaceholderPage';
+import ComunidadCarrera from '@/features/communities/components/ComunidadCarrera';
 
 export default function IngCivilInformatica() {
-  return <PlaceholderPage title='Ingeniería Civil en Informática' />;
+  return <ComunidadCarrera codigo='ICINF' />;
 }

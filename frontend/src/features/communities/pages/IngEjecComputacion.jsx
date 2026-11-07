@@ -1,5 +1,5 @@
-import PlaceholderPage from '@/shared/components/PlaceholderPage';
+import ComunidadCarrera from '@/features/communities/components/ComunidadCarrera';
 
 export default function IngEjecComputacion() {
-  return <PlaceholderPage title='Ingeniería de Ejecución en Computación' />;
+  return <ComunidadCarrera codigo='IECI' />;
 }

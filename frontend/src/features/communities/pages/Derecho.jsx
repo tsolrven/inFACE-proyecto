@@ -1,5 +1,5 @@
-import PlaceholderPage from '@/shared/components/PlaceholderPage';
+import ComunidadCarrera from '@/features/communities/components/ComunidadCarrera';
 
 export default function Derecho() {
-  return <PlaceholderPage title='Derecho' />;
+  return <ComunidadCarrera codigo='DER' />;
 }

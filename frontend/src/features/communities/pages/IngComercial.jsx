@@ -1,5 +1,5 @@
-import PlaceholderPage from '@/shared/components/PlaceholderPage';
+import ComunidadCarrera from '@/features/communities/components/ComunidadCarrera';
 
 export default function IngComercial() {
-  return <PlaceholderPage title='Ingeniería Comercial' />;
+  return <ComunidadCarrera codigo='ICO' />;
 }
