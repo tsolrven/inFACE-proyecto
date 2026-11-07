@@ -128,6 +128,34 @@ export const extraRoutes = [
     path: '/foro-por-ramos/:id',
     component: lazy(() => import('@/features/forum/pages/HiloDetailPage')),
   },
+  {
+    path: '/espacio-creativo/nueva',
+    component: lazy(
+      () => import('@/features/creative-space/pages/ObraEditorPage'),
+    ),
+  },
+  {
+    path: '/espacio-creativo/obra/:id',
+    component: lazy(() => import('@/features/creative-space/pages/ObraPage')),
+  },
+  {
+    path: '/espacio-creativo/obra/:id/editar',
+    component: lazy(
+      () => import('@/features/creative-space/pages/ObraEditorPage'),
+    ),
+  },
+  {
+    path: '/espacio-creativo/hashtag/:nombre',
+    component: lazy(
+      () => import('@/features/creative-space/pages/HashtagPage'),
+    ),
+  },
+  {
+    path: '/espacio-creativo/:espacio',
+    component: lazy(
+      () => import('@/features/creative-space/pages/EspacioPage'),
+    ),
+  },
 ];
 
 export const modalRoutes = [

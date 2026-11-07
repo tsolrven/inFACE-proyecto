@@ -1,0 +1,14 @@
+export const TITULO_MIN = 3;
+export const TITULO_MAX = 150;
+export const DESCRIPCION_MAX = 3000;
+export const FIRMA_MAX = 80;
+export const TEXTO_MAX = 50000;
+export const CAPITULO_MAX = 40000;
+export const CAPITULOS_MAX = 50;
+export const PERSONAJES_MAX = 30;
+export const PISTAS_MAX = 40;
+export const ADJUNTO_MAX_MB = 20; 
+export const ADJUNTO_MAX_BYTES = ADJUNTO_MAX_MB * 1024 * 1024;
+export const ADJUNTOS_MAX = 40; 
+export const EXT_IMAGENES = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
+export const EXT_AUDIO = ['.mp3', '.wav', '.ogg', '.m4a'];

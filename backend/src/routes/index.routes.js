@@ -12,6 +12,7 @@ import proyectoRoutes from '../modules/project-match/matchingProyecto.routes.js'
 import etiquetaRoutes from '../modules/identity/etiqueta.routes.js';
 import perfilRoutes from '../modules/identity/perfil.routes.js';
 import hiloRoutes from '../modules/forum/forum.routes.js';
+import obraRoutes from '../modules/creative/creative.routes.js';
 import notificacionRoutes from '../shared/notifications/notifications.routes.js';
 
 function routerApi(app) {
@@ -33,6 +34,9 @@ function routerApi(app) {
 
   // módulo 2: Foro por ramos
   router.use('/hilos', hiloRoutes);
+
+  // módulo: Espacio creativo / cultural
+  router.use('/obras', obraRoutes);
 
   // moderación (transversal a todos los módulos)
   router.use('/reportes', reporteRoutes);

@@ -23,11 +23,42 @@ const CONTENT_REGISTRY = {
     votesField: 'votos_neto',
     previewField: 'titulo',
     allowsComments: true,
-    // solo imágenes: se aplica sobre EXTENSIONES_PERMITIDAS (multer.helper.js)
     adjuntos: {
       max: 10,
       extensiones: ['.jpg', '.jpeg', '.png', '.webp', '.gif'],
     },
+  },
+  obra: {
+    modelName: 'obra',
+    tableName: 'obras',
+    label: 'Obra',
+    ownerField: 'autor_id',
+    votesField: 'votos_neto',
+    previewField: 'titulo',
+    allowsComments: true,
+    adjuntos: {
+      max: 40,
+      extensiones: [
+        '.jpg',
+        '.jpeg',
+        '.png',
+        '.webp',
+        '.gif',
+        '.mp3',
+        '.wav',
+        '.ogg',
+        '.m4a',
+      ],
+    },
+  },
+  parrafo: {
+    modelName: 'capituloParrafo',
+    tableName: 'capitulo_parrafos',
+    label: 'Párrafo',
+    ownerField: 'autor_id',
+    votesField: 'votos_neto',
+    previewField: 'extracto',
+    allowsComments: true,
   },
   comentario: {
     modelName: 'comentario',
@@ -143,10 +174,6 @@ async function hidratarGuardados(tipo_contenido, ids, usuario_id) {
 }
 
 // ────────────────────────────────────────────────────────────────────────────────────────
-// Cada módulo puede reaccionar cuando se elimina (lógica o físicamente) un comentario
-// de SU contenido. Ej: el foro limpia la respuesta aceptada del hilo.
-// El hook corre dentro de la transacción del borrado: recibe (tx, comentario),
-// con `comentario` tal como estaba ANTES de eliminarlo.
 function registrarAlEliminarComentario(tipo_contenido, hook) {
   obtenerEntradaRegistro(tipo_contenido).alEliminarComentario = hook;
 }
@@ -157,9 +184,6 @@ async function ejecutarAlEliminarComentario(tx, comentario) {
   if (hook) await hook(tx, comentario);
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-// Cada módulo puede impedir que se quite un archivo de SU contenido (ej: el apunte
-// no puede quedar vacío). Corre dentro de la transacción de eliminarArchivo, con el
-// contenido bloqueado. Recibe (tx, archivo) y lanza un error para rechazar.
 function registrarAlQuitarArchivo(tipo_contenido, hook) {
   obtenerEntradaRegistro(tipo_contenido).alQuitarArchivo = hook;
 }
@@ -181,7 +205,7 @@ async function notificarInteraccion(tipo_contenido, datos) {
   if (!oyente) return;
   try {
     await oyente(datos);
-  } catch {}
+  } catch { }
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 function tiposContenidoValidos() {
@@ -192,7 +216,6 @@ function admiteComentarios(tipo_contenido) {
   return CONTENT_REGISTRY[tipo_contenido]?.allowsComments === true;
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-// Config de adjuntos del tipo. Si el tipo no admite archivos, rechaza.
 function obtenerConfigAdjuntos(tipo_contenido) {
   const entrada = obtenerEntradaRegistro(tipo_contenido);
   if (!entrada.adjuntos) {

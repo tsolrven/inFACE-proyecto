@@ -11,44 +11,43 @@ datasource db {
 //───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 model Usuario {
-  id            String   @id @default(uuid())
+  id             String   @id @default(uuid())
   correo         String   @unique
   contrasena     String
-  rol            String   @default("estudiante") 
+  rol            String   @default("estudiante")
   esta_activo    Boolean  @default(true)
   version_token  Int      @default(0)
   creado_en      DateTime @default(now())
   actualizado_en DateTime @updatedAt
 
-  // Términos y consentimientos 
-  terminos_version               String?   @db.VarChar(20) 
-  terminos_aceptados_en          DateTime?
-  consentimiento_investigacion   Boolean   @default(false)
+  terminos_version                String?   @db.VarChar(20)
+  terminos_aceptados_en           DateTime?
+  consentimiento_investigacion    Boolean   @default(false)
   consentimiento_investigacion_en DateTime?
 
-  // Eliminación de cuenta (ver identity/cuentaEliminacion.service.js)
-  eliminacion_programada_en DateTime?  // cuando llega esta fecha, la cuenta se anonimiza sola
-  anonimizado_en            DateTime?  // ya anonimizada: sin datos personales
+  eliminacion_programada_en DateTime?
+  anonimizado_en            DateTime?
 
   // RELACIONES
-  perfil           Perfil?
-  usuario_carrera  UsuarioCarrera[]
-  apuntes          Apunte[]
-  comentarios            Comentario[] @relation("ComentarioAutor")
-  comentarios_eliminados Comentario[] @relation("ComentarioEliminadoPor")
-  votos            Voto[]
-  guardados        Guardado[]
-  reportes_creados Reporte[]  @relation("ReporteCreadoPor")
-  reportes_revisados Reporte[] @relation("ReporteRevisadoPor")
-  usuario_etiquetas    UsuarioEtiqueta[]
-  proyectos_creados    Proyecto[]
-  postulaciones        PostulacionProyecto[]
-  integrantes_proyecto IntegranteProyecto[]
-  favoritos_proyecto   FavoritoProyecto[]
-  descartes_proyecto   DescarteProyecto[]
-  hilos Hilo[]
-  notificaciones Notificacion[]
-  tokens_recuperacion TokenRecuperacion[]
+  perfil                 Perfil?
+  usuario_carrera        UsuarioCarrera[]
+  apuntes                Apunte[]
+  comentarios            Comentario[]          @relation("ComentarioAutor")
+  comentarios_eliminados Comentario[]          @relation("ComentarioEliminadoPor")
+  votos                  Voto[]
+  guardados              Guardado[]
+  reportes_creados       Reporte[]             @relation("ReporteCreadoPor")
+  reportes_revisados     Reporte[]             @relation("ReporteRevisadoPor")
+  usuario_etiquetas      UsuarioEtiqueta[]
+  proyectos_creados      Proyecto[]
+  postulaciones          PostulacionProyecto[]
+  integrantes_proyecto   IntegranteProyecto[]
+  favoritos_proyecto     FavoritoProyecto[]
+  descartes_proyecto     DescarteProyecto[]
+  hilos                  Hilo[]
+  obras                  Obra[]
+  notificaciones         Notificacion[]
+  tokens_recuperacion    TokenRecuperacion[]
 
   @@map("usuarios")
 }
@@ -77,8 +76,8 @@ model Perfil {
 //───────────────────────────────────────────────────────────────────────────────
 
 model TipoEtiqueta {
-  id                    String     @id @default(uuid())
-  nombre_tipo_etiqueta  String     @unique @db.VarChar(30)
+  id                   String @id @default(uuid())
+  nombre_tipo_etiqueta String @unique @db.VarChar(30)
 
   etiquetas Etiqueta[]
 
@@ -99,7 +98,7 @@ model Etiqueta {
   estado                String   @default("pendiente") @db.VarChar(20)
   fecha_creacion        DateTime @default(now())
 
-  tipo_etiqueta      TipoEtiqueta      @relation(fields: [tipo_etiqueta_id], references: [id])
+  tipo_etiqueta      TipoEtiqueta       @relation(fields: [tipo_etiqueta_id], references: [id])
   usuario_etiquetas  UsuarioEtiqueta[]
   proyecto_etiquetas ProyectoEtiqueta[]
 
@@ -123,9 +122,9 @@ model UsuarioEtiqueta {
 // ╰─────────────────────────────✧────────────────────────────────╮
 
 model Carrera {
-  id         String   @id @default(uuid())
-  nombre     String
-  codigo     String   @unique
+  id          String  @id @default(uuid())
+  nombre      String
+  codigo      String  @unique
   descripcion String?
 
   usuario_carrera UsuarioCarrera[]
@@ -137,15 +136,15 @@ model Carrera {
 // ╰─────────────────────────────✧────────────────────────────────╮
 
 model Ramo {
-  id          String   @id @default(uuid())
+  id          String  @id @default(uuid())
   nombre      String
-  codigo      String   @unique
+  codigo      String  @unique
   semestre    Int?
   descripcion String?
 
   ramo_carrera RamoCarrera[]
   apuntes      Apunte[]
-  hilos Hilo[]
+  hilos        Hilo[]
 
   @@map("ramos")
 }
@@ -158,7 +157,8 @@ model Hashtag {
   creado_en DateTime @default(now())
 
   apuntes ApunteHashtag[]
-  hilos HiloHashtag[]
+  hilos   HiloHashtag[]
+  obras   ObraHashtag[]
 
   @@map("hashtags")
 }
@@ -195,21 +195,21 @@ model RamoCarrera {
 //──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 model Comentario {
-  id               String   @id @default(uuid())
+  id               String    @id @default(uuid())
   autor_id         String
-  tipo_contenido   String   
+  tipo_contenido   String
   contenido_id     String
   padre_id         String?
-  nivel            Int      @default(0)
+  nivel            Int       @default(0)
   contenido        String
-  votos_neto       Int      @default(0)
-  hilo_aceptado Hilo? @relation("HiloRespuestaAceptada")
-  eliminado        Boolean  @default(false)
+  votos_neto       Int       @default(0)
+  hilo_aceptado    Hilo?     @relation("HiloRespuestaAceptada")
+  eliminado        Boolean   @default(false)
   eliminado_por_id String?
-  eliminado_en     DateTime?  
-  creado_en        DateTime @default(now())
-  actualizado_en   DateTime @updatedAt
-  editado_en       DateTime?   // null = nunca editado por su autor
+  eliminado_en     DateTime?
+  creado_en        DateTime  @default(now())
+  actualizado_en   DateTime  @updatedAt
+  editado_en       DateTime?
 
   autor      Usuario      @relation("ComentarioAutor", fields: [autor_id], references: [id])
   eliminador Usuario?     @relation("ComentarioEliminadoPor", fields: [eliminado_por_id], references: [id])
@@ -228,7 +228,7 @@ model Comentario {
 
 model Voto {
   usuario_id     String
-  tipo_contenido String 
+  tipo_contenido String
   contenido_id   String
   tipo           String
   creado_en      DateTime @default(now())
@@ -258,14 +258,14 @@ model Guardado {
 // ╰─────────────────────────────✧────────────────────────────────╮
 
 model Archivo {
-  id                 String   @id @default(uuid())
-  tipo_contenido     String  
-  contenido_id       String   
+  id                 String  @id @default(uuid())
+  tipo_contenido     String
+  contenido_id       String
   nombre_archivo     String
   ruta_url           String
   tipo_mime          String?
   tamanio            Int?
-  contador_descargas Int      @default(0)
+  contador_descargas Int     @default(0)
 
   @@index([tipo_contenido, contenido_id])
   @@map("archivos")
@@ -276,23 +276,23 @@ model Archivo {
 //───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 model Apunte {
-  id                String   @id @default(uuid())
-  autor_id          String
-  ramo_id           String
-  titulo            String
-  descripcion       String?
-  tipo              String   @default("apunte") 
-  links             String[] @default([])
-  codigo_snippet    String?   
-  lenguaje_snippet  String?   
-  votos_neto        Int      @default(0)
-  creado_en         DateTime @default(now())
-  actualizado_en    DateTime @updatedAt
-  editado_en        DateTime?   // null = nunca editado por su autor
+  id               String    @id @default(uuid())
+  autor_id         String
+  ramo_id          String
+  titulo           String
+  descripcion      String?
+  tipo             String    @default("apunte")
+  links            String[]  @default([])
+  codigo_snippet   String?
+  lenguaje_snippet String?
+  votos_neto       Int       @default(0)
+  creado_en        DateTime  @default(now())
+  actualizado_en   DateTime  @updatedAt
+  editado_en       DateTime?
 
   // RELACIONES
-  autor    Usuario       @relation(fields: [autor_id], references: [id])
-  ramo     Ramo          @relation(fields: [ramo_id], references: [id])
+  autor    Usuario         @relation(fields: [autor_id], references: [id])
+  ramo     Ramo            @relation(fields: [ramo_id], references: [id])
   hashtags ApunteHashtag[]
 
   @@index([ramo_id])
@@ -311,71 +311,73 @@ model ApunteHashtag {
   hashtag Hashtag @relation(fields: [hashtag_id], references: [id])
 
   @@id([apunte_id, hashtag_id])
-  @@map("apuntes_hashtags")
   @@index([hashtag_id])
+  @@map("apuntes_hashtags")
 }
 
 //───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 // MÓDULO 2: FORO POR RAMOS
 //───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 model Hilo {
-  id                    String    @id @default(uuid())
+  id                    String        @id @default(uuid())
   autor_id              String
   ramo_id               String
   titulo                String
-  contenido             String?   // markdown
-  votos_neto            Int       @default(0)
-  respuesta_aceptada_id String?   @unique
-  creado_en             DateTime  @default(now())
-  actualizado_en        DateTime  @updatedAt
+  contenido             String? // markdown
+  votos_neto            Int           @default(0)
+  respuesta_aceptada_id String?       @unique
+  creado_en             DateTime      @default(now())
+  actualizado_en        DateTime      @updatedAt
   editado_en            DateTime?
-  autor              Usuario       @relation(fields: [autor_id], references: [id])
-  ramo               Ramo          @relation(fields: [ramo_id], references: [id])
-  respuesta_aceptada Comentario?   @relation("HiloRespuestaAceptada", fields: [respuesta_aceptada_id], references: [id], onDelete: SetNull)
-  hashtags           HiloHashtag[]
+  autor                 Usuario       @relation(fields: [autor_id], references: [id])
+  ramo                  Ramo          @relation(fields: [ramo_id], references: [id])
+  respuesta_aceptada    Comentario?   @relation("HiloRespuestaAceptada", fields: [respuesta_aceptada_id], references: [id], onDelete: SetNull)
+  hashtags              HiloHashtag[]
+
   @@index([ramo_id, creado_en])
   @@index([ramo_id, votos_neto])
   @@index([autor_id])
   @@map("hilos")
 }
+
 model HiloHashtag {
   hilo_id    String
   hashtag_id String
-  hilo    Hilo    @relation(fields: [hilo_id], references: [id], onDelete: Cascade)
-  hashtag Hashtag @relation(fields: [hashtag_id], references: [id])
+  hilo       Hilo    @relation(fields: [hilo_id], references: [id], onDelete: Cascade)
+  hashtag    Hashtag @relation(fields: [hashtag_id], references: [id])
+
   @@id([hilo_id, hashtag_id])
   @@index([hashtag_id])
   @@map("hilos_hashtags")
 }
+
 //───────────────────────────────────────────────────────────────────────────────
 // MÓDULO 4: MATCH DE PROYECTOS
 //───────────────────────────────────────────────────────────────────────────────
 
 model Proyecto {
-  id                   String   @id @default(uuid())
+  id                   String    @id @default(uuid())
   creador_id           String
-  titulo_proyecto      String   @db.VarChar(200)
+  titulo_proyecto      String    @db.VarChar(200)
   descripcion_proyecto String?
-  modalidad_proyecto   String   @db.VarChar(20)
+  modalidad_proyecto   String    @db.VarChar(20)
   maximo_integrantes   Int?
-  estado_proyecto      String   @default("abierto") @db.VarChar(20)
+  estado_proyecto      String    @default("abierto") @db.VarChar(20)
   fecha_inicio         DateTime?
   fecha_fin            DateTime?
-  fecha_creacion       DateTime @default(now())
-  votos_neto Int @default(0)
+  fecha_creacion       DateTime  @default(now())
+  votos_neto           Int       @default(0)
 
-  // entregables finales (solo se pueden agregar cuando el proyecto está cerrado);
-  // el informe final en PDF vive en la tabla archivos (tipo_contenido = 'proyecto')
-  video_url        String?
-  repositorio_url  String?
-  linkedin_url     String?
+  video_url       String?
+  repositorio_url String?
+  linkedin_url    String?
 
-  creador              Usuario               @relation(fields: [creador_id], references: [id])
-  postulaciones        PostulacionProyecto[]
-  integrantes          IntegranteProyecto[]
-  favoritos            FavoritoProyecto[]
-  etiquetas            ProyectoEtiqueta[]
-  descartes            DescarteProyecto[]
+  creador       Usuario               @relation(fields: [creador_id], references: [id])
+  postulaciones PostulacionProyecto[]
+  integrantes   IntegranteProyecto[]
+  favoritos     FavoritoProyecto[]
+  etiquetas     ProyectoEtiqueta[]
+  descartes     DescarteProyecto[]
 
   @@map("proyectos")
 }
@@ -383,12 +385,12 @@ model Proyecto {
 // ╰─────────────────────────────✧────────────────────────────────╮
 
 model PostulacionProyecto {
-  id                   String   @id @default(uuid())
-  proyecto_id          String
-  postulante_id        String
-  mensaje_postulacion  String?
-  estado_postulacion   String   @default("pendiente") @db.VarChar(20)
-  fecha_postulacion    DateTime @default(now())
+  id                  String   @id @default(uuid())
+  proyecto_id         String
+  postulante_id       String
+  mensaje_postulacion String?
+  estado_postulacion  String   @default("pendiente") @db.VarChar(20)
+  fecha_postulacion   DateTime @default(now())
 
   proyecto   Proyecto @relation(fields: [proyecto_id], references: [id])
   postulante Usuario  @relation(fields: [postulante_id], references: [id])
@@ -399,13 +401,13 @@ model PostulacionProyecto {
 // ╰─────────────────────────────✧────────────────────────────────╮
 
 model IntegranteProyecto {
-  id               String   @id @default(uuid())
-  proyecto_id      String
-  usuario_id       String
-  rol_en_proyecto  String?  @db.VarChar(50)
-  fecha_union      DateTime @default(now())
-  fue_expulsado    Boolean   @default(false)   
-  fecha_expulsion  DateTime?                   
+  id              String    @id @default(uuid())
+  proyecto_id     String
+  usuario_id      String
+  rol_en_proyecto String?   @db.VarChar(50)
+  fecha_union     DateTime  @default(now())
+  fue_expulsado   Boolean   @default(false)
+  fecha_expulsion DateTime?
 
   proyecto Proyecto @relation(fields: [proyecto_id], references: [id])
   usuario  Usuario  @relation(fields: [usuario_id], references: [id])
@@ -465,9 +467,9 @@ model ModeloCluster {
   silueta      Float?
   n_usuarios   Int
   n_proyectos  Int
-  etiquetas    Json     // ids de etiqueta en el orden de las columnas del vector
-  centroides   Json     // k filas x n_etiquetas
-  parametros   Json?    // pesos de señales y de puntaje con los que se entrenó (reproducibilidad)
+  etiquetas    Json
+  centroides   Json
+  parametros   Json?
   activo       Boolean  @default(false)
   entrenado_en DateTime @default(now())
 
@@ -482,7 +484,7 @@ model ClusterUsuario {
   modelo_id  String
   usuario_id String
   cluster    Int
-  distancia  Float // distancia al centroide: menor = más típico del cluster
+  distancia  Float
 
   modelo ModeloCluster @relation(fields: [modelo_id], references: [id], onDelete: Cascade)
 
@@ -505,13 +507,11 @@ model ClusterProyecto {
   @@map("cluster_proyecto")
 }
 
-// Una fila por (usuario, proyecto) la primera vez que se le muestra en Descubrir, con el
-// algoritmo que lo propuso. Es lo que permite comparar "solo etiquetas" contra "híbrido".
 model RecomendacionLog {
   id          String   @id @default(uuid())
   usuario_id  String
   proyecto_id String
-  algoritmo   String   @db.VarChar(20) // 'etiquetas' | 'hibrido'
+  algoritmo   String   @db.VarChar(20)
   modelo_id   String?
   posicion    Int
   puntaje     Float
@@ -522,7 +522,6 @@ model RecomendacionLog {
   @@map("recomendacion_log")
 }
 
-// Historial de todo lo que un usuario hace con un proyecto 
 model InteraccionProyecto {
   id          String   @id @default(uuid())
   usuario_id  String
@@ -541,16 +540,16 @@ model InteraccionProyecto {
 //───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 model Reporte {
-  id             String   @id @default(uuid())
+  id             String    @id @default(uuid())
   reportado_por  String
-  tipo_contenido String  
+  tipo_contenido String
   contenido_id   String
-  motivo         String  
+  motivo         String
   detalle        String?
-  estado         String   @default("pendiente") 
+  estado         String    @default("pendiente")
   revisado_por   String?
   revisado_en    DateTime?
-  creado_en      DateTime @default(now())
+  creado_en      DateTime  @default(now())
 
   reportador Usuario  @relation("ReporteCreadoPor", fields: [reportado_por], references: [id])
   revisor    Usuario? @relation("ReporteRevisadoPor", fields: [revisado_por], references: [id])
@@ -566,11 +565,11 @@ model Reporte {
 
 model Notificacion {
   id         String   @id @default(uuid())
-  usuario_id String   
-  tipo       String   @db.VarChar(50) 
+  usuario_id String
+  tipo       String   @db.VarChar(50)
   titulo     String   @db.VarChar(150)
   mensaje    String?  @db.VarChar(500)
-  enlace     String?  @db.VarChar(300) 
+  enlace     String?  @db.VarChar(300)
   leida      Boolean  @default(false)
   creado_en  DateTime @default(now())
 
@@ -595,4 +594,110 @@ model TokenRecuperacion {
 
   @@index([usuario_id])
   @@map("tokens_recuperacion")
+}
+
+//───────────────────────────────────────────────────────────────────────────────
+// MÓDULO: ESPACIO CREATIVO / CULTURAL
+model Obra {
+  id             String    @id @default(uuid())
+  autor_id       String
+  tipo           String
+  titulo         String
+  descripcion    String? 
+  texto          String?
+  enlace_url     String?
+  borrador       Boolean   @default(false)
+  es_galeria     Boolean   @default(false)
+  guion_id       String?
+  portada_id     String? 
+  firma          String?
+  estilo         Json? 
+  votos_neto     Int       @default(0)
+  creado_en      DateTime  @default(now())
+  actualizado_en DateTime  @updatedAt
+  editado_en     DateTime?
+
+  autor        Usuario          @relation(fields: [autor_id], references: [id])
+  guion        Obra?            @relation("ObraGuion", fields: [guion_id], references: [id], onDelete: SetNull)
+  adaptaciones Obra[]           @relation("ObraGuion")
+  hashtags     ObraHashtag[]
+  capitulos    GuionCapitulo[]
+  personajes   GuionPersonaje[]
+  pistas       AlbumPista[]
+
+  @@index([tipo, creado_en])
+  @@index([tipo, votos_neto])
+  @@index([autor_id])
+  @@index([guion_id])
+  @@map("obras")
+}
+
+model ObraHashtag {
+  obra_id    String
+  hashtag_id String
+
+  obra    Obra    @relation(fields: [obra_id], references: [id], onDelete: Cascade)
+  hashtag Hashtag @relation(fields: [hashtag_id], references: [id])
+
+  @@id([obra_id, hashtag_id])
+  @@index([hashtag_id])
+  @@map("obras_hashtags")
+}
+
+model GuionCapitulo {
+  id        String  @id @default(uuid())
+  obra_id   String
+  orden     Int
+  titulo    String
+  contenido String
+  borrador  Boolean @default(false)
+
+  obra     Obra              @relation(fields: [obra_id], references: [id], onDelete: Cascade)
+  parrafos CapituloParrafo[]
+
+  @@index([obra_id, orden])
+  @@map("guion_capitulos")
+}
+
+model GuionPersonaje {
+  id          String  @id @default(uuid())
+  obra_id     String
+  orden       Int
+  nombre      String
+  descripcion String?
+  imagen_id   String?
+
+  obra Obra @relation(fields: [obra_id], references: [id], onDelete: Cascade)
+
+  @@index([obra_id, orden])
+  @@map("guion_personajes")
+}
+
+model CapituloParrafo {
+  id          String   @id @default(uuid())
+  capitulo_id String
+  indice      Int
+  autor_id    String 
+  extracto    String
+  votos_neto  Int      @default(0)
+  creado_en   DateTime @default(now())
+
+  capitulo GuionCapitulo @relation(fields: [capitulo_id], references: [id], onDelete: Cascade)
+
+  @@unique([capitulo_id, indice])
+  @@map("capitulo_parrafos")
+}
+
+model AlbumPista {
+  id         String  @id @default(uuid())
+  obra_id    String
+  orden      Int
+  titulo     String
+  enlace_url String?
+  archivo_id String? 
+
+  obra Obra @relation(fields: [obra_id], references: [id], onDelete: Cascade)
+
+  @@index([obra_id, orden])
+  @@map("album_pistas")
 }
