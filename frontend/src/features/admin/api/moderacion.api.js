@@ -41,3 +41,15 @@ export async function reintentarCorreoReporte(id) {
   });
   return res.data;
 }
+
+export async function listarReportesDeUsuario(
+  usuarioId,
+  lista,
+  { signal } = {},
+) {
+  const res = await apiFetch(
+    `/admin/usuarios/${usuarioId}/reportes?lista=${encodeURIComponent(lista)}`,
+    { signal },
+  );
+  return res.data;
+}

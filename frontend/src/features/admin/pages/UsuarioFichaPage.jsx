@@ -1,5 +1,6 @@
 import { Link, useParams } from 'react-router-dom';
 import AutorPanel from '@/features/admin/components/AutorPanel';
+import ReportesUsuarioLista from '@/features/admin/components/ReportesUsuarioLista';
 import { useFichaUsuario } from '@/features/admin/hooks/useUsuarios';
 import { mensajeDeError } from '@/shared/lib/errores';
 import {
@@ -120,6 +121,8 @@ export default function UsuarioFichaPage() {
             Los números son solo contexto: por sí solos no indican un uso
             indebido.
           </p>
+
+          <ReportesUsuarioLista usuarioId={u.id} />
 
           <AutorPanel
             titulo='Sanciones'
