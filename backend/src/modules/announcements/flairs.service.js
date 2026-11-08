@@ -9,7 +9,9 @@ import logger from '../../lib/logger.js';
 import {
   esStaff,
   puedePublicarAnuncioEn,
+  ROLES_ANUNCIANTES,
 } from '../../shared/auth/permissions.js';
+import { notificarVarios } from '../../shared/notifications/notifications.service.js';
 import { normalizarNombreFlair } from './flairs.validation.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 const MENSAJE_DUPLICADO = 'Ya existe un flair con ese nombre en esta carrera';
@@ -113,13 +115,42 @@ async function actualizarFlair(id, usuario, { nombre, color }) {
   }
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
+// Avisa (solo campana, sin correo) a los CEE y tutores de la carrera del flair.
+// Nunca debe hacer fallar la eliminación.
+async function avisarFlairEliminado(flair) {
+  try {
+    const destinatarios = await prisma.usuario.findMany({
+      where: {
+        esta_activo: true,
+        rol: { in: ROLES_ANUNCIANTES },
+        usuario_carrera: { some: { carrera_id: flair.carrera_id } },
+      },
+      select: { id: true },
+    });
+    await notificarVarios({
+      usuarioIds: destinatarios.map((u) => u.id),
+      tipo: 'flair_eliminado',
+      titulo: 'Un flair de tu carrera fue eliminado por moderación',
+      mensaje: `Se eliminó el flair «${flair.nombre}». Los anuncios que lo usaban quedaron sin flair.`,
+    });
+  } catch (error) {
+    logger.error('No se pudo avisar la eliminación del flair', {
+      flair_id: flair.id,
+      error: error.message,
+    });
+  }
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
 async function eliminarFlair(id, usuario) {
-  await exigirPermisoSobreFlair(id, usuario, { eliminar: true });
+  const flair = await exigirPermisoSobreFlair(id, usuario, { eliminar: true });
 
   // los anuncios que lo usaban quedan sin flair (onDelete: SetNull en el esquema)
   await prisma.flair.delete({ where: { id } });
 
   logger.info('Flair eliminado', { flair_id: id, eliminado_por: usuario.id });
+
+  // moderación (superadmin): se avisa a quienes administran los flairs
+  if (esStaff(usuario.rol)) await avisarFlairEliminado(flair);
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 export { listarFlairs, crearFlair, actualizarFlair, eliminarFlair };
