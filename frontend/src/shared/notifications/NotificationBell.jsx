@@ -12,6 +12,7 @@ const ICONOS = {
   entregables_actualizados: 'ti-trophy',
   proyecto_eliminado: 'ti-trash',
   sancion: 'ti-alert-triangle',
+  sancion_revocada: 'ti-circle-check',
 };
 
 function hace(fecha) {
