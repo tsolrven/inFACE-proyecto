@@ -2,6 +2,7 @@ import { obtenerEntradaRegistro } from '../content/contentRegistry.js';
 import {
   ESTADOS_REPORTE,
   ESTADOS_NOTIFICACION,
+  ORIGENES_ELIMINACION,
   RESPUESTAS_PREDETERMINADAS,
 } from './reports.constants.js';
 
@@ -56,7 +57,14 @@ async function armarSnapshot(tx, tipo_contenido, contenido_id) {
 // Devuelve los ids de reportes cuyo correo hay que enviar tras el commit.
 async function cerrarReportesPorEliminacion(
   tx,
-  { tipo_contenido, ids, por_moderacion, revisor_id = null, respuesta = null },
+  {
+    tipo_contenido,
+    ids,
+    por_moderacion,
+    por_arrastre = false,
+    revisor_id = null,
+    respuesta = null,
+  },
 ) {
   const reportes_a_notificar = [];
   if (ids.length === 0) return { reportes_a_notificar };
@@ -79,6 +87,12 @@ async function cerrarReportesPorEliminacion(
   }
 
   const ahora = new Date();
+
+  // quién eliminó: la moderación manda; el arrastre es de los comentarios que
+  // caen con su publicación; lo demás es borrado del autor
+  let origen = ORIGENES_ELIMINACION.AUTOR;
+  if (por_moderacion) origen = ORIGENES_ELIMINACION.MODERACION;
+  else if (por_arrastre) origen = ORIGENES_ELIMINACION.ARRASTRE;
 
   for (const [contenido_id, grupo] of porContenido) {
     // no se sobrescribe un snapshot previo (ej: comentario ya borrado por su autor)
@@ -105,6 +119,7 @@ async function cerrarReportesPorEliminacion(
       data: {
         estado: ESTADOS_REPORTE.CONTENIDO_ELIMINADO,
         revisado_en: ahora,
+        eliminado_por: origen,
         ...(por_moderacion
           ? {
             revisado_por: revisor_id,

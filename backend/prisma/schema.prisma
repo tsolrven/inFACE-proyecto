@@ -630,6 +630,9 @@ model Reporte {
   contenido_snapshot Json?
   contenido_autor_id    String?
   oculto_por_reportante Boolean @default(false)
+    // Quién eliminó el contenido: autor | moderacion | arrastre (junto con su
+  // publicación). null = reporte cerrado sin eliminación, o anterior al campo.
+  eliminado_por String? @db.VarChar(20)
 
   reportador Usuario  @relation("ReporteCreadoPor", fields: [reportado_por], references: [id])
   revisor    Usuario? @relation("ReporteRevisadoPor", fields: [revisado_por], references: [id])

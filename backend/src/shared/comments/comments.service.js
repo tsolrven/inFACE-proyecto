@@ -465,6 +465,7 @@ async function podarAncestrosEliminados(tx, padre_id) {
       tipo_contenido: 'comentario',
       ids: [padre.id],
       por_moderacion: false,
+      por_arrastre: true,
     });
     await eliminarInteracciones(tx, 'comentario', [padre.id]);
     await tx.comentario.delete({ where: { id: padre.id } });

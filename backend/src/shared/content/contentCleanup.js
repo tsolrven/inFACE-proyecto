@@ -51,6 +51,7 @@ async function eliminarContenido(
     tipo_contenido: 'comentario',
     ids: idsComentarios,
     por_moderacion: false,
+    por_arrastre: true,
   });
 
   await eliminarInteracciones(tx, 'comentario', idsComentarios);

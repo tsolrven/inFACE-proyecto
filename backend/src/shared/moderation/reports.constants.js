@@ -19,6 +19,13 @@ const ESTADOS_NOTIFICACION = Object.freeze({
   OMITIDA: 'omitida',
 });
 
+// Quién eliminó el contenido de un reporte (Reporte.eliminado_por).
+const ORIGENES_ELIMINACION = Object.freeze({
+  AUTOR: 'autor',
+  MODERACION: 'moderacion',
+  ARRASTRE: 'arrastre',
+});
+
 // Etiquetas de los motivos para el correo. Deben coincidir con las de
 // frontend/src/shared/moderation/reportReasons.js.
 const ETIQUETAS_MOTIVO = Object.freeze({
@@ -45,6 +52,7 @@ const RESPUESTAS_PREDETERMINADAS = Object.freeze({
 export {
   ESTADOS_REPORTE,
   ESTADOS_NOTIFICACION,
+  ORIGENES_ELIMINACION,
   RESPUESTAS_PREDETERMINADAS,
   ETIQUETAS_MOTIVO,
 };
