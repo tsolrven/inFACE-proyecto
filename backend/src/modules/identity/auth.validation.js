@@ -27,7 +27,10 @@ const ERROR_MESSAGES = {
     invalid: 'Selecciona una carrera válida',
     required: 'Debes seleccionar tu carrera',
   },
-
+  codigo: {
+    required: 'Ingresa el código de verificación que enviamos a tu correo',
+    invalid: 'El código debe tener 6 dígitos',
+  },
   terminos: {
     required:
       'Debes aceptar los Términos y Condiciones y la Política de Privacidad para registrarte',
@@ -96,6 +99,11 @@ const registerSchema = z.object({
     .string({ error: ERROR_MESSAGES.carrera.required })
     .uuid(ERROR_MESSAGES.carrera.invalid),
 
+  codigo: z
+    .string({ error: ERROR_MESSAGES.codigo.required })
+    .trim()
+    .regex(/^\d{6}$/, ERROR_MESSAGES.codigo.invalid),
+    
   etiqueta_ids: z
     .array(z.string().uuid('Etiqueta inválida'))
     .max(15, 'Puedes seleccionar como máximo 15 intereses')

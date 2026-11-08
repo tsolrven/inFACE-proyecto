@@ -15,6 +15,10 @@ import {
 } from '../../errors/appError.js';
 import { derivarNombreDesdeCorreo } from './nombre.helper.js';
 import { VERSION_TERMINOS } from './terminos.constants.js';
+import {
+  verificarCodigo,
+  consumirVerificacion,
+} from './verificacionCorreo.service.js';
 import { ORDEN_CARRERAS_USUARIO } from '../../shared/auth/carreraPrincipal.js';
 import { obtenerSancionesVigentes } from '../../shared/moderation/sanctions.service.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
@@ -51,6 +55,7 @@ async function registrar({
   contrasena,
   nombre_usuario,
   carrera_id,
+  codigo,
   acepta_investigacion = false,
 }) {
   const usuarioExiste = await prisma.usuario.findUnique({
@@ -74,38 +79,47 @@ async function registrar({
     throw new ValidationError('La carrera seleccionada no existe');
   }
 
+  // después de las validaciones baratas: un formulario mal llenado no gasta intentos
+  await verificarCodigo(correo, codigo);
+
   const rol = determinarRolPorCorreo(correo);
 
   const hash = await bcrypt.hash(contrasena, 10);
 
   const nombre_completo = derivarNombreDesdeCorreo(correo);
 
-  const usuario = await prisma.usuario.create({
-    data: {
-      correo,
-      contrasena: hash,
-      rol: rol,
-      terminos_version: VERSION_TERMINOS,
-      terminos_aceptados_en: new Date(),
-      consentimiento_investigacion: acepta_investigacion,
-      consentimiento_investigacion_en: acepta_investigacion ? new Date() : null,
-      perfil: {
-        create: {
-          nombre_usuario,
-          nombre_completo,
+  const usuario = await prisma.$transaction(async (tx) => {
+    await consumirVerificacion(tx, correo);
+
+    return tx.usuario.create({
+      data: {
+        correo,
+        contrasena: hash,
+        rol: rol,
+        terminos_version: VERSION_TERMINOS,
+        terminos_aceptados_en: new Date(),
+        consentimiento_investigacion: acepta_investigacion,
+        consentimiento_investigacion_en: acepta_investigacion
+          ? new Date()
+          : null,
+        perfil: {
+          create: {
+            nombre_usuario,
+            nombre_completo,
+          },
+        },
+        usuario_carrera: {
+          create: {
+            carrera_id,
+          },
         },
       },
-      usuario_carrera: {
-        create: {
-          carrera_id,
-        },
+      include: {
+        perfil: true,
+        usuario_carrera: { include: { carrera: true } },
+        usuario_etiquetas: true,
       },
-    },
-    include: {
-      perfil: true,
-      usuario_carrera: { include: { carrera: true } },
-      usuario_etiquetas: true,
-    },
+    });
   });
 
   return formatearUsuario(usuario);
