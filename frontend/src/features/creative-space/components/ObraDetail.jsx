@@ -60,11 +60,10 @@ export default function ObraDetail() {
 
   return (
     <div
-      className={`mx-auto w-full overflow-hidden bg-[#1A1A1F] sm:rounded-[14px] sm:border sm:border-white/[0.07] ${
-        obra && ['historia', 'guion', 'poema'].includes(obra.tipo)
+      className={`mx-auto w-full overflow-hidden bg-[#1A1A1F] sm:rounded-[14px] sm:border sm:border-white/[0.07] ${obra && ['historia', 'guion', 'poema'].includes(obra.tipo)
           ? 'max-w-[1180px]'
           : 'max-w-[900px]'
-      }`}
+        }`}
     >
       {isPending && (
         <div className='flex items-center justify-center py-20'>
@@ -219,6 +218,7 @@ export default function ObraDetail() {
 
                 {obra.tipo !== 'historia' &&
                   obra.tipo !== 'guion' &&
+                  !esMusica &&
                   obra.descripcion &&
                   !obra.descripcion_truncada && (
                     <div className='mb-4'>

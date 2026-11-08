@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import ImagenObra from '@/features/creative-space/components/ImagenObra';
 import AlbumPistas from '@/features/creative-space/components/AlbumPistas';
+import MarkdownView from '@/shared/markdown/MarkdownView';
 import InsigniaBorrador from '@/features/creative-space/components/InsigniaBorrador';
 import { parsearEnlace } from '@/features/creative-space/utils/embed';
 import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
@@ -42,6 +43,11 @@ export default function MusicaDetalle({ obra, cargando = false }) {
             <h2 className='mb-3 break-words text-[30px] font-extrabold leading-[1.05] tracking-tight text-neutral-50 sm:text-[46px]'>
               {obra.titulo}
             </h2>
+            {obra.descripcion && !obra.descripcion_truncada && (
+              <div className='mb-3 text-left text-neutral-300'>
+                <MarkdownView contenido={obra.descripcion} />
+              </div>
+            )}
             <div className='flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 text-[13px] text-neutral-300 sm:justify-start'>
               <Link
                 to={`/perfil/usuario/${nombre}`}

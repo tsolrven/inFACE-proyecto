@@ -35,7 +35,7 @@ export default function HistoriaReader({ obra }) {
     } catch {
     }
   }
-  const [abierto, setAbierto] = useState(null);
+  const [abierto, setAbierto] = useState(null); // { indice, id }
   const actual = capitulos[indice];
   const claveParrafos = ['obra', 'parrafos', actual?.id];
 
@@ -124,11 +124,10 @@ export default function HistoriaReader({ obra }) {
               <button
                 type='button'
                 onClick={() => irA(i)}
-                className={`w-full rounded-md px-2 py-1.5 text-left text-[13px] transition-colors ${
-                  i === indice
+                className={`w-full rounded-md px-2 py-1.5 text-left text-[13px] transition-colors ${i === indice
                     ? 'bg-sky-400/10 text-sky-300'
                     : 'text-neutral-400 hover:bg-white/[0.05]'
-                }`}
+                  }`}
               >
                 {i + 1}. {c.titulo}
                 {c.borrador && (
@@ -177,8 +176,8 @@ export default function HistoriaReader({ obra }) {
               <div key={i}>
                 <div className='group flex items-start gap-1 sm:gap-2'>
                   <div
-                    className='min-w-0 flex-1 text-neutral-200'
-                    style={{ fontSize: `${tamano}px`, lineHeight: 1.85 }}
+                    className='min-w-0 flex-1 text-neutral-200 [&_.md-view]:!text-[length:var(--lector-tam)] [&_.md-view]:!leading-[1.85]'
+                    style={{ '--lector-tam': `${tamano}px` }}
                   >
                     <MarkdownView contenido={texto} />
                   </div>
@@ -187,11 +186,10 @@ export default function HistoriaReader({ obra }) {
                     onClick={() => alternar(i)}
                     title='Comentar este párrafo'
                     aria-label={`Comentarios del párrafo ${i + 1}`}
-                    className={`mt-1 flex h-6 min-w-6 flex-shrink-0 items-center justify-center gap-0.5 rounded-full px-1.5 text-[11px] transition-opacity ${
-                      total > 0 || activo
+                    className={`mt-1 flex h-6 min-w-6 flex-shrink-0 items-center justify-center gap-0.5 rounded-full px-1.5 text-[11px] transition-opacity ${total > 0 || activo
                         ? 'bg-sky-400/15 text-sky-300 opacity-100'
                         : 'text-neutral-600 opacity-40 hover:bg-white/[0.06] hover:opacity-100 group-hover:opacity-80'
-                    }`}
+                      }`}
                   >
                     {abrir.isPending && abrir.variables === i ? (
                       <i className='ti ti-loader-2 animate-spin' />
