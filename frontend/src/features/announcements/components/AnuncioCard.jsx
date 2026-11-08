@@ -7,7 +7,7 @@ import ShareButton from '@/shared/post/share/ShareButton';
 import PortadaImagen from '@/shared/post/images/PortadaImagen';
 import QuitarGuardadoButton from '@/shared/post/bookmarks/QuitarGuardadoButton';
 import { extractoPlano } from '@/shared/markdown/extractoPlano';
-import { rutaHashtag } from '@/shared/lib/hashtags';
+import { useRutaHashtag } from '@/shared/hooks/useRutaHashtag';
 import FlairChip from '@/features/announcements/components/FlairChip';
 import AnuncioMenu from '@/features/announcements/components/AnuncioMenu';
 import { INSIGNIA_ROL } from '@/features/announcements/utils/insigniaRol';
@@ -15,6 +15,7 @@ import { INSIGNIA_ROL } from '@/features/announcements/utils/insigniaRol';
 export default function AnuncioCard({ anuncio, enGuardados = false }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const rutaHashtag = useRutaHashtag();
   const votarMut = useVotar('anuncio');
   const carreraUsuario = useAuthStore((s) => s.usuario?.carrera_id ?? null);
 

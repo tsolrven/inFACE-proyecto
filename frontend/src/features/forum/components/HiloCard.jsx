@@ -7,12 +7,13 @@ import ShareButton from '@/shared/post/share/ShareButton';
 import PortadaImagen from '@/shared/post/images/PortadaImagen';
 import HiloMenu from '@/features/forum/components/HiloMenu';
 import { extractoPlano } from '@/shared/markdown/extractoPlano';
-import { rutaHashtag } from '@/shared/lib/hashtags';
+import { useRutaHashtag } from '@/shared/hooks/useRutaHashtag';
 import QuitarGuardadoButton from '@/shared/post/bookmarks/QuitarGuardadoButton';
 
 export default function HiloCard({ hilo, enGuardados = false }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const rutaHashtag = useRutaHashtag();
   const votarMut = useVotar('hilo');
 
   const ramoColor = colorPorRamo(hilo.ramo?.id);

@@ -9,7 +9,7 @@ import VotePill from '@/shared/post/votes/VotePill';
 import ShareButton from '@/shared/post/share/ShareButton';
 import GaleriaImagenes from '@/shared/post/images/GaleriaImagenes';
 import MarkdownView from '@/shared/markdown/MarkdownView';
-import { rutaHashtag } from '@/shared/lib/hashtags';
+import { useRutaHashtag } from '@/shared/hooks/useRutaHashtag';
 import { useAnuncio } from '@/features/announcements/hooks/useAnuncios';
 import { INSIGNIA_ROL } from '@/features/announcements/utils/insigniaRol';
 import FlairChip from '@/features/announcements/components/FlairChip';
@@ -20,6 +20,7 @@ export default function AnuncioDetailModal() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const rutaHashtag = useRutaHashtag();
   const carreraUsuario = useAuthStore((s) => s.usuario?.carrera_id ?? null);
   const comentariosRef = useRef(null);
 

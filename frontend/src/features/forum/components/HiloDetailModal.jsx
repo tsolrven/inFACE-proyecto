@@ -21,12 +21,13 @@ import {
   useDesmarcarRespuesta,
   claveRespuestaAceptada,
 } from '@/features/forum/hooks/useHilos';
-import { rutaHashtag } from '@/shared/lib/hashtags';
+import { useRutaHashtag } from '@/shared/hooks/useRutaHashtag';
 
 export default function HiloDetailModal() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const rutaHashtag = useRutaHashtag();
   const qc = useQueryClient();
   const usuario = useAuthStore((s) => s.usuario);
   const comentariosRef = useRef(null);

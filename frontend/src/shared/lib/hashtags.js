@@ -42,8 +42,14 @@ export function validarHashtags(lista) {
   return null;
 }
 
-// Ruta de la página de un hashtag. `pestana`: 'materiales' (por defecto) o 'foro'.
-export function rutaHashtag(tag, pestana = 'materiales') {
+// Ruta de la página de un hashtag. `pestana`: 'materiales' (por defecto),
+// 'foro' o 'anuncios'. `carrera`: código en minúscula de la carrera de la
+// comunidad de origen; sin él la página usa la carrera del usuario.
+export function rutaHashtag(tag, pestana = 'materiales', carrera = null) {
   const base = `/hashtag/${encodeURIComponent(tag)}`;
-  return pestana === 'materiales' ? base : `${base}?pestana=${pestana}`;
+  const params = new URLSearchParams();
+  if (pestana !== 'materiales') params.set('pestana', pestana);
+  if (carrera) params.set('carrera', carrera);
+  const query = params.toString();
+  return query ? `${base}?${query}` : base;
 }

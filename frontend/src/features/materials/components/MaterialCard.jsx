@@ -14,13 +14,14 @@ import ApunteMenu from '@/features/materials/components/ApunteMenu';
 import VotePill from '@/shared/post/votes/VotePill';
 import ShareButton from '@/shared/post/share/ShareButton';
 import CodeViewer from '@/features/materials/components/CodeViewer';
-import { rutaHashtag } from '@/shared/lib/hashtags';
+import { useRutaHashtag } from '@/shared/hooks/useRutaHashtag';
 import QuitarGuardadoButton from '@/shared/post/bookmarks/QuitarGuardadoButton';
 import { extractoPlano } from '@/shared/markdown/extractoPlano';
 
 export default function MaterialCard({ apunte, enGuardados = false }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const rutaHashtag = useRutaHashtag();
   const votarMut = useVotar('apunte');
 
   const ramoColor = colorPorRamo(apunte.ramo?.id);

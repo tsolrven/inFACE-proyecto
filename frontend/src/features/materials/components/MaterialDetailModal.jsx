@@ -18,13 +18,14 @@ import ApunteMenu from '@/features/materials/components/ApunteMenu';
 import VotePill from '@/shared/post/votes/VotePill';
 import ShareButton from '@/shared/post/share/ShareButton';
 import CodeViewer from '@/features/materials/components/CodeViewer';
-import { rutaHashtag } from '@/shared/lib/hashtags';
+import { useRutaHashtag } from '@/shared/hooks/useRutaHashtag';
 import MarkdownView from '@/shared/markdown/MarkdownView';
 
 export default function MaterialDetailModal() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const rutaHashtag = useRutaHashtag();
 
   const { data: apunte, isPending: cargando, error } = useApunte(id);
   const votarMut = useVotar('apunte');
