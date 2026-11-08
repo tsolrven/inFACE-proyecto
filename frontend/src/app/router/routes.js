@@ -129,6 +129,22 @@ export const extraRoutes = [
     component: lazy(() => import('@/features/forum/pages/HiloDetailPage')),
   },
   {
+    path: '/marketplace/nuevo',
+    component: lazy(
+      () => import('@/features/marketplace/pages/ProductoEditorPage'),
+    ),
+  },
+  {
+    path: '/marketplace/producto/:id',
+    component: lazy(() => import('@/features/marketplace/pages/ProductoPage')),
+  },
+  {
+    path: '/marketplace/producto/:id/editar',
+    component: lazy(
+      () => import('@/features/marketplace/pages/ProductoEditorPage'),
+    ),
+  },
+  {
     path: '/espacio-creativo/nueva',
     component: lazy(
       () => import('@/features/creative-space/pages/ObraEditorPage'),

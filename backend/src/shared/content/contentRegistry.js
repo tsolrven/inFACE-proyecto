@@ -37,7 +37,7 @@ const CONTENT_REGISTRY = {
     previewField: 'titulo',
     allowsComments: true,
     adjuntos: {
-      max: 40,
+      max: 40, 
       extensiones: [
         '.jpg',
         '.jpeg',
@@ -49,6 +49,19 @@ const CONTENT_REGISTRY = {
         '.ogg',
         '.m4a',
       ],
+    },
+  },
+  producto: {
+    modelName: 'producto',
+    tableName: 'productos',
+    label: 'Producto',
+    ownerField: 'vendedor_id',
+    votesField: 'votos_neto',
+    previewField: 'titulo',
+    allowsComments: true, 
+    adjuntos: {
+      max: 8,
+      extensiones: ['.jpg', '.jpeg', '.png', '.webp', '.gif'],
     },
   },
   parrafo: {

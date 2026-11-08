@@ -46,6 +46,7 @@ model Usuario {
   descartes_proyecto     DescarteProyecto[]
   hilos                  Hilo[]
   obras                  Obra[]
+  productos              Producto[]
   notificaciones         Notificacion[]
   tokens_recuperacion    TokenRecuperacion[]
 
@@ -603,15 +604,15 @@ model Obra {
   autor_id       String
   tipo           String
   titulo         String
-  descripcion    String? 
+  descripcion    String?
   texto          String?
   enlace_url     String?
   borrador       Boolean   @default(false)
   es_galeria     Boolean   @default(false)
   guion_id       String?
-  portada_id     String? 
+  portada_id     String?
   firma          String?
-  estilo         Json? 
+  estilo         Json?
   votos_neto     Int       @default(0)
   creado_en      DateTime  @default(now())
   actualizado_en DateTime  @updatedAt
@@ -677,7 +678,7 @@ model CapituloParrafo {
   id          String   @id @default(uuid())
   capitulo_id String
   indice      Int
-  autor_id    String 
+  autor_id    String
   extracto    String
   votos_neto  Int      @default(0)
   creado_en   DateTime @default(now())
@@ -694,10 +695,42 @@ model AlbumPista {
   orden      Int
   titulo     String
   enlace_url String?
-  archivo_id String? 
+  archivo_id String?
 
   obra Obra @relation(fields: [obra_id], references: [id], onDelete: Cascade)
 
   @@index([obra_id, orden])
   @@map("album_pistas")
+}
+
+// ╰─────────────────────────────✧────────────────────────────────╮
+// MÓDULO: MARKETPLACE (compra / venta entre estudiantes)
+model Producto {
+  id                 String    @id @default(uuid())
+  vendedor_id        String
+  titulo             String
+  descripcion        String?
+  precio             Int
+  categoria          String
+  condicion          String
+  estado             String    @default("disponible")
+  negociable         Boolean   @default(false)
+  ubicacion          String?
+  unidad_precio      String? 
+  modalidad          String?
+  entrega_domicilio  Boolean   @default(false)
+  contacto_whatsapp  String?
+  contacto_instagram String?
+  contacto_discord   String?
+  votos_neto         Int       @default(0)
+  creado_en          DateTime  @default(now())
+  actualizado_en     DateTime  @updatedAt
+  editado_en         DateTime?
+
+  vendedor Usuario @relation(fields: [vendedor_id], references: [id])
+
+  @@index([estado, creado_en])
+  @@index([categoria, creado_en])
+  @@index([vendedor_id])
+  @@map("productos")
 }

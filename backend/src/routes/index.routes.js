@@ -13,6 +13,7 @@ import etiquetaRoutes from '../modules/identity/etiqueta.routes.js';
 import perfilRoutes from '../modules/identity/perfil.routes.js';
 import hiloRoutes from '../modules/forum/forum.routes.js';
 import obraRoutes from '../modules/creative/creative.routes.js';
+import productoRoutes from '../modules/marketplace/marketplace.routes.js';
 import notificacionRoutes from '../shared/notifications/notifications.routes.js';
 
 function routerApi(app) {
@@ -37,6 +38,9 @@ function routerApi(app) {
 
   // módulo: Espacio creativo / cultural
   router.use('/obras', obraRoutes);
+
+  // módulo: Marketplace
+  router.use('/productos', productoRoutes);
 
   // moderación (transversal a todos los módulos)
   router.use('/reportes', reporteRoutes);
