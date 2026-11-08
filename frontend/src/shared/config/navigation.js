@@ -58,27 +58,27 @@ export const navSections = [
     title: 'Comunidades',
     items: [
       {
-        path: '/comunidad/contador-publico-auditor',
+        path: '/comunidad/cpa',
         label: 'Cont. Público y Auditor',
         icon: 'ti-building',
       },
       {
-        path: '/comunidad/derecho',
+        path: '/comunidad/der',
         label: 'Derecho',
         icon: 'ti-building',
       },
       {
-        path: '/comunidad/ingenieria-civil-informatica',
+        path: '/comunidad/icinf',
         label: 'Ing. Civil en Informática',
         icon: 'ti-building',
       },
       {
-        path: '/comunidad/ingenieria-comercial',
+        path: '/comunidad/ico',
         label: 'Ing. Comercial',
         icon: 'ti-building',
       },
       {
-        path: '/comunidad/ingenieria-ejecucion-computacion',
+        path: '/comunidad/ieci',
         label: 'Ing. Ejec. Computación',
         icon: 'ti-building',
       },

@@ -42,27 +42,27 @@ export const protectedRoutes = [
   },
 
   {
-    path: '/comunidad/contador-publico-auditor',
+    path: '/comunidad/cpa',
     component: lazy(
       () => import('@/features/communities/pages/ContPublicoAuditor'),
     ),
   },
   {
-    path: '/comunidad/derecho',
+    path: '/comunidad/der',
     component: lazy(() => import('@/features/communities/pages/Derecho')),
   },
   {
-    path: '/comunidad/ingenieria-civil-informatica',
+    path: '/comunidad/icinf',
     component: lazy(
       () => import('@/features/communities/pages/IngCivilInformatica'),
     ),
   },
   {
-    path: '/comunidad/ingenieria-comercial',
+    path: '/comunidad/ico',
     component: lazy(() => import('@/features/communities/pages/IngComercial')),
   },
   {
-    path: '/comunidad/ingenieria-ejecucion-computacion',
+    path: '/comunidad/ieci',
     component: lazy(
       () => import('@/features/communities/pages/IngEjecComputacion'),
     ),

@@ -65,6 +65,22 @@ export default function Sidebar() {
   // no pertenece a ninguna carrera, así que consulta foro, materiales y
   // anuncios desde las comunidades.
   const esSuperadmin = useAuthStore((s) => s.usuario?.rol === ROLES.SUPERADMIN);
+  const carreraPropia = useAuthStore((s) => s.usuario?.carreras?.[0]?.codigo);
+
+  // «Comunidades» solo lista las carreras ajenas: la propia ya tiene sus
+  // módulos en «Académico»
+  const rutaPropia = carreraPropia
+    ? `/comunidad/${carreraPropia.toLowerCase()}`
+    : null;
+  const sinPropia = (s) =>
+    s.title === 'Comunidades'
+      ? { ...s, items: s.items.filter((i) => i.path !== rutaPropia) }
+      : s;
+
+  // El superadmin ve «Administración» y no «Reportes» dentro de Recursos
+  // (esa entrada es «Mis reportes», que él no usa). Tampoco ve «Académico»:
+  // no pertenece a ninguna carrera, así que consulta foro, materiales y
+  // anuncios desde las comunidades, y ve las cinco.
   const secciones = esSuperadmin
     ? [
       navAdmin,
@@ -75,7 +91,7 @@ export default function Sidebar() {
           items: s.items.filter((i) => i.path !== '/reportes'),
         })),
     ]
-    : navSections;
+    : navSections.map(sinPropia);
 
   // en mobile el sidebar se comporta como un cajón que se cierra solo al navegar
   const onNavigate = () => cerrarSidebarMovil();
