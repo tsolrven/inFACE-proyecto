@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/shared/auth/authStore';
 import { listarCarreras } from '@/shared/api/catalog.api';
+import { solicitarVerificacion } from '@/shared/auth/auth.service';
 
 function parseApiError(err) {
   if (err.details && Array.isArray(err.details)) {
@@ -38,6 +39,7 @@ export default function Register() {
 
   const [form, setForm] = useState({
     correo: '',
+    codigo: '',
     nombre_usuario: '',
     carrera_id: '',
     contrasena: '',
@@ -47,6 +49,23 @@ export default function Register() {
   const [errors, setErrors] = useState({ fields: {}, general: null });
   const [loading, setLoading] = useState(false);
   const [mostrarContrasena, setMostrarContrasena] = useState(false);
+
+  // verificación del correo: el código se pide con el botón y vale solo para
+  // el correo al que se envió
+  const [codigoEnviadoA, setCodigoEnviadoA] = useState(null);
+  const [enviandoCodigo, setEnviandoCodigo] = useState(false);
+  const [espera, setEspera] = useState(0);
+  const [vigenciaMin, setVigenciaMin] = useState(15);
+  const codigoEnviado =
+    codigoEnviadoA !== null &&
+    codigoEnviadoA === form.correo.trim().toLowerCase();
+
+  // cuenta regresiva para poder reenviar el código
+  useEffect(() => {
+    if (espera <= 0) return undefined;
+    const id = setTimeout(() => setEspera((s) => s - 1), 1000);
+    return () => clearTimeout(id);
+  }, [espera]);
 
   const [carreras, setCarreras] = useState([]);
   const [cargandoCarreras, setCargandoCarreras] = useState(true);
@@ -68,13 +87,41 @@ export default function Register() {
     const { name, value, type, checked } = e.target;
     setForm((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value,
+      [name]:
+        type === 'checkbox'
+          ? checked
+          : name === 'codigo'
+            ? value.replace(/\D/g, '').slice(0, 6)
+            : value,
+      // otro correo = otro código: el anterior ya no sirve
+      ...(name === 'correo' && { codigo: '' }),
     }));
     setErrors((prev) => ({
       ...prev,
       fields: { ...prev.fields, [name]: undefined },
       general: null,
     }));
+  }
+
+  async function handleEnviarCodigo() {
+    setEnviandoCodigo(true);
+    setErrors({ fields: {}, general: null });
+    try {
+      const res = await solicitarVerificacion({ correo: form.correo });
+      setCodigoEnviadoA(form.correo.trim().toLowerCase());
+      setVigenciaMin(res.data.vigencia_minutos);
+      setEspera(res.data.espera_reenvio_segundos);
+    } catch (err) {
+      // los errores de esta acción (correo inválido, ya registrado, espera,
+      // fallo de envío) se muestran bajo el campo de correo
+      const { fields, general } = parseApiError(err);
+      setErrors({
+        fields: general ? { correo: general } : fields,
+        general: null,
+      });
+    } finally {
+      setEnviandoCodigo(false);
+    }
   }
 
   async function handleSubmit(e) {
@@ -89,6 +136,17 @@ export default function Register() {
       });
       return;
     }
+    if (!codigoEnviado || !/^\d{6}$/.test(form.codigo.trim())) {
+      setErrors({
+        fields: {
+          codigo: codigoEnviado
+            ? 'Ingresa el código de 6 dígitos que enviamos a tu correo'
+            : 'Primero solicita el código de verificación a tu correo',
+        },
+        general: null,
+      });
+      return;
+    }
     setLoading(true);
     setErrors({ fields: {}, general: null });
 
@@ -98,7 +156,13 @@ export default function Register() {
       await login({ correo: form.correo, contrasena: form.contrasena });
       navigate('/onboarding');
     } catch (err) {
-      setErrors(parseApiError(err));
+      const parsed = parseApiError(err);
+      // código incorrecto, vencido o sin intentos: llega como 400
+      if (err.code === 'BAD_REQUEST' && parsed.general) {
+        setErrors({ fields: { codigo: parsed.general }, general: null });
+      } else {
+        setErrors(parsed);
+      }
     } finally {
       setLoading(false);
     }
@@ -185,6 +249,65 @@ export default function Register() {
                 <p className='mt-1.5 text-[11.5px] text-neutral-600'>
                   Detectamos tu nombre automáticamente desde tu correo
                   institucional.
+                </p>
+              )}
+            </div>
+
+            {/* Verificación del correo */}
+            <div>
+              <div className='mb-1.5 flex items-center justify-between gap-3'>
+                <label
+                  htmlFor='codigo'
+                  className='block text-[11px] font-medium text-neutral-500'
+                >
+                  Código de verificación
+                </label>
+                <button
+                  type='button'
+                  onClick={handleEnviarCodigo}
+                  disabled={
+                    enviandoCodigo || espera > 0 || !form.correo.trim()
+                  }
+                  className='text-[11.5px] font-semibold text-pink-400 transition hover:text-pink-300 disabled:cursor-not-allowed disabled:opacity-50'
+                >
+                  {enviandoCodigo
+                    ? 'Enviando…'
+                    : espera > 0
+                      ? `Reenviar en ${espera} s`
+                      : codigoEnviado
+                        ? 'Reenviar código'
+                        : 'Enviar código'}
+                </button>
+              </div>
+              <input
+                id='codigo'
+                name='codigo'
+                type='text'
+                inputMode='numeric'
+                autoComplete='one-time-code'
+                maxLength={6}
+                value={form.codigo}
+                onChange={handleChange}
+                disabled={!codigoEnviado}
+                placeholder='123456'
+                className={`w-full rounded-[10px] border bg-[#17171B] px-3.5 py-2.5 text-[13px] tracking-[0.3em] text-neutral-100 placeholder-neutral-600 outline-none transition
+                  focus:border-pink-500/50 disabled:opacity-50
+                  ${errors.fields.codigo ? 'border-red-500/60' : 'border-white/[0.07] hover:border-white/[0.14]'}`}
+              />
+              {errors.fields.codigo && (
+                <p className='mt-1.5 text-[11.5px] text-red-400'>
+                  {errors.fields.codigo}
+                </p>
+              )}
+              {!errors.fields.codigo && codigoEnviado && (
+                <p className='mt-1.5 text-[11px] text-neutral-600'>
+                  Enviamos un código de 6 dígitos a tu correo. Vence en{' '}
+                  {vigenciaMin} minutos.
+                </p>
+              )}
+              {!errors.fields.codigo && !codigoEnviado && (
+                <p className='mt-1.5 text-[11px] text-neutral-600'>
+                  Escribe tu correo y pulsa «Enviar código» para verificarlo.
                 </p>
               )}
             </div>

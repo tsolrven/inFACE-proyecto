@@ -10,6 +10,7 @@ export function register({
   contrasena,
   nombre_usuario,
   carrera_id,
+  codigo,
   acepta_terminos,
   acepta_investigacion,
 }) {
@@ -21,9 +22,19 @@ export function register({
       contrasena,
       nombre_usuario,
       carrera_id,
+      codigo,
       acepta_terminos,
       acepta_investigacion,
     },
+  });
+}
+
+// Pide el código que se envía al correo para verificarlo antes de registrar
+export function solicitarVerificacion({ correo }) {
+  return apiFetch('/auth/verificacion/solicitar', {
+    method: 'POST',
+    auth: false,
+    body: { correo },
   });
 }
 
