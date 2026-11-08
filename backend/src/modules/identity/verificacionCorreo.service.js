@@ -49,6 +49,12 @@ async function solicitarCodigo(correo) {
   });
   if (existente) throw new ConflictError('El correo ya está registrado');
 
+
+  // limpieza oportunista: no se conservan códigos vencidos ni sus correos
+  await prisma.verificacionCorreo.deleteMany({
+    where: { expira_en: { lt: new Date() } },
+  });
+  
   const previa = await prisma.verificacionCorreo.findUnique({
     where: { correo },
   });
