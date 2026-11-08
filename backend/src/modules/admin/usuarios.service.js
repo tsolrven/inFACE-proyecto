@@ -169,6 +169,7 @@ async function listarRealizados(where) {
       contenido_id: true,
       motivo: true,
       estado: true,
+      eliminado_por: true,
       creado_en: true,
       contenido_snapshot: true,
     },
@@ -206,6 +207,7 @@ async function listarAgrupados(where, campoOrden) {
       contenido_id: true,
       motivo: true,
       estado: true,
+      eliminado_por: true,
       contenido_snapshot: true,
     },
   });
@@ -231,6 +233,8 @@ async function listarAgrupados(where, campoOrden) {
       contenido_id: g.contenido_id,
       total_reportes: propios.length,
       estados,
+      eliminado_por:
+        propios.find((r) => r.eliminado_por)?.eliminado_por ?? null,
       motivos: Object.entries(motivos)
         .map(([motivo, cantidad]) => ({ motivo, cantidad }))
         .sort((a, b) => b.cantidad - a.cantidad),

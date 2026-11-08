@@ -81,6 +81,7 @@ async function listarReportesAgrupados({ vista, tipo, pagina, limite }) {
       contenido_id: true,
       motivo: true,
       estado: true,
+      eliminado_por: true,
       notificacion_estado: true,
       contenido_snapshot: true,
     },
@@ -137,6 +138,8 @@ async function listarReportesAgrupados({ vista, tipo, pagina, limite }) {
       correos_con_problema,
       correos_enviados,
       contenido_existe: existe,
+      eliminado_por:
+        propios.find((r) => r.eliminado_por)?.eliminado_por ?? null,
       titulo: existe
         ? extracto(vivo.texto)
         : (snapshot?.titulo ?? (vivo?.texto ? extracto(vivo.texto) : null)),
@@ -161,6 +164,7 @@ async function obtenerReportesDeContenido(tipo_contenido, contenido_id) {
       revisado_en: true,
       nota_resolucion: true,
       respuesta_personalizada: true,
+      eliminado_por: true,
       notificacion_estado: true,
       notificacion_intentos: true,
       notificacion_error: true,
@@ -199,6 +203,10 @@ async function obtenerReportesDeContenido(tipo_contenido, contenido_id) {
         : (snapshot?.padre ?? null)
       : null;
 
+  // los pendientes se cierran juntos: comparten quién eliminó el contenido
+  const eliminado_por =
+    reportes.find((r) => r.eliminado_por)?.eliminado_por ?? null;
+
   return {
     tipo_contenido,
     contenido_id,
@@ -212,6 +220,7 @@ async function obtenerReportesDeContenido(tipo_contenido, contenido_id) {
             : null)),
       autor,
       padre,
+      eliminado_por,
     },
     reportes: reportes.map(({ contenido_snapshot: _omitido, ...r }) => r),
   };
