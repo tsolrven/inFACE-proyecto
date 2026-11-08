@@ -17,6 +17,7 @@ import {
   useValoresProyecto,
 } from '@/features/project-match/store/interaccionesStore';
 import ConDescripcion from '@/shared/components/ConDescripcion';
+import ShareButton from '@/shared/post/share/ShareButton';
 
 const ORDEN_TIPOS = [
   'Área de Interés',
@@ -128,6 +129,11 @@ export default function DetalleProyecto({
             <h1 className='text-[19px] font-bold leading-snug text-neutral-100'>
               {proyecto.titulo}
             </h1>
+            <ShareButton
+              path={`/match-proyectos?proyecto=${proyecto.id}`}
+              titulo={proyecto.titulo}
+              className='inline-flex items-center gap-1.5 rounded-[10px] border border-white/[0.07] px-3 py-1.5 text-[12px] font-medium text-neutral-400 transition hover:text-neutral-100'
+            />
           </div>
 
           <div className='mb-4 flex flex-wrap items-center gap-2'>

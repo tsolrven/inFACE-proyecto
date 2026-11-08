@@ -41,6 +41,21 @@ export function useProductosFeed(filtros, { enabled = true } = {}) {
   });
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
+export function useTotalProductos(usuarioId) {
+  return useQuery({
+    queryKey: ['producto', 'total', usuarioId],
+    queryFn: async ({ signal }) => {
+      const { meta } = await listarProductos({
+        vendedor_id: usuarioId,
+        limite: 1,
+        signal,
+      });
+      return meta?.total ?? 0;
+    },
+    enabled: !!usuarioId,
+  });
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
 export function useProducto(id) {
   const qc = useQueryClient();
   return useQuery({

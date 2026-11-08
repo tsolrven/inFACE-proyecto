@@ -34,16 +34,17 @@ async function avisarComentario({
     }),
     padreId
       ? prisma.comentario.findUnique({
-          where: { id: padreId },
-          select: { autor_id: true },
-        })
+        where: { id: padreId },
+        select: { autor_id: true },
+      })
       : null,
   ]);
 
   const quien = perfil?.nombre_usuario
     ? `u/${perfil.nombre_usuario}`
     : 'Alguien';
-  const enlace = `${ruta}?comentario=${comentarioId}`;
+  const separador = ruta.includes('?') ? '&' : '?';
+  const enlace = `${ruta}${separador}comentario=${comentarioId}`;
   const mensaje = (verbo) =>
     `${quien} ${verbo} «${recortar(nombreContenido)}»: «${recortar(comentario?.contenido)}»`;
 

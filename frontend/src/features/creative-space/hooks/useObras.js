@@ -42,6 +42,21 @@ export function useObrasFeed(filtros) {
   });
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
+export function useTotalObras(usuarioId) {
+  return useQuery({
+    queryKey: ['obra', 'total', usuarioId],
+    queryFn: async ({ signal }) => {
+      const { meta } = await listarObras({
+        autor_id: usuarioId,
+        limite: 1,
+        signal,
+      });
+      return meta?.total ?? 0;
+    },
+    enabled: !!usuarioId,
+  });
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
 export function useObra(id) {
   const qc = useQueryClient();
   return useQuery({

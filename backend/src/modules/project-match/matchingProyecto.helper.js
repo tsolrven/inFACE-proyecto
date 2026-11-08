@@ -312,7 +312,7 @@ function formatearProyecto(p, opciones = {}) {
         carrera: extraerCarrera(i.usuario),
       })) || [],
     total_postulaciones: p._count?.postulaciones || 0,
-    total_integrantes: p._count?.integrantes || 0,
+    total_integrantes: (p._count?.integrantes || 0) + 1,
   };
 
   if (opciones.etiquetasUsuarioIds) {

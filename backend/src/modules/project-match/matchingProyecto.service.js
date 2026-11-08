@@ -52,10 +52,13 @@ import {
 // VOTOS Y COMENTARIOS (módulo compartido: shared/votes y shared/comments)
 //──────────────────────────────────────────────────────────────────────────────
 
+//* ruta del frontend que abre el detalle del proyecto (MatchProyectos lee ?proyecto=ID)
 function enlaceProyecto(proyecto_id) {
   return `/match-proyectos?proyecto=${proyecto_id}`;
 }
 
+//* si el proyecto quedó en progreso solo por cupos llenos y ahora hay un cupo libre
+//* (alguien salió o fue expulsado), vuelve a abierto para recibir postulaciones
 async function reabrirSiHayCupo(proyecto_id) {
   const proyecto = await prisma.proyecto.findUnique({
     where: { id: proyecto_id },
@@ -69,7 +72,7 @@ async function reabrirSiHayCupo(proyecto_id) {
   const total = await prisma.integranteProyecto.count({
     where: { proyecto_id, fue_expulsado: false },
   });
-  if (total < proyecto.maximo_integrantes) {
+  if (total + 1 < proyecto.maximo_integrantes) {
     await prisma.proyecto.update({
       where: { id: proyecto_id },
       data: { estado_proyecto: 'abierto' },
@@ -77,6 +80,8 @@ async function reabrirSiHayCupo(proyecto_id) {
   }
 }
 
+//* agrega a cada proyecto ya formateado: mi_voto y comentarios_count
+//* (votos_neto ya viene en formatearProyecto). Una sola consulta por lista.
 async function agregarInteracciones(proyectosFormateados, usuario_id) {
   if (proyectosFormateados.length === 0) return proyectosFormateados;
   const ids = proyectosFormateados.map((p) => p.id);
@@ -85,6 +90,7 @@ async function agregarInteracciones(proyectosFormateados, usuario_id) {
     ids,
     usuario_id,
   );
+  //* ¿tiene informe final (PDF)? lo usa el aviso "añade el trabajo final"
   const conInforme = await prisma.archivo.findMany({
     where: { tipo_contenido: 'proyecto', contenido_id: { in: ids } },
     select: { contenido_id: true },
@@ -149,6 +155,8 @@ async function obtenerProyectos({
   const skip = (pagina - 1) * limite;
   const hoy = new Date();
 
+  //* el estado real de un proyecto puede diferir del guardado en la BD según sus fechas
+  //* (ver calcularEstadoEfectivo), así que el filtro por estado tiene que contemplar eso
   let filtroEstado;
   if (estado === 'abierto') {
     filtroEstado = {
@@ -225,6 +233,10 @@ async function obtenerProyectoPorId(id, usuario_id) {
   const formateado = formatearProyecto(proyecto);
   await agregarInteracciones([formateado], usuario_id);
 
+  //* total histórico de PERSONAS distintas que se han postulado (no de filas: alguien
+  //* rechazado antes puede volver a postularse, y eso no debería contarse dos veces),
+  //* separado del conteo de pendientes que ya trae `total_postulaciones` — solo se pide
+  //* en el detalle, no en listados, para no sumar una consulta extra por cada tarjeta.
   const postulantesDistintos = await prisma.postulacionProyecto.findMany({
     where: { proyecto_id: id },
     select: { postulante_id: true },
@@ -232,6 +244,7 @@ async function obtenerProyectoPorId(id, usuario_id) {
   });
   formateado.total_postulaciones_historico = postulantesDistintos.length;
 
+  //* informe final (un solo PDF, se sube con /archivos/proyecto/:id)
   const informe = await prisma.archivo.findFirst({
     where: { tipo_contenido: 'proyecto', contenido_id: id },
   });
@@ -287,6 +300,7 @@ async function guardarEntregables(id, usuario_id, rol, datos) {
   if (proyecto.creador_id !== usuario_id && rol !== 'superadmin')
     throw new ForbiddenError('No tienes permiso para editar este proyecto');
 
+  //* solo con el proyecto cerrado (a mano, por cupos llenos o por fecha de fin)
   const estado = calcularEstadoEfectivo(
     proyecto.estado_proyecto,
     proyecto.fecha_inicio,
@@ -329,11 +343,15 @@ async function eliminarProyecto(id, usuario_id, rol) {
   if (proyecto.creador_id !== usuario_id && rol !== 'superadmin')
     throw new ForbiddenError('No tienes permiso para eliminar este proyecto');
 
+  //* se guarda a quién avisar antes de borrar (después ya no existen)
   const integrantesAviso = await prisma.integranteProyecto.findMany({
     where: { proyecto_id: id, fue_expulsado: false },
     select: { usuario_id: true },
   });
 
+  //* todo en una transacción: si algo falla no queda el proyecto a medias.
+  //* eliminarContenido borra comentarios, votos y reportes del proyecto
+  //* (tablas polimórficas sin FK, no se borran solas).
   const archivos = await prisma.$transaction(async (tx) => {
     const { archivos } = await eliminarContenido(tx, 'proyecto', id);
     await tx.proyectoEtiqueta.deleteMany({ where: { proyecto_id: id } });
@@ -345,8 +363,10 @@ async function eliminarProyecto(id, usuario_id, rol) {
     return archivos;
   });
 
+  //* después del commit: si el disco falla, la BD ya quedó consistente
   await borrarArchivosFisicos(archivos);
 
+  //* sin enlace: el proyecto ya no existe
   await notificarVarios({
     usuarioIds: integrantesAviso.map((i) => i.usuario_id),
     actorId: usuario_id,
@@ -381,12 +401,14 @@ async function postularProyecto({
   if (proyecto.creador_id === postulante_id)
     throw new BadRequestError('No puedes postularte a tu propio proyecto');
 
+  //* solo bloquear si es integrante activo (no expulsado)
   const yaIntegrante = await prisma.integranteProyecto.findFirst({
     where: { proyecto_id, usuario_id: postulante_id, fue_expulsado: false },
   });
   if (yaIntegrante)
     throw new ConflictError('Ya eres integrante de este proyecto');
 
+  //* bloquear si ya tiene una postulación pendiente o aceptada
   const yaPostulado = await prisma.postulacionProyecto.findFirst({
     where: {
       proyecto_id,
@@ -399,6 +421,7 @@ async function postularProyecto({
       'Ya tienes una postulación activa en este proyecto',
     );
 
+  //* verificar si fue expulsado anteriormente para incluir advertencia
   const fueExpulsado = await prisma.integranteProyecto.findFirst({
     where: { proyecto_id, usuario_id: postulante_id, fue_expulsado: true },
   });
@@ -430,6 +453,7 @@ async function postularProyecto({
 
   return {
     ...formatearPostulacion(postulacion),
+    //* el postulante ve si fue aceptado como aviso propio
     fue_expulsado_anteriormente: !!fueExpulsado,
   };
 }
@@ -466,6 +490,7 @@ async function obtenerPostulacionesProyecto(
     orderBy: { fecha_postulacion: 'desc' },
   });
 
+  //* para cada postulación verificar si el postulante fue expulsado antes
   const postulacionesConHistorial = await Promise.all(
     postulaciones.map(async (p) => {
       const fueExpulsado = await prisma.integranteProyecto.findFirst({
@@ -478,6 +503,7 @@ async function obtenerPostulacionesProyecto(
 
       return {
         ...formatearPostulacion(p),
+        //* el creador ve la advertencia si el postulante fue expulsado antes
         advertencia: fueExpulsado
           ? 'Este usuario fue expulsado anteriormente de este proyecto'
           : null,
@@ -491,6 +517,7 @@ async function obtenerPostulacionesProyecto(
 // ╰─────────────────────────────✧────────────────────────────────╮
 
 async function obtenerPostulacionesUsuario(usuario_id) {
+  //* todas las postulaciones que ha hecho el usuario, en cualquier proyecto
   const postulaciones = await prisma.postulacionProyecto.findMany({
     where: { postulante_id: usuario_id },
     include: {
@@ -508,6 +535,9 @@ async function obtenerPostulacionesUsuario(usuario_id) {
     orderBy: { fecha_postulacion: 'desc' },
   });
 
+  //* una postulación "aceptada" es solo el historial: si después te expulsaron del
+  //* proyecto, ya no cuenta como membresía activa (y por lo tanto no debería bloquear
+  //* que puedas volver a postular a ese mismo proyecto)
   const proyectosAceptados = postulaciones
     .filter((p) => p.estado_postulacion === 'aceptada')
     .map((p) => p.proyecto_id);
@@ -557,6 +587,8 @@ async function responderPostulacion(postulacion_id, usuario_id, rol, estado) {
     throw new BadRequestError('Esta postulación ya fue respondida');
 
   if (estado === 'aceptada') {
+    //* al aceptar: crear integrante y marcar la postulación como aceptada (se conserva el historial;
+    //* antes se borraba, lo que hacía imposible que le apareciera al postulante que fue aceptado)
     await prisma.integranteProyecto.create({
       data: {
         proyecto_id: postulacion.proyecto_id,
@@ -575,7 +607,7 @@ async function responderPostulacion(postulacion_id, usuario_id, rol, estado) {
         where: { proyecto_id: postulacion.proyecto_id, fue_expulsado: false },
       });
 
-      if (totalIntegrantes >= postulacion.proyecto.maximo_integrantes) {
+      if (totalIntegrantes + 1 >= postulacion.proyecto.maximo_integrantes) {
         await prisma.proyecto.update({
           where: { id: postulacion.proyecto_id },
           data: { estado_proyecto: 'en_progreso' },
@@ -595,6 +627,7 @@ async function responderPostulacion(postulacion_id, usuario_id, rol, estado) {
       enlace: enlaceProyecto(postulacion.proyecto_id),
     });
 
+    //* constancia para quien aceptó (sin actorId a propósito: sí debe llegarle a él)
     await notificar({
       usuarioId: usuario_id,
       tipo: 'postulacion_aceptada_creador',
@@ -613,6 +646,7 @@ async function responderPostulacion(postulacion_id, usuario_id, rol, estado) {
     };
   }
 
+  //* al rechazar: solo cambiar estado, queda visible para el creador
   const actualizada = await prisma.postulacionProyecto.update({
     where: { id: postulacion_id },
     data: { estado_postulacion: 'rechazada' },
@@ -634,6 +668,9 @@ async function responderPostulacion(postulacion_id, usuario_id, rol, estado) {
 // ╰─────────────────────────────✧────────────────────────────────╮
 
 async function eliminarPostulacion(postulacion_id, usuario_id) {
+  //* el postulante retira o "quita de su lista" cualquiera de sus propias postulaciones
+  //* (pendiente = retirar la postulación activa; aceptada/rechazada = solo limpiar el historial,
+  //* no afecta su membresía si ya es integrante, esa vive en otra tabla)
   const postulacion = await prisma.postulacionProyecto.findUnique({
     where: { id: postulacion_id },
   });
@@ -657,6 +694,9 @@ async function eliminarPostulacion(postulacion_id, usuario_id) {
 // ╰─────────────────────────────✧────────────────────────────────╮
 
 async function eliminarPostulacionRechazada(postulacion_id, usuario_id, rol) {
+  //* el creador limpia postulaciones ya resueltas (aceptadas o rechazadas) de su historial;
+  //* esto NO afecta la membresía del usuario si fue aceptado (esa vive en otra tabla), y
+  //* tampoco afecta lo que el propio postulante ve en "Mis postulaciones"
   const postulacion = await prisma.postulacionProyecto.findUnique({
     where: { id: postulacion_id },
     include: { proyecto: true },
@@ -692,6 +732,7 @@ async function obtenerIntegrantes(proyecto_id) {
   });
   if (!proyecto) throw new NotFoundError('Proyecto');
 
+  //* solo mostrar integrantes activos
   const integrantes = await prisma.integranteProyecto.findMany({
     where: { proyecto_id, fue_expulsado: false },
     include: {
@@ -726,6 +767,7 @@ async function expulsarIntegrante(
   if (usuario_id_expulsar === proyecto.creador_id)
     throw new BadRequestError('No puedes expulsar al creador del proyecto');
 
+  //* buscar solo integrantes activos
   const integrante = await prisma.integranteProyecto.findFirst({
     where: {
       proyecto_id,
@@ -738,10 +780,12 @@ async function expulsarIntegrante(
       'El usuario no es integrante activo de este proyecto',
     );
 
+  //* eliminar postulaciones del usuario en este proyecto
   await prisma.postulacionProyecto.deleteMany({
     where: { proyecto_id, postulante_id: usuario_id_expulsar },
   });
 
+  //* marcar como expulsado en vez de borrar, conserva historial
   await prisma.integranteProyecto.update({
     where: { id: integrante.id },
     data: {
@@ -768,6 +812,7 @@ async function expulsarIntegrante(
 // ╰─────────────────────────────✧────────────────────────────────╮
 
 async function salirseDeProyecto(proyecto_id, usuario_id) {
+  //* el integrante se va voluntariamente
   const proyecto = await prisma.proyecto.findUnique({
     where: { id: proyecto_id },
   });
@@ -784,6 +829,8 @@ async function salirseDeProyecto(proyecto_id, usuario_id) {
   if (!integrante)
     throw new NotFoundError('No eres integrante activo de este proyecto');
 
+  //* salida voluntaria: se elimina el registro (no queda historial negativo) y también sus
+  //* postulaciones en este proyecto; si no, la aceptada seguiría bloqueando volver a postular
   await prisma.$transaction([
     prisma.integranteProyecto.delete({ where: { id: integrante.id } }),
     prisma.postulacionProyecto.deleteMany({
@@ -852,12 +899,14 @@ async function descartarProyecto(usuario_id, proyecto_id) {
   });
   if (!proyecto) throw new NotFoundError('Proyecto');
 
+  //* idempotente: si ya estaba descartado no lanza error, solo lo confirma
   await prisma.descarteProyecto.upsert({
     where: { usuario_id_proyecto_id: { usuario_id, proyecto_id } },
     update: {},
     create: { usuario_id, proyecto_id },
   });
 
+  //* un proyecto descartado no puede seguir siendo favorito a la vez
   await prisma.favoritoProyecto.deleteMany({
     where: { usuario_id, proyecto_id },
   });
@@ -898,10 +947,13 @@ async function obtenerProyectosRecomendados(
         where: { usuario_id },
         select: { proyecto_id: true },
       }),
+      //* si ya se marcó "me interesa" (favorito), tampoco debe seguir apareciendo en el mazo
       prisma.favoritoProyecto.findMany({
         where: { usuario_id },
         select: { proyecto_id: true },
       }),
+      //* "me gusta" en Descubrir (o cualquier voto, a favor o en contra, en otro lugar):
+      //* ya se pronunció sobre este proyecto, no se le vuelve a mostrar en el mazo
       prisma.voto.findMany({
         where: { usuario_id, tipo_contenido: 'proyecto' },
         select: { contenido_id: true },
@@ -926,6 +978,8 @@ async function obtenerProyectosRecomendados(
     orderBy: { fecha_creacion: 'desc' },
   });
 
+  //* se calcula el % de coincidencia de cada proyecto y se ordena de mayor a menor
+  //* (el sort de JS es estable, así que ante empate se conserva el orden por más reciente)
   const formateados = formatearProyectos(proyectos, { etiquetasUsuarioIds });
   const listaEtiquetas = [...formateados].sort(
     (a, b) => b.porcentaje_match - a.porcentaje_match,
@@ -945,6 +999,7 @@ async function obtenerProyectosRecomendados(
     );
     puntajes = calculo.puntajes;
     modelo_id = calculo.modelo_id;
+    //* el sort de JS es estable: ante empate se conserva el orden por más reciente
     const listaHibrida = [...formateados].sort(
       (a, b) => puntajes.get(b.id).puntaje - puntajes.get(a.id).puntaje,
     );
@@ -952,9 +1007,10 @@ async function obtenerProyectosRecomendados(
     ordenados = intercalarTeamDraft(
       listaEtiquetas,
       listaHibrida,
-      crearRng(`${usuario_id}:${hoy}`),
+      crearRng(`${usuario_id}:${hoy}`), // mismo usuario y día => mismo orden (el mazo no "baila")
     );
   } catch (err) {
+    //* el recomendador nunca debe dejar al usuario sin mazo: si algo falla, solo etiquetas
     logger.error('Falló el recomendador híbrido; se usa solo etiquetas', {
       usuario_id,
       error: err.message,
@@ -1047,6 +1103,10 @@ async function obtenerUsuariosSimilares(usuario_id, { limite = 6 } = {}) {
 
   if (misEtiquetasIds.length === 0) return [];
 
+  //* candidatos: usuarios (distintos de mí) que tengan alguna de mis etiquetas de interés.
+  //* se evita mezclar `distinct` con un filtro sobre una relación (usuario.esta_activo):
+  //* esa combinación es inestable en versiones recientes de Prisma. El filtro de activos
+  //* se aplica después, sobre el modelo Usuario directamente (filtro escalar, no relacional).
   const candidatos = await prisma.usuarioEtiqueta.findMany({
     where: {
       etiqueta_id: { in: misEtiquetasIds },
@@ -1081,7 +1141,7 @@ async function obtenerUsuariosSimilares(usuario_id, { limite = 6 } = {}) {
   const setMisEtiquetas = new Set(misEtiquetasIds);
 
   const resultados = usuarios
-    .filter((u) => u.perfil)
+    .filter((u) => u.perfil) 
     .map((u) => {
       const etiquetasDeCandidato = etiquetasPorUsuario.get(u.id) || [];
       const compartidas = etiquetasDeCandidato.filter((e) =>

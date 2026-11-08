@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/shared/auth/authStore';
 import { useUiStore } from '@/shared/stores/uiStore';
 import NotificationBell from '@/shared/notifications/NotificationBell';
@@ -35,7 +35,6 @@ export default function Navbar() {
 
   return (
     <nav className='sticky top-0 z-[300] flex h-[54px] flex-shrink-0 items-center gap-2 border-b border-white/[0.07] bg-[#17171B] px-3 sm:gap-3 sm:px-[18px]'>
-      {/* hamburguesa: solo en mobile, abre el sidebar como cajón */}
       <button
         type='button'
         onClick={toggleSidebarMovil}
@@ -45,7 +44,12 @@ export default function Navbar() {
         <i className='ti ti-menu-2 text-lg' />
       </button>
 
-      <div className='flex flex-shrink-0 items-center gap-1.5'>
+      <Link
+        to='/'
+        title='Ir al inicio'
+        aria-label='InFACE, ir al inicio'
+        className='flex flex-shrink-0 items-center gap-1.5 transition hover:opacity-80'
+      >
         <img
           src='/logo_white.png'
           alt='InFACE'
@@ -54,7 +58,7 @@ export default function Navbar() {
         <div className='select-none whitespace-nowrap text-[17px] font-bold tracking-tight text-neutral-100'>
           In<span className='text-pink-500'>FACE</span>
         </div>
-      </div>
+      </Link>
 
       <div className='flex h-[34px] min-w-0 flex-1 cursor-text items-center gap-2 rounded-[10px] border border-white/[0.07] bg-[#1E1E24] px-3 transition-colors hover:border-white/[0.14] sm:max-w-[420px]'>
         <i className='ti ti-search flex-shrink-0 text-sm text-neutral-600' />

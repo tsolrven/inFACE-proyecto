@@ -9,6 +9,8 @@ import {
 import ConDescripcion from '@/shared/components/ConDescripcion';
 import PerfilCreativo from '@/features/profile/components/PerfilCreativo';
 import PerfilMarketplace from '@/features/profile/components/PerfilMarketplace';
+import { useTotalObras } from '@/features/creative-space/hooks/useObras';
+import { useTotalProductos } from '@/features/marketplace/hooks/useProductos';
 
 const TABS = [
   { id: 'proyectos', label: 'Proyectos', icon: 'ti-puzzle' },
@@ -28,11 +30,15 @@ export default function PerfilTabs({
   esPropio = false,
 }) {
   const [tab, setTab] = useState('proyectos');
+  const { data: totalObras = 0 } = useTotalObras(usuarioId);
+  const { data: totalProductos = 0 } = useTotalProductos(usuarioId);
 
   const counts = {
     proyectos: proyectosCreados.length + proyectosParticipa.length,
     apuntes: apuntes.length,
     respuestas: respuestas.length,
+    creativo: totalObras,
+    marketplace: totalProductos,
   };
 
   return (

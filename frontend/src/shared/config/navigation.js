@@ -1,7 +1,3 @@
-// Metadatos de navegación (solo datos, sin JSX ni imports de páginas).
-// Los consumen el Sidebar y la página de inicio.
-// La relación ruta → página está en app/router/routes.js
-
 export const topNavItems = [
   { path: '/', label: 'Inicio', icon: 'ti-home' },
   {
@@ -46,11 +42,13 @@ export const navSections = [
         path: '/espacio-creativo',
         label: 'Espacio creativo',
         icon: 'ti-palette',
+        beta: true,
       },
       {
         path: '/marketplace',
         label: 'Marketplace',
         icon: 'ti-shopping-bag',
+        beta: true,
       },
     ],
   },
