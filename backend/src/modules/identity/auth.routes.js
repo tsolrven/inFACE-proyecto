@@ -6,12 +6,14 @@ import {
   logout,
   me,
   aceptarTerminosController,
+  solicitarVerificacion,
 } from './auth.controller.js';
 import validate from '../../middlewares/validate.js';
 import {
   registerSchema,
   loginSchema,
   aceptarTerminosSchema,
+  solicitarVerificacionSchema,
 } from './auth.validation.js';
 import { olvideContrasena, restablecer } from './recuperacion.controller.js';
 import {
@@ -23,11 +25,18 @@ import {
   loginLimiter,
   registerLimiter,
   recuperacionLimiter,
+  verificacionLimiter,
 } from '../../middlewares/rateLimiter.js';
 
 const router = express.Router();
 
 router.post('/register', registerLimiter, validate(registerSchema), register);
+router.post(
+  '/verificacion/solicitar',
+  verificacionLimiter,
+  validate(solicitarVerificacionSchema),
+  solicitarVerificacion,
+);
 router.post('/login', loginLimiter, validate(loginSchema), login);
 router.post(
   '/olvide-contrasena',

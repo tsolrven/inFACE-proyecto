@@ -712,3 +712,16 @@ model TokenRecuperacion {
   @@index([usuario_id])
   @@map("tokens_recuperacion")
 }
+
+
+// Códigos de verificación del correo institucional (registro). 
+model VerificacionCorreo {
+  correo          String   @id
+  codigo_hash     String   @db.VarChar(64)
+  expira_en       DateTime
+  intentos        Int      @default(0)
+  ultimo_envio_en DateTime @default(now())
+  creado_en       DateTime @default(now())
+
+  @@map("verificaciones_correo")
+}

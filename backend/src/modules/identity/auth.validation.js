@@ -107,6 +107,11 @@ const registerSchema = z.object({
   acepta_investigacion: z.boolean().optional().default(false),
 });
 
+// mismas reglas de correo que el registro (dominio institucional incluido)
+const solicitarVerificacionSchema = z.object({
+  correo: registerSchema.shape.correo,
+});
+
 const aceptarTerminosSchema = z.object({
   acepta_terminos: z.literal(true, { error: ERROR_MESSAGES.terminos.required }),
   acepta_investigacion: z.boolean().optional().default(false),
@@ -127,6 +132,7 @@ const loginSchema = z.object({
 // ─────────────────────────────────────────────────────────────────────────────
 export {
   registerSchema,
+  solicitarVerificacionSchema,
   loginSchema,
   DOMINIOS_PERMITIDOS,
   aceptarTerminosSchema,

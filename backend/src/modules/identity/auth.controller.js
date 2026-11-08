@@ -7,6 +7,7 @@ import {
   aceptarTerminos,
 } from './auth.service.js';
 import ApiResponse from '../../utils/apiResponse.js';
+import { solicitarCodigo } from './verificacionCorreo.service.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 const REFRESH_COOKIE_OPTS = {
   httpOnly: true,
@@ -76,4 +77,21 @@ async function aceptarTerminosController(req, res, next) {
   }
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-export { register, login, refresh, logout, me, aceptarTerminosController };
+async function solicitarVerificacion(req, res, next) {
+  try {
+    const data = await solicitarCodigo(req.body.correo);
+    return ApiResponse.success(res, data);
+  } catch (err) {
+    next(err);
+  }
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+export {
+  register,
+  login,
+  refresh,
+  logout,
+  me,
+  aceptarTerminosController,
+  solicitarVerificacion,
+};

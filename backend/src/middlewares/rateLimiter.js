@@ -52,6 +52,22 @@ const registerLimiter = rateLimit({
   },
 });
 
+// pedir códigos de verificación: evita llenar de correos a alguien o gastar el SMTP
+const verificacionLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hora
+  max: 10, // 10 solicitudes por IP en la ventana
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: {
+      code: 'TOO_MANY_REQUESTS',
+      message:
+        'Demasiadas solicitudes de código. Intenta de nuevo en una hora.',
+    },
+  },
+});
+
 // ── por usuario (rutas con sesión) ─────────────────────────────────────────────────────
 // Se usa el id del usuario y no la IP: en la universidad muchos comparten la misma IP.
 // Deben ponerse DESPUÉS de `autenticar`, que es quien deja `req.usuario`.
@@ -103,6 +119,7 @@ export {
   loginLimiter,
   recuperacionLimiter,
   registerLimiter,
+  verificacionLimiter,
   interaccionLimiter,
   publicacionLimiter,
   subidaLimiter,
