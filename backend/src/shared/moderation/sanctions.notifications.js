@@ -96,7 +96,7 @@ async function notificarRevocacion(sancion) {
     if (config.titulo) {
       await notificar({
         usuarioId: sancion.usuario_id,
-        tipo: 'sancion',
+        tipo: 'sancion_revocada',
         titulo: config.titulo,
         mensaje: config.mensaje,
         enlace: config.enlace,
