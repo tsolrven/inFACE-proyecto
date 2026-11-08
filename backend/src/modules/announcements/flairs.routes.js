@@ -1,6 +1,10 @@
 import express from 'express';
 import { listar, crear, actualizar, eliminar } from './flairs.controller.js';
-import { autenticar, autorizar } from '../../middlewares/auth.middleware.js';
+import {
+  autenticar,
+  autorizar,
+  exigirEscritura,
+} from '../../middlewares/auth.middleware.js';
 import { exigirSinRestriccion } from '../../middlewares/restriction.middleware.js';
 import validate from '../../middlewares/validate.js';
 import {
@@ -20,6 +24,7 @@ router.get('/', autenticar, validate(listarFlairsQuerySchema, 'query'), listar);
 router.post(
   '/',
   autenticar,
+  exigirEscritura,
   autorizar(...ROLES_ANUNCIANTES),
   exigirSinRestriccion,
   publicacionLimiter,
@@ -29,6 +34,7 @@ router.post(
 router.patch(
   '/:id',
   autenticar,
+  exigirEscritura,
   autorizar(...ROLES_ANUNCIANTES),
   exigirSinRestriccion,
   validate(idParamSchema, 'params'),
