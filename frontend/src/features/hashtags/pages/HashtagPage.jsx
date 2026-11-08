@@ -1,10 +1,14 @@
 import { Navigate, useParams, useSearchParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import PageBanner from '@/shared/components/layout/PageBanner';
 import Pestanas from '@/shared/components/ui/Pestanas';
 import { MaterialFeed } from '@/features/materials';
 import { ForumFeed } from '@/features/forum';
 import { AnnouncementsFeed } from '@/features/announcements';
+import { listarCarreras } from '@/shared/api/catalog.api';
 import { useAuthStore } from '@/shared/auth/authStore';
+import { ROLES } from '@/shared/auth/roles';
+import { inputClasses } from '@/shared/components/form/inputClasses';
 import { normalizarHashtag, rutaHashtag } from '@/shared/lib/hashtags';
 
 const PESTANAS = [
@@ -27,14 +31,36 @@ export default function HashtagPage() {
   const { nombre = '' } = useParams();
   const [params, setParams] = useSearchParams();
   const usuario = useAuthStore((s) => s.usuario);
-  const carreraId = usuario?.carrera_id ?? null;
-  const carreraNombre = usuario?.carreras?.[0]?.nombre ?? 'tu carrera';
+  const esSuperadmin = usuario?.rol === ROLES.SUPERADMIN;
+
+  const {
+    data: carreras = [],
+    isPending: cargandoCarreras,
+    isError: errorCarreras,
+  } = useQuery({
+    queryKey: ['carreras'],
+    queryFn: () => listarCarreras(),
+    staleTime: 10 * 60 * 1000,
+  });
 
   const hashtag = normalizarHashtag(nombre);
   // una pestaña desconocida (?pestana=xyz) cae en Materiales
   const pedida = params.get('pestana');
   const pestana = PESTANAS.some((p) => p.id === pedida) ? pedida : 'materiales';
   const modulo = MODULOS[pestana];
+
+  // Carrera mostrada: la de ?carrera=<código> si es válida; si no, la del
+  // usuario. El superadmin no tiene carrera: debe elegirla.
+  const codigoPedido = params.get('carrera')?.toLowerCase() ?? null;
+  const carreraPedida = carreras.find(
+    (c) => c.codigo.toLowerCase() === codigoPedido,
+  );
+  const carreraPropia = esSuperadmin
+    ? null
+    : carreras.find((c) => c.id === usuario?.carrera_id);
+  const carrera = carreraPedida ?? carreraPropia ?? null;
+  // fuera de la carrera propia (o siendo superadmin) el contexto es la comunidad
+  const enComunidad = !!carrera && (esSuperadmin || carrera.id !== carreraPropia?.id);
 
   // /hashtag/Cálculo -> /hashtag/calculo (la misma forma que guarda el backend)
   if (!hashtag)
@@ -47,14 +73,50 @@ export default function HashtagPage() {
   if (hashtag !== nombre) {
     return (
       <Navigate
-        to={rutaHashtag(hashtag, pestana)}
+        to={rutaHashtag(hashtag, pestana, codigoPedido)}
         replace
       />
     );
   }
 
   function cambiarPestana(id) {
-    setParams(id === 'materiales' ? {} : { pestana: id }, { replace: true });
+    const siguiente = new URLSearchParams(params);
+    if (id === 'materiales') siguiente.delete('pestana');
+    else siguiente.set('pestana', id);
+    setParams(siguiente, { replace: true });
+  }
+
+  function cambiarCarrera(codigo) {
+    const siguiente = new URLSearchParams(params);
+    siguiente.set('carrera', codigo.toLowerCase());
+    setParams(siguiente, { replace: true });
+  }
+
+  // la comunidad abre en Foro por defecto; las otras pestañas van en la URL
+  const rutaComunidad = carrera
+    ? `/comunidad/${carrera.codigo.toLowerCase()}${pestana === 'foro' ? '' : `?pestana=${pestana}`
+    }`
+    : null;
+
+  let breadcrumb = [
+    { label: 'Inicio', to: '/' },
+    { label: 'Académico' },
+    modulo,
+    { label: `#${hashtag}` },
+  ];
+  if (enComunidad) {
+    breadcrumb = [
+      { label: 'Inicio', to: '/' },
+      { label: 'Comunidades' },
+      { label: carrera.nombre, to: rutaComunidad },
+      { label: `#${hashtag}` },
+    ];
+  } else if (esSuperadmin) {
+    breadcrumb = [
+      { label: 'Inicio', to: '/' },
+      { label: 'Comunidades' },
+      { label: `#${hashtag}` },
+    ];
   }
 
   return (
@@ -62,14 +124,47 @@ export default function HashtagPage() {
       <PageBanner
         icon='ti-hash'
         title={`#${hashtag}`}
-        subtitle={`Publicaciones con #${hashtag} en ${carreraNombre}`}
-        breadcrumb={[
-          { label: 'Inicio', to: '/' },
-          { label: 'Académico' },
-          modulo,
-          { label: `#${hashtag}` },
-        ]}
+        subtitle={
+          carrera
+            ? `Publicaciones con #${hashtag} en ${carrera.nombre}`
+            : `Publicaciones con #${hashtag}`
+        }
+        breadcrumb={breadcrumb}
       />
+
+      <div className='flex items-center gap-2.5 border-b border-white/[0.07] px-4 py-2'>
+        <label
+          htmlFor='hashtag-carrera'
+          className='text-[12px] text-neutral-500'
+        >
+          Carrera
+        </label>
+        <div className='w-full max-w-[300px]'>
+          <select
+            id='hashtag-carrera'
+            value={carrera?.codigo ?? ''}
+            onChange={(e) => cambiarCarrera(e.target.value)}
+            className={inputClasses}
+          >
+            {!carrera && (
+              <option
+                value=''
+                disabled
+              >
+                Elige una carrera...
+              </option>
+            )}
+            {carreras.map((c) => (
+              <option
+                key={c.id}
+                value={c.codigo}
+              >
+                {c.nombre}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
 
       <Pestanas
         pestanas={PESTANAS}
@@ -77,22 +172,34 @@ export default function HashtagPage() {
         onCambiar={cambiarPestana}
       />
 
-      {pestana === 'materiales' && (
+      {cargandoCarreras && (
+        <div className='flex flex-1 items-center justify-center'>
+          <i className='ti ti-loader-2 animate-spin text-2xl text-neutral-600' />
+        </div>
+      )}
+      {!cargandoCarreras && !carrera && (
+        <div className='flex flex-1 items-center justify-center px-6 text-center text-[13px] text-neutral-500'>
+          {errorCarreras
+            ? 'No se pudieron cargar las carreras.'
+            : `Elige una carrera para ver las publicaciones con #${hashtag}.`}
+        </div>
+      )}
+      {carrera && pestana === 'materiales' && (
         <MaterialFeed
-          carreraId={carreraId}
+          carreraId={carrera.id}
           hashtag={hashtag}
         />
       )}
-      {pestana === 'foro' && (
+      {carrera && pestana === 'foro' && (
         <ForumFeed
-          carreraId={carreraId}
+          carreraId={carrera.id}
           hashtag={hashtag}
           permitirCrear={false}
         />
       )}
-      {pestana === 'anuncios' && (
+      {carrera && pestana === 'anuncios' && (
         <AnnouncementsFeed
-          carreraId={carreraId}
+          carreraId={carrera.id}
           hashtag={hashtag}
           permitirCrear={false}
         />
