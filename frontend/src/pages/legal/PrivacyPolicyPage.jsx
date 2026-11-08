@@ -25,6 +25,12 @@ export default function PrivacyPolicyPage() {
             favoritos y descartes, y reportes.
           </li>
           <li>
+            Moderación: los reportes que hagas o recibas (motivo y, si lo
+            escribes, un detalle libre), los mensajes de cierre, las sanciones
+            aplicadas a una cuenta (tipo, duración y motivo escrito por el
+            moderador) y los correos que te enviamos por estos motivos.
+          </li>
+          <li>
             Recomendaciones: qué proyectos te mostramos, con qué algoritmo y qué
             hiciste con ellos.
           </li>
@@ -65,9 +71,32 @@ export default function PrivacyPolicyPage() {
       <Seccion titulo='5. Cuánto tiempo los conservamos'>
         <p>
           Mientras tu cuenta esté activa. Al terminar el período de pruebas o
-          cuando solicites eliminar tu cuenta, se eliminan o anonimizan en un
-          plazo de 30 días.
+          cuando solicites eliminar tu cuenta, tu correo, tu nombre y tu perfil
+          se eliminan o anonimizan en un plazo de 30 días, y tu nombre de
+          usuario pasa a ser un identificador genérico.
         </p>
+        <p>
+          Los registros de moderación se conservan después, asociados a esa
+          cuenta ya anonimizada (seudonimización), mientras sean necesarios para
+          la seguridad y moderación de la comunidad:
+        </p>
+        <ul className='list-disc space-y-1 pl-5'>
+          <li>
+            Reportes: motivo, detalle, mensaje de cierre y un extracto de hasta
+            280 caracteres del contenido reportado (su título o el inicio de su
+            texto), aunque ese contenido se elimine. No se conserva el
+            contenido completo ni sus archivos.
+          </li>
+          <li>
+            Sanciones: tipo, duración, fechas y el motivo escrito por el
+            moderador, incluido el de una eventual revocación.
+          </li>
+          <li>
+            Estos textos son libres: si quien reportó o moderó escribió en ellos
+            información que te identifique, esa información se conserva. Los
+            consulta el equipo de moderación.
+          </li>
+        </ul>
       </Seccion>
       <Seccion titulo='6. Tus derechos'>
         <p>
