@@ -122,3 +122,19 @@ export function AdminRoute({ children }) {
   }
   return children;
 }
+
+// El superadmin no usa las páginas académicas principales: no pertenece a
+// ninguna carrera y consulta foro, materiales y anuncios desde las
+// comunidades. Es solo de interfaz: la seguridad real está en el backend.
+export function NoSuperadminRoute({ children }) {
+  const esSuperadmin = useAuthStore((s) => s.usuario?.rol === ROLES.SUPERADMIN);
+  if (esSuperadmin) {
+    return (
+      <Navigate
+        to='/admin/reportes'
+        replace
+      />
+    );
+  }
+  return children;
+}

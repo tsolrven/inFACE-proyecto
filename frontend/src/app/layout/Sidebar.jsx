@@ -61,15 +61,19 @@ export default function Sidebar() {
   const abiertoMovil = useUiStore((s) => s.sidebarMovilAbierto);
   const cerrarSidebarMovil = useUiStore((s) => s.cerrarSidebarMovil);
   // El superadmin ve «Administración» y no «Reportes» dentro de Recursos
-  // (esa entrada es «Mis reportes», que él no usa).
+  // (esa entrada es «Mis reportes», que él no usa). Tampoco ve «Académico»:
+  // no pertenece a ninguna carrera, así que consulta foro, materiales y
+  // anuncios desde las comunidades.
   const esSuperadmin = useAuthStore((s) => s.usuario?.rol === ROLES.SUPERADMIN);
   const secciones = esSuperadmin
     ? [
       navAdmin,
-      ...navSections.map((s) => ({
-        ...s,
-        items: s.items.filter((i) => i.path !== '/reportes'),
-      })),
+      ...navSections
+        .filter((s) => s.title !== 'Académico')
+        .map((s) => ({
+          ...s,
+          items: s.items.filter((i) => i.path !== '/reportes'),
+        })),
     ]
     : navSections;
 
