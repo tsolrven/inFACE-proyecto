@@ -9,6 +9,7 @@ import {
   ETIQUETA_TIPO,
   ICONO_POR_TIPO,
   rutaDeContenido,
+  etiquetaEliminacion,
 } from '@/shared/moderation/reportUi';
 
 export default function ReportesContenidoModal({ tipo, id, onClose }) {
@@ -76,7 +77,7 @@ export default function ReportesContenidoModal({ tipo, id, onClose }) {
                 {ETIQUETA_TIPO[tipo] ?? tipo}
                 {!contenido.existe && (
                   <span className='rounded-full bg-neutral-500/10 px-2 py-0.5 text-[10.5px] normal-case tracking-normal'>
-                    Contenido eliminado
+                    {etiquetaEliminacion(contenido.eliminado_por)}
                   </span>
                 )}
               </div>

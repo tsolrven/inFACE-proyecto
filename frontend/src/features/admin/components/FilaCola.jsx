@@ -4,6 +4,7 @@ import {
   ETIQUETA_TIPO,
   ICONO_POR_TIPO,
   ESTADO_BADGE,
+  etiquetaEliminacion,
 } from '@/shared/moderation/reportUi';
 
 const ESTADO_LABEL = {
@@ -20,6 +21,7 @@ export default function FilaCola({ grupo, onAbrir }) {
     tipo_contenido,
     titulo,
     contenido_existe,
+    eliminado_por,
     total_reportes,
     motivos,
     estados,
@@ -29,7 +31,11 @@ export default function FilaCola({ grupo, onAbrir }) {
   } = grupo;
 
   // en la vista Pendientes todos son "pendiente": solo se muestra el resultado
-  const resultados = Object.keys(estados).filter((e) => e !== 'pendiente');
+  // la insignia de «contenido eliminado» la reemplaza la etiqueta de quién lo eliminó
+  const resultados = Object.keys(estados).filter(
+    (e) =>
+      e !== 'pendiente' && !(e === 'contenido_eliminado' && !contenido_existe),
+  );
 
   return (
     <button
@@ -50,7 +56,7 @@ export default function FilaCola({ grupo, onAbrir }) {
         <div className='flex flex-shrink-0 flex-wrap justify-end gap-1.5'>
           {!contenido_existe && (
             <span className='rounded-full bg-neutral-500/10 px-2 py-0.5 text-[10.5px] font-semibold text-neutral-500'>
-              Contenido eliminado
+              {etiquetaEliminacion(eliminado_por)}
             </span>
           )}
           {resultados.map((estado) => (

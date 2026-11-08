@@ -5,6 +5,7 @@ import {
   ICONO_POR_TIPO,
   ESTADO_BADGE,
   ESTADO_LABEL_MODERACION,
+  etiquetaEliminacion,
 } from '@/shared/moderation/reportUi';
 
 const MAX_MOTIVOS_VISIBLES = 3;
@@ -19,21 +20,24 @@ const ETIQUETA_FECHA = {
 // agrupados por contenido; «realizados» es un ítem por reporte.
 // No muestra reportantes ni detalle: el backend no los envía.
 export default function FilaReporteUsuario({ item, lista, onAbrir }) {
-  const { tipo_contenido, titulo, contenido_existe } = item;
+  const { tipo_contenido, titulo, contenido_existe, eliminado_por } = item;
   const agrupado = lista !== 'realizados';
 
-  // en «eliminados» todos están en el mismo estado: la insignia no informa
-  const estados =
+  // «eliminados» son, por definición, los que borró la moderación (también
+  // los reportes anteriores al campo eliminado_por)
+  const mostrarEliminado = lista === 'eliminados' || !contenido_existe;
+  const origen = eliminado_por ?? (lista === 'eliminados' ? 'moderacion' : null);
+
+  // en «eliminados» todos están en el mismo estado: la insignia no informa; y
+  // la de «Contenido eliminado» la reemplaza la etiqueta de quién lo eliminó
+  const estados = (
     lista === 'eliminados'
       ? []
       : agrupado
         ? Object.keys(item.estados)
-        : [item.estado];
+        : [item.estado]
+  ).filter((e) => !(mostrarEliminado && e === 'contenido_eliminado'));
   const fecha = agrupado ? item.ultimo_en : item.creado_en;
-  const mostrarEliminado =
-    lista !== 'eliminados' &&
-    !contenido_existe &&
-    !estados.includes('contenido_eliminado');
 
   return (
     <button
@@ -54,7 +58,7 @@ export default function FilaReporteUsuario({ item, lista, onAbrir }) {
         <div className='flex flex-shrink-0 flex-wrap justify-end gap-1.5'>
           {mostrarEliminado && (
             <span className='rounded-full bg-neutral-500/10 px-2 py-0.5 text-[10.5px] font-semibold text-neutral-500'>
-              Contenido eliminado
+              {etiquetaEliminacion(origen)}
             </span>
           )}
           {estados.map((estado) => (
