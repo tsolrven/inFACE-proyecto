@@ -11,6 +11,12 @@ const ICONOS = {
   integrante_salio: 'ti-door-exit',
   entregables_actualizados: 'ti-trophy',
   proyecto_eliminado: 'ti-trash',
+  obra_comentada: 'ti-message-circle-2',
+  parrafo_comentado: 'ti-message-dots',
+  respuesta_recibida: 'ti-corner-down-right',
+  producto_pregunta: 'ti-message-question',
+  vendedor_respondio: 'ti-user-check',
+  producto_estado: 'ti-shopping-bag',
 };
 
 function hace(fecha) {

@@ -7,6 +7,8 @@ import {
   tiempoRelativo,
 } from '@/shared/lib/matchHelpers';
 import ConDescripcion from '@/shared/components/ConDescripcion';
+import PerfilCreativo from '@/features/profile/components/PerfilCreativo';
+import PerfilMarketplace from '@/features/profile/components/PerfilMarketplace';
 
 const TABS = [
   { id: 'proyectos', label: 'Proyectos', icon: 'ti-puzzle' },
@@ -22,6 +24,8 @@ export default function PerfilTabs({
   apuntes = [],
   respuestas = [],
   cargando = false,
+  usuarioId = null,
+  esPropio = false,
 }) {
   const [tab, setTab] = useState('proyectos');
 
@@ -38,21 +42,19 @@ export default function PerfilTabs({
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`-mb-px flex items-center gap-1.5 whitespace-nowrap border-b-2 px-4 py-2.5 text-[12.5px] font-medium transition ${
-              tab === t.id
-                ? 'border-pink-500 font-semibold text-pink-500'
-                : 'border-transparent text-neutral-500 hover:text-neutral-300'
-            }`}
+            className={`-mb-px flex items-center gap-1.5 whitespace-nowrap border-b-2 px-4 py-2.5 text-[12.5px] font-medium transition ${tab === t.id
+              ? 'border-pink-500 font-semibold text-pink-500'
+              : 'border-transparent text-neutral-500 hover:text-neutral-300'
+              }`}
           >
             <i className={`ti ${t.icon} text-[15px]`} />
             {t.label}
             {counts[t.id] > 0 && (
               <span
-                className={`rounded-full px-1.5 py-px text-[10px] font-bold ${
-                  tab === t.id
-                    ? 'bg-pink-500/15 text-pink-400'
-                    : 'bg-white/[0.06] text-neutral-500'
-                }`}
+                className={`rounded-full px-1.5 py-px text-[10px] font-bold ${tab === t.id
+                  ? 'bg-pink-500/15 text-pink-400'
+                  : 'bg-white/[0.06] text-neutral-500'
+                  }`}
               >
                 {counts[t.id]}
               </span>
@@ -81,17 +83,11 @@ export default function PerfilTabs({
             texto='El foro por ramos todavía está en construcción, así que todavía no puedes ver tus respuestas aquí.'
           />
         )}
-        {!cargando && tab === 'creativo' && (
-          <ProximamenteTab
-            icono='ti-palette'
-            texto='El módulo cultural (audio, galerías, obras por capítulos) todavía está en construcción.'
-          />
+        {!cargando && tab === 'creativo' && usuarioId && (
+          <PerfilCreativo usuarioId={usuarioId} esPropio={esPropio} />
         )}
-        {!cargando && tab === 'marketplace' && (
-          <ProximamenteTab
-            icono='ti-shopping-bag'
-            texto='El marketplace de InFACE todavía está en construcción.'
-          />
+        {!cargando && tab === 'marketplace' && usuarioId && (
+          <PerfilMarketplace usuarioId={usuarioId} esPropio={esPropio} />
         )}
       </div>
     </div>
@@ -112,11 +108,10 @@ function ProyectosTab({ creados, participa }) {
       <div className='mb-4 flex gap-1 border-b border-white/[0.07]'>
         <button
           onClick={() => setSub('creados')}
-          className={`-mb-px flex items-center gap-1.5 border-b-2 px-3.5 py-2 text-[12.5px] font-medium transition ${
-            sub === 'creados'
-              ? 'border-pink-500 text-pink-500'
-              : 'border-transparent text-neutral-500 hover:text-neutral-300'
-          }`}
+          className={`-mb-px flex items-center gap-1.5 border-b-2 px-3.5 py-2 text-[12.5px] font-medium transition ${sub === 'creados'
+            ? 'border-pink-500 text-pink-500'
+            : 'border-transparent text-neutral-500 hover:text-neutral-300'
+            }`}
         >
           Creados{' '}
           <span className='text-[10.5px] text-neutral-600'>
@@ -125,11 +120,10 @@ function ProyectosTab({ creados, participa }) {
         </button>
         <button
           onClick={() => setSub('participa')}
-          className={`-mb-px flex items-center gap-1.5 border-b-2 px-3.5 py-2 text-[12.5px] font-medium transition ${
-            sub === 'participa'
-              ? 'border-pink-500 text-pink-500'
-              : 'border-transparent text-neutral-500 hover:text-neutral-300'
-          }`}
+          className={`-mb-px flex items-center gap-1.5 border-b-2 px-3.5 py-2 text-[12.5px] font-medium transition ${sub === 'participa'
+            ? 'border-pink-500 text-pink-500'
+            : 'border-transparent text-neutral-500 hover:text-neutral-300'
+            }`}
         >
           Participa{' '}
           <span className='text-[10.5px] text-neutral-600'>

@@ -22,13 +22,14 @@ import {
   parsearDatosMultipart,
 } from '../../shared/files/multipart.helper.js';
 import { obtenerConfigAdjuntos } from '../../shared/content/contentRegistry.js';
+import './marketplace.notifications.js'; 
 // ────────────────────────────────────────────────────────────────────────────────────────
 const router = express.Router();
 
 const MAX_ARCHIVOS = obtenerConfigAdjuntos('producto').max;
 
 const comoProducto = (req, _res, next) => {
-  req.tipoContenido = 'producto'; 
+  req.tipoContenido = 'producto';
   next();
 };
 // ────────────────────────────────────────────────────────────────────────────────────────

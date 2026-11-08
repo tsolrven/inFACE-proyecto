@@ -11,6 +11,7 @@ import {
   datosArchivo,
 } from '../../shared/files/files.service.js';
 import { revisarCoherencia } from './marketplace.validation.js';
+import { notificarCambioDeEstado } from './marketplace.notifications.js';
 import { eliminarContenido } from '../../shared/content/contentCleanup.js';
 import {
   registrarHidratadorGuardados,
@@ -86,6 +87,7 @@ async function listarProductos({
   precio_min,
   precio_max,
   solo_mios = false,
+  vendedor_id,
   busqueda,
   pagina = 1,
   limite = 20,
@@ -93,6 +95,7 @@ async function listarProductos({
 }) {
   const where = { AND: [] };
   if (solo_mios) where.AND.push({ vendedor_id: usuario_id });
+  else if (vendedor_id) where.AND.push({ vendedor_id });
   if (categoria?.length) where.AND.push({ categoria: { in: categoria } });
   if (condicion) where.AND.push({ condicion });
   if (estado) where.AND.push({ estado });
@@ -199,6 +202,14 @@ async function actualizarProducto(id, usuario_id, datos) {
     where: { id },
     data: { ...datos, ...ajuste, editado_en: new Date() },
   });
+
+  if (datos.estado && datos.estado !== producto.estado) {
+    await notificarCambioDeEstado({
+      producto,
+      estadoNuevo: datos.estado,
+      actorId: usuario_id,
+    });
+  }
   return obtenerProducto(id, usuario_id);
 }
 // ────────────────────────────────────────────────────────────────────────────────────────

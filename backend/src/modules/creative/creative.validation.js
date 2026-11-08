@@ -191,6 +191,7 @@ const listarObrasQuerySchema = paginacionQuerySchema.extend({
     .enum(['true', 'false'])
     .transform((v) => v === 'true')
     .optional(),
+  autor_id: z.string().uuid('El id no es válido').optional(),
   busqueda: z.string().trim().max(100).optional(),
 });
 

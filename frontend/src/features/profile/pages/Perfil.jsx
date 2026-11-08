@@ -285,6 +285,8 @@ export default function Perfil() {
           // apuntes={apuntes}
           // respuestas={respuestas}
           cargando={cargandoTabs}
+          usuarioId={perfil.id}
+          esPropio
         />
       </div>
 

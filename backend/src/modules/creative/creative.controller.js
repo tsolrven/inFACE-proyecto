@@ -14,13 +14,22 @@ import {
 import ApiResponse from '../../utils/apiResponse.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function listar(req, res) {
-  const { tipo, hashtag, orden, solo_mias, busqueda, pagina, limite } =
-    req.query;
+  const {
+    tipo,
+    hashtag,
+    orden,
+    solo_mias,
+    autor_id,
+    busqueda,
+    pagina,
+    limite,
+  } = req.query;
   const { obras, total } = await listarObras({
     tipo,
     hashtag,
     orden,
     solo_mias,
+    autor_id,
     busqueda,
     pagina,
     limite,

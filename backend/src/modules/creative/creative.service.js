@@ -163,6 +163,7 @@ async function listarObras({
   hashtag,
   orden = 'recientes',
   solo_mias = false,
+  autor_id,
   busqueda,
   pagina = 1,
   limite = 20,
@@ -171,9 +172,9 @@ async function listarObras({
   const where = { AND: [] };
   if (tipo?.length) where.AND.push({ tipo: { in: tipo } });
   if (hashtag) where.AND.push({ hashtags: filtroPorHashtag(hashtag) });
-  if (solo_mias) {
-    where.AND.push({ autor_id: usuario_id });
-  } else {
+  const duenoId = solo_mias ? usuario_id : autor_id;
+  if (duenoId) where.AND.push({ autor_id: duenoId });
+  if (!(duenoId && duenoId === usuario_id)) {
     where.AND.push({ borrador: false });
     where.AND.push({
       OR: [

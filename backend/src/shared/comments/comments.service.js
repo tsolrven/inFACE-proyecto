@@ -110,11 +110,11 @@ async function paginarComentarios({
 }) {
   const where = cursor
     ? {
-        AND: [
-          filtro,
-          condicionDespuesDe(orden, decodificarCursor(cursor, orden)),
-        ],
-      }
+      AND: [
+        filtro,
+        condicionDespuesDe(orden, decodificarCursor(cursor, orden)),
+      ],
+    }
     : filtro;
 
   // se pide uno de más para saber si hay página siguiente sin hacer un count
@@ -142,10 +142,10 @@ async function paginarComentarios({
       hasNext: hayMas,
       nextCursor: hayMas
         ? codificarCursor({
-            v: ultimo.votos_neto,
-            c: ultimo.creado_en.toISOString(),
-            id: ultimo.id,
-          })
+          v: ultimo.votos_neto,
+          c: ultimo.creado_en.toISOString(),
+          id: ultimo.id,
+        })
         : null,
     },
   };
@@ -306,6 +306,8 @@ async function crearComentario({
     clase: 'comentario',
     usuario_id: autor_id,
     contenido_id,
+    comentario_id: comentario.id,
+    padre_id: padre_id || null,
   });
 
   return formatearComentario(comentario);
@@ -538,10 +540,10 @@ async function hidratarComentariosGuardados(ids, usuario_id) {
         }),
         contenido_padre: previews.has(clave)
           ? {
-              tipo_contenido: c.tipo_contenido,
-              id: c.contenido_id,
-              titulo: previews.get(clave),
-            }
+            tipo_contenido: c.tipo_contenido,
+            id: c.contenido_id,
+            titulo: previews.get(clave),
+          }
           : null,
       };
     });
@@ -566,7 +568,7 @@ function formatearComentario(
       eliminado: true,
       eliminado_por:
         comentario.eliminado_por_id &&
-        comentario.eliminado_por_id !== comentario.autor_id
+          comentario.eliminado_por_id !== comentario.autor_id
           ? 'moderacion'
           : 'autor',
       autor: null,

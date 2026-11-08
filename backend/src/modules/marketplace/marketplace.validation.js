@@ -15,7 +15,7 @@ const CONDICIONES = [
   'como_nuevo',
   'usado',
   'para_reparar',
-  'servicio',
+  'servicio', 
 ];
 const UNIDADES_PRECIO = ['hora', 'clase', 'proyecto', 'total'];
 const MODALIDADES = ['presencial', 'online', 'ambas'];
@@ -197,6 +197,7 @@ const listarProductosQuerySchema = paginacionQuerySchema.extend({
     .enum(['true', 'false'])
     .transform((v) => v === 'true')
     .optional(),
+  vendedor_id: z.string().uuid('El id no es válido').optional(),
   busqueda: z.string().trim().max(100).optional(),
 });
 // ─────────────────────────────────────────────────────────────────────────────

@@ -30,13 +30,14 @@ import {
   parsearDatosMultipart,
 } from '../../shared/files/multipart.helper.js';
 import { obtenerConfigAdjuntos } from '../../shared/content/contentRegistry.js';
+import './creative.notifications.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 const router = express.Router();
 
 const MAX_ARCHIVOS = obtenerConfigAdjuntos('obra').max;
 
 const comoObra = (req, _res, next) => {
-  req.tipoContenido = 'obra';
+  req.tipoContenido = 'obra'; 
   next();
 };
 // ────────────────────────────────────────────────────────────────────────────────────────

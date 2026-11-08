@@ -262,6 +262,7 @@ export default function PerfilPublico() {
           proyectosCreados={proyectosCreados}
           proyectosParticipa={proyectosParticipa}
           cargando={cargandoTabs}
+          usuarioId={perfil.id}
         />
       </div>
     </div>

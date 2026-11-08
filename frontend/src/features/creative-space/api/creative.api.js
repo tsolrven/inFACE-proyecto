@@ -6,6 +6,7 @@ export async function listarObras({
   hashtag,
   orden,
   solo_mias,
+  autor_id,
   busqueda,
   pagina = 1,
   limite = 20,
@@ -16,6 +17,7 @@ export async function listarObras({
     hashtag,
     orden,
     solo_mias: solo_mias ? 'true' : null,
+    autor_id,
     busqueda,
     pagina,
     limite,
@@ -93,7 +95,7 @@ export async function resolverParrafo(capituloId, indice) {
     `/obras/capitulos/${capituloId}/parrafos/${indice}`,
     { method: 'POST' },
   );
-  return res.data;
+  return res.data; 
 }
 
 export async function subirAudioPista(obraId, pistaId, file) {
@@ -119,5 +121,5 @@ export async function obtenerComentariosParrafos(obraId, { signal } = {}) {
 
 export async function obtenerHashtagsPopulares({ signal } = {}) {
   const res = await apiFetch('/obras/hashtags?limite=40', { signal });
-  return res.data; 
+  return res.data;
 }
