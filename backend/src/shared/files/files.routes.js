@@ -1,9 +1,6 @@
 import express from 'express';
 import { subir, eliminar, descargar, ver } from './files.controller.js';
-import {
-  autenticar,
-  exigirEscritura,
-} from '../../middlewares/auth.middleware.js';
+import { autenticar } from '../../middlewares/auth.middleware.js';
 import { exigirSinRestriccion } from '../../middlewares/restriction.middleware.js';
 import { upload } from './multer.helper.js';
 import { validarContenidoReal } from './fileSignature.helper.js';
@@ -30,7 +27,6 @@ function exigirAdjuntos(req, res, next) {
 router.post(
   '/:tipo/:id',
   autenticar,
-  exigirEscritura,
   exigirSinRestriccion,
   validate(contenidoParamSchema, 'params'),
   exigirAdjuntos,

@@ -3,7 +3,6 @@
 import { prisma } from '../config/configDb.js';
 import { verificarAccessToken } from '../shared/auth/jwt.helper.js';
 import { ORDEN_CARRERAS_USUARIO } from '../shared/auth/carreraPrincipal.js';
-import { puedeEscribirContenido } from '../shared/auth/permissions.js';
 import {
   UnauthorizedError,
   ForbiddenError,
@@ -94,15 +93,4 @@ function autorizar(...roles) {
   };
 }
 
-// El superadmin solo elimina: rechaza crear y editar (POST, PATCH, PUT).
-// Va justo después de `autenticar` y ANTES de multer: no se escribe nada en disco.
-function exigirEscritura(req, res, next) {
-  if (!puedeEscribirContenido(req.usuario?.rol)) {
-    return next(
-      new ForbiddenError('El superadmin solo puede eliminar contenido'),
-    );
-  }
-  next();
-}
-
-export { autenticar, autorizar, exigirEscritura };
+export { autenticar, autorizar };

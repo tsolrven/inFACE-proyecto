@@ -6,10 +6,7 @@ import {
   actualizar,
   eliminar,
 } from './materials.controller.js';
-import {
-  autenticar,
-  exigirEscritura,
-} from '../../middlewares/auth.middleware.js';
+import { autenticar } from '../../middlewares/auth.middleware.js';
 import { exigirSinRestriccion } from '../../middlewares/restriction.middleware.js';
 import validate from '../../middlewares/validate.js';
 import {
@@ -46,7 +43,6 @@ router.get('/:id', autenticar, validate(idParamSchema, 'params'), detalle);
 router.post(
   '/',
   autenticar,
-  exigirEscritura,
   exigirSinRestriccion,
   publicacionLimiter,
   comoApunte,
@@ -60,7 +56,6 @@ router.post(
 router.patch(
   '/:id',
   autenticar,
-  exigirEscritura,
   exigirSinRestriccion,
   validate(idParamSchema, 'params'),
   validate(actualizarApunteSchema),

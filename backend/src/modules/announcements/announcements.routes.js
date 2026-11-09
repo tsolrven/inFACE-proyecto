@@ -6,11 +6,7 @@ import {
   actualizar,
   eliminar,
 } from './announcements.controller.js';
-import {
-  autenticar,
-  autorizar,
-  exigirEscritura,
-} from '../../middlewares/auth.middleware.js';
+import { autenticar, autorizar } from '../../middlewares/auth.middleware.js';
 import { exigirSinRestriccion } from '../../middlewares/restriction.middleware.js';
 import validate from '../../middlewares/validate.js';
 import {
@@ -50,7 +46,6 @@ router.get('/:id', autenticar, validate(idParamSchema, 'params'), detalle);
 router.post(
   '/',
   autenticar,
-  exigirEscritura,
   autorizar(...ROLES_ANUNCIANTES),
   exigirSinRestriccion,
   publicacionLimiter,
@@ -65,7 +60,6 @@ router.post(
 router.patch(
   '/:id',
   autenticar,
-  exigirEscritura,
   exigirSinRestriccion,
   validate(idParamSchema, 'params'),
   validate(actualizarAnuncioSchema),

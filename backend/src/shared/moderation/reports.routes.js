@@ -11,11 +11,7 @@ import {
   cerrarContenido,
   reintentarCorreo,
 } from './reports.moderation.controller.js';
-import {
-  autenticar,
-  autorizar,
-  exigirEscritura,
-} from '../../middlewares/auth.middleware.js';
+import { autenticar, autorizar } from '../../middlewares/auth.middleware.js';
 import validate from '../../middlewares/validate.js';
 import {
   crearReporteSchema,
@@ -31,8 +27,8 @@ import { ROLES } from '../auth/permissions.js';
 
 const router = express.Router();
 
-// El superadmin gestiona reportes, pero NO usa exigirEscritura aquí: cerrar es
-// su función. Lo que no puede es crear reportes (ver POST /:tipo/:id).
+// Solo el superadmin gestiona reportes (cola, cierre, correo). Crear un
+// reporte (POST /:tipo/:id) puede hacerlo cualquier usuario autenticado.
 const soloSuperadmin = [autenticar, autorizar(ROLES.SUPERADMIN)];
 
 router.get('/me', autenticar, listarMisReportes);
@@ -76,7 +72,6 @@ router.post(
 router.post(
   '/:tipo/:id',
   autenticar,
-  exigirEscritura,
   reporteLimiter,
   validate(contenidoParamSchema, 'params'),
   validate(crearReporteSchema),

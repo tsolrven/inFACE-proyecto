@@ -7,10 +7,7 @@ import {
   eliminar,
   obtenerContexto,
 } from './comments.controller.js';
-import {
-  autenticar,
-  exigirEscritura,
-} from '../../middlewares/auth.middleware.js';
+import { autenticar } from '../../middlewares/auth.middleware.js';
 import { exigirSinRestriccion } from '../../middlewares/restriction.middleware.js';
 import validate from '../../middlewares/validate.js';
 import {
@@ -53,7 +50,6 @@ router.get(
 router.post(
   '/:tipo/:id',
   autenticar,
-  exigirEscritura,
   exigirSinRestriccion,
   publicacionLimiter,
   validate(contenidoComentableParamSchema, 'params'),
@@ -65,7 +61,6 @@ router.post(
 router.patch(
   '/:comentario_id',
   autenticar,
-  exigirEscritura,
   exigirSinRestriccion,
   validate(comentarioIdParamSchema, 'params'),
   validate(editarComentarioSchema),
