@@ -13,6 +13,7 @@ import {
   hashtagsPopulares,
 } from './creative.controller.js';
 import { autenticar } from '../../middlewares/auth.middleware.js';
+import { exigirSinRestriccion } from '../../middlewares/restriction.middleware.js';
 import validate from '../../middlewares/validate.js';
 import {
   crearObraSchema,
@@ -58,6 +59,7 @@ router.get(
 router.post(
   '/',
   autenticar,
+  exigirSinRestriccion,
   publicacionLimiter,
   comoObra,
   limpiarArchivosSiFalla,
@@ -70,6 +72,7 @@ router.post(
 router.patch(
   '/:id',
   autenticar,
+  exigirSinRestriccion,
   validate(idParamSchema, 'params'),
   validate(actualizarObraSchema),
   actualizar,
@@ -83,6 +86,7 @@ const imagenParams = z.object({
 });
 const subirUnaImagen = [
   autenticar,
+  exigirSinRestriccion,
   publicacionLimiter,
   comoObra,
   limpiarArchivosSiFalla,

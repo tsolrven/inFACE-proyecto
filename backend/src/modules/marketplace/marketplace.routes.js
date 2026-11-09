@@ -7,6 +7,7 @@ import {
   eliminar,
 } from './marketplace.controller.js';
 import { autenticar } from '../../middlewares/auth.middleware.js';
+import { exigirSinRestriccion } from '../../middlewares/restriction.middleware.js';
 import validate from '../../middlewares/validate.js';
 import {
   crearProductoSchema,
@@ -43,6 +44,7 @@ router.get('/:id', autenticar, validate(idParamSchema, 'params'), detalle);
 router.post(
   '/',
   autenticar,
+  exigirSinRestriccion,
   publicacionLimiter,
   comoProducto,
   limpiarArchivosSiFalla,
@@ -55,6 +57,7 @@ router.post(
 router.patch(
   '/:id',
   autenticar,
+  exigirSinRestriccion,
   validate(idParamSchema, 'params'),
   validate(actualizarProductoSchema),
   actualizar,
