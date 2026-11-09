@@ -76,8 +76,6 @@ model Perfil {
   @@map("perfiles")
 }
 
-// ╰─────────────────────────────✧────────────────────────────────╮
-
 //───────────────────────────────────────────────────────────────────────────────
 // ETIQUETAS
 //───────────────────────────────────────────────────────────────────────────────
@@ -333,7 +331,7 @@ model Hilo {
   autor_id              String
   ramo_id               String
   titulo                String
-  contenido             String? // markdown
+  contenido             String? 
   votos_neto            Int           @default(0)
   respuesta_aceptada_id String?       @unique
   creado_en             DateTime      @default(now())
@@ -349,6 +347,8 @@ model Hilo {
   @@index([autor_id])
   @@map("hilos")
 }
+
+// ╰─────────────────────────────✧────────────────────────────────╮
 
 model HiloHashtag {
   hilo_id    String
@@ -389,6 +389,8 @@ model Anuncio {
   @@map("anuncios")
 }
 
+// ╰─────────────────────────────✧────────────────────────────────╮
+
 model AnuncioHashtag {
   anuncio_id String
   hashtag_id String
@@ -401,8 +403,8 @@ model AnuncioHashtag {
   @@map("anuncios_hashtags")
 }
 
-// Etiqueta tipo "flair" de Reddit: propia de una carrera, creada por CEE/tutores.
-// `color` guarda una clave de paleta fija (la valida la aplicación).
+// ╰─────────────────────────────✧────────────────────────────────╮
+
 model Flair {
   id                 String   @id @default(uuid())
   carrera_id         String
@@ -616,24 +618,15 @@ model Reporte {
   revisado_por   String?
   revisado_en    DateTime?
   creado_en      DateTime  @default(now())
-
-  // Cierre del reporte: lo escribe el superadmin, o el borrado del contenido
   nota_resolucion         String?  @db.VarChar(500)
   respuesta_personalizada Boolean  @default(false)
-
-  // Correo al reportante. null = el reporte sigue abierto.
-  // Valores: pendiente | enviada | fallida | omitida
   notificacion_estado     String?   @db.VarChar(20)
   notificacion_intentos   Int       @default(0)
   notificacion_error      String?   @db.VarChar(300)
   notificacion_enviada_en DateTime?
-
-  // Copia mínima del contenido, tomada al eliminarlo (sin cuerpo ni archivos)
   contenido_snapshot Json?
   contenido_autor_id    String?
   oculto_por_reportante Boolean @default(false)
-    // Quién eliminó el contenido: autor | moderacion | arrastre (junto con su
-  // publicación). null = reporte cerrado sin eliminación, o anterior al campo.
   eliminado_por String? @db.VarChar(20)
 
   reportador Usuario  @relation("ReporteCreadoPor", fields: [reportado_por], references: [id])
@@ -647,25 +640,17 @@ model Reporte {
 }
 
 // ╰─────────────────────────────✧────────────────────────────────╮
-// SANCIONES (las aplica el superadmin; historial completo, no se borran)
 
 model Sancion {
   id         String @id @default(uuid())
   usuario_id String
-  // advertencia | restriccion | suspension
   tipo       String @db.VarChar(20)
-  // Texto que ve el usuario
   motivo     String @db.VarChar(500)
-
-  // Contenido que originó la sanción (opcional). Sin FK, igual que
-  // Reporte.contenido_id. No apunta al reporte: la sanción es independiente.
   contenido_tipo String? @db.VarChar(30)
   contenido_id   String?
 
   aplicada_por String
   creado_en    DateTime @default(now())
-
-  // Fin de la sanción. null = sin término (advertencia o suspensión permanente).
   hasta DateTime?
 
   revocada_en       DateTime?
