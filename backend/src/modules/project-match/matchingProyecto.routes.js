@@ -54,7 +54,7 @@ router.put(
   verificarCreador,
   actualizar,
 ); // PUT  /api/proyecto/:id
-router.delete('/:id', autenticar, verificarCreador, eliminar); // DEL  /api/proyecto/:id
+router.delete('/:id', autenticar, eliminar); // DEL  /api/proyecto/:id (creador o moderación: lo valida el servicio)
 router.put(
   '/:id/entregables',
   autenticar,

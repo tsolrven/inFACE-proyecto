@@ -2,6 +2,7 @@ import { prisma } from '../../config/configDb.js';
 import logger from '../../lib/logger.js';
 import { obtenerEnriquecimiento } from '../../shared/content/contentEnrichment.js';
 import { eliminarContenido } from '../../shared/content/contentCleanup.js';
+import { esStaff } from '../../shared/auth/permissions.js';
 import { notificarReportesCerrados } from '../../shared/moderation/reports.notifications.js';
 import {
   notificar,
@@ -267,7 +268,7 @@ async function actualizarProyecto(id, usuario_id, rol, datos) {
   const proyecto = await prisma.proyecto.findUnique({ where: { id } });
 
   if (!proyecto) throw new NotFoundError('Proyecto');
-  if (proyecto.creador_id !== usuario_id && rol !== 'superadmin')
+  if (proyecto.creador_id !== usuario_id)
     throw new ForbiddenError('No tienes permiso para editar este proyecto');
 
   const { etiqueta_ids, fecha_inicio, fecha_fin, ...resto } = datos;
@@ -298,7 +299,7 @@ async function guardarEntregables(id, usuario_id, rol, datos) {
   const proyecto = await prisma.proyecto.findUnique({ where: { id } });
 
   if (!proyecto) throw new NotFoundError('Proyecto');
-  if (proyecto.creador_id !== usuario_id && rol !== 'superadmin')
+  if (proyecto.creador_id !== usuario_id)
     throw new ForbiddenError('No tienes permiso para editar este proyecto');
 
   //* solo con el proyecto cerrado (a mano, por cupos llenos o por fecha de fin)
@@ -341,7 +342,7 @@ async function eliminarProyecto(id, usuario_id, rol) {
   const proyecto = await prisma.proyecto.findUnique({ where: { id } });
 
   if (!proyecto) throw new NotFoundError('Proyecto');
-  if (proyecto.creador_id !== usuario_id && rol !== 'superadmin')
+  if (proyecto.creador_id !== usuario_id && !esStaff(rol))
     throw new ForbiddenError('No tienes permiso para eliminar este proyecto');
 
   //* se guarda a quién avisar antes de borrar (después ya no existen)
@@ -356,7 +357,7 @@ async function eliminarProyecto(id, usuario_id, rol) {
   const { archivos, reportes_a_notificar } = await prisma.$transaction(
     async (tx) => {
       const resultado = await eliminarContenido(tx, 'proyecto', id, {
-        por_moderacion: rol === 'superadmin',
+        por_moderacion: esStaff(rol),
         revisor_id: usuario_id,
       });
       await tx.proyectoEtiqueta.deleteMany({ where: { proyecto_id: id } });
@@ -478,7 +479,7 @@ async function obtenerPostulacionesProyecto(
   });
 
   if (!proyecto) throw new NotFoundError('Proyecto');
-  if (proyecto.creador_id !== usuario_id && rol !== 'superadmin')
+  if (proyecto.creador_id !== usuario_id)
     throw new ForbiddenError('No tienes permiso para ver estas postulaciones');
 
   const postulaciones = await prisma.postulacionProyecto.findMany({
@@ -586,7 +587,7 @@ async function responderPostulacion(postulacion_id, usuario_id, rol, estado) {
   });
 
   if (!postulacion) throw new NotFoundError('Postulación');
-  if (postulacion.proyecto.creador_id !== usuario_id && rol !== 'superadmin')
+  if (postulacion.proyecto.creador_id !== usuario_id)
     throw new ForbiddenError(
       'No tienes permiso para responder esta postulación',
     );
@@ -710,7 +711,7 @@ async function eliminarPostulacionRechazada(postulacion_id, usuario_id, rol) {
   });
 
   if (!postulacion) throw new NotFoundError('Postulación');
-  if (postulacion.proyecto.creador_id !== usuario_id && rol !== 'superadmin')
+  if (postulacion.proyecto.creador_id !== usuario_id)
     throw new ForbiddenError(
       'No tienes permiso para eliminar esta postulación',
     );
@@ -769,7 +770,7 @@ async function expulsarIntegrante(
   });
 
   if (!proyecto) throw new NotFoundError('Proyecto');
-  if (proyecto.creador_id !== usuario_id && rol !== 'superadmin')
+  if (proyecto.creador_id !== usuario_id)
     throw new ForbiddenError('No tienes permiso para expulsar integrantes');
   if (usuario_id_expulsar === proyecto.creador_id)
     throw new BadRequestError('No puedes expulsar al creador del proyecto');
