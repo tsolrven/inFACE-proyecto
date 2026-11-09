@@ -83,19 +83,6 @@ async function registrar({
     throw new ConflictError('El nombre de usuario ya está en uso');
   }
 
-  const carreraExiste = await prisma.carrera.findUnique({
-    where: { id: carrera_id },
-  });
-  if (!carreraExiste) {
-    throw new ValidationError('La carrera seleccionada no existe');
-  }
-
-  // después de las validaciones baratas: un formulario mal llenado no gasta intentos
-  await verificarCodigo(correo, codigo);
-
-  const rol = determinarRolPorCorreo(correo);
-  const esAcademico = rol === 'docente';
-
   if (carrera_id) {
     const carreraExiste = await prisma.carrera.findUnique({
       where: { id: carrera_id },
@@ -104,6 +91,12 @@ async function registrar({
       throw new ValidationError('La carrera seleccionada no existe');
     }
   }
+
+  // después de las validaciones baratas: un formulario mal llenado no gasta intentos
+  await verificarCodigo(correo, codigo);
+
+  const rol = determinarRolPorCorreo(correo);
+  const esAcademico = rol === 'docente';
 
   const hash = await bcrypt.hash(contrasena, 10);
 
