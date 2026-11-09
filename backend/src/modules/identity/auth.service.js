@@ -14,6 +14,8 @@ import {
 } from '../../errors/appError.js';
 import { derivarNombreDesdeCorreo } from './nombre.helper.js';
 import { VERSION_TERMINOS } from './terminos.constants.js';
+import { generacionDesdeCorreo } from './generacion.helper.js';
+import { esModeradora } from './moderadoras.constants.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 function determinarRolPorCorreo(correo) {
   if (correo.endsWith('@alumnos.ubiobio.cl')) {
@@ -39,6 +41,13 @@ function formatearUsuario(usuario) {
       codigo: uc.carrera.codigo,
     })),
     tiene_intereses: (usuario.usuario_etiquetas?.length ?? 0) > 0,
+    cargo: usuario.perfil?.cargo ?? null,
+    avatar: usuario.perfil?.avatar ?? null,
+    generacion:
+      usuario.rol === 'estudiante'
+        ? generacionDesdeCorreo(usuario.correo)
+        : null,
+    es_moderadora: esModeradora(usuario.correo),
     terminos_vigentes: usuario.terminos_version === VERSION_TERMINOS,
   };
 }
@@ -48,6 +57,8 @@ async function registrar({
   contrasena,
   nombre_usuario,
   carrera_id,
+  cargo,
+  nombre_completo: nombreIngresado,
   acepta_investigacion = false,
 }) {
   const usuarioExiste = await prisma.usuario.findUnique({
@@ -64,18 +75,24 @@ async function registrar({
     throw new ConflictError('El nombre de usuario ya está en uso');
   }
 
-  const carreraExiste = await prisma.carrera.findUnique({
-    where: { id: carrera_id },
-  });
-  if (!carreraExiste) {
-    throw new ValidationError('La carrera seleccionada no existe');
-  }
-
   const rol = determinarRolPorCorreo(correo);
+  const esAcademico = rol === 'docente';
+
+  if (carrera_id) {
+    const carreraExiste = await prisma.carrera.findUnique({
+      where: { id: carrera_id },
+    });
+    if (!carreraExiste) {
+      throw new ValidationError('La carrera seleccionada no existe');
+    }
+  }
 
   const hash = await bcrypt.hash(contrasena, 10);
 
-  const nombre_completo = derivarNombreDesdeCorreo(correo);
+  const nombre_completo =
+    esAcademico && nombreIngresado
+      ? nombreIngresado
+      : derivarNombreDesdeCorreo(correo);
 
   const usuario = await prisma.usuario.create({
     data: {
@@ -90,13 +107,14 @@ async function registrar({
         create: {
           nombre_usuario,
           nombre_completo,
+          cargo: esAcademico ? cargo : null,
         },
       },
-      usuario_carrera: {
-        create: {
-          carrera_id,
+      ...(carrera_id && {
+        usuario_carrera: {
+          create: { carrera_id },
         },
-      },
+      }),
     },
     include: {
       perfil: true,
@@ -108,7 +126,6 @@ async function registrar({
   return formatearUsuario(usuario);
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-// Para usuarios que ya existían (o cuando cambia VERSION_TERMINOS)
 async function aceptarTerminos(id, { acepta_investigacion = false } = {}) {
   await prisma.usuario.update({
     where: { id },
@@ -136,7 +153,6 @@ async function iniciarSesion({ correo, contrasena }) {
   const passwordValido = await bcrypt.compare(contrasena, usuario.contrasena);
   if (!passwordValido) throw new UnauthorizedError('Credenciales inválidas');
 
-  // recién con la contraseña correcta se revela el estado de la cuenta
   if (!usuario.esta_activo) throw new ForbiddenError('Cuenta desactivada');
 
   const carrera_id = usuario.usuario_carrera[0]?.carrera_id ?? null;
@@ -170,7 +186,6 @@ async function refrescarToken(token) {
     throw new ForbiddenError('Usuario no válido');
   }
 
-  // sesión revocada (logout) o token emitido antes de existir version_token
   if (payload.vt !== usuario.version_token) {
     throw new UnauthorizedError('Sesión cerrada, inicia sesión nuevamente');
   }
@@ -187,8 +202,6 @@ async function refrescarToken(token) {
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function cerrarSesion(token) {
-  // sin token, o con token inválido/expirado, no hay nada que revocar:
-  // el controller igual borra la cookie
   if (!token) return;
 
   let payload;
@@ -198,8 +211,6 @@ async function cerrarSesion(token) {
     return;
   }
 
-  // solo se incrementa si el token todavía es el vigente. Si ya estaba
-  // revocado, no se suma de nuevo (evita incrementos por tokens viejos)
   await prisma.usuario.updateMany({
     where: { id: payload.id, version_token: payload.vt },
     data: { version_token: { increment: 1 } },
@@ -221,7 +232,7 @@ async function obtenerUsuarioActual(id) {
 
   return formatearUsuario(usuario);
 }
-// ────────────────────────────────────────────────────────────────────────────────────────
+// ───────────────────────────F─────────────────────────────────────────────────────────────
 export {
   registrar,
   iniciarSesion,

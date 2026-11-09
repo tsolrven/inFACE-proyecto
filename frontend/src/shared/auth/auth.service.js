@@ -1,4 +1,4 @@
-
+//! endpoints de autenticación (la mecánica de red y de token vive en api.js)
 import {
   apiFetch,
   setAccessToken,
@@ -10,6 +10,8 @@ export function register({
   contrasena,
   nombre_usuario,
   carrera_id,
+  cargo,
+  nombre_completo,
   acepta_terminos,
   acepta_investigacion,
 }) {
@@ -21,6 +23,8 @@ export function register({
       contrasena,
       nombre_usuario,
       carrera_id,
+      cargo,
+      nombre_completo,
       acepta_terminos,
       acepta_investigacion,
     },

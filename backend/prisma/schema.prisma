@@ -62,6 +62,8 @@ model Perfil {
   nombre_completo String?
   biografia       String?
   campus          String?  @db.VarChar(12)
+  cargo           String?  @db.VarChar(20)
+  avatar          Json?
   creado_en       DateTime @default(now())
   actualizado_en  DateTime @updatedAt
 
@@ -716,7 +718,7 @@ model Producto {
   estado             String    @default("disponible")
   negociable         Boolean   @default(false)
   ubicacion          String?
-  unidad_precio      String? 
+  unidad_precio      String?
   modalidad          String?
   entrega_domicilio  Boolean   @default(false)
   contacto_whatsapp  String?

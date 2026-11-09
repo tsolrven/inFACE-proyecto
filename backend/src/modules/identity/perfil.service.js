@@ -1,11 +1,15 @@
+import { Prisma } from '@prisma/client';
 import { prisma } from '../../config/configDb.js';
 import logger from '../../lib/logger.js';
 import {
   NotFoundError,
   ConflictError,
   BadRequestError,
+  ForbiddenError,
 } from '../../errors/appError.js';
 import { validarEtiquetasExisten } from './etiqueta.service.js';
+import { generacionDesdeCorreo } from './generacion.helper.js';
+import { esModeradora } from './moderadoras.constants.js';
 
 const MAX_INTERESES = 15;
 
@@ -29,6 +33,13 @@ function formatearPerfil(usuario, stats = {}) {
     nombre_completo: usuario.perfil?.nombre_completo ?? null,
     biografia: usuario.perfil?.biografia ?? null,
     campus: usuario.perfil?.campus ?? null,
+    cargo: usuario.perfil?.cargo ?? null,
+    avatar: usuario.perfil?.avatar ?? null,
+    generacion:
+      usuario.rol === 'estudiante'
+        ? generacionDesdeCorreo(usuario.correo)
+        : null,
+    es_moderadora: esModeradora(usuario.correo),
     carrera: primeraCarrera
       ? {
         id: primeraCarrera.id,
@@ -114,13 +125,28 @@ async function obtenerPerfilPublico(nombre_usuario) {
     proyectos_creados,
     postulaciones_enviadas,
   });
-  delete formateado.correo; // no se expone el correo de otros usuarios
+  delete formateado.correo;
   return formateado;
 }
 
 // ╰─────────────────────────────✧────────────────────────────────╮
 
-async function actualizarPerfil(usuario_id, { nombre_usuario, biografia }) {
+async function actualizarPerfil(
+  usuario_id,
+  { nombre_usuario, nombre_completo, biografia, avatar },
+) {
+  if (nombre_completo !== undefined) {
+    const usuario = await prisma.usuario.findUnique({
+      where: { id: usuario_id },
+      select: { rol: true },
+    });
+    if (usuario?.rol !== 'docente') {
+      throw new ForbiddenError(
+        'Tu nombre se toma de tu correo institucional y no se puede editar',
+      );
+    }
+  }
+
   if (nombre_usuario) {
     const enUso = await prisma.perfil.findFirst({
       where: { nombre_usuario, usuario_id: { not: usuario_id } },
@@ -132,7 +158,11 @@ async function actualizarPerfil(usuario_id, { nombre_usuario, biografia }) {
     where: { usuario_id },
     data: {
       ...(nombre_usuario !== undefined && { nombre_usuario }),
+      ...(nombre_completo !== undefined && { nombre_completo }),
       ...(biografia !== undefined && { biografia }),
+      ...(avatar !== undefined && {
+        avatar: avatar === null ? Prisma.DbNull : avatar,
+      }),
     },
   });
 

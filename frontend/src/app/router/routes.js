@@ -111,6 +111,10 @@ export const extraRoutes = [
     component: lazy(() => import('@/features/profile/pages/Perfil')),
   },
   {
+    path: '/perfil/personaje',
+    component: lazy(() => import('@/features/profile/pages/EditarPersonaje')),
+  },
+  {
     path: '/ajustes',
     component: lazy(() => import('@/features/settings/pages/Ajustes')),
   },

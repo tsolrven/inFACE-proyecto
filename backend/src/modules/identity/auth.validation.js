@@ -1,5 +1,11 @@
 import { z } from 'zod';
 import dns from 'node:dns/promises';
+import { CARGOS } from './avatar.constants.js';
+import {
+  NOMBRE_USUARIO_REGEX,
+  NOMBRE_USUARIO_MENSAJE,
+  NOMBRE_COMPLETO_REGEX,
+} from './patrones.js';
 // ─────────────────────────────────────────────────────────────────────────────
 const ERROR_MESSAGES = {
   email: {
@@ -20,12 +26,22 @@ const ERROR_MESSAGES = {
   username: {
     min: 'El nombre de usuario debe tener al menos 3 caracteres',
     max: 'El nombre de usuario no puede superar 30 caracteres',
-    pattern: 'Solo letras, números y guiones bajos',
+    pattern: NOMBRE_USUARIO_MENSAJE,
     required: 'El nombre de usuario es requerido',
   },
   carrera: {
     invalid: 'Selecciona una carrera válida',
     required: 'Debes seleccionar tu carrera',
+  },
+  nombreCompleto: {
+    required: 'Debes ingresar tu nombre completo',
+    min: 'El nombre debe tener al menos 3 caracteres',
+    max: 'El nombre no puede superar 80 caracteres',
+    pattern: 'El nombre solo puede tener letras y espacios',
+  },
+  cargo: {
+    invalid: 'Selecciona un cargo válido',
+    required: 'Debes seleccionar tu cargo',
   },
 
   terminos: {
@@ -36,11 +52,6 @@ const ERROR_MESSAGES = {
 // ─────────────────────────────────────────────────────────────────────────────
 const DOMINIOS_PERMITIDOS = ['@alumnos.ubiobio.cl', '@ubiobio.cl'];
 // ─────────────────────────────────────────────────────────────────────────────
-// Confirma que el DOMINIO del correo tenga servidores de correo (MX) reales.
-// Esto NO confirma que la casilla específica exista (para eso hace falta mandar
-// un correo real de verificación, lo que requiere credenciales de un servicio
-// de envío que este proyecto todavía no tiene configurado) — pero sí descarta
-// dominios mal escritos o inexistentes.
 const cacheDominiosVerificados = new Map(); // evita repetir la consulta DNS en cada request
 
 async function dominioTieneCorreo(email) {
@@ -55,14 +66,11 @@ async function dominioTieneCorreo(email) {
     cacheDominiosVerificados.set(dominio, tieneMx);
     return tieneMx;
   } catch {
-    // si falla la consulta DNS en sí (ej. sin acceso a internet en el server),
-    // no se bloquea el registro por un problema nuestro, no del correo
     return true;
   }
 }
 // ─────────────────────────────────────────────────────────────────────────────
 const registerSchema = z.object({
-  // trim + minúsculas: evita cuentas duplicadas por mayúsculas y fallos de login
   correo: z
     .string({ error: ERROR_MESSAGES.email.required })
     .trim()
@@ -90,11 +98,22 @@ const registerSchema = z.object({
     .string({ error: ERROR_MESSAGES.username.required })
     .min(3, ERROR_MESSAGES.username.min)
     .max(30, ERROR_MESSAGES.username.max)
-    .regex(/^[a-zA-Z0-9_]+$/, ERROR_MESSAGES.username.pattern),
+    .regex(NOMBRE_USUARIO_REGEX, ERROR_MESSAGES.username.pattern),
 
   carrera_id: z
     .string({ error: ERROR_MESSAGES.carrera.required })
-    .uuid(ERROR_MESSAGES.carrera.invalid),
+    .uuid(ERROR_MESSAGES.carrera.invalid)
+    .optional(),
+
+  nombre_completo: z
+    .string()
+    .trim()
+    .min(3, ERROR_MESSAGES.nombreCompleto.min)
+    .max(80, ERROR_MESSAGES.nombreCompleto.max)
+    .regex(NOMBRE_COMPLETO_REGEX, ERROR_MESSAGES.nombreCompleto.pattern)
+    .optional(),
+
+  cargo: z.enum(CARGOS, { error: ERROR_MESSAGES.cargo.invalid }).optional(),
 
   etiqueta_ids: z
     .array(z.string().uuid('Etiqueta inválida'))
@@ -105,6 +124,30 @@ const registerSchema = z.object({
   acepta_terminos: z.literal(true, { error: ERROR_MESSAGES.terminos.required }),
 
   acepta_investigacion: z.boolean().optional().default(false),
+}).superRefine((datos, ctx) => {
+  const esAcademico = datos.correo.endsWith('@ubiobio.cl');
+  if (esAcademico) {
+    if (!datos.nombre_completo) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['nombre_completo'],
+        message: ERROR_MESSAGES.nombreCompleto.required,
+      });
+    }
+    if (!datos.cargo) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['cargo'],
+        message: ERROR_MESSAGES.cargo.required,
+      });
+    }
+  } else if (!datos.carrera_id) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['carrera_id'],
+      message: ERROR_MESSAGES.carrera.required,
+    });
+  }
 });
 
 const aceptarTerminosSchema = z.object({
@@ -119,7 +162,6 @@ const loginSchema = z.object({
     .toLowerCase()
     .email(ERROR_MESSAGES.email.invalid),
 
-  // la contraseña no se recorta: los espacios pueden ser parte de ella
   contrasena: z
     .string({ error: ERROR_MESSAGES.password.required })
     .min(1, ERROR_MESSAGES.password.required),

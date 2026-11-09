@@ -14,8 +14,6 @@ function parseApiError(err) {
   return { fields: {}, general: err.message || 'Ocurrió un error inesperado' };
 }
 
-// misma lógica que el backend (nombre.helper.js): detecta "Nombre Apellido" a partir
-// de la parte local del correo, solo para mostrarle una vista previa al usuario.
 function detectarNombreDesdeCorreo(correo) {
   const local = (correo.split('@')[0] || '').replace(/\d+$/, '');
   const partes = local
@@ -32,6 +30,23 @@ function detectarNombreDesdeCorreo(correo) {
   return partes.map((p) => p[0].toUpperCase() + p.slice(1)).join(' ');
 }
 
+function detectarGeneracion(correo) {
+  const m = (correo.split('@')[0] || '').match(/(\d{2})\d{2}$/);
+  if (!m) return null;
+  const anio = 2000 + Number(m[1]);
+  return anio <= new Date().getFullYear() + 1 ? anio : null;
+}
+
+const CARGOS = [
+  {
+    id: 'jefe_carrera',
+    label: 'Jefa de Carrera',
+    icon: 'ti-crown',
+  },
+  { id: 'funcionario', label: 'Funcionario', icon: 'ti-id-badge-2' },
+  { id: 'academico', label: 'Académico', icon: 'ti-school' },
+];
+
 export default function Register() {
   const { register, login } = useAuthStore();
   const navigate = useNavigate();
@@ -40,6 +55,8 @@ export default function Register() {
     correo: '',
     nombre_usuario: '',
     carrera_id: '',
+    cargo: '',
+    nombre_completo: '',
     contrasena: '',
     acepta_terminos: false,
     acepta_investigacion: false,
@@ -62,6 +79,12 @@ export default function Register() {
   const nombreDetectado = useMemo(
     () => detectarNombreDesdeCorreo(form.correo),
     [form.correo],
+  );
+
+  const esAcademico = form.correo.trim().toLowerCase().endsWith('@ubiobio.cl');
+  const generacion = useMemo(
+    () => (esAcademico ? null : detectarGeneracion(form.correo.trim())),
+    [form.correo, esAcademico],
   );
 
   function handleChange(e) {
@@ -93,8 +116,23 @@ export default function Register() {
     setErrors({ fields: {}, general: null });
 
     try {
-      await register(form);
-      // se loguea automáticamente para poder pasar directo a "configura tu perfil"
+      const datos = { ...form };
+      if (esAcademico) {
+        delete datos.carrera_id;
+        datos.nombre_completo = datos.nombre_completo.trim();
+        if (!datos.cargo) {
+          setErrors({
+            fields: { cargo: 'Debes seleccionar tu cargo' },
+            general: null,
+          });
+          setLoading(false);
+          return;
+        }
+      } else {
+        delete datos.cargo;
+        delete datos.nombre_completo;
+      }
+      await register(datos);
       await login({ correo: form.correo, contrasena: form.contrasena });
       navigate('/onboarding');
     } catch (err) {
@@ -113,7 +151,6 @@ export default function Register() {
       }}
     >
       <div className='w-full max-w-sm'>
-        {/* Volver al inicio */}
         <Link
           to='/'
           className='mb-6 inline-flex items-center gap-1.5 text-[12.5px] text-neutral-500 transition hover:text-neutral-200'
@@ -122,7 +159,6 @@ export default function Register() {
           Volver al inicio
         </Link>
 
-        {/* Encabezado */}
         <div className='mb-8 text-center'>
           <span className='inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-widest text-pink-400'>
             <i className='ti ti-affiliate text-[13px]' /> UBB · Inface
@@ -137,7 +173,6 @@ export default function Register() {
           </p>
         </div>
 
-        {/* Card */}
         <div className='rounded-2xl border border-white/[0.07] bg-[#1E1E24] p-6'>
           {errors.general && (
             <div className='mb-4 rounded-[10px] border border-red-500/30 bg-red-500/10 px-4 py-3 text-[12.5px] text-red-400'>
@@ -150,7 +185,6 @@ export default function Register() {
             noValidate
             className='flex flex-col gap-4'
           >
-            {/* Correo */}
             <div>
               <label
                 htmlFor='correo'
@@ -175,21 +209,60 @@ export default function Register() {
                   {errors.fields.correo}
                 </p>
               )}
-              {!errors.fields.correo && nombreDetectado && (
+              {!errors.fields.correo && !esAcademico && nombreDetectado && (
                 <p className='mt-1.5 flex items-center gap-1.5 text-[11.5px] text-emerald-400'>
                   <i className='ti ti-circle-check text-[13px]' />
                   Tu perfil se creará como <strong>{nombreDetectado}</strong>
                 </p>
               )}
-              {!errors.fields.correo && !nombreDetectado && form.correo && (
-                <p className='mt-1.5 text-[11.5px] text-neutral-600'>
-                  Detectamos tu nombre automáticamente desde tu correo
-                  institucional.
+              {!errors.fields.correo && generacion && (
+                <p className='mt-1 flex items-center gap-1.5 text-[11.5px] text-violet-300'>
+                  <i className='ti ti-school text-[13px]' />
+                  Generación <strong>{generacion}</strong>
                 </p>
               )}
+              {!errors.fields.correo &&
+                !esAcademico &&
+                !nombreDetectado &&
+                form.correo && (
+                  <p className='mt-1.5 text-[11.5px] text-neutral-600'>
+                    Detectamos tu nombre automáticamente desde tu correo
+                    institucional.
+                  </p>
+                )}
             </div>
 
-            {/* Nombre de usuario */}
+            {esAcademico && (
+              <div>
+                <label
+                  htmlFor='nombre_completo'
+                  className='mb-1.5 block text-[11px] font-medium text-neutral-500'
+                >
+                  Nombre completo
+                </label>
+                <input
+                  id='nombre_completo'
+                  name='nombre_completo'
+                  type='text'
+                  autoComplete='name'
+                  value={form.nombre_completo}
+                  onChange={handleChange}
+                  placeholder='María Pérez González'
+                  className={`w-full rounded-[10px] border bg-[#17171B] px-3.5 py-2.5 text-[13px] text-neutral-100 placeholder-neutral-600 outline-none transition
+                    focus:border-pink-500/50
+                    ${errors.fields.nombre_completo ? 'border-red-500/60' : 'border-white/[0.07] hover:border-white/[0.14]'}`}
+                />
+                {errors.fields.nombre_completo && (
+                  <p className='mt-1.5 text-[11.5px] text-red-400'>
+                    {errors.fields.nombre_completo}
+                  </p>
+                )}
+                <p className='mt-1.5 text-[11px] text-neutral-600'>
+                  Así se mostrará en tu perfil.
+                </p>
+              </div>
+            )}
+
             <div>
               <label
                 htmlFor='nombre_usuario'
@@ -216,54 +289,97 @@ export default function Register() {
               )}
             </div>
 
-            {/* Carrera */}
-            <div>
-              <label
-                htmlFor='carrera_id'
-                className='mb-1.5 block text-[11px] font-medium text-neutral-500'
-              >
-                Carrera
-              </label>
-              <select
-                id='carrera_id'
-                name='carrera_id'
-                value={form.carrera_id}
-                onChange={handleChange}
-                disabled={cargandoCarreras || errorCarreras}
-                className={`w-full rounded-[10px] border bg-[#17171B] px-3.5 py-2.5 text-[13px] text-neutral-100 outline-none transition
+            {esAcademico ? (
+              <div>
+                <span className='mb-1.5 block text-[11px] font-medium text-neutral-500'>
+                  Cargo
+                </span>
+                <div className='grid grid-cols-3 gap-2'>
+                  {CARGOS.map((c) => {
+                    const activo = form.cargo === c.id;
+                    return (
+                      <button
+                        key={c.id}
+                        type='button'
+                        aria-pressed={activo}
+                        onClick={() => {
+                          setForm((prev) => ({ ...prev, cargo: c.id }));
+                          setErrors((prev) => ({
+                            ...prev,
+                            fields: { ...prev.fields, cargo: undefined },
+                          }));
+                        }}
+                        className={`flex flex-col items-center gap-1 rounded-[10px] border px-2 py-2.5 text-[11.5px] font-medium transition ${activo
+                            ? 'border-pink-500/60 bg-pink-500/10 text-pink-300'
+                            : 'border-white/[0.07] bg-[#17171B] text-neutral-400 hover:border-white/[0.18]'
+                          }`}
+                      >
+                        <i className={`ti ${c.icon} text-[17px]`} />
+                        {c.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                {errors.fields.cargo && (
+                  <p className='mt-1.5 text-[11.5px] text-red-400'>
+                    {errors.fields.cargo}
+                  </p>
+                )}
+                <p className='mt-1.5 text-[11px] text-neutral-600'>
+                  Tu personaje parte sin accesorios; podrás personalizarlo
+                  después en tu perfil.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div>
+                  <label
+                    htmlFor='carrera_id'
+                    className='mb-1.5 block text-[11px] font-medium text-neutral-500'
+                  >
+                    Carrera
+                  </label>
+                  <select
+                    id='carrera_id'
+                    name='carrera_id'
+                    value={form.carrera_id}
+                    onChange={handleChange}
+                    disabled={cargandoCarreras || errorCarreras}
+                    className={`w-full rounded-[10px] border bg-[#17171B] px-3.5 py-2.5 text-[13px] text-neutral-100 outline-none transition
                   focus:border-pink-500/50 disabled:opacity-50
                   ${errors.fields.carrera_id ? 'border-red-500/60' : 'border-white/[0.07] hover:border-white/[0.14]'}`}
-              >
-                <option
-                  value=''
-                  disabled
-                >
-                  {cargandoCarreras
-                    ? 'Cargando carreras…'
-                    : 'Selecciona tu carrera'}
-                </option>
-                {carreras.map((carrera) => (
-                  <option
-                    key={carrera.id}
-                    value={carrera.id}
                   >
-                    {carrera.nombre}
-                  </option>
-                ))}
-              </select>
-              {errors.fields.carrera_id && (
-                <p className='mt-1.5 text-[11.5px] text-red-400'>
-                  {errors.fields.carrera_id}
-                </p>
-              )}
-              {errorCarreras && (
-                <p className='mt-1.5 text-[11.5px] text-red-400'>
-                  No se pudo cargar la lista de carreras. Recarga la página.
-                </p>
-              )}
-            </div>
+                    <option
+                      value=''
+                      disabled
+                    >
+                      {cargandoCarreras
+                        ? 'Cargando carreras…'
+                        : 'Selecciona tu carrera'}
+                    </option>
+                    {carreras.map((carrera) => (
+                      <option
+                        key={carrera.id}
+                        value={carrera.id}
+                      >
+                        {carrera.nombre}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.fields.carrera_id && (
+                    <p className='mt-1.5 text-[11.5px] text-red-400'>
+                      {errors.fields.carrera_id}
+                    </p>
+                  )}
+                  {errorCarreras && (
+                    <p className='mt-1.5 text-[11.5px] text-red-400'>
+                      No se pudo cargar la lista de carreras. Recarga la página.
+                    </p>
+                  )}
+                </div>
+              </>
+            )}
 
-            {/* Contraseña */}
             <div>
               <label
                 htmlFor='contrasena'
@@ -312,7 +428,6 @@ export default function Register() {
               )}
             </div>
 
-            {/* Términos (obligatorio) y consentimiento de investigación (opcional, separado) */}
             <div className='flex flex-col gap-2.5'>
               <label className='flex items-start gap-2.5 text-[12px] text-neutral-400'>
                 <input
@@ -374,7 +489,6 @@ export default function Register() {
           </form>
         </div>
 
-        {/* Link a login */}
         <p className='mt-6 text-center text-[13px] text-neutral-500'>
           ¿Ya tienes cuenta?{' '}
           <Link

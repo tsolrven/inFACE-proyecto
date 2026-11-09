@@ -3,11 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/shared/auth/authStore';
 import { obtenerPerfilPublico } from '@/shared/api/perfil.api';
 import { listarProyectos } from '@/features/project-match';
-import {
-  getInitials,
-  avatarColor,
-  etiquetaColor,
-} from '@/shared/lib/matchHelpers';
+import { etiquetaColor } from '@/shared/lib/matchHelpers';
+import Mascota from '@/shared/mascota/Mascota';
+import { NombrePerfil, InsigniasPerfil } from '@/shared/mascota/Insignias';
 import PerfilTabs from '@/features/profile/components/PerfilTabs';
 import ConDescripcion from '@/shared/components/ConDescripcion';
 // TODO(Silvana): importar aquí su servicio, ej:
@@ -52,7 +50,6 @@ export default function PerfilPublico() {
   const [cargandoTabs, setCargandoTabs] = useState(true);
 
   useEffect(() => {
-    // si es el propio usuario, se manda directo a /perfil (versión editable)
     if (usuarioSesion?.nombre_usuario === nombreUsuario) {
       navigate('/perfil', { replace: true });
       return;
@@ -78,7 +75,6 @@ export default function PerfilPublico() {
     return () => {
       activo = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nombreUsuario]);
 
   useEffect(() => {
@@ -134,9 +130,6 @@ export default function PerfilPublico() {
     );
   }
 
-  const av = avatarColor(perfil.id);
-  const nombreVisible = perfil.nombre_completo || perfil.nombre_usuario;
-
   return (
     <div>
       {/* BANNER */}
@@ -162,25 +155,30 @@ export default function PerfilPublico() {
         </button>
       </div>
 
-      {/* AVATAR (sin acciones de edición: es de solo lectura) */}
-      <div className='relative z-10 mx-auto -mt-11 flex max-w-4xl items-end gap-4 px-4 sm:px-[28px]'>
+      <div className='relative z-10 mx-auto -mt-16 flex max-w-4xl items-end gap-4 px-4 sm:px-[28px]'>
         <div className='relative flex-shrink-0'>
-          <div
-            className={`flex h-[90px] w-[90px] flex-shrink-0 items-center justify-center rounded-full border-[3px] border-neutral-950 text-[28px] font-bold ${av.bg} ${av.text}`}
-          >
-            {getInitials(nombreVisible)}
+          <div className='rounded-full border-4 border-neutral-950 bg-[#1E1E24]'>
+            <Mascota
+              cara
+              avatar={perfil.avatar}
+              carrera={perfil.carrera}
+              className='h-[132px] w-[132px] rounded-full'
+              alt={`Personaje de ${perfil.nombre_usuario}`}
+            />
           </div>
         </div>
       </div>
 
       {/* INFO */}
       <div className='mx-auto max-w-4xl px-4 sm:px-[28px] pb-10 pt-3.5'>
-        <div className='text-[20px] font-bold tracking-tight text-neutral-100'>
-          {nombreVisible}
-        </div>
+        <NombrePerfil
+          perfil={perfil}
+          className='block text-[20px] font-bold tracking-tight'
+        />
         <div className='mt-px text-[13px] text-neutral-500'>
           u/{perfil.nombre_usuario}
         </div>
+        <InsigniasPerfil perfil={perfil} />
 
         {perfil.biografia && (
           <p className='mt-2.5 max-w-xl text-[13px] leading-relaxed text-neutral-400'>
