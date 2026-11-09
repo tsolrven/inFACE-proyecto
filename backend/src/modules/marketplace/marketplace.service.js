@@ -13,6 +13,7 @@ import {
 import { revisarCoherencia } from './marketplace.validation.js';
 import { notificarCambioDeEstado } from './marketplace.notifications.js';
 import { eliminarContenido } from '../../shared/content/contentCleanup.js';
+import { notificarReportesCerrados } from '../../shared/moderation/reports.notifications.js';
 import {
   registrarHidratadorGuardados,
   registrarAlQuitarArchivo,
@@ -220,12 +221,19 @@ async function eliminarProducto(id, usuario_id, rol) {
     throw new ForbiddenError('No tienes permiso para eliminar este producto');
   }
 
-  const archivos = await prisma.$transaction(async (tx) => {
-    const { archivos } = await eliminarContenido(tx, 'producto', id);
-    await tx.producto.delete({ where: { id } });
-    return archivos;
-  });
+  const { archivos, reportes_a_notificar } = await prisma.$transaction(
+    async (tx) => {
+      const resultado = await eliminarContenido(tx, 'producto', id, {
+        por_moderacion: esStaff(rol),
+        revisor_id: usuario_id,
+      });
+      await tx.producto.delete({ where: { id } });
+      return resultado;
+    },
+  );
 
+  // después del commit: ni el correo ni el disco pueden revertir el borrado
+  notificarReportesCerrados(reportes_a_notificar);
   await borrarArchivosFisicos(archivos);
   logger.info('Producto eliminado', {
     producto_id: id,

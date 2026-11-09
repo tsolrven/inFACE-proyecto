@@ -27,7 +27,12 @@ async function eliminarContenido(
   tx,
   tipo_contenido,
   id,
-  { por_moderacion, revisor_id = null, respuesta = null },
+  {
+    por_moderacion,
+    por_arrastre = false,
+    revisor_id = null,
+    respuesta = null,
+  },
 ) {
   const [comentarios, archivos] = await Promise.all([
     tx.comentario.findMany({
@@ -43,6 +48,7 @@ async function eliminarContenido(
     tipo_contenido,
     ids: [id],
     por_moderacion,
+    por_arrastre,
     revisor_id,
     respuesta,
   });

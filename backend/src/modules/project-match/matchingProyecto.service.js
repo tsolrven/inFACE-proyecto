@@ -2,6 +2,7 @@ import { prisma } from '../../config/configDb.js';
 import logger from '../../lib/logger.js';
 import { obtenerEnriquecimiento } from '../../shared/content/contentEnrichment.js';
 import { eliminarContenido } from '../../shared/content/contentCleanup.js';
+import { notificarReportesCerrados } from '../../shared/moderation/reports.notifications.js';
 import {
   notificar,
   notificarVarios,
@@ -352,18 +353,24 @@ async function eliminarProyecto(id, usuario_id, rol) {
   //* todo en una transacción: si algo falla no queda el proyecto a medias.
   //* eliminarContenido borra comentarios, votos y reportes del proyecto
   //* (tablas polimórficas sin FK, no se borran solas).
-  const archivos = await prisma.$transaction(async (tx) => {
-    const { archivos } = await eliminarContenido(tx, 'proyecto', id);
-    await tx.proyectoEtiqueta.deleteMany({ where: { proyecto_id: id } });
-    await tx.postulacionProyecto.deleteMany({ where: { proyecto_id: id } });
-    await tx.integranteProyecto.deleteMany({ where: { proyecto_id: id } });
-    await tx.favoritoProyecto.deleteMany({ where: { proyecto_id: id } });
-    await tx.descarteProyecto.deleteMany({ where: { proyecto_id: id } });
-    await tx.proyecto.delete({ where: { id } });
-    return archivos;
-  });
+  const { archivos, reportes_a_notificar } = await prisma.$transaction(
+    async (tx) => {
+      const resultado = await eliminarContenido(tx, 'proyecto', id, {
+        por_moderacion: rol === 'superadmin',
+        revisor_id: usuario_id,
+      });
+      await tx.proyectoEtiqueta.deleteMany({ where: { proyecto_id: id } });
+      await tx.postulacionProyecto.deleteMany({ where: { proyecto_id: id } });
+      await tx.integranteProyecto.deleteMany({ where: { proyecto_id: id } });
+      await tx.favoritoProyecto.deleteMany({ where: { proyecto_id: id } });
+      await tx.descarteProyecto.deleteMany({ where: { proyecto_id: id } });
+      await tx.proyecto.delete({ where: { id } });
+      return resultado;
+    },
+  );
 
   //* después del commit: si el disco falla, la BD ya quedó consistente
+  notificarReportesCerrados(reportes_a_notificar);
   await borrarArchivosFisicos(archivos);
 
   //* sin enlace: el proyecto ya no existe

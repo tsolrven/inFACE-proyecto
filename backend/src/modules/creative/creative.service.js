@@ -11,6 +11,7 @@ import {
   datosArchivo,
 } from '../../shared/files/files.service.js';
 import { eliminarContenido } from '../../shared/content/contentCleanup.js';
+import { notificarReportesCerrados } from '../../shared/moderation/reports.notifications.js';
 import { registrarHidratadorGuardados } from '../../shared/content/contentRegistry.js';
 import { obtenerEnriquecimiento } from '../../shared/content/contentEnrichment.js';
 import { esStaff } from '../../shared/auth/permissions.js';
@@ -382,7 +383,12 @@ async function limpiarParrafosDeCapitulos(tx, capitulo_ids) {
     where: { capitulo_id: { in: capitulo_ids } },
     select: { id: true },
   });
-  for (const p of parrafos) await eliminarContenido(tx, 'parrafo', p.id);
+  for (const p of parrafos) {
+    await eliminarContenido(tx, 'parrafo', p.id, {
+      por_moderacion: false,
+      por_arrastre: true,
+    });
+  }
 }
 
 async function limpiarImagenesDePersonajes(tx, personaje_ids, acumulador) {
@@ -597,22 +603,29 @@ async function eliminarObra(id, usuario_id, rol) {
     throw new ForbiddenError('No tienes permiso para eliminar esta obra');
   }
 
-  const archivos = await prisma.$transaction(async (tx) => {
-    const capitulos = await tx.guionCapitulo.findMany({
-      where: { obra_id: id },
-      select: { id: true },
-    });
-    if (capitulos.length > 0) {
-      await limpiarParrafosDeCapitulos(
-        tx,
-        capitulos.map((c) => c.id),
-      );
-    }
-    const { archivos } = await eliminarContenido(tx, 'obra', id);
-    await tx.obra.delete({ where: { id } }); // hashtags, capítulos y personajes caen por cascade
-    return archivos;
-  });
+  const { archivos, reportes_a_notificar } = await prisma.$transaction(
+    async (tx) => {
+      const capitulos = await tx.guionCapitulo.findMany({
+        where: { obra_id: id },
+        select: { id: true },
+      });
+      if (capitulos.length > 0) {
+        await limpiarParrafosDeCapitulos(
+          tx,
+          capitulos.map((c) => c.id),
+        );
+      }
+      const resultado = await eliminarContenido(tx, 'obra', id, {
+        por_moderacion: esStaff(rol),
+        revisor_id: usuario_id,
+      });
+      await tx.obra.delete({ where: { id } }); // hashtags, capítulos y personajes caen por cascade
+      return resultado;
+    },
+  );
 
+  // después del commit: ni el correo ni el disco pueden revertir el borrado
+  notificarReportesCerrados(reportes_a_notificar);
   await borrarArchivosFisicos(archivos);
   logger.info('Obra eliminada', { obra_id: id, eliminado_por: usuario_id });
 }
