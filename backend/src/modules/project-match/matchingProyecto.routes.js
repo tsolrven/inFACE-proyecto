@@ -24,6 +24,7 @@ import {
   usuariosSimilares,
 } from './matchingProyecto.controller.js';
 import { autenticar, autorizar } from '../../middlewares/auth.middleware.js';
+import { exigirSinRestriccion } from '../../middlewares/restriction.middleware.js';
 import { verificarCreador } from './matchingProyecto.middleware.js';
 import { validarEntregables } from './matchingProyecto.validation.js';
 
@@ -42,15 +43,22 @@ router.get('/usuarios-similares', autenticar, usuariosSimilares); // GET  /api/p
 router.post('/:id/descartar', autenticar, descartar); // POST /api/proyecto/:id/descartar
 
 router.get('/', autenticar, listar); // GET  /api/proyecto
-router.post('/', autenticar, crear); // POST /api/proyecto
+router.post('/', autenticar, exigirSinRestriccion, crear); // POST /api/proyecto
 
 router.get('/:id', autenticar, obtenerUno); // GET  /api/proyecto/:id
 
-router.put('/:id', autenticar, verificarCreador, actualizar); // PUT  /api/proyecto/:id
+router.put(
+  '/:id',
+  autenticar,
+  exigirSinRestriccion,
+  verificarCreador,
+  actualizar,
+); // PUT  /api/proyecto/:id
 router.delete('/:id', autenticar, verificarCreador, eliminar); // DEL  /api/proyecto/:id
 router.put(
   '/:id/entregables',
   autenticar,
+  exigirSinRestriccion,
   verificarCreador,
   validarEntregables,
   guardarEntregablesProyecto,
@@ -60,7 +68,12 @@ router.put(
 // POSTULACIONES
 //──────────────────────────────────────────────────────────────────────────────
 
-router.post('/:id/postular', autenticar, postular); // POST /api/proyecto/:id/postular
+router.post(
+  '/:id/postular',
+  autenticar,
+  exigirSinRestriccion,
+  postular,
+); // POST /api/proyecto/:id/postular
 router.get('/:id/postulaciones', autenticar, listarPostulaciones); // GET  /api/proyecto/:id/postulaciones
 router.patch(
   '/:id/postulaciones/:postulacion_id',
