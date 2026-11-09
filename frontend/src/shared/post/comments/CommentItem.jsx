@@ -5,6 +5,7 @@ import ReportModal from '@/shared/moderation/ReportModal';
 import ConfirmDialog from '@/shared/components/ui/ConfirmDialog';
 import CommentActions from '@/shared/post/comments/CommentActions';
 import CommentComposer from '@/shared/post/comments/CommentComposer';
+import { useAutorDestacado } from '@/shared/post/comments/autorDestacado';
 import { COMENTARIO_MAX_NIVEL } from '@/shared/post/comments/constants';
 
 // Desde esta profundidad (0 = raíz) las respuestas arrancan tras "Ver N respuestas".
@@ -20,6 +21,7 @@ export default function CommentItem({
   onEnfocar,
   resaltadoId = null,
 }) {
+  const destacado = useAutorDestacado();
   const [colapsado, setColapsado] = useState(false);
   const [mostrarRespuestas, setMostrarRespuestas] = useState(
     profundidad < PROFUNDIDAD_RESPUESTAS_OCULTAS,
@@ -32,9 +34,7 @@ export default function CommentItem({
   const respuestas = comentario.respuestas ?? [];
   const totalRespuestas = comentario.respuestas_count ?? 0;
   const faltan = Math.max(0, totalRespuestas - respuestas.length);
-  // cursor_respuestas === null: ya se pidieron todas
   const hayMasPorCargar = faltan > 0 && comentario.cursor_respuestas !== null;
-  // las respuestas de este comentario ya no caben en la indentación
   const alLimite = profundidad + 1 >= maxIndent;
   const hijosVisibles = mostrarRespuestas && !alLimite && respuestas.length > 0;
 
@@ -78,13 +78,11 @@ export default function CommentItem({
   return (
     <div
       data-comentario-id={comentario.id}
-      className={`-m-1.5 flex gap-2.5 rounded-lg p-1.5 transition-[background-color,box-shadow] duration-700 ${
-        comentario.id === resaltadoId
+      className={`-m-1.5 flex gap-2.5 rounded-lg p-1.5 transition-[background-color,box-shadow] duration-700 ${comentario.id === resaltadoId
           ? 'bg-pink-500/[0.08] ring-1 ring-pink-500/40'
           : ''
-      }`}
+        }`}
     >
-      {/* riel izquierdo: avatar + línea clicable para colapsar */}
       <div className='flex w-[26px] flex-shrink-0 flex-col items-center'>
         {eliminado ? (
           <div className='flex h-[26px] w-[26px] items-center justify-center rounded-full bg-[#2A2A32] text-[10px] font-semibold text-neutral-700'>
@@ -122,6 +120,14 @@ export default function CommentItem({
               u/{nombre}
             </Link>
           )}
+          {!eliminado &&
+            destacado &&
+            comentario.autor?.id === destacado.autorId && (
+              <span className='inline-flex items-center gap-1 rounded-md border border-amber-400/40 bg-amber-400/10 px-1.5 py-0.5 text-[10px] font-bold leading-none text-amber-300'>
+                <i className='ti ti-user-check text-[11px]' />
+                {destacado.etiqueta}
+              </span>
+            )}
           <span className='text-neutral-600'>
             {formatearTiempoRelativo(comentario.creado_en)}
           </span>

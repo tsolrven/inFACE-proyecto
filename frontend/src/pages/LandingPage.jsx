@@ -111,7 +111,6 @@ function PerfilOrbita() {
         }
       `}</style>
 
-      {/* fondo: puntos + resplandores */}
       <div
         className='pointer-events-none absolute inset-0'
         style={{
@@ -121,7 +120,6 @@ function PerfilOrbita() {
         }}
       />
 
-      {/* órbita */}
       <div className='absolute inset-0 flex items-center justify-center'>
         <div className='relative aspect-square h-[74%]'>
           <div className='absolute inset-0 rounded-full border border-dashed border-white/[0.14]' />
@@ -153,7 +151,6 @@ function PerfilOrbita() {
             ))}
           </div>
 
-          {/* perfil al centro */}
           <div className='absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2'>
             <div className='relative flex flex-col items-center'>
               <span className='lp-ring absolute top-0 h-16 w-16 rounded-full border border-pink-400/50' />
@@ -175,7 +172,6 @@ function PerfilOrbita() {
         </div>
       </div>
 
-      {/* intereses flotando */}
       <span className='lp-float absolute left-[4%] top-[8%] rounded-full border border-indigo-400/30 bg-indigo-500/10 px-2.5 py-1 text-[10.5px] font-semibold text-indigo-300'>
         # Desarrollo Web
       </span>
@@ -192,7 +188,6 @@ function PerfilOrbita() {
         # Sustentabilidad
       </span>
 
-      {/* aviso de match */}
       <div className='lp-toast absolute bottom-[6%] right-[5%] flex items-center gap-2.5 rounded-xl border border-white/10 bg-[#1E1E24]/95 px-3 py-2 shadow-xl backdrop-blur'>
         <div className='flex h-8 w-8 items-center justify-center rounded-lg bg-pink-500/15 text-pink-400'>
           <i className='ti ti-flame text-[17px]' />
@@ -331,10 +326,11 @@ const MODULOS = [
   {
     icon: 'ti-palette',
     categoria: 'Universal',
-    titulo: 'Espacio cultural',
+    titulo: 'Espacio creativo',
     descripcion:
       'Música, teatro y artes visuales con herramientas propias y audiencia solo universitaria.',
-    estado: 'pendiente',
+    estado: 'beta',
+    color: 'violet',
   },
   {
     icon: 'ti-shopping-bag',
@@ -342,7 +338,8 @@ const MODULOS = [
     titulo: 'Marketplace',
     descripcion:
       'Compra y vende entre estudiantes verificados, sin exponerte a un público general.',
-    estado: 'pendiente',
+    estado: 'beta',
+    color: 'amber',
   },
 ];
 
@@ -374,7 +371,6 @@ const PROYECTOS_EJEMPLO = [
 export default function Landing() {
   return (
     <div className='min-h-screen bg-[#0B0B0D] text-neutral-100 antialiased'>
-      {/* ══════════════════════════ NAVBAR ══════════════════════════ */}
       <header className='sticky top-0 z-50 border-b border-white/[0.07] bg-[#0B0B0D]/85 backdrop-blur-md'>
         <nav className='mx-auto flex h-[68px] max-w-6xl items-center gap-3 px-5'>
           <div className='flex flex-shrink-0 items-center gap-1.5'>
@@ -427,7 +423,6 @@ export default function Landing() {
         </nav>
       </header>
 
-      {/* ══════════════════════════ HERO ══════════════════════════ */}
       <section className='relative overflow-hidden'>
         <div
           className='pointer-events-none absolute inset-0'
@@ -447,7 +442,7 @@ export default function Landing() {
               Apuntes, dudas de ramos, anuncios oficiales, equipos de proyecto,
               expresiones artísticas y compraventa entre estudiantes. Todo
               centralizado, verificado con tu correo institucional y pensado
-              para las 5 carreras de la Facultad de Ciencias Empresariales en la Universidad del Bío-Bío.
+              para las 5 carreras de la FACE.
             </p>
 
             <div className='mt-8 flex flex-wrap items-center gap-3'>
@@ -473,7 +468,6 @@ export default function Landing() {
             </p>
           </Reveal>
 
-          {/* MASCOTA — armadillo.png */}
           <Reveal className='relative mx-auto w-full max-w-md'>
             <div className='absolute -inset-6 -z-10 rounded-full bg-gradient-to-br from-pink-500/15 via-transparent to-indigo-500/15 blur-3xl' />
             <img
@@ -485,7 +479,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ══════════════════════════ FRANJA DE CONFIANZA ══════════════════════════ */}
       <section className='border-y border-white/[0.06] bg-white/[0.015]'>
         <div className='mx-auto grid max-w-6xl grid-cols-2 gap-px md:grid-cols-4'>
           {[
@@ -516,7 +509,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ══════════════════════════ CÓMO FUNCIONA ══════════════════════════ */}
       <section
         id='como-funciona'
         className='mx-auto max-w-6xl px-5 py-24'
@@ -567,7 +559,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ══════════════════════════ MÓDULOS ══════════════════════════ */}
       <section
         id='modulos'
         className='mx-auto max-w-6xl px-5 py-24'
@@ -590,8 +581,8 @@ export default function Landing() {
               <Reveal key={m.titulo}>
                 <div
                   className={`relative h-full overflow-hidden rounded-2xl border p-6 pt-[26px] transition ${c.border} ${c.wash} ${m.estado === 'pendiente'
-                    ? 'opacity-70 hover:opacity-100'
-                    : ''
+                      ? 'opacity-70 hover:opacity-100'
+                      : ''
                     }`}
                 >
                   <div className={`absolute inset-x-0 top-0 h-1 ${c.bar}`} />
@@ -628,7 +619,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ══════════════════════════ VISTA PREVIA DEL PRODUCTO ══════════════════════════ */}
       <section className='mx-auto max-w-6xl px-5 py-24'>
         <div className='grid grid-cols-1 items-center gap-14 lg:grid-cols-2'>
           <Reveal className='lg:order-2'>
@@ -672,7 +662,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ══════════════════════════ TECNOLOGÍA ══════════════════════════ */}
       <section
         id='tecnologia'
         className='mx-auto max-w-6xl px-5 py-24'
@@ -783,7 +772,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ══════════════════════════ CTA FINAL ══════════════════════════ */}
       <section className='mx-auto max-w-6xl px-5 pb-24'>
         <Reveal className='relative overflow-hidden rounded-[28px] border border-white/[0.08] bg-[#1E1E24] px-8 py-14 md:px-14'>
           <div

@@ -16,8 +16,6 @@ import {
 import { resolverRutaFisica } from './uploadsPath.js';
 import { obtenerMimePorExtension } from './fileMime.helper.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
-// solo lo que el cliente necesita: la ruta física y el vínculo polimórfico
-// (tipo_contenido / contenido_id) se quedan en el servidor
 function formatearArchivo(archivo) {
   return {
     id: archivo.id,
@@ -28,7 +26,6 @@ function formatearArchivo(archivo) {
   };
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-// datos de la fila Archivo a partir de lo que dejó multer
 function datosArchivo(file) {
   const tipo_mime = obtenerMimePorExtension(file.originalname);
   if (!tipo_mime)
@@ -64,12 +61,9 @@ async function subirArchivo({ tipo_contenido, contenido_id, file, usuario }) {
     );
   }
 
-  // puede lanzar 400 (tipo no reconocido): antes de abrir la transacción
   const datos = datosArchivo(file);
 
   const archivo = await prisma.$transaction(async (tx) => {
-    // bloquea el contenido: dos subidas simultáneas se ejecutan una tras otra
-    // y el tope de archivos no se puede pasar
     await bloquearContenido(tipo_contenido, contenido_id, tx);
 
     const cantidadActual = await tx.archivo.count({
@@ -108,7 +102,6 @@ async function descargarArchivo(id) {
     throw new NotFoundError('Archivo');
   }
 
-  // recién ahora, con el archivo confirmado, se cuenta la descarga
   await prisma.archivo.update({
     where: { id },
     data: { contador_descargas: { increment: 1 } },
@@ -145,10 +138,9 @@ async function eliminarArchivo(id, usuario) {
   }
 
   await prisma.$transaction(async (tx) => {
-    // bloquea el contenido: serializa contra PATCH y otros borrados/subidas
+
     await bloquearContenido(archivo.tipo_contenido, archivo.contenido_id, tx);
 
-    // otro borrado simultáneo pudo quitarlo mientras esperaba el bloqueo
     const vigente = await tx.archivo.findUnique({ where: { id } });
     if (!vigente) throw new NotFoundError('Archivo');
 
@@ -156,7 +148,6 @@ async function eliminarArchivo(id, usuario) {
     await tx.archivo.delete({ where: { id } });
   });
 
-  // después del commit: si el disco falla, la BD ya quedó consistente
   await borrarArchivosFisicos([archivo]);
 
   return { mensaje: 'Archivo eliminado' };
@@ -179,13 +170,14 @@ async function borrarArchivosFisicos(archivos) {
   );
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-// Para mostrar imágenes en pantalla: igual que descargar, pero sin contar descarga
-// y solo para imágenes.
 async function obtenerImagenParaVer(id) {
   const archivo = await prisma.archivo.findUnique({ where: { id } });
   if (!archivo) throw new NotFoundError('Archivo');
-  if (!archivo.tipo_mime?.startsWith('image/')) {
-    throw new BadRequestError('Solo se pueden visualizar imágenes');
+  if (
+    !archivo.tipo_mime?.startsWith('image/') &&
+    !archivo.tipo_mime?.startsWith('audio/')
+  ) {
+    throw new BadRequestError('Solo se pueden visualizar imágenes o audios');
   }
 
   const rutaFisica = resolverRutaFisica(archivo.ruta_url);

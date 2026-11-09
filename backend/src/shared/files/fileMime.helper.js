@@ -17,6 +17,10 @@ const MIME_POR_EXTENSION = {
   '.png': 'image/png',
   '.webp': 'image/webp',
   '.gif': 'image/gif',
+  '.mp3': 'audio/mpeg',
+  '.wav': 'audio/wav',
+  '.ogg': 'audio/ogg',
+  '.m4a': 'audio/mp4',
 };
 
 const EXTENSIONES_PERMITIDAS = Object.keys(MIME_POR_EXTENSION);

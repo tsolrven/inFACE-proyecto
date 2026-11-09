@@ -1,0 +1,1 @@
+export { normalizarImagen } from '@/shared/lib/normalizarImagen';

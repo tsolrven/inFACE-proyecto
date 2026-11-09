@@ -1,18 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/shared/auth/authStore';
 import { useUiStore } from '@/shared/stores/uiStore';
 import NotificationBell from '@/shared/notifications/NotificationBell';
-
-function getInitials(nombreUsuario) {
-  if (!nombreUsuario) return '?';
-  return nombreUsuario
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((p) => p[0]?.toUpperCase())
-    .join('');
-}
+import Mascota from '@/shared/mascota/Mascota';
 
 export default function Navbar() {
   const { usuario, logout } = useAuthStore();
@@ -31,11 +22,10 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const initials = getInitials(usuario?.nombre_usuario);
+  const carrera = usuario?.carreras?.[0] ?? null;
 
   return (
     <nav className='sticky top-0 z-[300] flex h-[54px] flex-shrink-0 items-center gap-2 border-b border-white/[0.07] bg-[#17171B] px-3 sm:gap-3 sm:px-[18px]'>
-      {/* hamburguesa: solo en mobile, abre el sidebar como cajón */}
       <button
         type='button'
         onClick={toggleSidebarMovil}
@@ -45,7 +35,12 @@ export default function Navbar() {
         <i className='ti ti-menu-2 text-lg' />
       </button>
 
-      <div className='flex flex-shrink-0 items-center gap-1.5'>
+      <Link
+        to='/'
+        title='Ir al inicio'
+        aria-label='InFACE, ir al inicio'
+        className='flex flex-shrink-0 items-center gap-1.5 transition hover:opacity-80'
+      >
         <img
           src='/logo_white.png'
           alt='InFACE'
@@ -54,7 +49,7 @@ export default function Navbar() {
         <div className='select-none whitespace-nowrap text-[17px] font-bold tracking-tight text-neutral-100'>
           In<span className='text-pink-500'>FACE</span>
         </div>
-      </div>
+      </Link>
 
       <div className='flex h-[34px] min-w-0 flex-1 cursor-text items-center gap-2 rounded-[10px] border border-white/[0.07] bg-[#1E1E24] px-3 transition-colors hover:border-white/[0.14] sm:max-w-[420px]'>
         <i className='ti ti-search flex-shrink-0 text-sm text-neutral-600' />
@@ -74,16 +69,26 @@ export default function Navbar() {
             type='button'
             title='Mi perfil'
             onClick={() => setDropdownOpen((open) => !open)}
-            className='flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-full border-[1.5px] border-pink-500/30 bg-pink-500/10 text-xs font-bold text-pink-500 transition-colors hover:border-pink-500'
+            className='flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center overflow-hidden rounded-full border-[1.5px] border-pink-500/30 bg-pink-500/10 transition-colors hover:border-pink-500'
           >
-            {initials}
+            <Mascota
+              cara
+              avatar={usuario?.avatar}
+              carrera={carrera}
+              className='h-full w-full'
+            />
           </button>
 
           {dropdownOpen && (
             <div className='absolute right-0 top-[44px] w-[206px] overflow-hidden rounded-2xl border border-white/10 bg-[#1E1E24] shadow-[0_12px_40px_rgba(0,0,0,0.5)]'>
               <div className='flex items-center gap-2.5 border-b border-white/[0.07] bg-pink-500/[0.06] px-[15px] py-[13px]'>
-                <div className='flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border-[1.5px] border-pink-500/30 bg-pink-500/10 text-xs font-bold text-pink-500'>
-                  {initials}
+                <div className='h-9 w-9 flex-shrink-0 overflow-hidden rounded-full border-[1.5px] border-pink-500/30 bg-pink-500/10'>
+                  <Mascota
+                    cara
+                    avatar={usuario?.avatar}
+                    carrera={carrera}
+                    className='h-full w-full'
+                  />
                 </div>
                 <div className='min-w-0 flex-1'>
                   <div className='truncate text-[13px] font-semibold text-neutral-100'>
@@ -106,7 +111,11 @@ export default function Navbar() {
               <div className='mx-0 my-0.5 h-px bg-white/[0.07]' />
               <DropdownItem
                 icon='ti-pencil'
-                label='Editar avatar'
+                label='Editar personaje'
+                onClick={() => {
+                  setDropdownOpen(false);
+                  navigate('/perfil/personaje');
+                }}
               />
               <div className='mx-0 my-0.5 h-px bg-white/[0.07]' />
               <DropdownItem

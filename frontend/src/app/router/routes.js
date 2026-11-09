@@ -111,6 +111,10 @@ export const extraRoutes = [
     component: lazy(() => import('@/features/profile/pages/Perfil')),
   },
   {
+    path: '/perfil/personaje',
+    component: lazy(() => import('@/features/profile/pages/EditarPersonaje')),
+  },
+  {
     path: '/ajustes',
     component: lazy(() => import('@/features/settings/pages/Ajustes')),
   },
@@ -132,6 +136,50 @@ export const extraRoutes = [
     path: '/anuncios-oficiales/:id',
     component: lazy(
       () => import('@/features/announcements/pages/AnuncioDetailPage'),
+    ),
+  },
+  {
+    path: '/marketplace/nuevo',
+    component: lazy(
+      () => import('@/features/marketplace/pages/ProductoEditorPage'),
+    ),
+  },
+  {
+    path: '/marketplace/producto/:id',
+    component: lazy(() => import('@/features/marketplace/pages/ProductoPage')),
+  },
+  {
+    path: '/marketplace/producto/:id/editar',
+    component: lazy(
+      () => import('@/features/marketplace/pages/ProductoEditorPage'),
+    ),
+  },
+  {
+    path: '/espacio-creativo/nueva',
+    component: lazy(
+      () => import('@/features/creative-space/pages/ObraEditorPage'),
+    ),
+  },
+  {
+    path: '/espacio-creativo/obra/:id',
+    component: lazy(() => import('@/features/creative-space/pages/ObraPage')),
+  },
+  {
+    path: '/espacio-creativo/obra/:id/editar',
+    component: lazy(
+      () => import('@/features/creative-space/pages/ObraEditorPage'),
+    ),
+  },
+  {
+    path: '/espacio-creativo/hashtag/:nombre',
+    component: lazy(
+      () => import('@/features/creative-space/pages/HashtagPage'),
+    ),
+  },
+  {
+    path: '/espacio-creativo/:espacio',
+    component: lazy(
+      () => import('@/features/creative-space/pages/EspacioPage'),
     ),
   },
 ];

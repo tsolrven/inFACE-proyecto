@@ -309,6 +309,8 @@ async function crearComentario({
     clase: 'comentario',
     usuario_id: autor_id,
     contenido_id,
+    comentario_id: comentario.id,
+    padre_id: padre_id || null,
   });
 
   return formatearComentario(comentario);

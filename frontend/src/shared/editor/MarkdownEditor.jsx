@@ -5,6 +5,7 @@ import CharCounter from '@/shared/components/ui/CharCounter';
 import {
   EXTENSIONES_EDITOR,
   EXTENSIONES_EDITOR_REDUCIDO,
+  EXTENSIONES_EDITOR_CREATIVO,
   normalizarEnlace,
 } from '@/shared/editor/editorExtensions';
 import '@/shared/markdown/markdown.css';
@@ -36,14 +37,12 @@ function Boton({ icono, titulo, activo = false, disabled = false, onClick }) {
       aria-label={titulo}
       aria-pressed={activo}
       disabled={disabled}
-      // evita que el botón le quite el foco al editor
       onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
-      className={`flex h-7 w-7 items-center justify-center rounded-md text-[15px] transition-colors disabled:cursor-not-allowed disabled:opacity-30 ${
-        activo
+      className={`flex h-7 w-7 items-center justify-center rounded-md text-[15px] transition-colors disabled:cursor-not-allowed disabled:opacity-30 ${activo
           ? 'bg-white/[0.12] text-neutral-100'
           : 'text-neutral-400 hover:bg-white/[0.06] hover:text-neutral-100'
-      }`}
+        }`}
     >
       <i className={`ti ${icono}`} />
     </button>
@@ -54,17 +53,6 @@ function Separador() {
   return <span className='mx-1 h-4 w-px bg-white/10' />;
 }
 
-/**
- * Editor visual (Tiptap) que entrega MARKDOWN. Reutilizable en cualquier módulo.
- * - valorInicial: markdown con el que arranca. Se lee solo al montar: para
- *   cargar otro contenido, el padre cambia la `key` del componente.
- * - onChange(markdown): se llama en cada cambio con el markdown ya recortado.
- * - max: límite de caracteres del markdown (el padre decide si bloquea el envío).
- * - ariaLabel: nombre accesible del área de escritura.
- * - placeholder: texto gris mientras el editor está vacío (se lee al montar).
- * - barra: 'completa' | 'reducida'. La reducida quita tachado, títulos, cita,
- *   línea horizontal, enlace y bloque de código (botones Y extensiones). Se lee al montar.
- */
 export default function MarkdownEditor({
   valorInicial = '',
   onChange,
@@ -73,26 +61,31 @@ export default function MarkdownEditor({
   ariaLabel = 'Contenido',
   placeholder = '',
   barra = 'completa',
+  onEditor = null,
+  alto = null,
 }) {
   const reducida = barra === 'reducida';
+  const sinCodigo = barra === 'creativa'; // sin código en línea ni bloques
 
   const [markdown, setMarkdown] = useState(valorInicial.trim());
   const [enlace, setEnlace] = useState(null); // null = cerrado; texto = URL en edición
   const [errorEnlace, setErrorEnlace] = useState('');
 
-  // onUpdate se fija al crear el editor: la ref evita usar un onChange viejo
   const onChangeRef = useRef(onChange);
   useEffect(() => {
     onChangeRef.current = onChange;
   });
 
-  // useEditor no debe recibir un arreglo nuevo en cada render
   const extensiones = useMemo(
     () => [
-      ...(reducida ? EXTENSIONES_EDITOR_REDUCIDO : EXTENSIONES_EDITOR),
+      ...(reducida
+        ? EXTENSIONES_EDITOR_REDUCIDO
+        : sinCodigo
+          ? EXTENSIONES_EDITOR_CREATIVO
+          : EXTENSIONES_EDITOR),
       ...(placeholder ? [Placeholder.configure({ placeholder })] : []),
     ],
-    [reducida, placeholder],
+    [reducida, sinCodigo, placeholder],
   );
 
   const editor = useEditor({
@@ -104,6 +97,7 @@ export default function MarkdownEditor({
       attributes: {
         class: 'md-view md-editor-contenido',
         'aria-label': ariaLabel,
+        ...(alto && { style: `min-height:${alto}` }),
       },
     },
     onUpdate: ({ editor: ed }) => {
@@ -113,8 +107,10 @@ export default function MarkdownEditor({
     },
   });
 
-  // En Tiptap 3 el componente no se re-renderiza en cada transacción:
-  // el estado de los botones se lee aquí.
+  useEffect(() => {
+    onEditor?.(editor);
+  }, [editor, onEditor]);
+
   const estado = useEditorState({
     editor,
     selector: ({ editor: ed }) => {
@@ -168,9 +164,8 @@ export default function MarkdownEditor({
 
   return (
     <div
-      className={`overflow-hidden rounded-[10px] border bg-[#17171B] transition-colors focus-within:border-white/[0.25] ${
-        excedido ? 'border-red-500/50' : 'border-white/[0.09]'
-      }`}
+      className={`overflow-hidden rounded-[10px] border bg-[#17171B] transition-colors focus-within:border-white/[0.25] ${excedido ? 'border-red-500/50' : 'border-white/[0.09]'
+        }`}
     >
       <div className='flex flex-wrap items-center gap-0.5 border-b border-white/[0.07] px-2 py-1.5'>
         <Boton
@@ -196,13 +191,15 @@ export default function MarkdownEditor({
             onClick={() => run().toggleStrike().run()}
           />
         )}
-        <Boton
-          icono='ti-code'
-          titulo='Código en línea'
-          activo={estado.codigo}
-          disabled={disabled}
-          onClick={() => run().toggleCode().run()}
-        />
+        {!sinCodigo && (
+          <Boton
+            icono='ti-code'
+            titulo='Código en línea'
+            activo={estado.codigo}
+            disabled={disabled}
+            onClick={() => run().toggleCode().run()}
+          />
+        )}
         {!reducida && (
           <Boton
             icono='ti-link'
@@ -258,7 +255,7 @@ export default function MarkdownEditor({
             onClick={() => run().toggleBlockquote().run()}
           />
         )}
-        {!reducida && (
+        {!reducida && !sinCodigo && (
           <Boton
             icono='ti-source-code'
             titulo='Bloque de código'

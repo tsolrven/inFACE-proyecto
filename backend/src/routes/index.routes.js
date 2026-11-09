@@ -14,6 +14,8 @@ import perfilRoutes from '../modules/identity/perfil.routes.js';
 import hiloRoutes from '../modules/forum/forum.routes.js';
 import anuncioRoutes from '../modules/announcements/announcements.routes.js';
 import flairRoutes from '../modules/announcements/flairs.routes.js';
+import obraRoutes from '../modules/creative/creative.routes.js';
+import productoRoutes from '../modules/marketplace/marketplace.routes.js';
 import notificacionRoutes from '../shared/notifications/notifications.routes.js';
 import adminRoutes from './admin.routes.js';
 
@@ -40,6 +42,12 @@ function routerApi(app) {
   // módulo 3: Anuncios oficiales
   router.use('/anuncios', anuncioRoutes);
   router.use('/flairs', flairRoutes);
+  
+  // módulo: Espacio creativo / cultural
+  router.use('/obras', obraRoutes);
+
+  // módulo: Marketplace
+  router.use('/productos', productoRoutes);
 
   // moderación (transversal a todos los módulos)
   router.use('/reportes', reporteRoutes);

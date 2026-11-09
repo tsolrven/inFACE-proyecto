@@ -44,13 +44,16 @@ function SubNavItem({ path, label, icon, colapsado, onNavigate }) {
       title={colapsado ? label : undefined}
       onClick={onNavigate}
       className={({ isActive }) =>
-        `flex items-center gap-2 border-l-2 border-transparent py-1.5 text-[12.5px] text-neutral-400 transition-colors hover:bg-white/5 hover:text-neutral-100 ${
-          colapsado ? 'justify-center px-0' : 'pl-[30px] pr-4'
+        `flex items-center gap-2 border-l-2 border-transparent py-1.5 text-[12.5px] text-neutral-400 transition-colors hover:bg-white/5 hover:text-neutral-100 ${colapsado ? 'justify-center px-0' : 'pl-[30px] pr-4'
         } ${isActive ? 'border-pink-500 bg-pink-500/10 font-semibold text-pink-500' : ''}`
       }
     >
       <i className={`ti ${icon} flex-shrink-0 text-sm`} />
-      {!colapsado && <span>{label}</span>}
+      {!colapsado && (
+        <>
+          <span className='flex-1'>{label}</span>
+        </>
+      )}
     </NavLink>
   );
 }
@@ -93,12 +96,10 @@ export default function Sidebar() {
     ]
     : navSections.map(sinPropia);
 
-  // en mobile el sidebar se comporta como un cajón que se cierra solo al navegar
   const onNavigate = () => cerrarSidebarMovil();
 
   return (
     <>
-      {/* fondo oscuro detrás del cajón, solo en mobile y solo cuando está abierto */}
       {abiertoMovil && (
         <div
           onClick={cerrarSidebarMovil}
@@ -113,7 +114,6 @@ export default function Sidebar() {
           ${colapsado ? 'lg:w-[56px]' : 'lg:w-[218px]'}
         `}
       >
-        {/* botón de cerrar, solo visible en el cajón mobile */}
         <button
           onClick={cerrarSidebarMovil}
           className='ml-auto mr-2 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-neutral-500 transition hover:bg-white/5 hover:text-neutral-100 lg:hidden'
@@ -174,10 +174,9 @@ export default function Sidebar() {
                 to={link.path}
                 onClick={onNavigate}
                 className={({ isActive }) =>
-                  `py-0.5 text-[11px] transition-colors ${
-                    isActive
-                      ? 'text-pink-500'
-                      : 'text-neutral-600 hover:text-neutral-400'
+                  `py-0.5 text-[11px] transition-colors ${isActive
+                    ? 'text-pink-500'
+                    : 'text-neutral-600 hover:text-neutral-400'
                   }`
                 }
               >
@@ -187,11 +186,10 @@ export default function Sidebar() {
           </div>
         )}
 
-        {/* botón para ocultar/mostrar el sidebar — solo tiene sentido en escritorio */}
         <button
           onClick={toggleSidebar}
           title={colapsado ? 'Mostrar barra lateral' : 'Ocultar barra lateral'}
-          className='sticky bottom-0 mt-2 hidden w-full items-center justify-center gap-1.5 border-t border-white/[0.07] bg-[#17171B] py-2.5 text-[11px] font-medium text-neutral-500 transition hover:text-neutral-200 lg:flex'
+          className='sticky bottom-0 mt-auto hidden w-full items-center justify-center gap-1.5 border-t border-white/[0.07] bg-[#17171B] py-2.5 text-[11px] font-medium text-neutral-500 transition hover:text-neutral-200 lg:flex'
         >
           <i
             className={`ti ${colapsado ? 'ti-layout-sidebar-left-expand' : 'ti-layout-sidebar-left-collapse'} text-[15px]`}

@@ -1,10 +1,9 @@
 //! validación de contenido real de archivos subidos (después de multer)
 
 import fs from 'fs';
-import path from 'path'; // ← NUEVO import
+import path from 'path';
 import { BadRequestError } from '../../errors/appError.js';
 
-// firmas binarias (magic numbers)
 const FIRMAS = {
   '.pdf': [[0x25, 0x50, 0x44, 0x46]],
   '.zip': [
@@ -21,20 +20,38 @@ const FIRMAS = {
   '.jpg': [[0xff, 0xd8, 0xff]],
   '.jpeg': [[0xff, 0xd8, 0xff]],
   '.png': [[0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]],
+  '.ogg': [[0x4f, 0x67, 0x67, 0x53]],
   '.gif': [
     [0x47, 0x49, 0x46, 0x38, 0x37, 0x61],
     [0x47, 0x49, 0x46, 0x38, 0x39, 0x61],
   ],
 };
 
-// únicas extensiones que se aceptan como texto plano
+function esMp3(b) {
+  return (
+    coincideFirma(b, [[0x49, 0x44, 0x33]]) ||
+    (b[0] === 0xff && (b[1] & 0xe0) === 0xe0)
+  );
+}
+function esWav(b) {
+  return (
+    coincideFirma(b, [[0x52, 0x49, 0x46, 0x46]]) &&
+    b[8] === 0x57 &&
+    b[9] === 0x41 &&
+    b[10] === 0x56 &&
+    b[11] === 0x45
+  );
+}
+function esM4a(b) {
+  return b[4] === 0x66 && b[5] === 0x74 && b[6] === 0x79 && b[7] === 0x70;
+}
+
 const EXTENSIONES_TEXTO = ['.txt'];
 
 function coincideFirma(buffer, firmas) {
   return firmas.some((firma) => firma.every((byte, i) => buffer[i] === byte));
 }
 
-// .webp: "RIFF" al inicio y "WEBP" en los bytes 8-11 (si no, podría ser WAV/AVI)
 function esWebp(buffer) {
   return (
     coincideFirma(buffer, [[0x52, 0x49, 0x46, 0x46]]) &&
@@ -52,7 +69,7 @@ function leerCabecera(ruta) {
   try {
     const buffer = Buffer.alloc(512);
     const leidos = fs.readSync(fd, buffer, 0, 512, 0);
-    return buffer.subarray(0, leidos); // solo lo realmente leído
+    return buffer.subarray(0, leidos);
   } finally {
     fs.closeSync(fd);
   }
@@ -63,10 +80,9 @@ function pareceBinario(cabecera) {
 }
 
 function descartar(archivos) {
-  archivos.forEach((f) => fs.unlink(f.path, () => {}));
+  archivos.forEach((f) => fs.unlink(f.path, () => { }));
 }
 
-// middleware: se ejecuta después de multer (sirve para .single y .array)
 function validarContenidoReal(req, res, next) {
   const archivos = req.files ?? (req.file ? [req.file] : []);
 
@@ -85,11 +101,14 @@ function validarContenidoReal(req, res, next) {
 
     let valido = true;
     if (ext === '.webp') valido = esWebp(cabecera);
+    else if (ext === '.mp3') valido = esMp3(cabecera);
+    else if (ext === '.wav') valido = esWav(cabecera);
+    else if (ext === '.m4a') valido = esM4a(cabecera);
     else if (FIRMAS[ext]) valido = coincideFirma(cabecera, FIRMAS[ext]);
     else if (EXTENSIONES_TEXTO.includes(ext)) valido = !pareceBinario(cabecera);
 
     if (!valido) {
-      descartar(archivos); // la petición falla completa: se descartan todos
+      descartar(archivos);
       return next(
         new BadRequestError(
           `El contenido de "${file.originalname}" no coincide con la extensión "${ext}" (¿fue renombrado?)`,

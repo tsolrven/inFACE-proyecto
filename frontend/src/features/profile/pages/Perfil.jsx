@@ -1,16 +1,14 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   obtenerMiPerfil,
   actualizarMiPerfil,
   actualizarMisIntereses,
 } from '@/shared/api/perfil.api';
 import { listarProyectos } from '@/features/project-match';
-import {
-  getInitials,
-  avatarColor,
-  etiquetaColor,
-} from '@/shared/lib/matchHelpers';
+import { etiquetaColor } from '@/shared/lib/matchHelpers';
+import Mascota from '@/shared/mascota/Mascota';
+import { NombrePerfil, InsigniasPerfil } from '@/shared/mascota/Insignias';
 import Modal, { ModalHeader, ModalBody } from '@/shared/components/ui/Modal';
 import EtiquetasPicker from '@/shared/components/EtiquetasPicker';
 import PerfilTabs from '@/features/profile/components/PerfilTabs';
@@ -47,6 +45,7 @@ export default function Perfil() {
 
   const [modalEditar, setModalEditar] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [modalIntereses, setModalIntereses] = useState(
     () => searchParams.get('editar') === 'intereses',
   );
@@ -127,9 +126,6 @@ export default function Perfil() {
     );
   }
 
-  const av = avatarColor(perfil.id);
-  const nombreVisible = perfil.nombre_completo || perfil.nombre_usuario;
-
   return (
     <div>
       {/* BANNER */}
@@ -150,14 +146,25 @@ export default function Perfil() {
       </div>
 
       {/* AVATAR + ACCIONES (se monta sobre el borde inferior del banner) */}
-      <div className='relative z-10 mx-auto -mt-11 flex max-w-4xl items-end gap-4 px-4 sm:px-[28px]'>
+      <div className='relative z-10 mx-auto -mt-16 flex max-w-4xl items-end gap-4 px-4 sm:px-[28px]'>
         <div className='relative flex-shrink-0'>
-          <div
-            className={`flex h-[90px] w-[90px] flex-shrink-0 items-center justify-center rounded-full border-[3px] border-neutral-950 text-[28px] font-bold ${av.bg} ${av.text}`}
+          <button
+            type='button'
+            onClick={() => navigate('/perfil/personaje')}
+            title='Editar personaje'
+            className='group relative block rounded-full border-4 border-neutral-950 bg-[#1E1E24] transition hover:border-pink-500/50'
           >
-            {getInitials(nombreVisible)}
-          </div>
-          <span className='absolute bottom-1 right-1 h-[14px] w-[14px] rounded-full border-[2.5px] border-neutral-950 bg-emerald-400' />
+            <Mascota
+              cara
+              avatar={perfil.avatar}
+              carrera={perfil.carrera}
+              className='h-[132px] w-[132px] rounded-full'
+              alt={`Personaje de ${perfil.nombre_usuario}`}
+            />
+            <span className='absolute bottom-1 right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-neutral-950 bg-pink-500 text-white'>
+              <i className='ti ti-pencil text-[13px]' />
+            </span>
+          </button>
         </div>
 
         <div className='ml-auto pb-2'>
@@ -172,12 +179,14 @@ export default function Perfil() {
 
       {/* INFO */}
       <div className='mx-auto max-w-4xl px-4 sm:px-[28px] pb-10 pt-3.5'>
-        <div className='text-[20px] font-bold tracking-tight text-neutral-100'>
-          {nombreVisible}
-        </div>
+        <NombrePerfil
+          perfil={perfil}
+          className='block text-[20px] font-bold tracking-tight'
+        />
         <div className='mt-px text-[13px] text-neutral-500'>
           u/{perfil.nombre_usuario}
         </div>
+        <InsigniasPerfil perfil={perfil} />
 
         {perfil.biografia && (
           <p className='mt-2.5 max-w-xl text-[13px] leading-relaxed text-neutral-400'>
@@ -285,6 +294,8 @@ export default function Perfil() {
           // apuntes={apuntes}
           // respuestas={respuestas}
           cargando={cargandoTabs}
+          usuarioId={perfil.id}
+          esPropio
         />
       </div>
 
@@ -322,8 +333,10 @@ export default function Perfil() {
 function EditarPerfilModal({ perfil, onClose, onGuardado }) {
   const [form, setForm] = useState({
     nombre_usuario: perfil.nombre_usuario || '',
+    nombre_completo: perfil.nombre_completo || '',
     biografia: perfil.biografia || '',
   });
+  const puedeEditarNombre = perfil.rol === 'docente';
   const [errores, setErrores] = useState([]);
   const [guardando, setGuardando] = useState(false);
 
@@ -334,6 +347,9 @@ function EditarPerfilModal({ perfil, onClose, onGuardado }) {
     try {
       const actualizado = await actualizarMiPerfil({
         nombre_usuario: form.nombre_usuario.trim(),
+        ...(puedeEditarNombre && {
+          nombre_completo: form.nombre_completo.trim(),
+        }),
         biografia: form.biografia.trim() || null,
       });
       onGuardado(actualizado);
@@ -377,14 +393,27 @@ function EditarPerfilModal({ perfil, onClose, onGuardado }) {
             <label className='mb-1.5 block text-[11px] font-medium text-neutral-500'>
               Nombre completo
             </label>
-            <div className='flex items-center gap-2 rounded-[10px] border border-white/[0.05] bg-[#17171B] px-3.5 py-2.5 text-[13px] text-neutral-500'>
-              <i className='ti ti-lock text-[13px]' />
-              {perfil.nombre_completo || 'Sin nombre completo'}
-            </div>
-            <p className='mt-1 text-[11px] text-neutral-600'>
-              No se puede editar: se detectó automáticamente desde tu correo
-              institucional al registrarte.
-            </p>
+            {puedeEditarNombre ? (
+              <input
+                type='text'
+                value={form.nombre_completo}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, nombre_completo: e.target.value }))
+                }
+                className='w-full rounded-[10px] border border-white/[0.07] bg-[#1E1E24] px-3.5 py-2.5 text-[13px] text-neutral-100 outline-none transition focus:border-pink-500/50'
+              />
+            ) : (
+              <>
+                <div className='flex items-center gap-2 rounded-[10px] border border-white/[0.05] bg-[#17171B] px-3.5 py-2.5 text-[13px] text-neutral-500'>
+                  <i className='ti ti-lock text-[13px]' />
+                  {perfil.nombre_completo || 'Sin nombre completo'}
+                </div>
+                <p className='mt-1 text-[11px] text-neutral-600'>
+                  No se puede editar: se detectó automáticamente desde tu correo
+                  institucional al registrarte.
+                </p>
+              </>
+            )}
           </div>
 
           <div>
@@ -400,7 +429,8 @@ function EditarPerfilModal({ perfil, onClose, onGuardado }) {
               className='w-full rounded-[10px] border border-white/[0.07] bg-[#1E1E24] px-3.5 py-2.5 text-[13px] text-neutral-100 outline-none transition focus:border-pink-500/50'
             />
             <p className='mt-1 text-[11px] text-neutral-600'>
-              Debe ser único: no puede coincidir con el de otro usuario.
+              Letras, números, guiones bajos y puntos. Debe ser único: no puede
+              coincidir con el de otro usuario.
             </p>
           </div>
 

@@ -13,6 +13,12 @@ const ICONOS = {
   proyecto_eliminado: 'ti-trash',
   sancion: 'ti-alert-triangle',
   sancion_revocada: 'ti-circle-check',
+  obra_comentada: 'ti-message-circle-2',
+  parrafo_comentado: 'ti-message-dots',
+  respuesta_recibida: 'ti-corner-down-right',
+  producto_pregunta: 'ti-message-question',
+  vendedor_respondio: 'ti-user-check',
+  producto_estado: 'ti-shopping-bag',
 };
 
 function hace(fecha) {

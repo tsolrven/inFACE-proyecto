@@ -36,7 +36,11 @@ import PostulacionesModal from '@/features/project-match/components/Postulacione
 import IntegrantesModal from '@/features/project-match/components/IntegrantesModal';
 import DescubrirTab from '@/features/project-match/components/DescubrirTab';
 import ConfirmDialog from '@/shared/components/ui/ConfirmDialog';
+import ShareButton from '@/shared/post/share/ShareButton';
 import ConDescripcion from '@/shared/components/ConDescripcion';
+import RightPanel from '@/shared/components/layout/RightPanel';
+import RpCard from '@/shared/components/layout/RpCard';
+import RpRules from '@/shared/components/layout/RpRules';
 
 const TABS = [
   { id: 'descubrir', label: 'Descubrir', icon: 'ti-flame' },
@@ -46,20 +50,56 @@ const TABS = [
   { id: 'guardados', label: 'Guardados', icon: 'ti-bookmark' },
 ];
 
+const REGLAS_MATCH = [
+  'Publica tu proyecto con una descripción clara y las habilidades que buscas.',
+  'Postula a proyectos que de verdad te interesen y cuéntale al equipo por qué.',
+  'Revisa las postulaciones y acepta a quienes mejor encajen.',
+  'Responde a quienes postulan, aunque sea para decir que no.',
+  'Respeta a todos: las faltas de respeto se pueden reportar.',
+];
+
+// Panel derecho explicativo (se despliega/oculta como en los demás módulos)
+function InfoMatch() {
+  return (
+    <>
+      <RpCard
+        title='Acerca de Match de proyectos'
+        icon='ti-info-circle'
+      >
+        <p className='text-[12px] leading-relaxed text-neutral-400'>
+          Encuentra o forma equipos para proyectos académicos y de
+          emprendimiento. En Descubrir ves proyectos recomendados según tus
+          intereses; en Explorar, todos los proyectos abiertos.
+        </p>
+      </RpCard>
+      <RpCard
+        title='Cómo funciona'
+        icon='ti-route'
+        iconColor='text-emerald-400'
+      >
+        <RpRules items={REGLAS_MATCH} />
+      </RpCard>
+    </>
+  );
+}
+
 export default function MatchProyectos() {
   const usuario = useAuthStore((s) => s.usuario);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-
+  // se inicializa desde la URL para que sobreviva a un remount (ej. volver de ver
+  // el perfil de alguien), en vez de resetearse siempre a 'descubrir'.
   const [tab, setTabState] = useState(
     () => searchParams.get('tab') || 'descubrir',
   );
   const [search, setSearch] = useState('');
-
+  // mientras esto es true no se muestra nada (ni tabs ni detalle), para evitar el "flash"
+  // de Descubrir antes de resolver un ?proyecto=ID que venga en la URL al montar.
   const [resolviendoDetalleInicial, setResolviendoDetalleInicial] = useState(
     () => !!searchParams.get('proyecto'),
   );
 
+  // datos globales usados por varias pestañas
   const [favoritos, setFavoritos] = useState([]);
   const [favoritosLoaded, setFavoritosLoaded] = useState(false);
   const [misPostulaciones, setMisPostulaciones] = useState([]);
@@ -86,7 +126,7 @@ export default function MatchProyectos() {
       const data = await listarFavoritos();
       setFavoritos(data);
     } catch {
-
+      // silencioso: no bloquea el resto de la página
     } finally {
       setFavoritosLoaded(true);
     }
@@ -97,7 +137,7 @@ export default function MatchProyectos() {
       const data = await listarMisPostulaciones();
       setMisPostulaciones(data);
     } catch {
-
+      // silencioso
     } finally {
       setMisPostulacionesLoaded(true);
     }
@@ -140,6 +180,9 @@ export default function MatchProyectos() {
     recargarMisPostulaciones();
   }
 
+  // abre el detalle de un proyecto como una navegación real (queda en el historial de
+  // verdad), así "Volver" y el botón "atrás" del navegador siempre funcionan como se
+  // espera, incluso después de salir a ver el perfil de alguien y regresar.
   function abrirDetalle(proyectoId, { conIntegrantes = false } = {}) {
     const params = new URLSearchParams();
     params.set('proyecto', proyectoId);
@@ -148,7 +191,7 @@ export default function MatchProyectos() {
   }
 
   function handleVerDetalle(proyecto) {
-    setProyectoDetalle(proyecto);
+    setProyectoDetalle(proyecto); // optimista: se muestra al toque, sin esperar el fetch
     abrirDetalle(proyecto.id);
   }
 
@@ -197,6 +240,9 @@ export default function MatchProyectos() {
     }
   }
 
+  // vuelve a pedir el proyecto y refresca lo que esté mostrando ahora mismo (detalle
+  // y/o modal de integrantes), sin navegar a ningún lado — para usar después de editar,
+  // aceptar/rechazar postulaciones, o expulsar/agregar integrantes.
   async function refrescarDetalle(proyectoId) {
     try {
       const p = await obtenerProyecto(proyectoId);
@@ -204,10 +250,12 @@ export default function MatchProyectos() {
       setProyectoDetalle((actual) => (actual?.id === proyectoId ? p : actual));
       setModalIntegrantes((actual) => (actual?.id === proyectoId ? p : actual));
     } catch {
-
+      // ignorar
     }
   }
 
+  // abre el formulario de entregables finales. Se pide el proyecto completo antes,
+  // porque las listas no traen el informe (PDF) que ya pudo haberse subido.
   async function abrirEntregables(proyecto) {
     try {
       const completo = await obtenerProyecto(proyecto.id);
@@ -218,6 +266,9 @@ export default function MatchProyectos() {
     }
   }
 
+  // el estado de la vista (qué detalle está abierto, si el modal de integrantes está
+  // abierto encima) vive en la URL en vez de solo en memoria, así sobrevive a salir a
+  // ver el perfil de alguien y volver con "atrás" (o remontar el componente).
   useEffect(() => {
     const proyectoId = searchParams.get('proyecto');
     const panel = searchParams.get('panel');
@@ -253,286 +304,298 @@ export default function MatchProyectos() {
   }, [searchParams]);
 
   return (
-    <div>
-      {/* HEADER (mismo estilo que Repositorio de materiales) */}
-      <div className='px-4 pt-6 sm:px-[26px]'>
-        <div className='mb-4 flex items-center gap-1.5 text-[12px] text-neutral-500'>
-          <span>Inicio</span>
-          <i className='ti ti-chevron-right text-[12px]' />
-          <span>Cultural</span>
-          <i className='ti ti-chevron-right text-[12px]' />
-          <span className='text-neutral-300'>Match de proyectos</span>
-        </div>
-
-        <div className='mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between'>
-          <div className='flex items-center gap-3'>
-            <div className='flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-[12px] bg-pink-500/10'>
-              <i className='ti ti-puzzle text-[22px] text-pink-400' />
-            </div>
-            <div>
-              <h1 className='text-[19px] font-bold text-neutral-50'>
-                Match de proyectos
-              </h1>
-              <p className='hidden text-[12.5px] text-neutral-500 sm:block'>
-                Encuentra o forma equipos para proyectos académicos y de
-                emprendimiento
-              </p>
-            </div>
+    <div className='flex h-full flex-1 overflow-hidden'>
+      <div className='min-w-0 flex-1 overflow-y-auto'>
+        {/* HEADER (mismo estilo que Repositorio de materiales) */}
+        <div className='px-4 pt-6 sm:px-[26px]'>
+          <div className='mb-4 flex items-center gap-1.5 text-[12px] text-neutral-500'>
+            <span>Inicio</span>
+            <i className='ti ti-chevron-right text-[12px]' />
+            <span>Cultural</span>
+            <i className='ti ti-chevron-right text-[12px]' />
+            <span className='text-neutral-300'>Match de proyectos</span>
           </div>
 
-          <div className='relative w-full sm:w-auto'>
-            <i className='ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-[14px] text-neutral-600' />
-            <input
-              type='text'
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder='Buscar en Match de proyectos...'
-              className='w-full rounded-[10px] border border-white/[0.07] bg-[#1E1E24] py-2 pl-9 pr-3 text-[12.5px] text-neutral-100 outline-none transition placeholder:text-neutral-600 focus:border-pink-500/50 sm:w-64'
-            />
+          <div className='mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between'>
+            <div className='flex items-center gap-3'>
+              <div className='flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-[12px] bg-pink-500/10'>
+                <i className='ti ti-puzzle text-[22px] text-pink-400' />
+              </div>
+              <div>
+                <h1 className='text-[19px] font-bold text-neutral-50'>
+                  Match de proyectos
+                </h1>
+                <p className='hidden text-[12.5px] text-neutral-500 sm:block'>
+                  Encuentra o forma equipos para proyectos académicos y de
+                  emprendimiento
+                </p>
+              </div>
+            </div>
+
+            <div className='relative w-full sm:w-auto'>
+              <i className='ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-[14px] text-neutral-600' />
+              <input
+                type='text'
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder='Buscar en Match de proyectos...'
+                className='w-full rounded-[10px] border border-white/[0.07] bg-[#1E1E24] py-2 pl-9 pr-3 text-[12.5px] text-neutral-100 outline-none transition placeholder:text-neutral-600 focus:border-pink-500/50 sm:w-64'
+              />
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* TABS */}
-      {!proyectoDetalle && !resolviendoDetalleInicial && (
-        <div className='sticky top-0 z-20 flex items-center overflow-x-auto border-b border-white/[0.07] bg-[#17171B] px-4 sm:px-[26px]'>
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className={`-mb-px flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-[12.5px] font-medium transition sm:px-4 sm:py-3 sm:text-[13px] ${tab === t.id
-                ? 'border-pink-500 font-semibold text-pink-500'
-                : 'border-transparent text-neutral-500 hover:text-neutral-300'
-                }`}
-            >
-              <i className={`ti ${t.icon} text-[15px]`} />
-              {t.label}
-            </button>
-          ))}
-        </div>
-      )}
-
-      <div className='px-4 pb-10 pt-[22px] sm:px-[26px]'>
-        {resolviendoDetalleInicial && (
-          <p className='py-16 text-center text-[13px] text-neutral-500'>
-            Cargando…
-          </p>
+        {/* TABS */}
+        {!proyectoDetalle && !resolviendoDetalleInicial && (
+          <div className='sticky top-0 z-20 flex items-center overflow-x-auto border-b border-white/[0.07] bg-[#17171B] px-4 sm:px-[26px]'>
+            {TABS.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                className={`-mb-px flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-[12.5px] font-medium transition sm:px-4 sm:py-3 sm:text-[13px] ${tab === t.id
+                    ? 'border-pink-500 font-semibold text-pink-500'
+                    : 'border-transparent text-neutral-500 hover:text-neutral-300'
+                  }`}
+              >
+                <i className={`ti ${t.icon} text-[15px]`} />
+                {t.label}
+              </button>
+            ))}
+          </div>
         )}
 
-        {!resolviendoDetalleInicial && proyectoDetalle && (
-          <DetalleProyecto
-            proyecto={proyectoDetalle}
-            esCreador={proyectoDetalle.creador?.id === usuario?.id}
-            esIntegrante={proyectoDetalle.integrantes?.some(
-              (i) => i.usuario_id === usuario?.id,
-            )}
-            yaPostulado={postuladosActivos.has(proyectoDetalle.id)}
-            fueRechazado={misPostulaciones.some(
-              (p) =>
-                p.proyecto_id === proyectoDetalle.id &&
-                p.estado === 'rechazada',
-            )}
-            onSalir={() => setConfirmSalir(proyectoDetalle)}
-            puedePostular={proyectoDetalle.estado === 'abierto'}
-            onVolver={handleVolverDetalle}
-            onPostular={handlePostular}
-            onEditar={() => setModalCrear(proyectoDetalle)}
-            onEliminar={() => handleEliminarDesdeDetalle(proyectoDetalle)}
-            onVerIntegrantes={handleVerIntegrantesDesdeDetalle}
-            onVerPostulaciones={() => setModalPostulaciones(proyectoDetalle)}
-            onVerHistorialPostulaciones={() => {
-              setVerTodasPostulaciones(true);
-              setModalPostulaciones(proyectoDetalle);
+        <div className='px-4 pb-10 pt-[22px] sm:px-[26px]'>
+          {resolviendoDetalleInicial && (
+            <p className='py-16 text-center text-[13px] text-neutral-500'>
+              Cargando…
+            </p>
+          )}
+
+          {!resolviendoDetalleInicial && proyectoDetalle && (
+            <DetalleProyecto
+              proyecto={proyectoDetalle}
+              esCreador={proyectoDetalle.creador?.id === usuario?.id}
+              esIntegrante={proyectoDetalle.integrantes?.some(
+                (i) => i.usuario_id === usuario?.id,
+              )}
+              yaPostulado={postuladosActivos.has(proyectoDetalle.id)}
+              fueRechazado={misPostulaciones.some(
+                (p) =>
+                  p.proyecto_id === proyectoDetalle.id &&
+                  p.estado === 'rechazada',
+              )}
+              onSalir={() => setConfirmSalir(proyectoDetalle)}
+              puedePostular={proyectoDetalle.estado === 'abierto'}
+              onVolver={handleVolverDetalle}
+              onPostular={handlePostular}
+              onEditar={() => setModalCrear(proyectoDetalle)}
+              onEliminar={() => handleEliminarDesdeDetalle(proyectoDetalle)}
+              onVerIntegrantes={handleVerIntegrantesDesdeDetalle}
+              onVerPostulaciones={() => setModalPostulaciones(proyectoDetalle)}
+              onVerHistorialPostulaciones={() => {
+                setVerTodasPostulaciones(true);
+                setModalPostulaciones(proyectoDetalle);
+              }}
+              onEntregablesActualizados={() =>
+                refrescarDetalle(proyectoDetalle.id)
+              }
+            />
+          )}
+
+          {/* las 5 pestañas quedan SIEMPRE montadas (solo se ocultan con CSS) para que su estado
+            y sus datos ya cargados no se pierdan/reinicien al cambiar de pestaña, ver el detalle
+            de un proyecto, o volver a Descubrir — antes esta sección se desmontaba por completo
+            cada vez que se abría un detalle, reiniciando la cola de swipes de Descubrir */}
+          <div
+            style={{
+              display:
+                resolviendoDetalleInicial || proyectoDetalle ? 'none' : 'block',
             }}
-            onEntregablesActualizados={() =>
-              refrescarDetalle(proyectoDetalle.id)
+          >
+            <div style={{ display: tab === 'descubrir' ? 'block' : 'none' }}>
+              <DescubrirTab
+                usuario={usuario}
+                favoritosIds={favoritosIds}
+                postuladosActivos={postuladosActivos}
+                onToggleFavorito={handleToggleFavorito}
+                onVerDetalle={handleVerDetalle}
+                onPostularClick={setModalPostular}
+                onIrExplorar={() => setTab('explorar')}
+                search={search}
+              />
+            </div>
+            <div style={{ display: tab === 'explorar' ? 'block' : 'none' }}>
+              <ExplorarTab
+                usuario={usuario}
+                favoritosIds={favoritosIds}
+                postuladosActivos={postuladosActivos}
+                onToggleFavorito={handleToggleFavorito}
+                onVerDetalle={handleVerDetalle}
+                onPostularClick={setModalPostular}
+                search={search}
+              />
+            </div>
+            <div style={{ display: tab === 'guardados' ? 'block' : 'none' }}>
+              <GuardadosTab
+                usuario={usuario}
+                favoritos={favoritos}
+                loaded={favoritosLoaded}
+                postuladosActivos={postuladosActivos}
+                onToggleFavorito={handleToggleFavorito}
+                onVerDetalle={handleVerDetalle}
+                onPostularClick={setModalPostular}
+                search={search}
+              />
+            </div>
+            <div style={{ display: tab === 'mis' ? 'block' : 'none' }}>
+              <MisProyectosTab
+                usuario={usuario}
+                onCrear={() => setModalCrear('crear')}
+                onEditar={(p) => setModalCrear(p)}
+                onAgregarEntregables={abrirEntregables}
+                onVerPostulaciones={(p) => setModalPostulaciones(p)}
+                onVerIntegrantes={(p) =>
+                  abrirDetalle(p.id, { conIntegrantes: true })
+                }
+                onVerDetalle={handleVerDetalle}
+                search={search}
+              />
+            </div>
+            <div
+              style={{ display: tab === 'postulaciones' ? 'block' : 'none' }}
+            >
+              <MisPostulacionesTab
+                postulaciones={misPostulaciones}
+                loaded={misPostulacionesLoaded}
+                onRecargar={recargarMisPostulaciones}
+                onVerProyecto={handleVerDetallePorId}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* MODALES */}
+        {modalCrear && (
+          <ProyectoFormModal
+            proyecto={modalCrear === 'crear' ? null : modalCrear}
+            onClose={() => setModalCrear(null)}
+            onEntregables={
+              modalCrear === 'crear'
+                ? undefined
+                : () => abrirEntregables(modalCrear)
             }
+            onSubmit={async (payload) => {
+              if (modalCrear === 'crear') {
+                await crearProyecto(payload);
+              } else {
+                await actualizarProyecto(modalCrear.id, payload);
+                if (proyectoDetalle?.id === modalCrear.id)
+                  refrescarDetalle(modalCrear.id);
+              }
+              setModalCrear(null);
+              window.dispatchEvent(
+                new Event('inface:mis-proyectos-actualizados'),
+              );
+            }}
           />
         )}
 
-        <div
-          style={{
-            display:
-              resolviendoDetalleInicial || proyectoDetalle ? 'none' : 'block',
-          }}
-        >
-          <div style={{ display: tab === 'descubrir' ? 'block' : 'none' }}>
-            <DescubrirTab
-              usuario={usuario}
-              favoritosIds={favoritosIds}
-              postuladosActivos={postuladosActivos}
-              onToggleFavorito={handleToggleFavorito}
-              onVerDetalle={handleVerDetalle}
-              onPostularClick={setModalPostular}
-              onIrExplorar={() => setTab('explorar')}
-              search={search}
-            />
-          </div>
-          <div style={{ display: tab === 'explorar' ? 'block' : 'none' }}>
-            <ExplorarTab
-              usuario={usuario}
-              favoritosIds={favoritosIds}
-              postuladosActivos={postuladosActivos}
-              onToggleFavorito={handleToggleFavorito}
-              onVerDetalle={handleVerDetalle}
-              onPostularClick={setModalPostular}
-              search={search}
-            />
-          </div>
-          <div style={{ display: tab === 'guardados' ? 'block' : 'none' }}>
-            <GuardadosTab
-              usuario={usuario}
-              favoritos={favoritos}
-              loaded={favoritosLoaded}
-              postuladosActivos={postuladosActivos}
-              onToggleFavorito={handleToggleFavorito}
-              onVerDetalle={handleVerDetalle}
-              onPostularClick={setModalPostular}
-              search={search}
-            />
-          </div>
-          <div style={{ display: tab === 'mis' ? 'block' : 'none' }}>
-            <MisProyectosTab
-              usuario={usuario}
-              onCrear={() => setModalCrear('crear')}
-              onEditar={(p) => setModalCrear(p)}
-              onAgregarEntregables={abrirEntregables}
-              onVerPostulaciones={(p) => setModalPostulaciones(p)}
-              onVerIntegrantes={(p) =>
-                abrirDetalle(p.id, { conIntegrantes: true })
-              }
-              onVerDetalle={handleVerDetalle}
-              search={search}
-            />
-          </div>
-          <div style={{ display: tab === 'postulaciones' ? 'block' : 'none' }}>
-            <MisPostulacionesTab
-              postulaciones={misPostulaciones}
-              loaded={misPostulacionesLoaded}
-              onRecargar={recargarMisPostulaciones}
-              onVerProyecto={handleVerDetallePorId}
-            />
-          </div>
-        </div>
+        {modalEntregables && (
+          <EntregablesModal
+            proyecto={modalEntregables}
+            onClose={() => setModalEntregables(null)}
+            onGuardado={() => {
+              window.dispatchEvent(
+                new Event('inface:mis-proyectos-actualizados'),
+              );
+              if (proyectoDetalle?.id === modalEntregables.id)
+                refrescarDetalle(modalEntregables.id);
+            }}
+          />
+        )}
+
+        {modalPostular && (
+          <PostularModal
+            proyecto={modalPostular}
+            onClose={() => setModalPostular(null)}
+            onPostular={handlePostular}
+          />
+        )}
+
+        {modalPostulaciones && (
+          <PostulacionesModal
+            proyecto={modalPostulaciones}
+            verTodas={verTodasPostulaciones}
+            onIrAVerPendientes={() => setVerTodasPostulaciones(false)}
+            onClose={() => {
+              setModalPostulaciones(null);
+              setVerTodasPostulaciones(false);
+            }}
+            onCambio={() => {
+              window.dispatchEvent(
+                new Event('inface:mis-proyectos-actualizados'),
+              );
+              if (proyectoDetalle?.id === modalPostulaciones.id)
+                refrescarDetalle(modalPostulaciones.id);
+            }}
+          />
+        )}
+        {modalIntegrantes && (
+          <IntegrantesModal
+            proyecto={modalIntegrantes}
+            esCreador={modalIntegrantes.creador?.id === usuario?.id}
+            onClose={handleCerrarIntegrantes}
+            onCambio={() => {
+              window.dispatchEvent(
+                new Event('inface:mis-proyectos-actualizados'),
+              );
+              refrescarDetalle(modalIntegrantes.id);
+            }}
+          />
+        )}
+
+        <ConfirmDialog
+          open={!!confirmEliminarDetalle}
+          title='Eliminar proyecto'
+          message={
+            confirmEliminarDetalle
+              ? `¿Eliminar el proyecto "${confirmEliminarDetalle.titulo}"? Esta acción no se puede deshacer.`
+              : ''
+          }
+          confirmLabel='Eliminar'
+          danger
+          onConfirm={ejecutarEliminarDesdeDetalle}
+          onCancel={() => setConfirmEliminarDetalle(null)}
+        />
+
+        <ConfirmDialog
+          open={!!confirmSalir}
+          title='Salirme del proyecto'
+          message={
+            confirmSalir
+              ? `¿Quieres salirte de "${confirmSalir.titulo}"? Dejarás de ser integrante y podrás volver a postularte si el proyecto sigue abierto.`
+              : ''
+          }
+          confirmLabel='Salirme'
+          danger
+          onConfirm={ejecutarSalirDelProyecto}
+          onCancel={() => setConfirmSalir(null)}
+        />
+
+        <ConfirmDialog
+          open={!!avisoError}
+          title='Ocurrió un error'
+          message={avisoError || ''}
+          confirmLabel='Entendido'
+          danger
+          soloConfirmar
+          onConfirm={() => setAvisoError(null)}
+        />
       </div>
 
-      {/* MODALES */}
-      {modalCrear && (
-        <ProyectoFormModal
-          proyecto={modalCrear === 'crear' ? null : modalCrear}
-          onClose={() => setModalCrear(null)}
-          onEntregables={
-            modalCrear === 'crear'
-              ? undefined
-              : () => abrirEntregables(modalCrear)
-          }
-          onSubmit={async (payload) => {
-            if (modalCrear === 'crear') {
-              await crearProyecto(payload);
-            } else {
-              await actualizarProyecto(modalCrear.id, payload);
-              if (proyectoDetalle?.id === modalCrear.id)
-                refrescarDetalle(modalCrear.id);
-            }
-            setModalCrear(null);
-            window.dispatchEvent(
-              new Event('inface:mis-proyectos-actualizados'),
-            );
-          }}
-        />
-      )}
-
-      {modalEntregables && (
-        <EntregablesModal
-          proyecto={modalEntregables}
-          onClose={() => setModalEntregables(null)}
-          onGuardado={() => {
-            window.dispatchEvent(
-              new Event('inface:mis-proyectos-actualizados'),
-            );
-            if (proyectoDetalle?.id === modalEntregables.id)
-              refrescarDetalle(modalEntregables.id);
-          }}
-        />
-      )}
-
-      {modalPostular && (
-        <PostularModal
-          proyecto={modalPostular}
-          onClose={() => setModalPostular(null)}
-          onPostular={handlePostular}
-        />
-      )}
-
-      {modalPostulaciones && (
-        <PostulacionesModal
-          proyecto={modalPostulaciones}
-          verTodas={verTodasPostulaciones}
-          onIrAVerPendientes={() => setVerTodasPostulaciones(false)}
-          onClose={() => {
-            setModalPostulaciones(null);
-            setVerTodasPostulaciones(false);
-          }}
-          onCambio={() => {
-            window.dispatchEvent(
-              new Event('inface:mis-proyectos-actualizados'),
-            );
-            if (proyectoDetalle?.id === modalPostulaciones.id)
-              refrescarDetalle(modalPostulaciones.id);
-          }}
-        />
-      )}
-      {modalIntegrantes && (
-        <IntegrantesModal
-          proyecto={modalIntegrantes}
-          esCreador={modalIntegrantes.creador?.id === usuario?.id}
-          onClose={handleCerrarIntegrantes}
-          onCambio={() => {
-            window.dispatchEvent(
-              new Event('inface:mis-proyectos-actualizados'),
-            );
-            refrescarDetalle(modalIntegrantes.id);
-          }}
-        />
-      )}
-
-      <ConfirmDialog
-        open={!!confirmEliminarDetalle}
-        title='Eliminar proyecto'
-        message={
-          confirmEliminarDetalle
-            ? `¿Eliminar el proyecto "${confirmEliminarDetalle.titulo}"? Esta acción no se puede deshacer.`
-            : ''
-        }
-        confirmLabel='Eliminar'
-        danger
-        onConfirm={ejecutarEliminarDesdeDetalle}
-        onCancel={() => setConfirmEliminarDetalle(null)}
-      />
-
-      <ConfirmDialog
-        open={!!confirmSalir}
-        title='Salirme del proyecto'
-        message={
-          confirmSalir
-            ? `¿Quieres salirte de "${confirmSalir.titulo}"? Dejarás de ser integrante y podrás volver a postularte si el proyecto sigue abierto.`
-            : ''
-        }
-        confirmLabel='Salirme'
-        danger
-        onConfirm={ejecutarSalirDelProyecto}
-        onCancel={() => setConfirmSalir(null)}
-      />
-
-      <ConfirmDialog
-        open={!!avisoError}
-        title='Ocurrió un error'
-        message={avisoError || ''}
-        confirmLabel='Entendido'
-        danger
-        soloConfirmar
-        onConfirm={() => setAvisoError(null)}
-      />
+      <RightPanel>
+        <InfoMatch />
+      </RightPanel>
     </div>
   );
 }
@@ -558,8 +621,12 @@ function FilterDropdown({
 
   function calcularPosicion() {
     const rect = btnRef.current.getBoundingClientRect();
+    // por defecto se alinea a la derecha del botón, pero si el botón está muy cerca
+    // del borde izquierdo (ej. con el sidebar colapsado) eso deja el menú con
+    // coordenada negativa y se corta; en ese caso se alinea a la izquierda del botón.
     let left = rect.right - MENU_WIDTH;
     if (left < 8) left = rect.left;
+    // tampoco debe salirse por la derecha de la ventana
     if (left + MENU_WIDTH > window.innerWidth - 8)
       left = window.innerWidth - MENU_WIDTH - 8;
     return { top: rect.bottom + 6, left };
@@ -629,8 +696,8 @@ function FilterDropdown({
                       setOpen(false);
                     }}
                     className={`flex cursor-pointer items-center gap-2 px-3.5 py-2 text-[13px] transition hover:bg-white/[0.04] ${sec.selected === opt.value
-                      ? 'text-pink-500'
-                      : 'text-neutral-400'
+                        ? 'text-pink-500'
+                        : 'text-neutral-400'
                       }`}
                   >
                     {opt.label}
@@ -784,8 +851,8 @@ function EtiquetaFilterDropdown({ selectedIds, onChange }) {
                           <button
                             onClick={() => toggle(et.id)}
                             className={`rounded-full border px-2 py-1 text-[11px] font-medium transition ${seleccionada
-                              ? `${c.bg} ${c.text} ${c.border}`
-                              : 'border-white/[0.07] text-neutral-400 hover:border-white/[0.16] hover:text-neutral-100'
+                                ? `${c.bg} ${c.text} ${c.border}`
+                                : 'border-white/[0.07] text-neutral-400 hover:border-white/[0.16] hover:text-neutral-100'
                               }`}
                           >
                             {seleccionada && (
@@ -1016,10 +1083,17 @@ function iconoYColorEstado(estado) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TARJETA BASE 
+// TARJETA BASE (estilo "post" de feed): columna de acento a la izquierda + contenido
+// a lo ancho + footer con meta a la izquierda y acciones a la derecha. La misma
+// estructura se reutiliza en Explorar, Guardados, Mis proyectos y Mis postulaciones.
 // ─────────────────────────────────────────────────────────────────────────────
 
-function TarjetaProyectoBase({ proyecto: p, extra, accionesDerecha }) {
+function TarjetaProyectoBase({
+  proyecto: p,
+  extra,
+  accionesDerecha,
+  onAbrir = null,
+}) {
   const cupos = p.maximo_integrantes
     ? p.maximo_integrantes - p.total_integrantes
     : null;
@@ -1054,7 +1128,17 @@ function TarjetaProyectoBase({ proyecto: p, extra, accionesDerecha }) {
         </div>
 
         <div className='mb-1 text-[15px] font-bold leading-snug text-neutral-100'>
-          {p.titulo}
+          {onAbrir ? (
+            <button
+              type='button'
+              onClick={onAbrir}
+              className='text-left transition hover:text-pink-400 hover:underline'
+            >
+              {p.titulo}
+            </button>
+          ) : (
+            p.titulo
+          )}
         </div>
 
         <p className='mb-2.5 line-clamp-2 text-[12.5px] leading-relaxed text-neutral-400'>
@@ -1145,6 +1229,7 @@ function ProyectoCard({
   return (
     <TarjetaProyectoBase
       proyecto={p}
+      onAbrir={onVerDetalle}
       accionesDerecha={
         <>
           {puedePostular && (
@@ -1170,13 +1255,18 @@ function ProyectoCard({
           <button
             onClick={onToggleFavorito}
             className={`inline-flex items-center gap-1.5 rounded-[10px] border px-3.5 py-1.5 text-[12px] font-medium transition ${esFavorito
-              ? 'border-pink-500/40 bg-pink-500/10 text-pink-500'
-              : 'border-white/[0.07] text-neutral-400 hover:text-neutral-100'
+                ? 'border-pink-500/40 bg-pink-500/10 text-pink-500'
+                : 'border-white/[0.07] text-neutral-400 hover:text-neutral-100'
               }`}
           >
             <i className='ti ti-bookmark text-[13px]' />
             {esFavorito ? 'Guardado' : 'Guardar'}
           </button>
+          <ShareButton
+            path={`/match-proyectos?proyecto=${p.id}`}
+            titulo={p.titulo}
+            className='inline-flex items-center gap-1.5 rounded-[10px] border border-white/[0.07] px-3.5 py-1.5 text-[12px] font-medium text-neutral-400 transition hover:text-neutral-100'
+          />
           <button
             onClick={onVerDetalle}
             className='inline-flex items-center gap-1.5 rounded-[10px] border border-pink-500/40 bg-pink-500/10 px-3.5 py-1.5 text-[12px] font-semibold text-pink-500 transition hover:bg-pink-500/20'
@@ -1334,8 +1424,8 @@ function MisProyectosTab({
           <button
             onClick={() => setSub('creados')}
             className={`rounded-[8px] px-3.5 py-1.5 text-[12.5px] font-medium transition ${sub === 'creados'
-              ? 'bg-pink-500 text-white'
-              : 'text-neutral-400 hover:text-neutral-100'
+                ? 'bg-pink-500 text-white'
+                : 'text-neutral-400 hover:text-neutral-100'
               }`}
           >
             Creados <span className='opacity-70'>({creados.length})</span>
@@ -1343,8 +1433,8 @@ function MisProyectosTab({
           <button
             onClick={() => setSub('participa')}
             className={`rounded-[8px] px-3.5 py-1.5 text-[12.5px] font-medium transition ${sub === 'participa'
-              ? 'bg-pink-500 text-white'
-              : 'text-neutral-400 hover:text-neutral-100'
+                ? 'bg-pink-500 text-white'
+                : 'text-neutral-400 hover:text-neutral-100'
               }`}
           >
             Participo <span className='opacity-70'>({participa.length})</span>
@@ -1460,6 +1550,7 @@ function MiProyectoCard({
   const cupos = p.maximo_integrantes
     ? p.maximo_integrantes - p.total_integrantes
     : null;
+  // proyecto cerrado al que todavía no se le ha subido el trabajo final
   const faltaTrabajoFinal =
     p.estado === 'cerrado' &&
     !p.tiene_informe &&
