@@ -23,11 +23,10 @@ export function EmbedEnlace({ enlace, autoplay = false }) {
       <iframe
         src={
           autoplay
-            ? `${embed.src}${embed.src.includes('?') ? '&' : '?'}${
-                embed.plataforma === 'SoundCloud'
-                  ? 'auto_play=true'
-                  : 'autoplay=1'
-              }`
+            ? `${embed.src}${embed.src.includes('?') ? '&' : '?'}${embed.plataforma === 'SoundCloud'
+              ? 'auto_play=true'
+              : 'autoplay=1'
+            }`
             : embed.src
         }
         title={`Reproductor de ${embed.plataforma}`}
@@ -41,18 +40,19 @@ export function EmbedEnlace({ enlace, autoplay = false }) {
   );
 }
 
-export default function MediaObra({ obra }) {
+export default function MediaObra({ obra, llenar = false }) {
   const archivos = obra.archivos ?? [];
   const imagenes = archivos.filter((a) => a.tipo_mime?.startsWith('image/'));
   const audios = archivos.filter((a) => a.tipo_mime?.startsWith('audio/'));
 
   return (
-    <div className='flex flex-col gap-3'>
+    <div className={`flex flex-col gap-3 ${llenar ? 'h-full' : ''}`}>
       {obra.enlace_url && <EmbedEnlace enlace={obra.enlace_url} />}
       {audios.map((a) => (
         <AudioAutenticado
           key={a.id}
           archivo={a}
+          className={llenar ? 'flex flex-1 flex-col justify-center' : ''}
         />
       ))}
       {imagenes.length > 0 && <GaleriaImagenes archivos={imagenes} />}

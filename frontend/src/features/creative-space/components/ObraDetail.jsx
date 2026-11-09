@@ -18,6 +18,7 @@ import InsigniaBorrador from '@/features/creative-space/components/InsigniaBorra
 import ComentariosParrafos from '@/features/creative-space/components/ComentariosParrafos';
 import PoemaView from '@/features/creative-space/components/PoemaView';
 import ImagenObra from '@/features/creative-space/components/ImagenObra';
+import { parsearEnlace } from '@/features/creative-space/utils/embed';
 import { useObra } from '@/features/creative-space/hooks/useObras';
 import { TIPO_POR_ID } from '@/features/creative-space/utils/tipos';
 import {
@@ -39,7 +40,12 @@ export default function ObraDetail() {
   const { data: obra, isPending, isPlaceholderData, error } = useObra(id);
   const votarMut = useVotar('obra');
   const tipo = obra ? TIPO_POR_ID[obra.tipo] : null;
-  const esMusica = obra?.tipo === 'musica' || obra?.tipo === 'album';
+  const esAlbum = obra?.tipo === 'album';
+  const miniatura = obra?.enlace_url
+    ? (parsearEnlace(obra.enlace_url)?.miniatura ?? null)
+    : null;
+  const cancionConPortada =
+    obra?.tipo === 'musica' && !!(obra.portada_id || miniatura);
 
   function handleClose() {
     if (window.history.state?.idx > 0) navigate(-1);
@@ -125,21 +131,21 @@ export default function ObraDetail() {
               </div>
             )}
 
-            {esMusica && (
+            {esAlbum && (
               <MusicaDetalle
                 obra={obra}
                 cargando={cargandoCompleto}
               />
             )}
 
-            {!esMusica && (
+            {!esAlbum && (
               <h2 className='mb-3 break-words text-[20px] font-bold leading-snug text-neutral-100'>
                 {obra.titulo}
               </h2>
             )}
 
             <div
-              className={`mb-4 flex items-center gap-2 text-[12.5px] text-neutral-600 ${esMusica ? 'hidden' : ''}`}
+              className={`mb-4 flex items-center gap-2 text-[12.5px] text-neutral-600 ${esAlbum ? 'hidden' : ''}`}
             >
               <Link
                 to={`/perfil/usuario/${obra.autor?.nombre_usuario}`}
@@ -208,17 +214,43 @@ export default function ObraDetail() {
                   </div>
                 )}
 
-                {obra.tipo !== 'album' && (
-                  <div className='mb-4'>
-                    <MediaObra obra={obra} />
-                  </div>
+                {cancionConPortada ? (
+                  <>
+                    <div className='mb-4 flex items-stretch gap-4'>
+                      <ImagenObra
+                        archivoId={obra.portada_id}
+                        fallbackSrc={miniatura}
+                        icono='ti-music'
+                        alt={`Portada de ${obra.titulo}`}
+                        className='aspect-square w-[112px] flex-shrink-0 rounded-[10px] border border-white/[0.07] bg-[#17171B] shadow-lg sm:w-[230px]'
+                      />
+                      <div className='min-w-0 flex-1'>
+                        <MediaObra
+                          obra={obra}
+                          llenar
+                        />
+                      </div>
+                    </div>
+                    {obra.descripcion && !obra.descripcion_truncada && (
+                      <div className='mb-4'>
+                        <MarkdownView contenido={obra.descripcion} />
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  !esAlbum && (
+                    <div className='mb-4'>
+                      <MediaObra obra={obra} />
+                    </div>
+                  )
                 )}
 
                 {obra.tipo === 'audiovisual' && <ElencoYGuion obra={obra} />}
 
                 {obra.tipo !== 'historia' &&
                   obra.tipo !== 'guion' &&
-                  !esMusica &&
+                  !esAlbum &&
+                  !cancionConPortada &&
                   obra.descripcion &&
                   !obra.descripcion_truncada && (
                     <div className='mb-4'>
