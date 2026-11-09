@@ -127,6 +127,7 @@ const usuarios = [
     contrasena: 'Test1234',
     rol: 'superadmin',
     nombre_usuario: 'admin2',
+    carrera: 'DER',
     campus: 'Concepción',
   },
   {
@@ -134,6 +135,7 @@ const usuarios = [
     contrasena: 'Test1234',
     rol: 'superadmin',
     nombre_usuario: 'admin',
+    carrera: 'IECI',
     campus: 'Concepción',
   },
 ];
