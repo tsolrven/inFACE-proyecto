@@ -50,14 +50,13 @@ export default function HashtagPage() {
   const modulo = MODULOS[pestana];
 
   // Carrera mostrada: la de ?carrera=<código> si es válida; si no, la del
-  // usuario. El superadmin no tiene carrera: debe elegirla.
+  // usuario (el superadmin también elige carrera al registrarse). Si no tiene
+  // ninguna, debe elegirla.
   const codigoPedido = params.get('carrera')?.toLowerCase() ?? null;
   const carreraPedida = carreras.find(
     (c) => c.codigo.toLowerCase() === codigoPedido,
   );
-  const carreraPropia = esSuperadmin
-    ? null
-    : carreras.find((c) => c.id === usuario?.carrera_id);
+  const carreraPropia = carreras.find((c) => c.id === usuario?.carrera_id);
   const carrera = carreraPedida ?? carreraPropia ?? null;
   // fuera de la carrera propia (o siendo superadmin) el contexto es la comunidad
   const enComunidad = !!carrera && (esSuperadmin || carrera.id !== carreraPropia?.id);

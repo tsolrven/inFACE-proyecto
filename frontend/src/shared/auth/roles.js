@@ -11,10 +11,10 @@ export function esStaff(rol) {
   return ROLES_STAFF.includes(rol);
 }
 
-// El superadmin solo elimina: no crea ni edita. Debe coincidir con
-// puedeEscribirContenido del backend (shared/auth/permissions.js).
+// Cualquier usuario autenticado crea, edita lo propio, vota y comenta. El
+// superadmin también: además modera (ver esStaff).
 export function puedeEscribir(usuario) {
-  return !!usuario && !esStaff(usuario.rol);
+  return !!usuario;
 }
 
 export function puedeEditar(usuario, autorId) {

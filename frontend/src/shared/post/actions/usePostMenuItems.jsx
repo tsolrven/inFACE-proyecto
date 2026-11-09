@@ -1,5 +1,5 @@
 import { useAuthStore } from '@/shared/auth/authStore';
-import { esStaff, puedeEditar, puedeEliminar } from '@/shared/auth/roles';
+import { puedeEditar, puedeEliminar } from '@/shared/auth/roles';
 import BookmarkIcon from '@/shared/post/bookmarks/BookmarkIcon';
 
 // Acciones del menú ⋯ de cualquier contenido (material, comentario, hilo...).
@@ -20,7 +20,6 @@ export default function usePostMenuItems({
   // el llamador puede imponer su propia regla (ej: anuncios)
   const puedeBorrar = permitirEliminar ?? puedeEliminar(usuario, autorId);
   const puedeModificar = permitirEditar ?? esAutor;
-  const esModerador = esStaff(usuario?.rol);
   const estiloIcono = { fontSize: iconSize };
 
   return [
@@ -72,7 +71,7 @@ export default function usePostMenuItems({
       ),
       onClick: onReportar,
       danger: true,
-      hidden: esAutor || esModerador,
+      hidden: esAutor,
     },
   ];
 }
