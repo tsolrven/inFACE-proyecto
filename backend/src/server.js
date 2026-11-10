@@ -4,6 +4,7 @@ import { connectDB } from './config/configDb.js';
 import { PORT } from './config/configEnv.js';
 import logger from './lib/logger.js';
 import { iniciarLimpiezaCuentas } from './jobs/limpiezaCuentas.job.js';
+import { iniciarAvisosCargos } from './jobs/avisosCargos.job.js';
 import { sincronizarModeradores } from './modules/identity/moderadores.sync.js';
 
 connectDB().then(async () => {
@@ -18,4 +19,5 @@ connectDB().then(async () => {
     logger.info(`Servidor corriendo en http://localhost:${PORT}`);
   });
   iniciarLimpiezaCuentas();
+  iniciarAvisosCargos();
 });

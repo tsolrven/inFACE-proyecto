@@ -199,7 +199,9 @@ export async function seedBase(prisma, bcrypt, carrerasCreadas) {
         tipo: u.rol,
         carrera_id,
         desde: new Date(Date.now() - 2 * DIA_MS),
-        hasta: new Date(Date.now() + 365 * DIA_MS),
+        hasta: new Date(
+          Date.now() + (u.nombre_usuario === 'tutor_der' ? 5 : 365) * DIA_MS,
+        ),
         aprobada_por: usuariosCreados.admin.id,
       },
     });
