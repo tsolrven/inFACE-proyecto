@@ -7,5 +7,6 @@ export const navAdmin = {
   items: [
     { path: '/admin/reportes', label: 'Reportes', icon: 'ti-flag' },
     { path: '/admin/usuarios', label: 'Usuarios', icon: 'ti-users' },
+    { path: '/admin/historial', label: 'Historial', icon: 'ti-history' },
   ],
 };

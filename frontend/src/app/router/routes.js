@@ -219,4 +219,8 @@ export const adminRoutes = [
     path: '/admin/usuarios/:id',
     component: lazy(() => import('@/features/admin/pages/UsuarioFichaPage')),
   },
+  {
+    path: '/admin/historial',
+    component: lazy(() => import('@/features/admin/pages/HistorialPage')),
+  },
 ];
