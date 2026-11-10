@@ -22,17 +22,8 @@ import {
 import { ORDEN_CARRERAS_USUARIO } from '../../shared/auth/carreraPrincipal.js';
 import { obtenerSancionesVigentes } from '../../shared/moderation/sanctions.service.js';
 import { generacionDesdeCorreo } from './generacion.helper.js';
-import { esModeradora } from './moderadoras.constants.js';
-// ────────────────────────────────────────────────────────────────────────────────────────
-function determinarRolPorCorreo(correo) {
-  if (correo.endsWith('@alumnos.ubiobio.cl')) {
-    return 'estudiante';
-  }
-  if (correo.endsWith('@ubiobio.cl')) {
-    return 'docente';
-  }
-  throw new ValidationError('Dominio de correo no permitido');
-}
+import { esModerador } from './moderadoras.constants.js';
+import { determinarRolPorCorreo } from './rolCorreo.helper.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 function formatearUsuario(usuario) {
   const carreras = usuario.usuario_carrera ?? [];
@@ -50,11 +41,10 @@ function formatearUsuario(usuario) {
     tiene_intereses: (usuario.usuario_etiquetas?.length ?? 0) > 0,
     cargo: usuario.perfil?.cargo ?? null,
     avatar: usuario.perfil?.avatar ?? null,
-    generacion:
-      usuario.rol === 'estudiante'
-        ? generacionDesdeCorreo(usuario.correo)
-        : null,
-    es_moderadora: esModeradora(usuario.correo),
+    generacion: usuario.correo.endsWith('@alumnos.ubiobio.cl')
+      ? generacionDesdeCorreo(usuario.correo)
+      : null,
+    es_moderador: usuario.rol === 'superadmin',
     terminos_vigentes: usuario.terminos_version === VERSION_TERMINOS,
   };
 }
@@ -95,8 +85,10 @@ async function registrar({
   // después de las validaciones baratas: un formulario mal llenado no gasta intentos
   await verificarCodigo(correo, codigo);
 
-  const rol = determinarRolPorCorreo(correo);
-  const esAcademico = rol === 'docente';
+  // el rol base sale del dominio; los moderadores (lista en código) nacen superadmin
+  const rolBase = determinarRolPorCorreo(correo);
+  const esAcademico = rolBase === 'docente';
+  const rol = esModerador(correo) ? 'superadmin' : rolBase;
 
   const hash = await bcrypt.hash(contrasena, 10);
 

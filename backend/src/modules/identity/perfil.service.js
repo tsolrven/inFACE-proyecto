@@ -9,7 +9,6 @@ import {
 } from '../../errors/appError.js';
 import { validarEtiquetasExisten } from './etiqueta.service.js';
 import { generacionDesdeCorreo } from './generacion.helper.js';
-import { esModeradora } from './moderadoras.constants.js';
 
 const MAX_INTERESES = 15;
 
@@ -35,11 +34,10 @@ function formatearPerfil(usuario, stats = {}) {
     campus: usuario.perfil?.campus ?? null,
     cargo: usuario.perfil?.cargo ?? null,
     avatar: usuario.perfil?.avatar ?? null,
-    generacion:
-      usuario.rol === 'estudiante'
-        ? generacionDesdeCorreo(usuario.correo)
-        : null,
-    es_moderadora: esModeradora(usuario.correo),
+    generacion: usuario.correo.endsWith('@alumnos.ubiobio.cl')
+      ? generacionDesdeCorreo(usuario.correo)
+      : null,
+    es_moderador: usuario.rol === 'superadmin',
     carrera: primeraCarrera
       ? {
         id: primeraCarrera.id,

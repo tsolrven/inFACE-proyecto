@@ -1,14 +1,25 @@
-// TODO: cuando se definan los permisos, pasar esto a una columna/rol en la BD.
-const CORREOS_MODERADORAS = [
+// Cuentas que moderan la plataforma (rol 'superadmin'). La lista es la fuente
+// de verdad: quien se registra con uno de estos correos nace como superadmin,
+// y al arrancar el servidor se sincroniza (ver moderadores.sync.js).
+const CORREOS_MODERADORES = [
   'valentina.martinez2302@alumnos.ubiobio.cl',
   'silvana.araya2301@alumnos.ubiobio.cl',
 ];
 
-function esModeradora(correo) {
+// Solo para desarrollo (cuentas del seed). En producción no cuentan.
+const CORREOS_MODERADORES_PRUEBA = ['admin@ubiobio.cl', 'admin2@ubiobio.cl'];
+
+function correosModeradores() {
+  return process.env.NODE_ENV === 'production'
+    ? CORREOS_MODERADORES
+    : [...CORREOS_MODERADORES, ...CORREOS_MODERADORES_PRUEBA];
+}
+
+function esModerador(correo) {
   return (
     typeof correo === 'string' &&
-    CORREOS_MODERADORAS.includes(correo.trim().toLowerCase())
+    correosModeradores().includes(correo.trim().toLowerCase())
   );
 }
 
-export { CORREOS_MODERADORAS, esModeradora };
+export { CORREOS_MODERADORES, correosModeradores, esModerador };
