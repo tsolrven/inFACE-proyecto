@@ -46,7 +46,7 @@ async function autenticar(req, res, next) {
           take: 1,
         },
         // cargos de CEE/tutor vigentes
-        asignaciones_rol: {
+        cargos_asignados: {
           where: filtroCargoVigente(hoy),
           select: { tipo: true, carrera_id: true, hasta: true },
         },
@@ -78,7 +78,7 @@ async function autenticar(req, res, next) {
       id: usuario.id,
       rol: usuario.rol,
       carrera_id: usuario.usuario_carrera[0]?.carrera_id ?? null,
-      cargos: usuario.asignaciones_rol,
+      cargos: usuario.cargos_asignados,
       restriccion:
         usuario.sanciones_recibidas.find(
           (s) => s.tipo === TIPOS_SANCION.RESTRICCION,
