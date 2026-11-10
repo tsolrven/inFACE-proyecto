@@ -6,7 +6,7 @@ import {
   actualizar,
   eliminar,
 } from './announcements.controller.js';
-import { autenticar, autorizar } from '../../middlewares/auth.middleware.js';
+import { autenticar, exigirCargo } from '../../middlewares/auth.middleware.js';
 import { exigirSinRestriccion } from '../../middlewares/restriction.middleware.js';
 import validate from '../../middlewares/validate.js';
 import {
@@ -23,7 +23,6 @@ import {
   parsearDatosMultipart,
 } from '../../shared/files/multipart.helper.js';
 import { obtenerConfigAdjuntos } from '../../shared/content/contentRegistry.js';
-import { ROLES_ANUNCIANTES } from '../../shared/auth/permissions.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 const router = express.Router();
 
@@ -46,7 +45,7 @@ router.get('/:id', autenticar, validate(idParamSchema, 'params'), detalle);
 router.post(
   '/',
   autenticar,
-  autorizar(...ROLES_ANUNCIANTES),
+  exigirCargo(),
   exigirSinRestriccion,
   publicacionLimiter,
   comoAnuncio,

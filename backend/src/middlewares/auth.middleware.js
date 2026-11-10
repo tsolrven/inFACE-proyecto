@@ -10,6 +10,7 @@ import {
 } from '../errors/appError.js';
 import { filtroVigente } from '../shared/moderation/sanctions.service.js';
 import { hoyEnChile, filtroCargoVigente } from '../shared/auth/cargos.js';
+import { esStaff } from '../shared/auth/permissions.js';
 import {
   TIPOS_SANCION,
   TIPOS_CON_EFECTO,
@@ -101,4 +102,17 @@ function autorizar(...roles) {
   };
 }
 
-export { autenticar, autorizar };
+// exige tener al menos un cargo vigente (CEE o tutor). La carrera concreta la
+// valida el servicio con puedePublicarAnuncioEn. Con permitirStaff, el
+// superadmin también pasa (moderación).
+function exigirCargo({ permitirStaff = false } = {}) {
+  return (req, res, next) => {
+    const tieneCargo = (req.usuario?.cargos?.length ?? 0) > 0;
+    if (tieneCargo || (permitirStaff && esStaff(req.usuario?.rol))) {
+      return next();
+    }
+    next(new ForbiddenError('No tienes permiso para esto'));
+  };
+}
+
+export { autenticar, autorizar, exigirCargo };

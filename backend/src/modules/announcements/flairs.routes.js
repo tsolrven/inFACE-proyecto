@@ -1,6 +1,6 @@
 import express from 'express';
 import { listar, crear, actualizar, eliminar } from './flairs.controller.js';
-import { autenticar, autorizar } from '../../middlewares/auth.middleware.js';
+import { autenticar, exigirCargo } from '../../middlewares/auth.middleware.js';
 import { exigirSinRestriccion } from '../../middlewares/restriction.middleware.js';
 import validate from '../../middlewares/validate.js';
 import {
@@ -10,7 +10,6 @@ import {
 } from './flairs.validation.js';
 import { idParamSchema } from '../../shared/validation/common.schemas.js';
 import { publicacionLimiter } from '../../middlewares/rateLimiter.js';
-import { ROLES, ROLES_ANUNCIANTES } from '../../shared/auth/permissions.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 const router = express.Router();
 
@@ -20,7 +19,7 @@ router.get('/', autenticar, validate(listarFlairsQuerySchema, 'query'), listar);
 router.post(
   '/',
   autenticar,
-  autorizar(...ROLES_ANUNCIANTES),
+  exigirCargo(),
   exigirSinRestriccion,
   publicacionLimiter,
   validate(crearFlairSchema),
@@ -29,7 +28,7 @@ router.post(
 router.patch(
   '/:id',
   autenticar,
-  autorizar(...ROLES_ANUNCIANTES),
+  exigirCargo(),
   exigirSinRestriccion,
   validate(idParamSchema, 'params'),
   validate(actualizarFlairSchema),
@@ -38,7 +37,7 @@ router.patch(
 router.delete(
   '/:id',
   autenticar,
-  autorizar(...ROLES_ANUNCIANTES, ROLES.SUPERADMIN),
+  exigirCargo({ permitirStaff: true }),
   validate(idParamSchema, 'params'),
   eliminar,
 );

@@ -9,9 +9,9 @@ import logger from '../../lib/logger.js';
 import {
   esStaff,
   puedePublicarAnuncioEn,
-  ROLES_ANUNCIANTES,
 } from '../../shared/auth/permissions.js';
 import { notificarVarios } from '../../shared/notifications/notifications.service.js';
+import { hoyEnChile, filtroCargoVigente } from '../../shared/auth/cargos.js';
 import { normalizarNombreFlair } from './flairs.validation.js';
 import {
   registrarAccionAdmin,
@@ -123,16 +123,17 @@ async function actualizarFlair(id, usuario, { nombre, color }) {
 // Nunca debe hacer fallar la eliminación.
 async function avisarFlairEliminado(flair) {
   try {
-    const destinatarios = await prisma.usuario.findMany({
+    const asignaciones = await prisma.asignacionRol.findMany({
       where: {
-        esta_activo: true,
-        rol: { in: ROLES_ANUNCIANTES },
-        usuario_carrera: { some: { carrera_id: flair.carrera_id } },
+        carrera_id: flair.carrera_id,
+        ...filtroCargoVigente(hoyEnChile()),
+        usuario: { esta_activo: true },
       },
-      select: { id: true },
+      select: { usuario_id: true },
     });
+    const destinatarios = [...new Set(asignaciones.map((a) => a.usuario_id))];
     await notificarVarios({
-      usuarioIds: destinatarios.map((u) => u.id),
+      usuarioIds: destinatarios,
       tipo: 'flair_eliminado',
       titulo: 'Un flair de tu carrera fue eliminado por moderación',
       mensaje: `Se eliminó el flair «${flair.nombre}». Los anuncios que lo usaban quedaron sin flair.`,
