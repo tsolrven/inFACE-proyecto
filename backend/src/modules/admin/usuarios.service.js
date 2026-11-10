@@ -1,6 +1,8 @@
 import { prisma } from '../../config/configDb.js';
 import { NotFoundError } from '../../errors/appError.js';
+import { hoyEnChile } from '../../shared/auth/cargos.js';
 import { ORDEN_CARRERAS_USUARIO } from '../../shared/auth/carreraPrincipal.js';
+import { AUTOR_PUBLICO_SELECT } from '../../shared/content/selects.js';
 import { ESTADOS_REPORTE } from '../../shared/moderation/reports.constants.js';
 import { obtenerVistasContenido } from '../../shared/content/contentRegistry.js';
 import { recortar } from '../../shared/content/extracto.js';
@@ -79,6 +81,53 @@ async function buscarUsuarios(q) {
   };
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
+// Tope de cargos de la ficha (una persona acumula pocos: 1 o 2 por año).
+const LIMITE_CARGOS_FICHA = 50;
+
+// Estado de una asignación frente a hoy (fecha de Chile).
+function estadoDeCargo(a, hoy) {
+  if (a.revocada_en) return 'revocado';
+  if (a.hasta < hoy) return 'vencido';
+  if (a.desde > hoy) return 'futuro';
+  return 'vigente';
+}
+
+// Cargos (CEE/tutor) del usuario, el más reciente primero. La ficha es solo
+// del superadmin: ve el motivo de la revocación y quién revocó. `revocable`
+// indica si tiene sentido mostrar el botón de revocar (vigente o futuro).
+async function listarCargosDeUsuario(usuarioId) {
+  const hoy = hoyEnChile();
+  const filas = await prisma.asignacionRol.findMany({
+    where: { usuario_id: usuarioId },
+    orderBy: [{ desde: 'desc' }, { id: 'asc' }],
+    take: LIMITE_CARGOS_FICHA,
+    select: {
+      id: true,
+      tipo: true,
+      desde: true,
+      hasta: true,
+      revocada_en: true,
+      motivo_revocacion: true,
+      carrera: { select: { id: true, nombre: true, codigo: true } },
+      revocador: { select: AUTOR_PUBLICO_SELECT },
+    },
+  });
+  return filas.map(({ revocador, ...a }) => {
+    const estado = estadoDeCargo(a, hoy);
+    return {
+      ...a,
+      estado,
+      revocable: estado === 'vigente' || estado === 'futuro',
+      revocada_por: revocador
+        ? {
+          id: revocador.id,
+          nombre_usuario: revocador.perfil?.nombre_usuario ?? null,
+        }
+        : null,
+    };
+  });
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
 async function obtenerFichaUsuario(id) {
   const usuario = await prisma.usuario.findUnique({
     where: { id },
@@ -111,6 +160,7 @@ async function obtenerFichaUsuario(id) {
   return {
     ...darFormato(usuario),
     creado_en: usuario.creado_en,
+    cargos: await listarCargosDeUsuario(id),
     reportes: {
       recibidos,
       recibidos_pendientes: recibidosPendientes,
