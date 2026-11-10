@@ -20,6 +20,7 @@ import {
   notificarSancion,
   notificarRevocacion,
 } from './sanctions.notifications.js';
+import { registrarAccionAdmin, TIPOS_ACCION_ADMIN } from './adminActions.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 // Vigente = no revocada y sin fecha de término o con término futuro.
 // Sin cron: el vencimiento se evalúa al consultar.
@@ -125,7 +126,7 @@ async function crearSancion({
       }
     }
 
-    return tx.sancion.create({
+    const creada = await tx.sancion.create({
       data: {
         usuario_id,
         tipo,
@@ -136,6 +137,20 @@ async function crearSancion({
         hasta,
       },
     });
+    await registrarAccionAdmin(tx, {
+      admin_id: aplicada_por,
+      tipo: TIPOS_ACCION_ADMIN.SANCION_APLICADA,
+      entidad_tipo: 'sancion',
+      entidad_id: creada.id,
+      afectado_id: usuario_id,
+      detalle: {
+        tipo_sancion: tipo,
+        hasta: hasta ? hasta.toISOString() : null,
+        contenido_tipo: contenido_tipo ?? null,
+        contenido_id: contenido_id ?? null,
+      },
+    });
+    return creada;
   });
 
   // después del commit y sin esperar: un fallo de aviso no afecta la sanción
@@ -155,18 +170,30 @@ async function revocarSancion({
     ? limpiarTexto(motivo_revocacion, 'El motivo de revocación')
     : null;
 
-  const { count } = await prisma.sancion.updateMany({
-    where: {
-      id: sancion_id,
-      usuario_id,
-      usuario: { anonimizado_en: null },
-      ...filtroVigente(ahora),
-    },
-    data: {
-      revocada_en: ahora,
-      revocada_por,
-      motivo_revocacion: texto,
-    },
+  const { count } = await prisma.$transaction(async (tx) => {
+    const resultado = await tx.sancion.updateMany({
+      where: {
+        id: sancion_id,
+        usuario_id,
+        usuario: { anonimizado_en: null },
+        ...filtroVigente(ahora),
+      },
+      data: {
+        revocada_en: ahora,
+        revocada_por,
+        motivo_revocacion: texto,
+      },
+    });
+    if (resultado.count > 0) {
+      await registrarAccionAdmin(tx, {
+        admin_id: revocada_por,
+        tipo: TIPOS_ACCION_ADMIN.SANCION_REVOCADA,
+        entidad_tipo: 'sancion',
+        entidad_id: sancion_id,
+        afectado_id: usuario_id,
+      });
+    }
+    return resultado;
   });
 
   if (count === 0) {

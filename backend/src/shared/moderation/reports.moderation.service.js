@@ -22,6 +22,7 @@ import {
   ESTADOS_NOTIFICACION,
   RESPUESTAS_PREDETERMINADAS,
 } from './reports.constants.js';
+import { registrarAccionAdmin, TIPOS_ACCION_ADMIN } from './adminActions.js';
 
 const EXTRACTO_MAX = 280;
 const CORREO_CON_PROBLEMA = [
@@ -301,6 +302,13 @@ async function cerrarReportesDeContenido({
         respuesta_personalizada: mensaje.personalizada,
         notificacion_estado: ESTADOS_NOTIFICACION.PENDIENTE,
       },
+    });
+    await registrarAccionAdmin(tx, {
+      admin_id: revisor.id,
+      tipo: TIPOS_ACCION_ADMIN.REPORTES_CERRADOS,
+      entidad_tipo: tipo_contenido,
+      entidad_id: contenido_id,
+      detalle: { resultado, cantidad: idsPendientes.length },
     });
     return idsPendientes;
   });

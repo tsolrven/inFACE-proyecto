@@ -1,4 +1,13 @@
 import { cerrarReportesPorEliminacion } from '../moderation/reports.closure.js';
+import {
+  registrarAccionAdmin,
+  TIPOS_ACCION_ADMIN,
+} from '../moderation/adminActions.js';
+import {
+  obtenerPreviewsContenido,
+  obtenerPropietarioContenido,
+} from './contentRegistry.js';
+import { recortar } from './extracto.js';
 
 // Borra los votos y guardados que "cuelgan" de un contenido en tablas
 // polimórficas (sin FK). Los reportes NO se borran: se cierran con
@@ -43,11 +52,33 @@ async function eliminarContenido(
   ]);
   const idsComentarios = comentarios.map((c) => c.id);
 
+  // Un moderador que elimina SU PROPIO contenido es el autor, no moderación.
+  // Solo la moderación sobre contenido ajeno queda en el registro de acciones.
+  let comoModeracion = false;
+  if (por_moderacion && revisor_id) {
+    const autor_id = await obtenerPropietarioContenido(tipo_contenido, id, tx);
+    comoModeracion = autor_id !== revisor_id;
+    if (comoModeracion) {
+      const previews = await obtenerPreviewsContenido(tipo_contenido, [id], tx);
+      await registrarAccionAdmin(tx, {
+        admin_id: revisor_id,
+        tipo: TIPOS_ACCION_ADMIN.CONTENIDO_ELIMINADO,
+        entidad_tipo: tipo_contenido,
+        entidad_id: id,
+        afectado_id: autor_id,
+        detalle: {
+          titulo: recortar(previews.get(id) ?? '', 280).texto,
+          comentarios: idsComentarios.length,
+        },
+      });
+    }
+  }
+
   // reportes del contenido: lo que decida la moderación o el autor
   const { reportes_a_notificar } = await cerrarReportesPorEliminacion(tx, {
     tipo_contenido,
     ids: [id],
-    por_moderacion,
+    por_moderacion: comoModeracion,
     por_arrastre,
     revisor_id,
     respuesta,

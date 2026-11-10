@@ -41,6 +41,8 @@ model Usuario {
   sanciones_recibidas  Sancion[] @relation("SancionRecibida")
   sanciones_aplicadas  Sancion[] @relation("SancionAplicada")
   sanciones_revocadas  Sancion[] @relation("SancionRevocada")
+  acciones_admin       AccionAdmin[] @relation("AccionAdminAutor")
+  acciones_recibidas   AccionAdmin[] @relation("AccionAdminAfectado")
   usuario_etiquetas    UsuarioEtiqueta[]
   proyectos_creados    Proyecto[]
   postulaciones        PostulacionProyecto[]
@@ -848,4 +850,26 @@ model Producto {
   @@index([categoria, creado_en])
   @@index([vendedor_id])
   @@map("productos")
+}
+
+// ╰─────────────────────────────✧────────────────────────────────╮
+// REGISTRO DE ACCIONES ADMINISTRATIVAS (quién hizo qué y cuándo)
+
+model AccionAdmin {
+  id           String   @id @default(uuid())
+  admin_id     String
+  tipo         String   @db.VarChar(40)
+  entidad_tipo String?  @db.VarChar(30)
+  entidad_id   String?
+  afectado_id  String?
+  detalle      Json?
+  creado_en    DateTime @default(now())
+
+  admin    Usuario  @relation("AccionAdminAutor", fields: [admin_id], references: [id])
+  afectado Usuario? @relation("AccionAdminAfectado", fields: [afectado_id], references: [id])
+
+  @@index([creado_en])
+  @@index([admin_id, creado_en])
+  @@index([entidad_tipo, entidad_id])
+  @@map("acciones_admin")
 }
