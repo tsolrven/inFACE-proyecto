@@ -26,7 +26,7 @@ function Insignia({ icon, children, className, title }) {
 
 export function InsigniasPerfil({ perfil }) {
   const cargo = perfil.cargo ? CARGO_POR_ID[perfil.cargo] : null;
-  const hay = cargo || perfil.es_moderadora || perfil.generacion;
+  const hay = cargo || perfil.es_moderador || perfil.generacion;
   if (!hay) return null;
 
   return (
@@ -46,13 +46,13 @@ export function InsigniasPerfil({ perfil }) {
           {cargo.label}
         </Insignia>
       )}
-      {perfil.es_moderadora && (
+      {perfil.es_moderador && (
         <Insignia
           icon='ti-shield-check'
           title='Modera la plataforma'
           className='border-pink-500/40 bg-pink-500/10 text-pink-400'
         >
-          Moderadora
+          Moderador
         </Insignia>
       )}
       {perfil.generacion && (
