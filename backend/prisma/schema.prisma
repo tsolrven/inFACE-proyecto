@@ -46,6 +46,8 @@ model Usuario {
   cargos_asignados     AsignacionRol[] @relation("AsignacionUsuario")
   cargos_aprobados     AsignacionRol[] @relation("AsignacionAprobada")
   cargos_revocados     AsignacionRol[] @relation("AsignacionRevocada")
+  solicitudes_rol      SolicitudRol[] @relation("SolicitudUsuario")
+  solicitudes_resueltas SolicitudRol[] @relation("SolicitudResuelta")
   usuario_etiquetas    UsuarioEtiqueta[]
   proyectos_creados    Proyecto[]
   postulaciones        PostulacionProyecto[]
@@ -142,6 +144,7 @@ model Carrera {
   anuncios        Anuncio[]
   flairs          Flair[]
   asignaciones_rol AsignacionRol[]
+  solicitudes_rol  SolicitudRol[]
 
   @@map("carreras")
 }
@@ -690,11 +693,40 @@ model AsignacionRol {
   carrera   Carrera  @relation(fields: [carrera_id], references: [id])
   aprobador Usuario? @relation("AsignacionAprobada", fields: [aprobada_por], references: [id])
   revocador Usuario? @relation("AsignacionRevocada", fields: [revocada_por], references: [id])
+  solicitud SolicitudRol?
 
   @@index([usuario_id, hasta])
   @@index([carrera_id, tipo])
   @@map("asignaciones_rol")
 }
+
+// ╰─────────────────────────────✧────────────────────────────────╮
+// SOLICITUDES DE CARGO (CEE o tutor). 
+
+model SolicitudRol {
+  id                   String    @id @default(uuid())
+  usuario_id           String
+  tipo                 String    @db.VarChar(10)
+  carrera_id           String
+  mensaje              String    @db.VarChar(1000)
+  estado               String    @default("pendiente") @db.VarChar(15)
+  creado_en            DateTime  @default(now())
+  resuelta_en          DateTime?
+  resuelta_por         String?
+  motivo_rechazo       String?   @db.VarChar(500)
+  asignacion_id        String?   @unique
+  archivos_borrados_en DateTime?
+
+  usuario    Usuario        @relation("SolicitudUsuario", fields: [usuario_id], references: [id])
+  carrera    Carrera        @relation(fields: [carrera_id], references: [id])
+  resolutor  Usuario?       @relation("SolicitudResuelta", fields: [resuelta_por], references: [id])
+  asignacion AsignacionRol? @relation(fields: [asignacion_id], references: [id])
+
+  @@index([usuario_id, creado_en])
+  @@index([estado, creado_en])
+  @@map("solicitudes_rol")
+}
+
 // ╰─────────────────────────────✧────────────────────────────────╮
 // NOTIFICACIONES (transversal: las usan todos los módulos con notificar())
 

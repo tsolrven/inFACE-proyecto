@@ -12,6 +12,7 @@ import {
   bloquearContenido,
   ejecutarAlQuitarArchivo,
   evaluarPermisoAdjuntos,
+  evaluarPermisoLectura,
 } from '../content/contentRegistry.js';
 import { resolverRutaFisica } from './uploadsPath.js';
 import { obtenerMimePorExtension } from './fileMime.helper.js';
@@ -89,7 +90,17 @@ async function subirArchivo({ tipo_contenido, contenido_id, file, usuario }) {
   return formatearArchivo(archivo);
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-async function descargarArchivo(id) {
+// Aplica la regla de lectura del tipo (registry). Responde 404 y no 403: no se
+// revela que el archivo existe a quien no puede leerlo.
+async function exigirLectura(id, usuario) {
+  const archivo = await prisma.archivo.findUnique({ where: { id } });
+  if (!archivo) throw new NotFoundError('Archivo');
+  const permitido = await evaluarPermisoLectura(usuario, archivo);
+  if (!permitido) throw new NotFoundError('Archivo');
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+async function descargarArchivo(id, usuario) {
+  await exigirLectura(id, usuario);
   const archivo = await prisma.archivo.findUnique({ where: { id } });
   if (!archivo) throw new NotFoundError('Archivo');
 
@@ -170,7 +181,8 @@ async function borrarArchivosFisicos(archivos) {
   );
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-async function obtenerImagenParaVer(id) {
+async function obtenerImagenParaVer(id, usuario) {
+  await exigirLectura(id, usuario);
   const archivo = await prisma.archivo.findUnique({ where: { id } });
   if (!archivo) throw new NotFoundError('Archivo');
   if (

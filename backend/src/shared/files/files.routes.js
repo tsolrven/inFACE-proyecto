@@ -8,7 +8,7 @@ import { subidaLimiter } from '../../middlewares/rateLimiter.js';
 import validate from '../../middlewares/validate.js';
 import {
   idParamSchema,
-  contenidoParamSchema,
+  archivoContenidoParamSchema,
 } from '../validation/common.schemas.js';
 import { obtenerConfigAdjuntos } from '../content/contentRegistry.js';
 
@@ -28,7 +28,7 @@ router.post(
   '/:tipo/:id',
   autenticar,
   exigirSinRestriccion,
-  validate(contenidoParamSchema, 'params'),
+  validate(archivoContenidoParamSchema, 'params'),
   exigirAdjuntos,
   subidaLimiter,
   upload.single('archivo'),

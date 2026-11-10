@@ -41,6 +41,7 @@ async function descargar(req, res, next) {
   try {
     const { rutaFisica, nombre_archivo, tipo_mime } = await descargarArchivo(
       req.params.id,
+      req.usuario,
     );
     if (tipo_mime) res.type(tipo_mime);
     return res.download(rutaFisica, nombre_archivo);
@@ -51,7 +52,10 @@ async function descargar(req, res, next) {
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function ver(req, res, next) {
   try {
-    const { rutaFisica, tipo_mime } = await obtenerImagenParaVer(req.params.id);
+    const { rutaFisica, tipo_mime } = await obtenerImagenParaVer(
+      req.params.id,
+      req.usuario,
+    );
     res.type(tipo_mime);
     res.set('Cache-Control', 'private, max-age=3600');
     // dotfiles: 'allow' evita un 404 si alguna carpeta de la ruta empieza con "."

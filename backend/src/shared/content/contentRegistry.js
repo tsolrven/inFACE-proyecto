@@ -96,6 +96,19 @@ const CONTENT_REGISTRY = {
     allowsComments: false,
     eliminadoField: 'eliminado',
   },
+  solicitud_rol: {
+    modelName: 'solicitudRol',
+    tableName: 'solicitudes_rol',
+    label: 'Solicitud',
+    ownerField: 'usuario_id',
+    previewField: 'mensaje',
+    allowsComments: false,
+    interno: true,
+    adjuntos: {
+      max: 5,
+      extensiones: ['.pdf', '.jpg', '.jpeg', '.png', '.webp'],
+    },
+  },
   proyecto: {
     modelName: 'proyecto',
     tableName: 'proyectos',
@@ -287,6 +300,21 @@ async function evaluarPermisoAdjuntos(
   return hook(usuario, contenido_id, accion);
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
+// Cada tipo puede restringir quién LEE sus archivos (ver y descargar). El hook
+// recibe (usuario, archivo) y devuelve true/false. Sin hook, un tipo normal
+// mantiene la regla general (cualquier usuario autenticado); un tipo interno
+// sin hook no es legible por nadie (falla cerrado).
+function registrarPermisoLectura(tipo_contenido, hook) {
+  obtenerEntradaRegistro(tipo_contenido).permisoLectura = hook;
+}
+
+async function evaluarPermisoLectura(usuario, archivo) {
+  const entrada = CONTENT_REGISTRY[archivo.tipo_contenido];
+  if (!entrada) return false;
+  if (entrada.permisoLectura) return entrada.permisoLectura(usuario, archivo);
+  return !entrada.interno;
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
 const OYENTES_INTERACCION = new Map();
 
 function registrarOyenteInteraccion(tipo_contenido, oyente) {
@@ -306,7 +334,16 @@ async function notificarInteraccion(tipo_contenido, datos) {
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 function tiposContenidoValidos() {
-  return Object.keys(CONTENT_REGISTRY);
+  return Object.keys(CONTENT_REGISTRY).filter(
+    (tipo) => !CONTENT_REGISTRY[tipo].interno,
+  );
+}
+// Tipos que admiten archivos, incluidos los internos: solo la ruta de archivos
+// los usa (votos, guardados y reportes siguen con tiposContenidoValidos).
+function tiposContenidoConArchivos() {
+  return Object.keys(CONTENT_REGISTRY).filter(
+    (tipo) => CONTENT_REGISTRY[tipo].adjuntos,
+  );
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 function admiteComentarios(tipo_contenido) {
@@ -339,9 +376,12 @@ export {
   ejecutarAlQuitarArchivo,
   registrarPermisoAdjuntos,
   evaluarPermisoAdjuntos,
+  registrarPermisoLectura,
+  evaluarPermisoLectura,
   registrarOyenteInteraccion,
   notificarInteraccion,
   tiposContenidoValidos,
+  tiposContenidoConArchivos,
   admiteComentarios,
   obtenerConfigAdjuntos,
 };

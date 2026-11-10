@@ -1,5 +1,8 @@
 import { z } from 'zod';
-import { tiposContenidoValidos } from '../content/contentRegistry.js';
+import {
+  tiposContenidoValidos,
+  tiposContenidoConArchivos,
+} from '../content/contentRegistry.js';
 // ─────────────────────────────────────────────────────────────────────────────
 // Schemas de parámetros de ruta compartidos por todos los módulos.
 const apunteIdParamSchema = z.object({
@@ -11,6 +14,18 @@ const comentarioIdParamSchema = z.object({
 });
 
 const idParamSchema = z.object({
+  id: z.string().uuid('El id no es válido'),
+});
+
+// Para la ruta de archivos: acepta también los tipos internos con adjuntos
+// (ej. solicitud_rol), que votos, guardados y reportes no aceptan.
+const archivoContenidoParamSchema = z.object({
+  tipo: z
+    .string()
+    .refine(
+      (tipo) => tiposContenidoConArchivos().includes(tipo),
+      'Tipo de contenido inválido',
+    ),
   id: z.string().uuid('El id no es válido'),
 });
 
@@ -47,5 +62,6 @@ export {
   comentarioIdParamSchema,
   idParamSchema,
   contenidoParamSchema,
+  archivoContenidoParamSchema,
   paginacionQuerySchema,
 };
