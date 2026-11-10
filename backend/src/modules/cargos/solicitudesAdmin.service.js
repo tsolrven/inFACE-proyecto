@@ -154,6 +154,115 @@ async function obtenerSolicitudAdmin(id, adminId) {
   };
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
+// 'YYYY-MM-DD' de una fecha @db.Date (viene a medianoche UTC).
+const aDia = (fecha) => fecha.toISOString().slice(0, 10);
+
+// Aprueba una solicitud pendiente y crea el cargo. La vigencia la calcula
+// calcularVigencia con `tx`: es la misma función que muestra el detalle, así
+// que lo mostrado y lo guardado no pueden divergir.
+async function aprobarSolicitud(id, adminId) {
+  const { solicitud, asignacion, vigencia } = await prisma.$transaction(
+    async (tx) => {
+      // lanza NotFoundError si no existe
+      await bloquearContenido(TIPO_CONTENIDO, id, tx);
+
+      const previa = await tx.solicitudRol.findUnique({ where: { id } });
+      if (previa.usuario_id === adminId) {
+        throw new ForbiddenError(
+          'No puedes resolver tu propia solicitud: debe resolverla otro moderador',
+        );
+      }
+      if (previa.estado !== ESTADOS_SOLICITUD.PENDIENTE) {
+        throw new ConflictError('La solicitud ya fue resuelta');
+      }
+
+      // serializa con crearSolicitud y otras aprobaciones del mismo usuario
+      await tx.$queryRaw`SELECT id FROM "usuarios" WHERE id = ${previa.usuario_id} FOR UPDATE`;
+
+      const solicitante = await tx.usuario.findUnique({
+        where: { id: previa.usuario_id },
+        select: { esta_activo: true, anonimizado_en: true },
+      });
+      if (!solicitante.esta_activo || solicitante.anonimizado_en) {
+        throw new ConflictError(
+          'La cuenta del solicitante ya no está activa: no se puede aprobar',
+        );
+      }
+
+      const sigueEnCarrera = await tx.usuarioCarrera.findFirst({
+        where: { usuario_id: previa.usuario_id, carrera_id: previa.carrera_id },
+        select: { carrera_id: true },
+      });
+      if (!sigueEnCarrera) {
+        throw new ConflictError(
+          'El solicitante ya no pertenece a esa carrera: no se puede aprobar',
+        );
+      }
+
+      const vigencia = await calcularVigencia(tx, previa, hoyEnChile());
+
+      const asignacion = await tx.asignacionRol.create({
+        data: {
+          usuario_id: previa.usuario_id,
+          tipo: previa.tipo,
+          carrera_id: previa.carrera_id,
+          desde: vigencia.desde,
+          hasta: vigencia.hasta,
+          aprobada_por: adminId,
+        },
+      });
+
+      const solicitud = await tx.solicitudRol.update({
+        where: { id },
+        data: {
+          estado: ESTADOS_SOLICITUD.APROBADA,
+          resuelta_en: new Date(),
+          resuelta_por: adminId,
+          asignacion_id: asignacion.id,
+        },
+        include: {
+          carrera: CARRERA_SELECT,
+          usuario: { select: SOLICITANTE_SELECT },
+          resolutor: { select: AUTOR_PUBLICO_SELECT },
+        },
+      });
+
+      await registrarAccionAdmin(tx, {
+        admin_id: adminId,
+        tipo: TIPOS_ACCION_ADMIN.SOLICITUD_APROBADA,
+        entidad_tipo: TIPO_CONTENIDO,
+        entidad_id: id,
+        afectado_id: previa.usuario_id,
+        detalle: {
+          tipo: previa.tipo,
+          carrera_id: previa.carrera_id,
+          desde: aDia(vigencia.desde),
+          hasta: aDia(vigencia.hasta),
+        },
+      });
+
+      return { solicitud, asignacion, vigencia };
+    },
+  );
+
+  // Después del commit; notificar() no lanza. Sin correo.
+  const dmy = (f) => aDia(f).split('-').reverse().join('-');
+  await notificar({
+    usuarioId: solicitud.usuario_id,
+    actorId: adminId,
+    tipo: 'solicitud_cargo_resuelta',
+    titulo: 'Solicitud de cargo aprobada',
+    mensaje: `Tu solicitud del cargo de ${ETIQUETA_CARGO[solicitud.tipo]} en ${solicitud.carrera.nombre} fue aprobada. Vigencia: del ${dmy(vigencia.desde)} al ${dmy(vigencia.hasta)}.`,
+    enlace: '/solicitar-cargo',
+  });
+
+  return {
+    ...formatearSolicitudAdmin(solicitud, adminId),
+    vigencia,
+    asignacion_id: asignacion.id,
+  };
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
 // Rechaza una solicitud pendiente. El motivo lo ve el solicitante; quién
 // rechazó solo lo ven los superadmins. El texto del motivo NO va al historial.
 async function rechazarSolicitud(id, adminId, motivo) {
@@ -215,6 +324,7 @@ async function rechazarSolicitud(id, adminId, motivo) {
 export {
   listarSolicitudesAdmin,
   obtenerSolicitudAdmin,
+  aprobarSolicitud,
   rechazarSolicitud,
   calcularVigencia,
 };

@@ -5,7 +5,12 @@ import {
   listarSolicitudesAdminQuerySchema,
   rechazarSolicitudSchema,
 } from './solicitudesAdmin.validation.js';
-import { listar, detalle, rechazar } from './solicitudesAdmin.controller.js';
+import {
+  listar,
+  detalle,
+  aprobar,
+  rechazar,
+} from './solicitudesAdmin.controller.js';
 
 // Se monta bajo /api/admin/solicitudes-cargo. La protección (autenticar +
 // superadmin) la pone el router de /api/admin; acá no se repite.
@@ -13,6 +18,7 @@ const router = express.Router();
 
 router.get('/', validate(listarSolicitudesAdminQuerySchema, 'query'), listar);
 router.get('/:id', validate(idParamSchema, 'params'), detalle);
+router.post('/:id/aprobar', validate(idParamSchema, 'params'), aprobar);
 router.post(
   '/:id/rechazar',
   validate(idParamSchema, 'params'),
