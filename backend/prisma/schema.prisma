@@ -687,6 +687,7 @@ model AsignacionRol {
   revocada_en      DateTime?
   revocada_por     String?
   aviso_enviado_en DateTime?
+  motivo_revocacion String?  @db.VarChar(500)
   creado_en        DateTime  @default(now())
 
   usuario   Usuario  @relation("AsignacionUsuario", fields: [usuario_id], references: [id])
