@@ -17,3 +17,18 @@ export async function obtenerSolicitudAdmin(id, { signal } = {}) {
   const res = await apiFetch(`/admin/solicitudes-cargo/${id}`, { signal });
   return res.data;
 }
+
+export async function aprobarSolicitud(id) {
+  const res = await apiFetch(`/admin/solicitudes-cargo/${id}/aprobar`, {
+    method: 'POST',
+  });
+  return res.data;
+}
+
+export async function rechazarSolicitud(id, motivo) {
+  const res = await apiFetch(`/admin/solicitudes-cargo/${id}/rechazar`, {
+    method: 'POST',
+    body: { motivo },
+  });
+  return res.data;
+}

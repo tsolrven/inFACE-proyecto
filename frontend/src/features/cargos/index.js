@@ -5,3 +5,4 @@ export {
   formatearFechaCargo,
   formatearFechaHora,
 } from './utils/cargosUi';
+export { MOTIVO_MIN, MOTIVO_MAX } from './utils/limites';

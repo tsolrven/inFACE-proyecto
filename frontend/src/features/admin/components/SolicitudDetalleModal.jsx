@@ -3,6 +3,7 @@ import { descargarArchivo } from '@/shared/api/archivos.api';
 import { formatearTamanio } from '@/shared/lib/archivos';
 import { mensajeDeError } from '@/shared/lib/errores';
 import { mostrarToast } from '@/shared/stores/toastStore';
+import PanelResolucion from '@/features/admin/components/PanelResolucion';
 import { useSolicitudAdmin } from '@/features/admin/hooks/useSolicitudesAdmin';
 import {
   ESTADO_UI,
@@ -22,7 +23,7 @@ function Seccion({ titulo, children }) {
   );
 }
 
-// Detalle de una solicitud (solo lectura por ahora).
+// Detalle de una solicitud; si está pendiente, permite aprobarla o rechazarla.
 export default function SolicitudDetalleModal({ id, onClose }) {
   const { data: s, isPending, isError, error } = useSolicitudAdmin(id);
 
@@ -149,6 +150,12 @@ export default function SolicitudDetalleModal({ id, onClose }) {
                   </p>
                 )}
               </Seccion>
+            )}
+            {s.estado === 'pendiente' && (
+              <PanelResolucion
+                solicitud={s}
+                onTerminar={onClose}
+              />
             )}
           </>
         )}
