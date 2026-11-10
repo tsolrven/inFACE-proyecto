@@ -119,6 +119,15 @@ export default function Navbar() {
               />
               <div className='mx-0 my-0.5 h-px bg-white/[0.07]' />
               <DropdownItem
+                icon='ti-id-badge-2'
+                label='Solicitar cargo'
+                onClick={() => {
+                  setDropdownOpen(false);
+                  navigate('/solicitar-cargo');
+                }}
+              />
+              <div className='mx-0 my-0.5 h-px bg-white/[0.07]' />
+              <DropdownItem
                 icon='ti-settings'
                 label='Ajustes'
                 onClick={() => {

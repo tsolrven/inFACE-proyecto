@@ -115,6 +115,12 @@ export const extraRoutes = [
     component: lazy(() => import('@/features/profile/pages/EditarPersonaje')),
   },
   {
+    path: '/solicitar-cargo',
+    component: lazy(
+      () => import('@/features/cargos/pages/SolicitarCargoPage'),
+    ),
+  },
+  {
     path: '/ajustes',
     component: lazy(() => import('@/features/settings/pages/Ajustes')),
   },
