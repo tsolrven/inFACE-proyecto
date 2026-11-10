@@ -1,15 +1,14 @@
-import { ROLES, esStaff } from '@/shared/auth/roles';
-
-const ROLES_ANUNCIANTES = [ROLES.CEE, ROLES.TUTOR];
+import { esStaff, tieneCargoEn } from '@/shared/auth/roles';
 
 // Debe coincidir con puedePublicarAnuncioEn (backend, shared/auth/permissions.js):
-// solo CEE y tutor, y solo en su propia carrera. El superadmin no publica.
+// cargo vigente (CEE o tutor) en esa carrera, y la carrera destino es siempre
+// la principal del usuario. El superadmin solo publica si además tiene cargo.
 export function puedeCrearAnuncio(usuario, carreraId) {
   return (
     !!usuario &&
-    ROLES_ANUNCIANTES.includes(usuario.rol) &&
     !!carreraId &&
-    usuario.carrera_id === carreraId
+    usuario.carrera_id === carreraId &&
+    tieneCargoEn(usuario, carreraId)
   );
 }
 
@@ -29,7 +28,7 @@ export function puedeEliminarAnuncio(usuario, anuncio) {
 }
 
 // Crear, renombrar y cambiar el color de un flair: igual que publicar
-// (CEE o tutor de la carrera). Debe coincidir con crearFlair y actualizarFlair
+// (cargo en la carrera). Debe coincidir con crearFlair y actualizarFlair
 // del backend (flairs.service.js).
 export function puedeGestionarFlairs(usuario, carreraId) {
   return puedeCrearAnuncio(usuario, carreraId);

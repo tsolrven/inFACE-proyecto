@@ -23,6 +23,11 @@ import {
   puedePublicarAnuncioEn,
 } from '../../shared/auth/permissions.js';
 import { AUTOR_PUBLICO_SELECT } from '../../shared/content/selects.js';
+import {
+  hoyEnChile,
+  filtroCargoVigente,
+  TIPOS_CARGO,
+} from '../../shared/auth/cargos.js';
 import { recortar } from '../../shared/content/extracto.js';
 import {
   INCLUDE_HASHTAGS,
@@ -35,9 +40,9 @@ import { notificarReportesCerrados } from '../../shared/moderation/reports.notif
 // En las listas el contenido viaja recortado; el detalle lo trae completo.
 const EXTRACTO_MAX = 300;
 
-// El rol del autor viaja para mostrar la insignia (CEE, Tutor) en la tarjeta.
+// La insignia del autor (CEE, Tutor) se calcula en formatearAnuncios.
 const INCLUDE_ANUNCIO = {
-  autor: { select: { ...AUTOR_PUBLICO_SELECT, rol: true } },
+  autor: { select: AUTOR_PUBLICO_SELECT },
   carrera: { select: { id: true, nombre: true, codigo: true } },
   flair: { select: { id: true, nombre: true, color: true } },
   hashtags: INCLUDE_HASHTAGS,
@@ -53,10 +58,33 @@ async function formatearAnuncios(
   const { mapVotos, setGuardados, mapComentarios, mapArchivos } =
     await obtenerEnriquecimiento('anuncio', ids, usuario_id);
 
+  // cargo vigente de cada autor en la carrera de su anuncio (insignia)
+  const autorIds = [...new Set(anuncios.map((a) => a.autor.id))];
+  const cargosVigentes = autorIds.length
+    ? await prisma.asignacionRol.findMany({
+      where: {
+        usuario_id: { in: autorIds },
+        ...filtroCargoVigente(hoyEnChile()),
+      },
+      select: { usuario_id: true, carrera_id: true, tipo: true },
+    })
+    : [];
+  const cargoDe = (a) => {
+    const propios = cargosVigentes.filter(
+      (c) => c.usuario_id === a.autor.id && c.carrera_id === a.carrera.id,
+    );
+    return (
+      propios.find((c) => c.tipo === TIPOS_CARGO.CEE)?.tipo ??
+      propios[0]?.tipo ??
+      null
+    );
+  };
+
   return anuncios.map((a) =>
     formatearAnuncio(a, {
       extracto,
       comentarios: mapComentarios.get(a.id) ?? 0,
+      cargo: cargoDe(a),
       archivos: mapArchivos.get(a.id) ?? [],
       mi_voto: mapVotos.get(a.id) ?? null,
       esta_guardado: setGuardados.has(a.id),
@@ -316,6 +344,7 @@ function formatearAnuncio(
     extracto = false,
     comentarios = 0,
     archivos = [],
+    cargo = null,
     mi_voto = null,
     esta_guardado = false,
   } = {},
@@ -339,7 +368,7 @@ function formatearAnuncio(
     autor: {
       id: anuncio.autor.id,
       nombre_usuario: anuncio.autor.perfil?.nombre_usuario,
-      rol: anuncio.autor.rol,
+      cargo,
     },
     carrera: {
       id: anuncio.carrera.id,

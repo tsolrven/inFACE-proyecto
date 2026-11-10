@@ -1,8 +1,6 @@
-import { ROLES } from '@/shared/auth/roles';
-
-// Insignia que acompaña al autor de un anuncio
+// Insignia que acompaña al autor de un anuncio según su cargo vigente en la
+// carrera del anuncio (anuncio.autor.cargo, que calcula el backend).
 export const INSIGNIA_ROL = {
-  [ROLES.CEE]: 'CEE',
-  [ROLES.TUTOR]: 'Tutor',
-  [ROLES.SUPERADMIN]: 'Admin',
+  cee: 'CEE',
+  tutor: 'Tutor',
 };

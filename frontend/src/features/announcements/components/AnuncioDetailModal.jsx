@@ -37,7 +37,7 @@ export default function AnuncioDetailModal() {
     votarMut.mutate({ id, tipo });
   }
 
-  const insignia = INSIGNIA_ROL[anuncio?.autor?.rol];
+  const insignia = INSIGNIA_ROL[anuncio?.autor?.cargo];
   const deOtraCarrera = !!anuncio && anuncio.carrera?.id !== carreraUsuario;
 
   return (

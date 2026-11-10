@@ -1,7 +1,5 @@
 export const ROLES = {
   ESTUDIANTE: 'estudiante',
-  TUTOR: 'tutor',
-  CEE: 'cee',
   SUPERADMIN: 'superadmin',
 };
 
@@ -23,4 +21,13 @@ export function puedeEditar(usuario, autorId) {
 
 export function puedeEliminar(usuario, autorId) {
   return !!usuario && (usuario.id === autorId || esStaff(usuario.rol));
+}
+
+// Cargo vigente (CEE o tutor) del usuario en una carrera. `usuario.cargos`
+// viene del login y de /auth/me: [{ tipo, carrera_id, hasta }]. El backend
+// es la autoridad; esto solo decide qué botones se muestran.
+export function tieneCargoEn(usuario, carreraId) {
+  return (
+    !!carreraId && (usuario?.cargos ?? []).some((c) => c.carrera_id === carreraId)
+  );
 }

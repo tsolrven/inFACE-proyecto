@@ -26,7 +26,7 @@ export default function AnuncioCard({ anuncio, enGuardados = false }) {
   const pdfs = (anuncio.archivos ?? []).filter(
     (a) => a.tipo_mime === 'application/pdf',
   ).length;
-  const insignia = INSIGNIA_ROL[anuncio.autor?.rol];
+  const insignia = INSIGNIA_ROL[anuncio.autor?.cargo];
   // En Guardados pueden mezclarse carreras: se indica la de cada anuncio
   const deOtraCarrera = anuncio.carrera?.id !== carreraUsuario;
 

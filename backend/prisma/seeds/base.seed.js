@@ -154,7 +154,7 @@ export async function seedBase(prisma, bcrypt, carrerasCreadas) {
       create: {
         correo: u.correo,
         contrasena: hash,
-        rol: u.rol,
+        rol: u.rol === 'cee' || u.rol === 'tutor' ? 'estudiante' : u.rol,
         perfil: {
           create: { nombre_usuario: u.nombre_usuario, campus: u.campus },
         },

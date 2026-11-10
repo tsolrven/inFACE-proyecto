@@ -23,6 +23,7 @@ import { ORDEN_CARRERAS_USUARIO } from '../../shared/auth/carreraPrincipal.js';
 import { obtenerSancionesVigentes } from '../../shared/moderation/sanctions.service.js';
 import { generacionDesdeCorreo } from './generacion.helper.js';
 import { esModerador } from './moderadoras.constants.js';
+import { hoyEnChile, filtroCargoVigente } from '../../shared/auth/cargos.js';
 import { determinarRolPorCorreo } from './rolCorreo.helper.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 function formatearUsuario(usuario) {
@@ -45,6 +46,11 @@ function formatearUsuario(usuario) {
       ? generacionDesdeCorreo(usuario.correo)
       : null,
     es_moderador: usuario.rol === 'superadmin',
+    cargos: (usuario.cargos_asignados ?? []).map((c) => ({
+      tipo: c.tipo,
+      carrera_id: c.carrera_id,
+      hasta: c.hasta,
+    })),
     terminos_vigentes: usuario.terminos_version === VERSION_TERMINOS,
   };
 }
@@ -129,6 +135,10 @@ async function registrar({
         perfil: true,
         usuario_carrera: { include: { carrera: true } },
         usuario_etiquetas: true,
+        cargos_asignados: {
+          where: filtroCargoVigente(hoyEnChile()),
+          select: { tipo: true, carrera_id: true, hasta: true },
+        },
       },
     });
   });
@@ -159,6 +169,10 @@ async function iniciarSesion({ correo, contrasena }) {
         orderBy: ORDEN_CARRERAS_USUARIO,
       },
       usuario_etiquetas: true,
+      cargos_asignados: {
+        where: filtroCargoVigente(hoyEnChile()),
+        select: { tipo: true, carrera_id: true, hasta: true },
+      },
     },
   });
   if (!usuario) throw new UnauthorizedError('Credenciales inválidas');
@@ -250,6 +264,10 @@ async function obtenerUsuarioActual(id) {
         orderBy: ORDEN_CARRERAS_USUARIO,
       },
       usuario_etiquetas: true,
+      cargos_asignados: {
+        where: filtroCargoVigente(hoyEnChile()),
+        select: { tipo: true, carrera_id: true, hasta: true },
+      },
     },
   });
 
