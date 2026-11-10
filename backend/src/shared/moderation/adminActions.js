@@ -6,6 +6,8 @@ const TIPOS_ACCION_ADMIN = Object.freeze({
   SANCION_REVOCADA: 'sancion_revocada',
   REPORTES_CERRADOS: 'reportes_cerrados',
   CONTENIDO_ELIMINADO: 'contenido_eliminado',
+  COMENTARIO_ELIMINADO: 'comentario_eliminado',
+  FLAIR_ELIMINADO: 'flair_eliminado',
 });
 
 async function registrarAccionAdmin(

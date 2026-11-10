@@ -17,6 +17,11 @@ import {
 import { eliminarInteracciones } from '../content/contentCleanup.js';
 import { cerrarReportesPorEliminacion } from '../moderation/reports.closure.js';
 import { notificarReportesCerrados } from '../moderation/reports.notifications.js';
+import {
+  registrarAccionAdmin,
+  TIPOS_ACCION_ADMIN,
+} from '../moderation/adminActions.js';
+import { recortar } from '../content/extracto.js';
 import { obtenerMisInteracciones } from '../content/contentEnrichment.js';
 import { esStaff } from '../auth/permissions.js';
 import { AUTOR_PUBLICO_SELECT } from '../content/selects.js';
@@ -408,6 +413,17 @@ async function eliminarComentario(
       respuesta,
     });
     reportesANotificar = cierre.reportes_a_notificar;
+
+    if (!esAutor) {
+      await registrarAccionAdmin(tx, {
+        admin_id: usuario_id,
+        tipo: TIPOS_ACCION_ADMIN.COMENTARIO_ELIMINADO,
+        entidad_tipo: 'comentario',
+        entidad_id: comentario_id,
+        afectado_id: comentario.autor_id,
+        detalle: { extracto: recortar(comentario.contenido ?? '', 280).texto },
+      });
+    }
 
     await tx.guardado.deleteMany({
       where: { tipo_contenido: 'comentario', contenido_id: comentario_id },

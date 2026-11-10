@@ -13,6 +13,10 @@ import {
 } from '../../shared/auth/permissions.js';
 import { notificarVarios } from '../../shared/notifications/notifications.service.js';
 import { normalizarNombreFlair } from './flairs.validation.js';
+import {
+  registrarAccionAdmin,
+  TIPOS_ACCION_ADMIN,
+} from '../../shared/moderation/adminActions.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 const MENSAJE_DUPLICADO = 'Ya existe un flair con ese nombre en esta carrera';
 
@@ -145,7 +149,18 @@ async function eliminarFlair(id, usuario) {
   const flair = await exigirPermisoSobreFlair(id, usuario, { eliminar: true });
 
   // los anuncios que lo usaban quedan sin flair (onDelete: SetNull en el esquema)
-  await prisma.flair.delete({ where: { id } });
+  await prisma.$transaction(async (tx) => {
+    await tx.flair.delete({ where: { id } });
+    if (esStaff(usuario.rol)) {
+      await registrarAccionAdmin(tx, {
+        admin_id: usuario.id,
+        tipo: TIPOS_ACCION_ADMIN.FLAIR_ELIMINADO,
+        entidad_tipo: 'flair',
+        entidad_id: id,
+        detalle: { nombre: flair.nombre, carrera_id: flair.carrera_id },
+      });
+    }
+  });
 
   logger.info('Flair eliminado', { flair_id: id, eliminado_por: usuario.id });
 
