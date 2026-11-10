@@ -9,6 +9,7 @@ import {
   AccountSuspendedError,
 } from '../errors/appError.js';
 import { filtroVigente } from '../shared/moderation/sanctions.service.js';
+import { hoyEnChile, filtroCargoVigente } from '../shared/auth/cargos.js';
 import {
   TIPOS_SANCION,
   TIPOS_CON_EFECTO,
@@ -32,6 +33,7 @@ async function autenticar(req, res, next) {
   }
 
   try {
+    const hoy = hoyEnChile();
     const usuario = await prisma.usuario.findUnique({
       where: { id: payload.id },
       select: {
@@ -42,6 +44,11 @@ async function autenticar(req, res, next) {
           select: { carrera_id: true },
           orderBy: ORDEN_CARRERAS_USUARIO,
           take: 1,
+        },
+        // cargos de CEE/tutor vigentes
+        asignaciones_rol: {
+          where: filtroCargoVigente(hoy),
+          select: { tipo: true, carrera_id: true, hasta: true },
         },
         // sanciones con efecto vigentes (suspensión y restricción)
         sanciones_recibidas: {
@@ -71,6 +78,7 @@ async function autenticar(req, res, next) {
       id: usuario.id,
       rol: usuario.rol,
       carrera_id: usuario.usuario_carrera[0]?.carrera_id ?? null,
+      cargos: usuario.asignaciones_rol,
       restriccion:
         usuario.sanciones_recibidas.find(
           (s) => s.tipo === TIPOS_SANCION.RESTRICCION,

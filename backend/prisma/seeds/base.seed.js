@@ -182,6 +182,30 @@ export async function seedBase(prisma, bcrypt, carrerasCreadas) {
     console.log(`Usuario: ${u.correo} (${u.rol})`);
   }
 
+  //* Cargos de prueba: cada CEE/tutor recibe su asignación vigente.
+  //* `desde` es 2 días atrás para no caer en el desfase UTC/Chile.
+  const DIA_MS = 24 * 60 * 60 * 1000;
+  for (const u of usuarios) {
+    if (u.rol !== 'cee' && u.rol !== 'tutor') continue;
+    const usuario_id = usuariosCreados[u.nombre_usuario].id;
+    const carrera_id = carrerasCreadas[u.carrera].id;
+    const existe = await prisma.asignacionRol.findFirst({
+      where: { usuario_id, tipo: u.rol, carrera_id },
+    });
+    if (existe) continue;
+    await prisma.asignacionRol.create({
+      data: {
+        usuario_id,
+        tipo: u.rol,
+        carrera_id,
+        desde: new Date(Date.now() - 2 * DIA_MS),
+        hasta: new Date(Date.now() + 365 * DIA_MS),
+        aprobada_por: usuariosCreados.admin.id,
+      },
+    });
+    console.log(`Cargo: ${u.nombre_usuario} (${u.rol} ${u.carrera})`);
+  }
+
   console.log('--- Seed base completado ---\n');
 
   return {
