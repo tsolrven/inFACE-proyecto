@@ -8,6 +8,9 @@ const TIPOS_ACCION_ADMIN = Object.freeze({
   CONTENIDO_ELIMINADO: 'contenido_eliminado',
   COMENTARIO_ELIMINADO: 'comentario_eliminado',
   FLAIR_ELIMINADO: 'flair_eliminado',
+  SOLICITUD_APROBADA: 'solicitud_aprobada',
+  SOLICITUD_RECHAZADA: 'solicitud_rechazada',
+  CARGO_REVOCADO: 'cargo_revocado',
 });
 
 async function registrarAccionAdmin(

@@ -1,11 +1,22 @@
 import { prisma } from '../../config/configDb.js';
-import { NotFoundError } from '../../errors/appError.js';
+import {
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+} from '../../errors/appError.js';
 import { calcularVencimiento, hoyEnChile } from '../../shared/auth/cargos.js';
 import { AUTOR_PUBLICO_SELECT } from '../../shared/content/selects.js';
+import { bloquearContenido } from '../../shared/content/contentRegistry.js';
+import {
+  TIPOS_ACCION_ADMIN,
+  registrarAccionAdmin,
+} from '../../shared/moderation/adminActions.js';
+import { notificar } from '../../shared/notifications/notifications.service.js';
 import { ESTADOS_SOLICITUD } from './solicitudes.constants.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 const DIA_MS = 24 * 60 * 60 * 1000;
 const TIPO_CONTENIDO = 'solicitud_rol';
+const ETIQUETA_CARGO = { cee: 'CEE', tutor: 'tutor' };
 const CARRERA_SELECT = { select: { id: true, nombre: true, codigo: true } };
 
 // Vigencia que tendría el cargo si se aprobara hoy. Sin cargo previo empieza
@@ -143,4 +154,67 @@ async function obtenerSolicitudAdmin(id, adminId) {
   };
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-export { listarSolicitudesAdmin, obtenerSolicitudAdmin, calcularVigencia };
+// Rechaza una solicitud pendiente. El motivo lo ve el solicitante; quién
+// rechazó solo lo ven los superadmins. El texto del motivo NO va al historial.
+async function rechazarSolicitud(id, adminId, motivo) {
+  const rechazada = await prisma.$transaction(async (tx) => {
+    // lanza NotFoundError si no existe
+    await bloquearContenido(TIPO_CONTENIDO, id, tx);
+
+    const solicitud = await tx.solicitudRol.findUnique({ where: { id } });
+    if (solicitud.usuario_id === adminId) {
+      throw new ForbiddenError(
+        'No puedes resolver tu propia solicitud: debe resolverla otro moderador',
+      );
+    }
+    if (solicitud.estado !== ESTADOS_SOLICITUD.PENDIENTE) {
+      throw new ConflictError('La solicitud ya fue resuelta');
+    }
+
+    const actualizada = await tx.solicitudRol.update({
+      where: { id },
+      data: {
+        estado: ESTADOS_SOLICITUD.RECHAZADA,
+        resuelta_en: new Date(),
+        resuelta_por: adminId,
+        motivo_rechazo: motivo,
+      },
+      include: {
+        carrera: CARRERA_SELECT,
+        usuario: { select: SOLICITANTE_SELECT },
+        resolutor: { select: AUTOR_PUBLICO_SELECT },
+      },
+    });
+
+    await registrarAccionAdmin(tx, {
+      admin_id: adminId,
+      tipo: TIPOS_ACCION_ADMIN.SOLICITUD_RECHAZADA,
+      entidad_tipo: TIPO_CONTENIDO,
+      entidad_id: id,
+      afectado_id: solicitud.usuario_id,
+      detalle: { tipo: solicitud.tipo, carrera_id: solicitud.carrera_id },
+    });
+
+    return actualizada;
+  });
+
+  // Después del commit; notificar() no lanza. No se copia el motivo: la
+  // campana lleva a /solicitar-cargo, donde ya se muestra.
+  await notificar({
+    usuarioId: rechazada.usuario_id,
+    actorId: adminId,
+    tipo: 'solicitud_cargo_resuelta',
+    titulo: 'Solicitud de cargo rechazada',
+    mensaje: `Tu solicitud del cargo de ${ETIQUETA_CARGO[rechazada.tipo]} en ${rechazada.carrera.nombre} fue rechazada. Revisa el motivo en Solicitar cargo.`,
+    enlace: '/solicitar-cargo',
+  });
+
+  return formatearSolicitudAdmin(rechazada, adminId);
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+export {
+  listarSolicitudesAdmin,
+  obtenerSolicitudAdmin,
+  rechazarSolicitud,
+  calcularVigencia,
+};

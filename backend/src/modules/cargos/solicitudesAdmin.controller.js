@@ -1,6 +1,7 @@
 import {
   listarSolicitudesAdmin,
   obtenerSolicitudAdmin,
+  rechazarSolicitud,
 } from './solicitudesAdmin.service.js';
 import ApiResponse from '../../utils/apiResponse.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
@@ -31,4 +32,17 @@ async function detalle(req, res, next) {
   }
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-export { listar, detalle };
+async function rechazar(req, res, next) {
+  try {
+    const solicitud = await rechazarSolicitud(
+      req.params.id,
+      req.usuario.id,
+      req.body.motivo,
+    );
+    return ApiResponse.success(res, solicitud);
+  } catch (err) {
+    next(err);
+  }
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+export { listar, detalle, rechazar };
