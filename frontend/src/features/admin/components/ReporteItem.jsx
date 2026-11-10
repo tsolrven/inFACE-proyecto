@@ -1,5 +1,6 @@
 import { obtenerMotivo } from '@/shared/moderation/reportReasons';
 import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
+import { formatearFechaSancion } from '@/shared/moderation/sancionUi';
 import { mensajeDeError } from '@/shared/lib/errores';
 import { mostrarToast } from '@/shared/stores/toastStore';
 import Button from '@/shared/components/ui/Button';
@@ -103,6 +104,16 @@ export default function ReporteItem({ reporte }) {
           <p className='whitespace-pre-line text-[12.5px] leading-relaxed text-neutral-300'>
             {reporte.nota_resolucion}
           </p>
+          {reporte.revisor && (
+            <p className='mt-1.5 text-[11.5px] text-neutral-500'>
+              Decisión tomada por:{' '}
+              <span className='font-medium text-neutral-300'>
+                {nombreDeUsuario(reporte.revisor)}
+              </span>
+              {reporte.revisado_en &&
+                ` · ${formatearFechaSancion(reporte.revisado_en)}`}
+            </p>
+          )}
         </div>
       )}
 

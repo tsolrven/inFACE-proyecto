@@ -7,6 +7,7 @@ import {
   descripcionTermino,
   formatearFechaSancion,
 } from '@/shared/moderation/sancionUi';
+import { nombreDeUsuario } from '@/shared/moderation/reportUi';
 
 // `acciones` (opcional): función (sancion) => nodo que se dibuja al final de
 // cada sanción, p. ej. el botón «Revocar» de Administración.
@@ -50,9 +51,18 @@ export default function SancionesHistorial({ sanciones, acciones }) {
             {termino && (
               <p className='mt-1.5 text-[11.5px] text-neutral-500'>{termino}</p>
             )}
+            {s.aplicador && (
+              <p className='mt-1.5 text-[11.5px] text-neutral-500'>
+                Sanción aplicada por:{' '}
+                <span className='font-medium text-neutral-300'>
+                  {nombreDeUsuario(s.aplicador)}
+                </span>
+              </p>
+            )}
             {s.revocada_en && (
               <p className='mt-1.5 text-[11.5px] text-neutral-500'>
                 Revocada el {formatearFechaSancion(s.revocada_en)}
+                {s.revocador && ` por ${nombreDeUsuario(s.revocador)}`}
                 {s.motivo_revocacion ? ` · ${s.motivo_revocacion}` : ''}
               </p>
             )}

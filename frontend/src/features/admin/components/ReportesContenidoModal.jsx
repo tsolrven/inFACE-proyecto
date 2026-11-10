@@ -5,6 +5,7 @@ import PanelCierre from '@/features/admin/components/PanelCierre';
 import ReporteItem from '@/features/admin/components/ReporteItem';
 import AutorPanel from '@/features/admin/components/AutorPanel';
 import { useReportesDeContenido } from '@/features/admin/hooks/useModeracion';
+import { useAuthStore } from '@/shared/auth/authStore';
 import {
   ETIQUETA_TIPO,
   ICONO_POR_TIPO,
@@ -21,9 +22,16 @@ export default function ReportesContenidoModal({ tipo, id, onClose }) {
     id,
   );
 
+  const usuario = useAuthStore((s) => s.usuario);
   const contenido = data?.contenido;
   const pendientes =
     data?.reportes.filter((r) => r.estado === 'pendiente') ?? [];
+  // conflicto de interés (el backend lo valida igual): contenido propio o
+  // reportes creados por quien está viendo el panel
+  const hayConflicto =
+    !!usuario &&
+    (contenido?.autor?.id === usuario.id ||
+      pendientes.some((r) => r.reportador?.id === usuario.id));
 
   // un comentario se abre en la publicación a la que pertenece
   const destino =
@@ -122,7 +130,14 @@ export default function ReportesContenidoModal({ tipo, id, onClose }) {
               </div>
             </section>
 
-            {pendientes.length > 0 && (
+            {pendientes.length > 0 && hayConflicto && (
+              <p className='rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-[12.5px] text-amber-300'>
+                Este caso te involucra (es tu contenido o un reporte tuyo):
+                debe resolverlo otro moderador.
+              </p>
+            )}
+
+            {pendientes.length > 0 && !hayConflicto && (
               <PanelCierre
                 tipo={tipo}
                 id={id}

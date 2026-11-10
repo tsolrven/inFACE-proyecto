@@ -6,6 +6,7 @@ import {
   NotFoundError,
 } from '../../errors/appError.js';
 import { ROLES } from '../auth/permissions.js';
+import { AUTOR_PUBLICO_SELECT } from '../content/selects.js';
 import {
   TIPOS_SANCION,
   TIPOS_CON_EFECTO,
@@ -212,6 +213,10 @@ async function listarSancionesDeUsuario(usuario_id) {
   const filas = await prisma.sancion.findMany({
     where: { usuario_id },
     orderBy: { creado_en: 'desc' },
+    include: {
+      aplicador: { select: AUTOR_PUBLICO_SELECT },
+      revocador: { select: AUTOR_PUBLICO_SELECT },
+    },
   });
   const ahora = new Date();
   return filas.map((s) => ({ ...s, estado: estadoDeSancion(s, ahora) }));

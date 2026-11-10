@@ -175,6 +175,7 @@ async function obtenerReportesDeContenido(tipo_contenido, contenido_id) {
       notificacion_enviada_en: true,
       contenido_snapshot: true,
       reportador: { select: AUTOR_PUBLICO_SELECT },
+      revisor: { select: AUTOR_PUBLICO_SELECT },
     },
   });
   if (reportes.length === 0) {
