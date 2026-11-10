@@ -1,6 +1,10 @@
 import { prisma } from '../../config/configDb.js';
 import logger from '../../lib/logger.js';
-import { ConflictError, NotFoundError } from '../../errors/appError.js';
+import {
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+} from '../../errors/appError.js';
 import {
   bloquearContenido,
   eliminarPorModeracion,
@@ -236,6 +240,23 @@ async function cerrarReportesDeContenido({
   revisor,
 }) {
   const mensaje = resolverRespuesta(resultado, respuesta);
+
+  // conflicto de interés: un moderador no resuelve reportes sobre su propio
+  // contenido ni reportes que él mismo creó; debe resolverlo otro moderador
+  const abiertos = await prisma.reporte.findMany({
+    where: { tipo_contenido, contenido_id, estado: ESTADOS_REPORTE.PENDIENTE },
+    select: { reportado_por: true, contenido_autor_id: true },
+  });
+  if (
+    abiertos.some(
+      (r) =>
+        r.contenido_autor_id === revisor.id || r.reportado_por === revisor.id,
+    )
+  ) {
+    throw new ForbiddenError(
+      'No puedes resolver reportes sobre tu propio contenido ni reportes que tú creaste: debe resolverlo otro moderador',
+    );
+  }
 
   if (resultado === ESTADOS_REPORTE.CONTENIDO_ELIMINADO) {
     const pendientes = await prisma.reporte.count({
