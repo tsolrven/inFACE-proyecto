@@ -18,6 +18,7 @@ import obraRoutes from '../modules/creative/creative.routes.js';
 import productoRoutes from '../modules/marketplace/marketplace.routes.js';
 import notificacionRoutes from '../shared/notifications/notifications.routes.js';
 import adminRoutes from './admin.routes.js';
+import solicitudCargoRoutes from '../modules/cargos/solicitudes.routes.js';
 
 function routerApi(app) {
   const router = Router();
@@ -42,6 +43,9 @@ function routerApi(app) {
   // módulo 3: Anuncios oficiales
   router.use('/anuncios', anuncioRoutes);
   router.use('/flairs', flairRoutes);
+
+  // solicitudes de cargo (CEE o tutor): lado del solicitante
+  router.use('/solicitudes-cargo', solicitudCargoRoutes);
   
   // módulo: Espacio creativo / cultural
   router.use('/obras', obraRoutes);
