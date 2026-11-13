@@ -16,6 +16,12 @@ import {
 import armadilloRepositorio from '@/assets/armadillo-repositorio-materiales.png';
 import { rutaHashtag } from '@/shared/lib/hashtags';
 import { puedeEscribir } from '@/shared/auth/roles';
+import { useDebounce } from '@/shared/hooks/useDebounce';
+import {
+  BUSQUEDA_MAX,
+  BUSQUEDA_RETARDO_MS,
+  busquedaEfectiva,
+} from '@/shared/lib/busqueda';
 
 const COLORES_COLABORADOR = [
   'bg-amber-400/10 text-amber-400',
@@ -55,6 +61,14 @@ export default function RepositorioMateriales() {
   const [uploadAbierto, setUploadAbierto] = useState(false);
   const [vista, setVista] = useState('publicaciones');
 
+  // un solo texto para ambas pestañas: se conserva al cambiar entre
+  // Publicaciones y Guardados. Se envía 300 ms después de dejar de escribir.
+  const [textoBusqueda, setTextoBusqueda] = useState('');
+  const busqueda = useDebounce(
+    busquedaEfectiva(textoBusqueda),
+    BUSQUEDA_RETARDO_MS,
+  );
+
   const [colaboradores, setColaboradores] = useState([]);
   const [tagsPopulares, setTagsPopulares] = useState([]);
 
@@ -88,7 +102,14 @@ export default function RepositorioMateriales() {
           gradient='linear-gradient(135deg, rgba(96,165,250,0.07) 0%, rgba(129,140,248,0.05) 100%)'
           title={banner.title}
           subtitle={banner.subtitle}
-          searchPlaceholder='Buscar en el repositorio...'
+          searchPlaceholder={
+            vista === 'publicaciones'
+              ? 'Buscar en el repositorio...'
+              : 'Buscar en tus guardados...'
+          }
+          searchValue={textoBusqueda}
+          onSearchChange={setTextoBusqueda}
+          searchMaxLength={BUSQUEDA_MAX}
           breadcrumb={banner.breadcrumb}
         />
 
@@ -102,12 +123,13 @@ export default function RepositorioMateriales() {
         {vista === 'publicaciones' ? (
           <MaterialFeed
             carreraId={carreraId}
+            busqueda={busqueda}
             onAbrirSubida={
               puedeEscribir(usuario) ? () => setUploadAbierto(true) : undefined
             }
           />
         ) : (
-          <MaterialGuardados />
+          <MaterialGuardados busqueda={busqueda} />
         )}
       </div>
 

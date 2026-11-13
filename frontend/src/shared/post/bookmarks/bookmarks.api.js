@@ -14,17 +14,18 @@ export async function quitarGuardado(tipoContenido, id) {
   return res.data;
 }
 
-// `padre`: solo con tipo='comentario'; filtra por el tipo de contenido al que
-// pertenece el comentario ('apunte', 'hilo'…).
+// `busqueda`: texto de la barra de búsqueda (ya filtrado por busquedaEfectiva).
 export async function listarGuardados({
   tipo = 'apunte',
   padre,
+  busqueda,
   pagina = 1,
   limite = 20,
   signal,
 } = {}) {
   const qs = new URLSearchParams({ tipo, pagina, limite });
   if (padre) qs.set('padre', padre);
+  if (busqueda) qs.set('busqueda', busqueda);
   const res = await apiFetch(`/guardados?${qs.toString()}`, { signal });
   return { items: res.data, meta: res.meta };
 }

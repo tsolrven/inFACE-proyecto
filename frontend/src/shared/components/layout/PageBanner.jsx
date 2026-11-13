@@ -9,8 +9,9 @@ export default function PageBanner({
   iconColor = 'text-pink-500',
   iconBg = 'bg-pink-500/10 border-pink-500/30',
   gradient = '',
-  searchValue, 
+  searchValue,
   onSearchChange,
+  searchMaxLength,
 }) {
   return (
     <div
@@ -72,6 +73,7 @@ export default function PageBanner({
               value: searchValue ?? '',
               onChange: (e) => onSearchChange(e.target.value),
             })}
+            maxLength={searchMaxLength}
             autoComplete='off'
             className='flex-1 bg-transparent text-[12.5px] text-neutral-100 placeholder-neutral-600 outline-none'
           />

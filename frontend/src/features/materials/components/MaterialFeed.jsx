@@ -5,9 +5,11 @@ import FeedTopbar from '@/features/materials/components/FeedTopbar';
 import QuickUploadBox from '@/features/materials/components/QuickUploadBox';
 import MaterialCard from '@/features/materials/components/MaterialCard';
 
+// `busqueda` (opcional): texto ya filtrado por busquedaEfectiva
 export default function MaterialFeed({
   carreraId,
   hashtag = null,
+  busqueda = '',
   onAbrirSubida,
 }) {
   const filtrosStore = useFiltrosStore((s) => s.filtros);
@@ -20,12 +22,19 @@ export default function MaterialFeed({
   }, [carreraId, alinearCarrera]);
 
   const filtros = useMemo(
-    () => ({ ...filtrosStore, hashtag, carrera_id: carreraId }),
-    [filtrosStore, hashtag, carreraId],
+    () => ({ ...filtrosStore, hashtag, busqueda, carrera_id: carreraId }),
+    [filtrosStore, hashtag, busqueda, carreraId],
   );
 
   const hayOtrosFiltros = !!(filtros.ramo_id || filtros.tipo_archivo);
-  const textoVacio = hashtag
+  const textoVacio = busqueda
+    ? {
+      titulo: `Sin resultados para «${busqueda}»`,
+      detalle: hayOtrosFiltros
+        ? 'Prueba con otras palabras o quitando algún filtro.'
+        : 'Prueba con otras palabras.',
+    }
+    : hashtag
     ? {
         titulo: `No hay materiales con #${hashtag}`,
         detalle: hayOtrosFiltros
@@ -120,7 +129,9 @@ export default function MaterialFeed({
 
       {!hasNextPage && apuntes.length > 0 && (
         <p className='py-4 text-center text-[11.5px] text-neutral-700'>
-          Llegaste al final — {total} materiales en total
+          {busqueda
+            ? `Llegaste al final — ${total} resultados`
+            : `Llegaste al final — ${total} materiales en total`}
         </p>
       )}
     </div>

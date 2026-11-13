@@ -2,13 +2,9 @@ import { Fragment, useState } from 'react';
 import { useGuardados } from '@/shared/post/bookmarks/useGuardados';
 import { useCentinela } from '@/shared/hooks/useCentinela';
 
-// Lista de guardados con pestañas. Cada módulo decide qué pestañas muestra y
-// cómo se dibuja cada tarjeta:
-//   tipos = [{ valor, padre?, label, icono, plural, singular, renderItem }]
-// `valor` es el tipo guardado ('apunte', 'hilo', 'comentario') y debe ser único
-// dentro del arreglo; `padre` filtra los comentarios por el tipo de contenido
-// al que pertenecen; `renderItem(item)` devuelve la tarjeta.
-export default function GuardadosFeed({ tipos }) {
+// `busqueda` (opcional): texto ya filtrado por busquedaEfectiva; se aplica a
+// la pestaña activa. Sin él, el feed funciona igual que antes.
+export default function GuardadosFeed({ tipos, busqueda = '' }) {
   const [valor, setValor] = useState(tipos[0].valor);
   const actual = tipos.find((t) => t.valor === valor) ?? tipos[0];
 
@@ -19,7 +15,7 @@ export default function GuardadosFeed({ tipos }) {
     hasNextPage,
     fetchNextPage,
     isFetchingNextPage,
-  } = useGuardados(actual.valor, { padre: actual.padre });
+  } = useGuardados(actual.valor, { padre: actual.padre, busqueda });
 
   const items = data?.pages.flatMap((p) => p.items) ?? [];
   const total = data?.pages.at(-1)?.meta?.total;
@@ -61,7 +57,19 @@ export default function GuardadosFeed({ tipos }) {
         </div>
       )}
 
-      {!isPending && !error && items.length === 0 && (
+      {!isPending && !error && items.length === 0 && busqueda && (
+        <div className='flex flex-col items-center justify-center py-16 text-center select-none'>
+          <i className='ti ti-search-off mb-3 block text-5xl text-neutral-700' />
+          <p className='text-sm font-semibold text-neutral-300'>
+            Sin resultados para «{busqueda}»
+          </p>
+          <p className='mt-1.5 text-xs text-neutral-600'>
+            No hay {actual.plural} guardados que coincidan con tu búsqueda.
+          </p>
+        </div>
+      )}
+
+      {!isPending && !error && items.length === 0 && !busqueda && (
         <div className='flex flex-col items-center justify-center py-16 text-center select-none'>
           <i className='ti ti-bookmark mb-3 block text-5xl text-neutral-700' />
           <p className='text-sm font-semibold text-neutral-300'>
@@ -91,7 +99,9 @@ export default function GuardadosFeed({ tipos }) {
 
       {!hasNextPage && items.length > 0 && (
         <p className='py-4 text-center text-[11.5px] text-neutral-700'>
-          Llegaste al final — {total} guardados en total
+          {busqueda
+            ? `Llegaste al final — ${total} resultados`
+            : `Llegaste al final — ${total} guardados en total`}
         </p>
       )}
     </div>
