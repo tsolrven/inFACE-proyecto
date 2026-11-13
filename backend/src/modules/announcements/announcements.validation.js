@@ -5,6 +5,7 @@ import {
   hashtagFiltroSchema,
 } from '../../shared/hashtags/hashtags.validation.js';
 import { crearMarkdownSchema } from '../../shared/validation/markdown.validation.js';
+import { busquedaQuerySchema } from '../../shared/search/busqueda.validation.js';
 // ─────────────────────────────────────────────────────────────────────────────
 const TITULO_MIN = 3;
 const TITULO_MAX = 150;
@@ -58,6 +59,7 @@ const listarAnunciosQuerySchema = paginacionQuerySchema.extend({
   carrera_id: z.string().uuid(ERROR_MESSAGES.carrera.invalid).optional(),
   flair_id: z.string().uuid(ERROR_MESSAGES.flair.invalid).optional(),
   hashtag: hashtagFiltroSchema.optional(),
+  busqueda: busquedaQuerySchema,
   orden: z
     .enum(['recientes', 'populares'], { error: 'Orden inválido' })
     .optional(),

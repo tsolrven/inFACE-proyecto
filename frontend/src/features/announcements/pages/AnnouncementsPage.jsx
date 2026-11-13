@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useBusqueda } from '@/shared/hooks/useBusqueda';
+import { BUSQUEDA_MAX } from '@/shared/lib/busqueda';
 import { useAuthStore } from '@/shared/auth/authStore';
 import RightPanel from '@/shared/components/layout/RightPanel';
 import RpCard from '@/shared/components/layout/RpCard';
@@ -27,6 +29,11 @@ export default function AnunciosOficiales() {
   const carreraNombre = usuario?.carreras?.[0]?.nombre ?? 'tu carrera';
   const [vista, setVista] = useState('publicaciones');
 
+  // un solo texto para ambas pestañas: se conserva al cambiar entre
+  // Publicaciones y Guardados (ver useBusqueda: debounce y borrado inmediato)
+  const [textoBusqueda, setTextoBusqueda] = useState('');
+  const busqueda = useBusqueda(textoBusqueda);
+
   return (
     <div className='flex h-full flex-1 overflow-hidden'>
       <div className='flex flex-1 flex-col overflow-hidden'>
@@ -37,7 +44,14 @@ export default function AnunciosOficiales() {
           gradient='linear-gradient(135deg, rgba(251,191,36,0.07) 0%, rgba(251,146,60,0.05) 100%)'
           title='Anuncios oficiales'
           subtitle={`${carreraNombre} · Comunicados del CEE y los tutores`}
-          searchPlaceholder='Buscar anuncios...'
+          searchPlaceholder={
+            vista === 'publicaciones'
+              ? 'Buscar anuncios...'
+              : 'Buscar en tus guardados...'
+          }
+          searchValue={textoBusqueda}
+          onSearchChange={setTextoBusqueda}
+          searchMaxLength={BUSQUEDA_MAX}
           breadcrumb={[
             { label: 'Inicio', to: '/' },
             { label: 'Académico' },
@@ -53,9 +67,12 @@ export default function AnunciosOficiales() {
         />
 
         {vista === 'publicaciones' ? (
-          <AnnouncementsFeed carreraId={carreraId} />
+          <AnnouncementsFeed
+            carreraId={carreraId}
+            busqueda={busqueda}
+          />
         ) : (
-          <AnnouncementsGuardados />
+          <AnnouncementsGuardados busqueda={busqueda} />
         )}
       </div>
 

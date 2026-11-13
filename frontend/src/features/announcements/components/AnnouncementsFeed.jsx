@@ -5,9 +5,11 @@ import { useCentinela } from '@/shared/hooks/useCentinela';
 import AnnouncementsTopbar from '@/features/announcements/components/AnnouncementsTopbar';
 import AnuncioCard from '@/features/announcements/components/AnuncioCard';
 
+// `busqueda` (opcional): texto ya filtrado por useBusqueda
 export default function AnnouncementsFeed({
   carreraId,
   hashtag = null,
+  busqueda = '',
   permitirCrear = true,
 }) {
   const flairId = useAnunciosFiltrosStore((s) => s.filtros.flair_id);
@@ -20,8 +22,14 @@ export default function AnnouncementsFeed({
   }, [carreraId, alinearCarrera]);
 
   const filtros = useMemo(
-    () => ({ carrera_id: carreraId, flair_id: flairId, orden, hashtag }),
-    [carreraId, flairId, orden, hashtag],
+    () => ({
+      carrera_id: carreraId,
+      flair_id: flairId,
+      orden,
+      hashtag,
+      busqueda,
+    }),
+    [carreraId, flairId, orden, hashtag, busqueda],
   );
 
   const {
@@ -42,7 +50,14 @@ export default function AnnouncementsFeed({
   });
 
   const hayOtrosFiltros = !!filtros.flair_id;
-  const textoVacio = hashtag
+  const textoVacio = busqueda
+    ? {
+      titulo: `Sin resultados para «${busqueda}»`,
+      detalle: hayOtrosFiltros
+        ? 'Prueba con otras palabras o quitando el filtro de flair.'
+        : 'Prueba con otras palabras.',
+    }
+    : hashtag
     ? {
         titulo: `No hay anuncios con #${hashtag}`,
         detalle: hayOtrosFiltros
@@ -111,7 +126,9 @@ export default function AnnouncementsFeed({
 
         {!hasNextPage && anuncios.length > 0 && (
           <p className='py-4 text-center text-[11.5px] text-neutral-700'>
-            Llegaste al final — {total} anuncios en total
+            {busqueda
+              ? `Llegaste al final — ${total} resultados`
+              : `Llegaste al final — ${total} anuncios en total`}
           </p>
         )}
       </div>

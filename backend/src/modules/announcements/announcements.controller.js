@@ -9,11 +9,13 @@ import ApiResponse from '../../utils/apiResponse.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function listar(req, res, next) {
   try {
-    const { carrera_id, flair_id, hashtag, orden, pagina, limite } = req.query;
+    const { carrera_id, flair_id, hashtag, busqueda, orden, pagina, limite } =
+      req.query;
     const { anuncios, total } = await listarAnuncios({
       carrera_id: carrera_id ?? req.usuario.carrera_id,
       flair_id,
       hashtag,
+      busqueda,
       orden,
       pagina,
       limite,

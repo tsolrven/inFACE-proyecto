@@ -13,6 +13,7 @@ import {
 import { eliminarContenido } from '../../shared/content/contentCleanup.js';
 import {
   registrarHidratadorGuardados,
+  registrarBuscadorGuardados,
   registrarPermisoAdjuntos,
   bloquearContenido,
   registrarEliminadorModeracion,
@@ -35,6 +36,11 @@ import {
   filtroPorHashtag,
   nombresDeHashtags,
 } from '../../shared/hashtags/hashtags.service.js';
+import {
+  interpretarBusqueda,
+  condicionTexto,
+  aplicarBusqueda,
+} from '../../shared/search/busqueda.helper.js';
 import { notificarReportesCerrados } from '../../shared/moderation/reports.notifications.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 // En las listas el contenido viaja recortado; el detalle lo trae completo.
@@ -92,12 +98,29 @@ async function formatearAnuncios(
   );
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
+// ids de anuncios cuyo título, contenido (la descripción, en Markdown) o nombre
+// de algún archivo adjunto contiene el texto, sin mayúsculas ni tildes.
+// El flair no se busca a propósito: ya existe su filtro.
+async function idsPorBusquedaTexto(texto) {
+  const filas = await prisma.$queryRaw`
+    SELECT a.id
+    FROM "anuncios" a
+    WHERE ${condicionTexto(['a.titulo', 'a.contenido'], texto)}
+    UNION
+    SELECT ar.contenido_id AS id
+    FROM "archivos" ar
+    WHERE ar.tipo_contenido = 'anuncio'
+      AND ${condicionTexto(['ar.nombre_archivo'], texto)}`;
+  return filas.map((f) => f.id);
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
 // Cualquier usuario con sesión ve los anuncios de cualquier carrera; por defecto
 // el controlador pasa la suya.
 async function listarAnuncios({
   carrera_id,
   flair_id,
   hashtag,
+  busqueda,
   orden = 'recientes',
   pagina = 1,
   limite = 20,
@@ -110,6 +133,17 @@ async function listarAnuncios({
   const where = { carrera_id };
   if (flair_id) where.flair_id = flair_id;
   if (hashtag) where.hashtags = filtroPorHashtag(hashtag);
+
+  // barra de búsqueda: "#prefijo" busca por hashtag; si no, por texto.
+  // En AND: no pisa el filtro ?hashtag= si viene también.
+  const hayResultados = await aplicarBusqueda(
+    where,
+    interpretarBusqueda(busqueda),
+    idsPorBusquedaTexto,
+  );
+  if (!hayResultados) {
+    return { anuncios: [], total: 0, pagina, paginas: 0 };
+  }
 
   // `id` como último criterio: orden total y estable entre páginas
   const orderBy =
@@ -383,6 +417,14 @@ function formatearAnuncio(
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 registrarHidratadorGuardados('anuncio', hidratarAnunciosGuardados);
+
+// Búsqueda en la pestaña Guardados: mismas reglas que el listado
+registrarBuscadorGuardados('anuncio', async (consulta, ids) => {
+  const where = { id: { in: ids } };
+  if (!(await aplicarBusqueda(where, consulta, idsPorBusquedaTexto))) return [];
+  const filas = await prisma.anuncio.findMany({ where, select: { id: true } });
+  return filas.map((f) => f.id);
+});
 // ────────────────────────────────────────────────────────────────────────────────────────
 export {
   listarAnuncios,
