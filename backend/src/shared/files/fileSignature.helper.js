@@ -46,7 +46,19 @@ function esM4a(b) {
   return b[4] === 0x66 && b[5] === 0x74 && b[6] === 0x79 && b[7] === 0x70;
 }
 
-const EXTENSIONES_TEXTO = ['.txt'];
+// se validan como texto (no tienen firma binaria): deben coincidir con las
+// extensiones de texto de fileMime.helper.js
+const EXTENSIONES_TEXTO = [
+  '.txt',
+  '.md',
+  '.csv',
+  '.tsv',
+  '.json',
+  '.jsonl',
+  '.xml',
+  '.yaml',
+  '.yml',
+];
 
 function coincideFirma(buffer, firmas) {
   return firmas.some((firma) => firma.every((byte, i) => buffer[i] === byte));
@@ -79,6 +91,20 @@ function pareceBinario(cabecera) {
   return cabecera.includes(0x00);
 }
 
+// UTF-16 (p. ej. «Texto Unicode» de Excel en Windows) trae bytes 0x00 por
+// diseño; se acepta solo si declara su codificación con BOM (FF FE / FE FF)
+function tieneBomUtf16(cabecera) {
+  return (
+    cabecera.length >= 2 &&
+    ((cabecera[0] === 0xff && cabecera[1] === 0xfe) ||
+      (cabecera[0] === 0xfe && cabecera[1] === 0xff))
+  );
+}
+
+function esTextoValido(cabecera) {
+  return tieneBomUtf16(cabecera) || !pareceBinario(cabecera);
+}
+
 function descartar(archivos) {
   archivos.forEach((f) => fs.unlink(f.path, () => { }));
 }
@@ -105,7 +131,7 @@ function validarContenidoReal(req, res, next) {
     else if (ext === '.wav') valido = esWav(cabecera);
     else if (ext === '.m4a') valido = esM4a(cabecera);
     else if (FIRMAS[ext]) valido = coincideFirma(cabecera, FIRMAS[ext]);
-    else if (EXTENSIONES_TEXTO.includes(ext)) valido = !pareceBinario(cabecera);
+    else if (EXTENSIONES_TEXTO.includes(ext)) valido = esTextoValido(cabecera);
 
     if (!valido) {
       descartar(archivos);

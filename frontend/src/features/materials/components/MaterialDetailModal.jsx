@@ -7,6 +7,7 @@ import {
   metaDeArchivo,
   metaDeBadge,
   metaDeLink,
+  estiloDeLink,
   badgesDeApunte,
 } from '@/features/materials/utils/fileMeta';
 import { formatearTamanio } from '@/shared/lib/archivos';
@@ -225,13 +226,19 @@ function DetalleArchivos({ apunte }) {
       {tieneLinks &&
         apunte.links.map((link, i) => {
           const meta = metaDeLink(link);
+          const estilo = estiloDeLink(link);
           return (
             <a
               key={i}
               href={link}
               target='_blank'
               rel='noreferrer'
-              className='flex items-center gap-2 rounded-md border border-[rgba(129,140,248,0.18)] bg-[rgba(129,140,248,0.05)] px-3 py-2 text-[12.5px] font-medium text-[#818CF8] hover:underline'
+              className='flex items-center gap-2 rounded-md border px-3 py-2 text-[12.5px] font-medium hover:underline'
+              style={{
+                borderColor: estilo.border,
+                background: estilo.bg,
+                color: estilo.color,
+              }}
             >
               <i
                 className={`ti ${meta.icon} text-base`}

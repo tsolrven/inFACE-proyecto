@@ -29,6 +29,48 @@ import {
 } from '../../shared/hashtags/hashtags.service.js';
 import { notificarReportesCerrados } from '../../shared/moderation/reports.notifications.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
+// host github.com o un subdominio (gist.github.com), sin distinguir mayúsculas;
+// anclado para que "github.com.evil.com" o "notgithub.com" no coincidan.
+// Debe ser el mismo criterio que esLinkGithub en frontend/.../utils/fileMeta.js
+const REGEX_LINK_GITHUB = String.raw`^https?://([^/?#@]*@)?([a-z0-9-]+\.)*github\.com(:[0-9]+)?([/?#]|$)`;
+
+// ids de apuntes que cumplen el filtro por tipo; null = filtro desconocido
+async function idsPorTipoArchivo(tipo_archivo) {
+  if (MIME_MAP[tipo_archivo]) {
+    const archivos = await prisma.archivo.findMany({
+      where: {
+        tipo_contenido: 'apunte',
+        OR: MIME_MAP[tipo_archivo].map((prefix) => ({
+          tipo_mime: { startsWith: prefix },
+        })),
+      },
+      select: { contenido_id: true },
+      distinct: ['contenido_id'],
+    });
+    return archivos.map((a) => a.contenido_id);
+  }
+
+  if (tipo_archivo === 'snippet') {
+    // al menos un carácter que no sea espacio (cubre filas antiguas con '')
+    const filas = await prisma.$queryRaw`
+      SELECT id FROM "apuntes"
+      WHERE codigo_snippet ~ '[^[:space:]]'`;
+    return filas.map((f) => f.id);
+  }
+
+  if (tipo_archivo === 'github') {
+    const filas = await prisma.$queryRaw`
+      SELECT id FROM "apuntes"
+      WHERE EXISTS (
+        SELECT 1 FROM unnest(links) AS l(url)
+        WHERE l.url ~* ${REGEX_LINK_GITHUB}
+      )`;
+    return filas.map((f) => f.id);
+  }
+
+  return null;
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
 // relaciones que siempre se piden junto con un apunte
 const INCLUDE_APUNTE = {
   autor: { select: AUTOR_PUBLICO_SELECT },
@@ -87,22 +129,14 @@ async function listarApuntes({
     where.hashtags = filtroPorHashtag(hashtag);
   }
 
-  if (tipo_archivo && MIME_MAP[tipo_archivo]) {
-    const archivosMatch = await prisma.archivo.findMany({
-      where: {
-        tipo_contenido: 'apunte',
-        OR: MIME_MAP[tipo_archivo].map((prefix) => ({
-          tipo_mime: { startsWith: prefix },
-        })),
-      },
-      select: { contenido_id: true },
-      distinct: ['contenido_id'],
-    });
-    const idsConEseTipo = archivosMatch.map((a) => a.contenido_id);
-    if (idsConEseTipo.length === 0) {
-      return { apuntes: [], total: 0, pagina, paginas: 0 };
+  if (tipo_archivo) {
+    const idsConEseTipo = await idsPorTipoArchivo(tipo_archivo);
+    if (idsConEseTipo !== null) {
+      if (idsConEseTipo.length === 0) {
+        return { apuntes: [], total: 0, pagina, paginas: 0 };
+      }
+      where.id = { in: idsConEseTipo };
     }
-    where.id = { in: idsConEseTipo };
   }
 
   // `id` como último criterio: garantiza un orden total y estable entre páginas

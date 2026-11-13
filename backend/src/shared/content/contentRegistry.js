@@ -13,7 +13,36 @@ const CONTENT_REGISTRY = {
     votesField: 'votos_neto',
     previewField: 'titulo',
     allowsComments: true,
-    adjuntos: { max: 10 },
+    // lista explícita: apunte no hereda extensiones que otros módulos agreguen
+    // a la lista global (p. ej. audio). Debe coincidir con
+    // frontend/src/features/materials/utils/limites.js (ADJUNTOS_EXTENSIONES)
+    adjuntos: {
+      max: 10,
+      extensiones: [
+        '.pdf',
+        '.doc',
+        '.docx',
+        '.ppt',
+        '.pptx',
+        '.xls',
+        '.xlsx',
+        '.zip',
+        '.jpg',
+        '.jpeg',
+        '.png',
+        '.webp',
+        '.gif',
+        '.txt',
+        '.md',
+        '.csv',
+        '.tsv',
+        '.json',
+        '.jsonl',
+        '.xml',
+        '.yaml',
+        '.yml',
+      ],
+    },
   },
   hilo: {
     modelName: 'hilo',

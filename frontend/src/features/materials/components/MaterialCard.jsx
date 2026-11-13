@@ -4,6 +4,7 @@ import {
   metaDeBadge,
   metaDeArchivo,
   metaDeLink,
+  estiloDeLink,
   badgesDeApunte,
 } from '@/features/materials/utils/fileMeta';
 import { formatearTamanio } from '@/shared/lib/archivos';
@@ -188,19 +189,29 @@ function ArchivosPreview({ apunte }) {
       {tieneLinks &&
         apunte.links.map((link, i) => {
           const meta = metaDeLink(link);
+          const estilo = estiloDeLink(link);
           return (
-            <div
+            <a
               key={i}
-              className='flex items-center gap-2 rounded-md border border-[rgba(129,140,248,0.18)] bg-[rgba(129,140,248,0.05)] px-2 py-1.5'
+              href={link}
+              target='_blank'
+              rel='noreferrer'
+              // abre el link sin abrir también el detalle de la tarjeta
+              onClick={(e) => e.stopPropagation()}
+              className='flex items-center gap-2 rounded-md border px-2 py-1.5 hover:underline'
+              style={{ borderColor: estilo.border, background: estilo.bg }}
             >
               <i
                 className={`ti ${meta.icon} text-[15px]`}
                 style={{ color: meta.color }}
               />
-              <span className='flex-1 truncate text-[11.5px] font-medium text-[#818CF8]'>
+              <span
+                className='flex-1 truncate text-[11.5px] font-medium'
+                style={{ color: estilo.color }}
+              >
                 {link}
               </span>
-            </div>
+            </a>
           );
         })}
 

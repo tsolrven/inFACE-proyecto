@@ -37,11 +37,19 @@ const DEFS = {
     bg: 'rgba(74,222,128,.1)',
     label: 'Excel',
   },
+  // badge del snippet de código
   codigo: {
     icon: 'ti-code',
     color: '#34D399',
     bg: 'rgba(52,211,153,.1)',
     label: 'Código',
+  },
+  // adjuntos de texto plano y datos (.txt .md .csv .tsv .json .jsonl .xml .yaml)
+  texto: {
+    icon: 'ti-file-text',
+    color: '#22D3EE',
+    bg: 'rgba(34,211,238,.1)',
+    label: 'Texto y datos',
   },
   github: {
     icon: 'ti-brand-github',
@@ -51,8 +59,8 @@ const DEFS = {
   },
   link: {
     icon: 'ti-link',
-    color: '#818CF8',
-    bg: 'rgba(129,140,248,.1)',
+    color: '#FFFFFF',
+    bg: 'rgba(255,255,255,.1)',
     label: 'Link',
   },
   default: {
@@ -63,6 +71,8 @@ const DEFS = {
   },
 };
 
+// `value` debe existir en FILTROS_TIPO_ARCHIVO del backend
+// (backend/src/modules/materials/fileType.helper.js)
 export const TIPOS_ARCHIVO_FILTRO = [
   {
     value: null,
@@ -70,13 +80,17 @@ export const TIPOS_ARCHIVO_FILTRO = [
     label: 'Todos los tipos',
     icon: 'ti-stack-2',
   },
+  // por archivo adjunto
   { value: 'pdf', ...DEFS.pdf },
-  { value: 'codigo', ...DEFS.codigo, label: 'Código / GitHub' },
-  { value: 'ppt', ...DEFS.ppt },
   { value: 'doc', ...DEFS.doc },
+  { value: 'ppt', ...DEFS.ppt },
+  { value: 'excel', ...DEFS.excel },
   { value: 'imagen', ...DEFS.imagen },
   { value: 'zip', ...DEFS.zip },
-  { value: 'excel', ...DEFS.excel },
+  { value: 'texto', ...DEFS.texto },
+  // por contenido del apunte
+  { value: 'snippet', ...DEFS.codigo, label: 'Fragmento de código' },
+  { value: 'github', ...DEFS.github },
 ];
 
 function categoriaDeMime(mime = '') {
@@ -89,12 +103,15 @@ function categoriaDeMime(mime = '') {
   if (mime.includes('ms-excel') || mime.includes('spreadsheetml'))
     return 'excel';
   if (mime.includes('zip') || mime.includes('rar')) return 'zip';
+  // igualdad exacta en xml/yaml: los MIME de Office contienen "xml"
+  // (openxmlformats), aunque ya se resolvieron arriba
   if (
     mime.startsWith('text/') ||
     mime.includes('json') ||
-    mime.includes('javascript')
+    mime === 'application/xml' ||
+    mime === 'application/yaml'
   )
-    return 'codigo';
+    return 'texto';
   return 'default';
 }
 
@@ -110,7 +127,12 @@ export function iconoDeAdjunto(archivo) {
 
 const DOMINIOS_LINK = {
   'github.com': DEFS.github,
-  'gitlab.com': { ...DEFS.link, icon: 'ti-brand-gitlab', label: 'GitLab' },
+  'gitlab.com': {
+    icon: 'ti-brand-gitlab',
+    color: '#F97316',
+    bg: 'rgba(249,115,22,.1)',
+    label: 'GitLab',
+  },
   'youtube.com': {
     icon: 'ti-brand-youtube',
     color: '#F87171',
@@ -144,19 +166,37 @@ const DOMINIOS_LINK = {
   },
   'notion.so': {
     icon: 'ti-brand-notion',
-    color: '#E5E5E5',
-    bg: 'rgba(229,229,229,.1)',
+    color: '#E0C9A6',
+    bg: 'rgba(224,201,166,.1)',
     label: 'Notion',
   },
 };
 
 export function metaDeLink(url) {
+  if (esLinkGithub(url)) return DEFS.github; // incluye subdominios (gist)
   try {
     const host = new URL(url).hostname.replace(/^www\./, '');
     return DOMINIOS_LINK[host] ?? DEFS.link;
   } catch {
     return DEFS.link;
   }
+}
+
+// '#RRGGBB' -> 'rgba(r,g,b,alfa)'
+function conAlfa(hex, alfa) {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alfa})`;
+}
+
+// colores de la caja del link (tarjeta y detalle): cada dominio usa su propio
+// color en borde, fondo y texto; sale del mismo meta que el ícono
+export function estiloDeLink(url) {
+  const { color } = metaDeLink(url);
+  return {
+    color,
+    bg: conAlfa(color, 0.05),
+    border: conAlfa(color, 0.18),
+  };
 }
 
 export function metaDeBadge(value) {
@@ -179,13 +219,19 @@ const ORDEN_BADGES = [
   'excel',
   'zip',
   'imagen',
+  'texto',
   'codigo',
   'github',
 ];
 
+// mismo criterio que REGEX_LINK_GITHUB en
+// backend/src/modules/materials/materials.service.js:
+// http(s) y host github.com o un subdominio (gist.github.com, www.github.com)
 function esLinkGithub(url) {
   try {
-    return new URL(url).hostname.replace(/^www\./, '') === 'github.com';
+    const { protocol, hostname } = new URL(url);
+    if (protocol !== 'http:' && protocol !== 'https:') return false;
+    return hostname === 'github.com' || hostname.endsWith('.github.com');
   } catch {
     return false;
   }

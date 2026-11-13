@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { MIME_MAP } from './fileType.helper.js';
+import { FILTROS_TIPO_ARCHIVO } from './fileType.helper.js';
 import { paginacionQuerySchema } from '../../shared/validation/common.schemas.js';
 import {
   hashtagsSchema,
@@ -92,9 +92,12 @@ const linksSchema = z
   .transform((links) => [...new Set(links)])
   .optional();
 
+// vacío o solo espacios -> null (los modales ya lo bloquean; esto cubre la API
+// directa). No se recorta el valor guardado: la indentación es parte del código
 const codigoSnippetSchema = z
   .string()
   .max(20000, ERROR_MESSAGES.codigo_snippet.max)
+  .transform((s) => (s.trim() === '' ? null : s))
   .optional()
   .nullable();
 
@@ -136,7 +139,7 @@ const listarApuntesQuerySchema = paginacionQuerySchema.extend({
   ramo_id: z.string().uuid('El id del ramo no es válido').optional(),
   tipo: z.enum(TIPOS_APUNTE, { error: 'Tipo de material inválido' }).optional(),
   tipo_archivo: z
-    .enum(Object.keys(MIME_MAP), { error: 'Tipo de archivo inválido' })
+    .enum(FILTROS_TIPO_ARCHIVO, { error: 'Tipo de archivo inválido' })
     .optional(),
   hashtag: hashtagFiltroSchema.optional(),
   orden: z
