@@ -28,6 +28,12 @@ function filtroPorHashtag(nombre) {
   return { some: { hashtag: { nombre } } };
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
+// Para la barra de búsqueda: "#calc" encuentra #calculo, #calculo_ii...
+// `prefijo` ya viene normalizado (interpretarBusqueda -> normalizarHashtag)
+function filtroPorPrefijoHashtag(prefijo) {
+  return { some: { hashtag: { nombre: { startsWith: prefijo } } } };
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
 // Filas puente (con INCLUDE_HASHTAGS) -> ['calculo', 'algebra']
 function nombresDeHashtags(filas) {
   return filas.map((h) => h.hashtag.nombre);
@@ -37,5 +43,6 @@ export {
   INCLUDE_HASHTAGS,
   resolverHashtags,
   filtroPorHashtag,
+  filtroPorPrefijoHashtag,
   nombresDeHashtags,
 };

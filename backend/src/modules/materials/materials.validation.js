@@ -6,6 +6,7 @@ import {
   hashtagFiltroSchema,
 } from '../../shared/hashtags/hashtags.validation.js';
 import { crearMarkdownSchema } from '../../shared/validation/markdown.validation.js';
+import { busquedaQuerySchema } from '../../shared/search/busqueda.validation.js';
 // ─────────────────────────────────────────────────────────────────────────────
 const TIPOS_APUNTE = ['apunte', 'codigo', 'guia', 'ejercicio', 'otro'];
 const LENGUAJES_SNIPPET = [
@@ -142,6 +143,7 @@ const listarApuntesQuerySchema = paginacionQuerySchema.extend({
     .enum(FILTROS_TIPO_ARCHIVO, { error: 'Tipo de archivo inválido' })
     .optional(),
   hashtag: hashtagFiltroSchema.optional(),
+  busqueda: busquedaQuerySchema,
   orden: z
     .enum(['recientes', 'populares'], { error: 'Orden inválido' })
     .optional(),

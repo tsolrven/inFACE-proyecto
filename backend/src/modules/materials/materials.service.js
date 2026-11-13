@@ -25,8 +25,15 @@ import {
   INCLUDE_HASHTAGS,
   resolverHashtags,
   filtroPorHashtag,
+  filtroPorPrefijoHashtag,
   nombresDeHashtags,
 } from '../../shared/hashtags/hashtags.service.js';
+import {
+  interpretarBusqueda,
+  condicionTexto,
+  restringirWhere,
+  restringirIds,
+} from '../../shared/search/busqueda.helper.js';
 import { notificarReportesCerrados } from '../../shared/moderation/reports.notifications.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 // host github.com o un subdominio (gist.github.com), sin distinguir mayúsculas;
@@ -71,6 +78,22 @@ async function idsPorTipoArchivo(tipo_archivo) {
   return null;
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
+// ids de apuntes cuyo título, descripción o nombre de algún archivo adjunto
+// contiene el texto (sin mayúsculas ni tildes). El snippet y los links no se
+// buscan a propósito.
+async function idsPorBusquedaTexto(texto) {
+  const filas = await prisma.$queryRaw`
+    SELECT a.id
+    FROM "apuntes" a
+    WHERE ${condicionTexto(['a.titulo', 'a.descripcion'], texto)}
+    UNION
+    SELECT ar.contenido_id AS id
+    FROM "archivos" ar
+    WHERE ar.tipo_contenido = 'apunte'
+      AND ${condicionTexto(['ar.nombre_archivo'], texto)}`;
+  return filas.map((f) => f.id);
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
 // relaciones que siempre se piden junto con un apunte
 const INCLUDE_APUNTE = {
   autor: { select: AUTOR_PUBLICO_SELECT },
@@ -110,6 +133,7 @@ async function listarApuntes({
   tipo,
   tipo_archivo,
   hashtag,
+  busqueda,
   orden = 'recientes',
   pagina = 1,
   limite = 20,
@@ -135,8 +159,23 @@ async function listarApuntes({
       if (idsConEseTipo.length === 0) {
         return { apuntes: [], total: 0, pagina, paginas: 0 };
       }
-      where.id = { in: idsConEseTipo };
+      restringirIds(where, idsConEseTipo);
     }
+  }
+
+  // barra de búsqueda: "#prefijo" busca por hashtag; si no, por texto
+  const consulta = interpretarBusqueda(busqueda);
+  if (consulta?.tipo === 'hashtag') {
+    // en AND: no pisa el filtro ?hashtag= (where.hashtags) si viene también
+    restringirWhere(where, {
+      hashtags: filtroPorPrefijoHashtag(consulta.prefijo),
+    });
+  } else if (consulta?.tipo === 'texto') {
+    const idsQueCoinciden = await idsPorBusquedaTexto(consulta.texto);
+    if (idsQueCoinciden.length === 0) {
+      return { apuntes: [], total: 0, pagina, paginas: 0 };
+    }
+    restringirIds(where, idsQueCoinciden);
   }
 
   // `id` como último criterio: garantiza un orden total y estable entre páginas
