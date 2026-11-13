@@ -13,6 +13,7 @@ import {
 import { eliminarContenido } from '../../shared/content/contentCleanup.js';
 import {
   registrarHidratadorGuardados,
+  registrarBuscadorGuardados,
   registrarAlEliminarComentario,
   registrarEliminadorModeracion,
   bloquearContenido,
@@ -27,6 +28,11 @@ import {
   filtroPorHashtag,
   nombresDeHashtags,
 } from '../../shared/hashtags/hashtags.service.js';
+import {
+  interpretarBusqueda,
+  condicionTexto,
+  aplicarBusqueda,
+} from '../../shared/search/busqueda.helper.js';
 import { notificarReportesCerrados } from '../../shared/moderation/reports.notifications.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 // En las listas el contenido viaja recortado (hasta 20 hilos x 10000 caracteres
@@ -56,9 +62,21 @@ async function formatearHilos(hilos, usuario_id, { extracto = false } = {}) {
   );
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
+// ids de hilos cuyo título o contenido (la descripción, en Markdown) contiene
+// el texto, sin mayúsculas ni tildes. Los adjuntos del foro son solo imágenes:
+// su nombre de archivo no se busca.
+async function idsPorBusquedaTexto(texto) {
+  const filas = await prisma.$queryRaw`
+    SELECT h.id
+    FROM "hilos" h
+    WHERE ${condicionTexto(['h.titulo', 'h.contenido'], texto)}`;
+  return filas.map((f) => f.id);
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
 async function listarHilos({
   ramo_id,
   hashtag,
+  busqueda,
   orden = 'recientes',
   pagina = 1,
   limite = 20,
@@ -72,6 +90,17 @@ async function listarHilos({
   const where = { ramo: { ramo_carrera: { some: { carrera_id } } } };
   if (ramo_id) where.ramo_id = ramo_id;
   if (hashtag) where.hashtags = filtroPorHashtag(hashtag);
+
+  // barra de búsqueda: "#prefijo" busca por hashtag; si no, por texto.
+  // En AND: no pisa el filtro ?hashtag= si viene también.
+  const hayResultados = await aplicarBusqueda(
+    where,
+    interpretarBusqueda(busqueda),
+    idsPorBusquedaTexto,
+  );
+  if (!hayResultados) {
+    return { hilos: [], total: 0, pagina, paginas: 0 };
+  }
 
   // `id` como último criterio: orden total y estable entre páginas
   const orderBy =
@@ -364,6 +393,14 @@ function formatearHilo(
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 registrarHidratadorGuardados('hilo', hidratarHilosGuardados);
+
+// Búsqueda en la pestaña Guardados: mismas reglas que el listado
+registrarBuscadorGuardados('hilo', async (consulta, ids) => {
+  const where = { id: { in: ids } };
+  if (!(await aplicarBusqueda(where, consulta, idsPorBusquedaTexto))) return [];
+  const filas = await prisma.hilo.findMany({ where, select: { id: true } });
+  return filas.map((f) => f.id);
+});
 
 // la pantalla de reportes elimina por moderación a través del registry
 registrarEliminadorModeracion('hilo', (id, usuario, respuesta) =>

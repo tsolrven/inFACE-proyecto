@@ -5,6 +5,7 @@ import {
   hashtagFiltroSchema,
 } from '../../shared/hashtags/hashtags.validation.js';
 import { crearMarkdownSchema } from '../../shared/validation/markdown.validation.js';
+import { busquedaQuerySchema } from '../../shared/search/busqueda.validation.js';
 // ─────────────────────────────────────────────────────────────────────────────
 const TITULO_MIN = 3;
 const TITULO_MAX = 150;
@@ -56,6 +57,7 @@ const listarHilosQuerySchema = paginacionQuerySchema.extend({
   carrera_id: z.string().uuid('El id de la carrera no es válido').optional(),
   ramo_id: z.string().uuid('El id del ramo no es válido').optional(),
   hashtag: hashtagFiltroSchema.optional(),
+  busqueda: busquedaQuerySchema,
   orden: z
     .enum(['recientes', 'populares'], { error: 'Orden inválido' })
     .optional(),

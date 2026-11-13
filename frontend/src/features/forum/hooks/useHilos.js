@@ -1,4 +1,5 @@
 import {
+  keepPreviousData,
   useInfiniteQuery,
   useMutation,
   useQuery,
@@ -50,6 +51,9 @@ export function useHilosFeed(filtros) {
     },
     getNextPageParam: (ultima) =>
       ultima.meta?.hasNext ? ultima.meta.page + 1 : undefined,
+    // al cambiar la búsqueda o un filtro se mantienen los resultados
+    // anteriores mientras llegan los nuevos (sin parpadeo del spinner)
+    placeholderData: keepPreviousData,
   });
 }
 // ────────────────────────────────────────────────────────────────────────────────────────

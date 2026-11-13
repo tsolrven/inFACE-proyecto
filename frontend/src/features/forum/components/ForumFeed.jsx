@@ -5,9 +5,11 @@ import { useCentinela } from '@/shared/hooks/useCentinela';
 import ForumTopbar from '@/features/forum/components/ForumTopbar';
 import HiloCard from '@/features/forum/components/HiloCard';
 
+// `busqueda` (opcional): texto ya filtrado por useBusqueda
 export default function ForumFeed({
   carreraId,
   hashtag = null,
+  busqueda = '',
   permitirCrear = true,
 }) {
   const filtrosStore = useForumFiltrosStore((s) => s.filtros);
@@ -20,8 +22,8 @@ export default function ForumFeed({
   }, [carreraId, alinearCarrera]);
 
   const filtros = useMemo(
-    () => ({ ...filtrosStore, hashtag, carrera_id: carreraId }),
-    [filtrosStore, hashtag, carreraId],
+    () => ({ ...filtrosStore, hashtag, busqueda, carrera_id: carreraId }),
+    [filtrosStore, hashtag, busqueda, carreraId],
   );
   
   const {
@@ -42,7 +44,14 @@ export default function ForumFeed({
   });
 
   const hayOtrosFiltros = !!filtros.ramo_id;
-  const textoVacio = hashtag
+  const textoVacio = busqueda
+    ? {
+      titulo: `Sin resultados para «${busqueda}»`,
+      detalle: hayOtrosFiltros
+        ? 'Prueba con otras palabras o quitando el filtro de ramo.'
+        : 'Prueba con otras palabras.',
+    }
+    : hashtag
     ? {
         titulo: `No hay hilos con #${hashtag}`,
         detalle: hayOtrosFiltros
@@ -111,7 +120,9 @@ export default function ForumFeed({
 
         {!hasNextPage && hilos.length > 0 && (
           <p className='py-4 text-center text-[11.5px] text-neutral-700'>
-            Llegaste al final — {total} hilos en total
+            {busqueda
+              ? `Llegaste al final — ${total} resultados`
+              : `Llegaste al final — ${total} hilos en total`}
           </p>
         )}
       </div>

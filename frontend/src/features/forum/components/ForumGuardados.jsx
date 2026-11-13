@@ -35,6 +35,11 @@ const TIPOS = [
   },
 ];
 
-export default function ForumGuardados() {
-  return <GuardadosFeed tipos={TIPOS} />;
+export default function ForumGuardados({ busqueda = '' }) {
+  return (
+    <GuardadosFeed
+      tipos={TIPOS}
+      busqueda={busqueda}
+    />
+  );
 }
