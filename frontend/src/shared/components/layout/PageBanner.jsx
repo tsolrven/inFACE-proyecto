@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { Link } from 'react-router-dom';
 
 export default function PageBanner({
@@ -13,6 +14,15 @@ export default function PageBanner({
   onSearchChange,
   searchMaxLength,
 }) {
+
+  const inputRef = useRef(null);
+  const puedeLimpiar = Boolean(onSearchChange && searchValue);
+
+  function limpiarBusqueda() {
+    onSearchChange('');
+    inputRef.current?.focus(); // se puede seguir escribiendo sin otro clic
+  }
+  
   return (
     <div
       className='border-b border-white/[0.07] px-[22px] pb-4 pt-[18px] flex-shrink-0'
@@ -67,16 +77,34 @@ export default function PageBanner({
         <div className='ml-auto flex h-[34px] min-w-[220px] items-center gap-1.5 rounded-[10px] border border-white/[0.07] bg-white/[0.06] px-[11px] transition-colors focus-within:border-blue-400/35 hover:border-white/[0.14]'>
           <i className='ti ti-search text-[13px] text-neutral-600 flex-shrink-0' />
           <input
+            ref={inputRef}
             type='text'
             placeholder={searchPlaceholder}
             {...(onSearchChange && {
               value: searchValue ?? '',
               onChange: (e) => onSearchChange(e.target.value),
+              onKeyDown: (e) => {
+                if (e.key === 'Escape' && searchValue) {
+                  e.preventDefault();
+                  limpiarBusqueda();
+                }
+              },
             })}
             maxLength={searchMaxLength}
             autoComplete='off'
             className='flex-1 bg-transparent text-[12.5px] text-neutral-100 placeholder-neutral-600 outline-none'
           />
+          {puedeLimpiar && (
+            <button
+              type='button'
+              onClick={limpiarBusqueda}
+              aria-label='Borrar búsqueda'
+              title='Borrar búsqueda (Esc)'
+              className='flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-neutral-500 transition-colors hover:bg-white/[0.08] hover:text-neutral-200'
+            >
+              <i className='ti ti-x text-[12px]' />
+            </button>
+          )}
         </div>
       </div>
     </div>

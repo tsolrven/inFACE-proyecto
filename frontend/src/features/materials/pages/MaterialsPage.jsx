@@ -16,12 +16,8 @@ import {
 import armadilloRepositorio from '@/assets/armadillo-repositorio-materiales.png';
 import { rutaHashtag } from '@/shared/lib/hashtags';
 import { puedeEscribir } from '@/shared/auth/roles';
-import { useDebounce } from '@/shared/hooks/useDebounce';
-import {
-  BUSQUEDA_MAX,
-  BUSQUEDA_RETARDO_MS,
-  busquedaEfectiva,
-} from '@/shared/lib/busqueda';
+import { useBusqueda } from '@/shared/hooks/useBusqueda';
+import { BUSQUEDA_MAX } from '@/shared/lib/busqueda';
 
 const COLORES_COLABORADOR = [
   'bg-amber-400/10 text-amber-400',
@@ -62,12 +58,9 @@ export default function RepositorioMateriales() {
   const [vista, setVista] = useState('publicaciones');
 
   // un solo texto para ambas pestañas: se conserva al cambiar entre
-  // Publicaciones y Guardados. Se envía 300 ms después de dejar de escribir.
+  // Publicaciones y Guardados (ver useBusqueda: debounce y borrado inmediato)
   const [textoBusqueda, setTextoBusqueda] = useState('');
-  const busqueda = useDebounce(
-    busquedaEfectiva(textoBusqueda),
-    BUSQUEDA_RETARDO_MS,
-  );
+  const busqueda = useBusqueda(textoBusqueda);
 
   const [colaboradores, setColaboradores] = useState([]);
   const [tagsPopulares, setTagsPopulares] = useState([]);
