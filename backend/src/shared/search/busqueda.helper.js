@@ -6,6 +6,7 @@
 
 import { Prisma } from '@prisma/client';
 import { normalizarHashtag } from '../hashtags/hashtags.validation.js';
+import { filtroPorPrefijoHashtag } from '../hashtags/hashtags.service.js';
 import { BUSQUEDA_MIN } from './busqueda.validation.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 // Vocales con tilde, diéresis o acento grave -> sin marca. La ñ NO está:
@@ -69,9 +70,26 @@ function restringirIds(where, ids) {
   restringirWhere(where, { id: { in: ids } });
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
+// Suma la búsqueda (ya interpretada) al where de un listado de contenidos con
+// hashtags. `buscarIdsPorTexto(texto)` lo pone cada módulo: sabe qué columnas
+// de SU tabla se buscan. Devuelve false si ya se sabe que no habrá resultados.
+async function aplicarBusqueda(where, consulta, buscarIdsPorTexto) {
+  if (consulta?.tipo === 'hashtag') {
+    restringirWhere(where, {
+      hashtags: filtroPorPrefijoHashtag(consulta.prefijo),
+    });
+  } else if (consulta?.tipo === 'texto') {
+    const ids = await buscarIdsPorTexto(consulta.texto);
+    if (ids.length === 0) return false;
+    restringirIds(where, ids);
+  }
+  return true;
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
 export {
   interpretarBusqueda,
   condicionTexto,
   restringirWhere,
   restringirIds,
+  aplicarBusqueda,
 };

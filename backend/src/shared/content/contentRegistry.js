@@ -265,7 +265,24 @@ async function hidratarGuardados(tipo_contenido, ids, usuario_id) {
   }
   return entrada.hidratarGuardados(ids, usuario_id);
 }
+// ────────────────────────────────────────────────────────────────────────────────────────
+// Cada módulo registra cómo busca entre SUS contenidos guardados (la barra de
+// búsqueda de la pestaña Guardados). El buscador recibe
+// (consulta, ids) — consulta de interpretarBusqueda e ids guardados del
+// usuario — y devuelve los ids que coinciden (en cualquier orden).
+function registrarBuscadorGuardados(tipo_contenido, buscador) {
+  obtenerEntradaRegistro(tipo_contenido).buscarGuardados = buscador;
+}
 
+async function buscarEnGuardados(tipo_contenido, consulta, ids) {
+  const entrada = obtenerEntradaRegistro(tipo_contenido);
+  if (!entrada.buscarGuardados) {
+    throw new BadRequestError(
+      `"${entrada.label}" no admite búsqueda en guardados`,
+    );
+  }
+  return entrada.buscarGuardados(consulta, ids);
+}
 // ────────────────────────────────────────────────────────────────────────────────────────
 function registrarAlEliminarComentario(tipo_contenido, hook) {
   obtenerEntradaRegistro(tipo_contenido).alEliminarComentario = hook;
@@ -397,6 +414,8 @@ export {
   obtenerVistasContenido,
   registrarHidratadorGuardados,
   hidratarGuardados,
+  registrarBuscadorGuardados,
+  buscarEnGuardados,
   registrarAlEliminarComentario,
   registrarEliminadorModeracion,
   eliminarPorModeracion,

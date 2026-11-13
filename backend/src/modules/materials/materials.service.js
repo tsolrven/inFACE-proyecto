@@ -15,6 +15,7 @@ import { eliminarContenido } from '../../shared/content/contentCleanup.js';
 import {
   bloquearContenido,
   registrarHidratadorGuardados,
+  registrarBuscadorGuardados,
   registrarEliminadorModeracion,
   registrarAlQuitarArchivo,
 } from '../../shared/content/contentRegistry.js';
@@ -25,14 +26,13 @@ import {
   INCLUDE_HASHTAGS,
   resolverHashtags,
   filtroPorHashtag,
-  filtroPorPrefijoHashtag,
   nombresDeHashtags,
 } from '../../shared/hashtags/hashtags.service.js';
 import {
   interpretarBusqueda,
   condicionTexto,
-  restringirWhere,
   restringirIds,
+  aplicarBusqueda,
 } from '../../shared/search/busqueda.helper.js';
 import { notificarReportesCerrados } from '../../shared/moderation/reports.notifications.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
@@ -163,19 +163,15 @@ async function listarApuntes({
     }
   }
 
-  // barra de búsqueda: "#prefijo" busca por hashtag; si no, por texto
-  const consulta = interpretarBusqueda(busqueda);
-  if (consulta?.tipo === 'hashtag') {
-    // en AND: no pisa el filtro ?hashtag= (where.hashtags) si viene también
-    restringirWhere(where, {
-      hashtags: filtroPorPrefijoHashtag(consulta.prefijo),
-    });
-  } else if (consulta?.tipo === 'texto') {
-    const idsQueCoinciden = await idsPorBusquedaTexto(consulta.texto);
-    if (idsQueCoinciden.length === 0) {
-      return { apuntes: [], total: 0, pagina, paginas: 0 };
-    }
-    restringirIds(where, idsQueCoinciden);
+  // barra de búsqueda: "#prefijo" busca por hashtag; si no, por texto.
+  // En AND: no pisa el filtro ?hashtag= ni el de tipo_archivo.
+  const hayResultados = await aplicarBusqueda(
+    where,
+    interpretarBusqueda(busqueda),
+    idsPorBusquedaTexto,
+  );
+  if (!hayResultados) {
+    return { apuntes: [], total: 0, pagina, paginas: 0 };
   }
 
   // `id` como último criterio: garantiza un orden total y estable entre páginas
@@ -472,7 +468,14 @@ function formatearApunte(
 // ────────────────────────────────────────────────────────────────────────────────────────
 registrarHidratadorGuardados('apunte', hidratarApuntesGuardados);
 // ────────────────────────────────────────────────────────────────────────────────────────
-
+// Búsqueda en la pestaña Guardados: mismas reglas que el listado
+registrarBuscadorGuardados('apunte', async (consulta, ids) => {
+  const where = { id: { in: ids } };
+  if (!(await aplicarBusqueda(where, consulta, idsPorBusquedaTexto))) return [];
+  const filas = await prisma.apunte.findMany({ where, select: { id: true } });
+  return filas.map((f) => f.id);
+});
+// ────────────────────────────────────────────────────────────────────────────────────────
 // Quitar un archivo no puede dejar el material vacío. Corre dentro de la
 // transacción de eliminarArchivo, con el apunte ya bloqueado.
 registrarAlQuitarArchivo('apunte', async (tx, archivo) => {

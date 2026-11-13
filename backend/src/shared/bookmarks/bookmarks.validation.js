@@ -4,6 +4,7 @@ import {
   admiteComentarios,
 } from '../content/contentRegistry.js';
 import { paginacionQuerySchema } from '../validation/common.schemas.js';
+import { busquedaQuerySchema } from '../search/busqueda.validation.js';
 // ─────────────────────────────────────────────────────────────────────────────
 const ERROR_MESSAGES = {
   tipo: {
@@ -30,6 +31,7 @@ const listarGuardadosQuerySchema = paginacionQuerySchema
       .string()
       .refine((padre) => admiteComentarios(padre), ERROR_MESSAGES.padre.invalid)
       .optional(),
+    busqueda: busquedaQuerySchema,
   })
   .refine((query) => !query.padre || query.tipo === 'comentario', {
     message: ERROR_MESSAGES.padre.solo_comentarios,

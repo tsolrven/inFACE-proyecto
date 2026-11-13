@@ -35,11 +35,12 @@ async function quitar(req, res, next) {
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function listar(req, res, next) {
   try {
-    const { tipo, padre, pagina, limite } = req.query;
+    const { tipo, padre, busqueda, pagina, limite } = req.query;
     const { items, total } = await listarGuardados({
       usuario_id: req.usuario.id,
       tipo_contenido: tipo || 'apunte',
       padre,
+      busqueda,
       pagina,
       limite,
     });
