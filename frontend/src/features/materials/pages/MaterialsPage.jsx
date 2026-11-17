@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
 import RightPanel from '@/shared/components/layout/RightPanel';
 import RpCard from '@/shared/components/layout/RpCard';
 import RpRules from '@/shared/components/layout/RpRules';
@@ -9,33 +8,12 @@ import MaterialFeed from '@/features/materials/components/MaterialFeed';
 import MaterialGuardados from '@/features/materials/components/MaterialGuardados';
 import UploadModal from '@/features/materials/components/UploadModal';
 import { useAuthStore } from '@/shared/auth/authStore';
-import {
-  listarTopColaboradores,
-  listarHashtagsPopulares,
-} from '@/features/materials/api/statistics.api';
+import TopColaboradoresCard from '@/shared/statistics/TopColaboradoresCard';
+import TagsPopularesCard from '@/shared/statistics/TagsPopularesCard';
 import armadilloRepositorio from '@/assets/armadillo-repositorio-materiales.png';
-import { rutaHashtag } from '@/shared/lib/hashtags';
 import { puedeEscribir } from '@/shared/auth/roles';
 import { useBusqueda } from '@/shared/hooks/useBusqueda';
 import { BUSQUEDA_MAX } from '@/shared/lib/busqueda';
-
-const COLORES_COLABORADOR = [
-  'bg-amber-400/10 text-amber-400',
-  'bg-blue-400/10 text-blue-400',
-  'bg-emerald-400/10 text-emerald-400',
-  'bg-violet-400/10 text-violet-400',
-  'bg-rose-400/10 text-rose-400',
-];
-
-function inicialesDe(nombreUsuario) {
-  return (nombreUsuario || '??').slice(0, 2).toUpperCase();
-}
-
-function formatearPuntos(puntos) {
-  return puntos >= 1000
-    ? `${(puntos / 1000).toFixed(1)}k pts`
-    : `${puntos} pts`;
-}
 
 const rules = [
   'Sube solo materiales propios o con autorización del autor original.',
@@ -61,19 +39,6 @@ export default function RepositorioMateriales() {
   // Publicaciones y Guardados (ver useBusqueda: debounce y borrado inmediato)
   const [textoBusqueda, setTextoBusqueda] = useState('');
   const busqueda = useBusqueda(textoBusqueda);
-
-  const [colaboradores, setColaboradores] = useState([]);
-  const [tagsPopulares, setTagsPopulares] = useState([]);
-
-  useEffect(() => {
-    if (!carreraId) return;
-    listarTopColaboradores()
-      .then(setColaboradores)
-      .catch(() => setColaboradores([]));
-    listarHashtagsPopulares()
-      .then(setTagsPopulares)
-      .catch(() => setTagsPopulares([]));
-  }, [carreraId]);
 
   const banner = {
     title: 'Repositorio de materiales',
@@ -149,64 +114,15 @@ export default function RepositorioMateriales() {
           />
         </RpCard>
 
-        <RpCard
-          title='Top colaboradores'
-          icon='ti-star'
-        >
-          {colaboradores.length === 0 ? (
-            <p className='text-[11.5px] text-neutral-600'>
-              Aún no hay colaboradores con votos en tu carrera.
-            </p>
-          ) : (
-            <div className='flex flex-col'>
-              {colaboradores.map(
-                ({ usuario_id, nombre_usuario, puntos }, i) => (
-                  <div
-                    key={usuario_id}
-                    className='flex items-center gap-2 py-1.5'
-                  >
-                    <div
-                      className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${
-                        COLORES_COLABORADOR[i % COLORES_COLABORADOR.length]
-                      }`}
-                    >
-                      {inicialesDe(nombre_usuario)}
-                    </div>
-                    <span className='flex-1 text-[12px] text-neutral-400'>
-                      u/{nombre_usuario}
-                    </span>
-                    <span className='text-[11px] font-semibold text-pink-500'>
-                      {formatearPuntos(puntos)}
-                    </span>
-                  </div>
-                ),
-              )}
-            </div>
-          )}
-        </RpCard>
+        <TopColaboradoresCard
+          tipo='apunte'
+          carreraId={carreraId}
+        />
 
-        <RpCard
-          title='Tags populares'
-          icon='ti-hash'
-        >
-          {tagsPopulares.length === 0 ? (
-            <p className='text-[11.5px] text-neutral-600'>
-              Aún no hay tags usados en los últimos 30 días.
-            </p>
-          ) : (
-            <div className='flex flex-wrap gap-1.5'>
-              {tagsPopulares.map(({ nombre }) => (
-                <Link
-                  key={nombre}
-                  to={rutaHashtag(nombre)}
-                  className='cursor-pointer rounded-full border border-transparent bg-[#2A2A32] px-2.5 py-0.5 text-[11px] text-neutral-500 transition-colors hover:border-white/[0.07] hover:bg-white/[0.06] hover:text-neutral-100'
-                >
-                  #{nombre}
-                </Link>
-              ))}
-            </div>
-          )}
-        </RpCard>
+        <TagsPopularesCard
+          tipo='apunte'
+          carreraId={carreraId}
+        />
 
         <RpCard
           title='Normas del repositorio'

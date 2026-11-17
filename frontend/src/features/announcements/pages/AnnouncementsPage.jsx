@@ -9,6 +9,8 @@ import PageBanner from '@/shared/components/layout/PageBanner';
 import Pestanas from '@/shared/components/ui/Pestanas';
 import AnnouncementsFeed from '@/features/announcements/components/AnnouncementsFeed';
 import AnnouncementsGuardados from '@/features/announcements/components/AnnouncementsGuardados';
+import TagsPopularesCard from '@/shared/statistics/TagsPopularesCard';
+import armadilloRepositorio from '@/assets/armadillo-repositorio-materiales.png';
 
 const rules = [
   'Los anuncios oficiales los publican el CEE y los tutores de cada carrera.',
@@ -84,11 +86,21 @@ export default function AnunciosOficiales() {
           title='Acerca de los anuncios'
           icon='ti-info-circle'
         >
-          <p className='text-[12px] leading-relaxed text-neutral-400'>
+          <p className='mb-2.5 text-[12px] leading-relaxed text-neutral-400'>
             Comunicados oficiales de cada carrera: fechas, avisos y documentos
             publicados por el CEE y los tutores.
           </p>
+          <img
+            src={armadilloRepositorio}
+            alt='Armadillo mascota de los anuncios oficiales'
+            className='w-full rounded-[10px]'
+          />
         </RpCard>
+
+        <TagsPopularesCard
+          tipo='anuncio'
+          carreraId={carreraId}
+        />
 
         <RpCard
           title='Normas de los anuncios'

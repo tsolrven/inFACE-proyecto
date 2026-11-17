@@ -5,19 +5,25 @@ import {
 } from './statistics.controller.js';
 import { autenticar } from '../../middlewares/auth.middleware.js';
 import validate from '../../middlewares/validate.js';
-import { estadisticasQuerySchema } from './statistics.validation.js';
+import {
+  estadisticasParamsSchema,
+  estadisticasQuerySchema,
+} from './statistics.validation.js';
 
+// /api/estadisticas/:tipo/...  (tipo: apunte | hilo | anuncio)
 const router = express.Router();
 
 router.get(
-  '/top-colaboradores',
+  '/:tipo/top-colaboradores',
   autenticar,
+  validate(estadisticasParamsSchema, 'params'),
   validate(estadisticasQuerySchema, 'query'),
   topColaboradores,
 );
 router.get(
-  '/hashtags-populares',
+  '/:tipo/hashtags-populares',
   autenticar,
+  validate(estadisticasParamsSchema, 'params'),
   validate(estadisticasQuerySchema, 'query'),
   hashtagsPopulares,
 );

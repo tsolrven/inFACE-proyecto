@@ -284,6 +284,32 @@ async function filtrarGuardados(tipo_contenido, ids, opciones) {
   }
   return entrada.filtrarGuardados(ids, opciones);
 }
+
+// ────────────────────────────────────────────────────────────────────────────────────────
+// Estadísticas del panel derecho (tags populares y top colaboradores).
+// Cada módulo registra cómo se calculan para SUS publicaciones:
+//   modelo:            delegate de Prisma de la publicación (ej. prisma.hilo)
+//   whereCarrera(id):  where de Prisma "publicaciones de esta carrera"
+//   hashtags:          { modelo: delegate de la tabla puente, relacion: campo
+//                        de la tabla puente que apunta a la publicación }
+//   diasTags:          ventana de los tags populares
+//   topColaboradores:  si el módulo tiene ranking de colaboradores
+// Así shared/statistics no conoce las tablas de los módulos.
+function registrarEstadisticas(tipo_contenido, config) {
+  obtenerEntradaRegistro(tipo_contenido).estadisticas = config;
+}
+
+function tieneEstadisticas(tipo_contenido) {
+  return Boolean(CONTENT_REGISTRY[tipo_contenido]?.estadisticas);
+}
+
+function obtenerConfigEstadisticas(tipo_contenido) {
+  const entrada = obtenerEntradaRegistro(tipo_contenido);
+  if (!entrada.estadisticas) {
+    throw new BadRequestError(`"${entrada.label}" no tiene estadísticas`);
+  }
+  return entrada.estadisticas;
+}
 // ────────────────────────────────────────────────────────────────────────────────────────
 function registrarAlEliminarComentario(tipo_contenido, hook) {
   obtenerEntradaRegistro(tipo_contenido).alEliminarComentario = hook;
@@ -417,6 +443,9 @@ export {
   hidratarGuardados,
   registrarFiltroGuardados,
   filtrarGuardados,
+  registrarEstadisticas,
+  tieneEstadisticas,
+  obtenerConfigEstadisticas,
   registrarAlEliminarComentario,
   registrarEliminadorModeracion,
   eliminarPorModeracion,

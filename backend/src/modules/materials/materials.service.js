@@ -16,6 +16,7 @@ import {
   bloquearContenido,
   registrarHidratadorGuardados,
   registrarFiltroGuardados,
+  registrarEstadisticas,
   registrarEliminadorModeracion,
   registrarAlQuitarArchivo,
 } from '../../shared/content/contentRegistry.js';
@@ -476,6 +477,17 @@ registrarFiltroGuardados('apunte', async (ids, { consulta, carrera_id }) => {
   if (!(await aplicarBusqueda(where, consulta, idsPorBusquedaTexto))) return [];
   const filas = await prisma.apunte.findMany({ where, select: { id: true } });
   return filas.map((f) => f.id);
+});
+
+// Panel derecho: tags populares (30 días) y top colaboradores
+registrarEstadisticas('apunte', {
+  modelo: prisma.apunte,
+  whereCarrera: (carrera_id) => ({
+    ramo: { ramo_carrera: { some: { carrera_id } } },
+  }),
+  hashtags: { modelo: prisma.apunteHashtag, relacion: 'apunte' },
+  diasTags: 30,
+  topColaboradores: true,
 });
 // ────────────────────────────────────────────────────────────────────────────────────────
 // Quitar un archivo no puede dejar el material vacío. Corre dentro de la

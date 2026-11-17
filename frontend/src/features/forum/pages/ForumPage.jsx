@@ -9,6 +9,9 @@ import { useBusqueda } from '@/shared/hooks/useBusqueda';
 import { BUSQUEDA_MAX } from '@/shared/lib/busqueda';
 import Pestanas from '@/shared/components/ui/Pestanas';
 import ForumGuardados from '@/features/forum/components/ForumGuardados';
+import TopColaboradoresCard from '@/shared/statistics/TopColaboradoresCard';
+import TagsPopularesCard from '@/shared/statistics/TagsPopularesCard';
+import armadilloRepositorio from '@/assets/armadillo-repositorio-materiales.png';
 
 const rules = [
   'Publica solo en ramos de tu carrera; puedes leer, comentar y votar en las demás.',
@@ -84,14 +87,29 @@ export default function ForumPage() {
           title='Acerca del foro'
           icon='ti-info-circle'
         >
-          <p className='text-[12px] leading-relaxed text-neutral-400'>
+          <p className='mb-2.5 text-[12px] leading-relaxed text-neutral-400'>
             Espacio para resolver dudas y conversar sobre los ramos de{' '}
             <span className='font-semibold text-neutral-200'>
               {carreraNombre}
             </span>
             . Solo estudiantes con correo institucional.
           </p>
+          <img
+            src={armadilloRepositorio}
+            alt='Armadillo mascota del foro por ramos'
+            className='w-full rounded-[10px]'
+          />
         </RpCard>
+
+        <TopColaboradoresCard
+          tipo='hilo'
+          carreraId={carreraId}
+        />
+
+        <TagsPopularesCard
+          tipo='hilo'
+          carreraId={carreraId}
+        />
 
         <RpCard
           title='Normas del foro'

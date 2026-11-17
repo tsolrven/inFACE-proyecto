@@ -14,6 +14,7 @@ import { eliminarContenido } from '../../shared/content/contentCleanup.js';
 import {
   registrarHidratadorGuardados,
   registrarFiltroGuardados,
+  registrarEstadisticas,
   registrarPermisoAdjuntos,
   bloquearContenido,
   registrarEliminadorModeracion,
@@ -425,6 +426,16 @@ registrarFiltroGuardados('anuncio', async (ids, { consulta, carrera_id }) => {
   if (!(await aplicarBusqueda(where, consulta, idsPorBusquedaTexto))) return [];
   const filas = await prisma.anuncio.findMany({ where, select: { id: true } });
   return filas.map((f) => f.id);
+});
+
+// Panel derecho: solo tags populares (90 días: una carrera publica pocos
+// anuncios al mes). Sin top colaboradores: publican solo CEE y tutores.
+registrarEstadisticas('anuncio', {
+  modelo: prisma.anuncio,
+  whereCarrera: (carrera_id) => ({ carrera_id }),
+  hashtags: { modelo: prisma.anuncioHashtag, relacion: 'anuncio' },
+  diasTags: 90,
+  topColaboradores: false,
 });
 // ────────────────────────────────────────────────────────────────────────────────────────
 export {

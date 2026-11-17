@@ -6,7 +6,7 @@ import votoRoutes from '../shared/votes/votes.routes.js';
 import comentarioRoutes from '../shared/comments/comments.routes.js';
 import guardadoRoutes from '../shared/bookmarks/bookmarks.routes.js';
 import ramoRoutes from '../modules/catalog/courses.routes.js';
-import estadisticasRoutes from '../modules/materials/statistics.routes.js';
+import estadisticasRoutes from '../shared/statistics/statistics.routes.js';
 import reporteRoutes from '../shared/moderation/reports.routes.js';
 import proyectoRoutes from '../modules/project-match/matchingProyecto.routes.js';
 import etiquetaRoutes from '../modules/identity/etiqueta.routes.js';
@@ -35,7 +35,9 @@ function routerApi(app) {
   router.use('/comentarios', comentarioRoutes);
   router.use('/guardados', guardadoRoutes);
   router.use('/repositorio', ramoRoutes);
-  router.use('/repositorio', estadisticasRoutes);
+  
+  // estadísticas del panel derecho (materiales, foro y anuncios)
+  router.use('/estadisticas', estadisticasRoutes);
 
   // módulo 2: Foro por ramos
   router.use('/hilos', hiloRoutes);

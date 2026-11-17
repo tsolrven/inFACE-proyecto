@@ -14,6 +14,7 @@ import { eliminarContenido } from '../../shared/content/contentCleanup.js';
 import {
   registrarHidratadorGuardados,
   registrarFiltroGuardados,
+  registrarEstadisticas,
   registrarAlEliminarComentario,
   registrarEliminadorModeracion,
   bloquearContenido,
@@ -406,6 +407,17 @@ registrarFiltroGuardados('hilo', async (ids, { consulta, carrera_id }) => {
   if (!(await aplicarBusqueda(where, consulta, idsPorBusquedaTexto))) return [];
   const filas = await prisma.hilo.findMany({ where, select: { id: true } });
   return filas.map((f) => f.id);
+});
+
+// Panel derecho: tags populares (30 días) y top colaboradores
+registrarEstadisticas('hilo', {
+  modelo: prisma.hilo,
+  whereCarrera: (carrera_id) => ({
+    ramo: { ramo_carrera: { some: { carrera_id } } },
+  }),
+  hashtags: { modelo: prisma.hiloHashtag, relacion: 'hilo' },
+  diasTags: 30,
+  topColaboradores: true,
 });
 
 // la pantalla de reportes elimina por moderación a través del registry
