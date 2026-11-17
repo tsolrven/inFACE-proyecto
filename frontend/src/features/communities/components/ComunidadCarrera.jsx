@@ -8,6 +8,9 @@ import Pestanas from '@/shared/components/ui/Pestanas';
 import { MaterialFeed, UploadModal } from '@/features/materials';
 import { ForumFeed } from '@/features/forum';
 import { AnnouncementsFeed } from '@/features/announcements';
+import MaterialGuardados from '@/features/materials/components/MaterialGuardados';
+import ForumGuardados from '@/features/forum/components/ForumGuardados';
+import AnnouncementsGuardados from '@/features/announcements/components/AnnouncementsGuardados';
 import { listarCarreras } from '@/shared/api/catalog.api';
 import { useAuthStore } from '@/shared/auth/authStore';
 import { puedeEscribir } from '@/shared/auth/roles';
@@ -21,6 +24,17 @@ const PESTANAS = [
   { id: 'anuncios', label: 'Anuncios', icono: 'ti-speakerphone' },
 ];
 const PESTANA_INICIAL = 'foro';
+
+// segunda fila: Publicaciones / Guardados, con el color de cada módulo
+const VISTAS = [
+  { id: 'publicaciones', label: 'Publicaciones', icono: 'ti-layout-grid' },
+  { id: 'guardados', label: 'Guardados', icono: 'ti-bookmark' },
+];
+const ACENTO_MODULO = {
+  foro: 'border-emerald-400',
+  materiales: 'border-blue-400',
+  anuncios: 'border-amber-400',
+};
 
 function Estado({ children }) {
   return (
@@ -42,6 +56,10 @@ export default function ComunidadCarrera({ codigo }) {
   // Debe ir antes de los return tempranos (reglas de los hooks).
   const [textoBusqueda, setTextoBusqueda] = useState('');
   const busqueda = useBusqueda(textoBusqueda);
+
+  // se conserva al cambiar de pestaña: si revisas lo guardado en Foro,
+  // al pasar a Materiales sigues en sus guardados
+  const [vista, setVista] = useState('publicaciones');
 
   const {
     data: carreras,
@@ -107,7 +125,11 @@ export default function ComunidadCarrera({ codigo }) {
           icon='ti-building'
           title={carrera.nombre}
           subtitle='Comunidad · Foro, materiales y anuncios de la carrera'
-          searchPlaceholder={`Buscar en ${carrera.nombre}...`}
+          searchPlaceholder={
+            vista === 'publicaciones'
+              ? `Buscar en ${carrera.nombre}...`
+              : 'Buscar en tus guardados...'
+          }
           searchValue={textoBusqueda}
           onSearchChange={setTextoBusqueda}
           searchMaxLength={BUSQUEDA_MAX}
@@ -124,14 +146,21 @@ export default function ComunidadCarrera({ codigo }) {
           onCambiar={cambiarPestana}
         />
 
-        {pestana === 'foro' && (
+        <Pestanas
+          pestanas={VISTAS}
+          activa={vista}
+          onCambiar={setVista}
+          acento={ACENTO_MODULO[pestana]}
+        />
+
+        {vista === 'publicaciones' && pestana === 'foro' && (
           <ForumFeed
             carreraId={carrera.id}
             busqueda={busqueda}
             permitirCrear={esPropia}
           />
         )}
-        {pestana === 'materiales' && (
+        {vista === 'publicaciones' && pestana === 'materiales' && (
           <MaterialFeed
             carreraId={carrera.id}
             busqueda={busqueda}
@@ -140,10 +169,29 @@ export default function ComunidadCarrera({ codigo }) {
             }
           />
         )}
-        {pestana === 'anuncios' && (
+        {vista === 'publicaciones' && pestana === 'anuncios' && (
           <AnnouncementsFeed
             carreraId={carrera.id}
             busqueda={busqueda}
+          />
+        )}
+
+        {vista === 'guardados' && pestana === 'foro' && (
+          <ForumGuardados
+            busqueda={busqueda}
+            carreraId={carrera.id}
+          />
+        )}
+        {vista === 'guardados' && pestana === 'materiales' && (
+          <MaterialGuardados
+            busqueda={busqueda}
+            carreraId={carrera.id}
+          />
+        )}
+        {vista === 'guardados' && pestana === 'anuncios' && (
+          <AnnouncementsGuardados
+            busqueda={busqueda}
+            carreraId={carrera.id}
           />
         )}
       </div>

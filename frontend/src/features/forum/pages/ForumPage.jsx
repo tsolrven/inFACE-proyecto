@@ -72,7 +72,10 @@ export default function ForumPage() {
             busqueda={busqueda}
           />
         ) : (
-          <ForumGuardados busqueda={busqueda} />
+            <ForumGuardados
+              busqueda={busqueda}
+              carreraId={carreraId}
+            />
         )}
       </div>
 

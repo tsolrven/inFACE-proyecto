@@ -15,10 +15,12 @@ export async function quitarGuardado(tipoContenido, id) {
 }
 
 // `busqueda`: texto de la barra de búsqueda (ya filtrado por busquedaEfectiva).
+// `carreraId`: solo lo guardado de esa carrera (comunidad / página de módulo).
 export async function listarGuardados({
   tipo = 'apunte',
   padre,
   busqueda,
+  carreraId,
   pagina = 1,
   limite = 20,
   signal,
@@ -26,6 +28,7 @@ export async function listarGuardados({
   const qs = new URLSearchParams({ tipo, pagina, limite });
   if (padre) qs.set('padre', padre);
   if (busqueda) qs.set('busqueda', busqueda);
+  if (carreraId) qs.set('carrera_id', carreraId);
   const res = await apiFetch(`/guardados?${qs.toString()}`, { signal });
   return { items: res.data, meta: res.meta };
 }

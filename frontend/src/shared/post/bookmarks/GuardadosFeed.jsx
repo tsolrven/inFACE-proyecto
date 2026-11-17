@@ -3,8 +3,13 @@ import { useGuardados } from '@/shared/post/bookmarks/useGuardados';
 import { useCentinela } from '@/shared/hooks/useCentinela';
 
 // `busqueda` (opcional): texto ya filtrado por busquedaEfectiva; se aplica a
-// la pestaña activa. Sin él, el feed funciona igual que antes.
-export default function GuardadosFeed({ tipos, busqueda = '' }) {
+// la pestaña activa. `carreraId` (opcional): solo lo guardado de esa carrera.
+// Sin ellos, el feed funciona igual que antes.
+export default function GuardadosFeed({
+  tipos,
+  busqueda = '',
+  carreraId = null,
+}) {
   const [valor, setValor] = useState(tipos[0].valor);
   const actual = tipos.find((t) => t.valor === valor) ?? tipos[0];
 
@@ -15,7 +20,11 @@ export default function GuardadosFeed({ tipos, busqueda = '' }) {
     hasNextPage,
     fetchNextPage,
     isFetchingNextPage,
-  } = useGuardados(actual.valor, { padre: actual.padre, busqueda });
+  } = useGuardados(actual.valor, {
+    padre: actual.padre,
+    busqueda,
+    carreraId,
+  });
 
   const items = data?.pages.flatMap((p) => p.items) ?? [];
   const total = data?.pages.at(-1)?.meta?.total;
@@ -74,6 +83,7 @@ export default function GuardadosFeed({ tipos, busqueda = '' }) {
           <i className='ti ti-bookmark mb-3 block text-5xl text-neutral-700' />
           <p className='text-sm font-semibold text-neutral-300'>
             No tienes {actual.plural} guardados
+            {carreraId ? ' en esta carrera' : ''}
           </p>
           <p className='mt-1.5 text-xs text-neutral-600'>
             Usa el ícono de marcador en cualquier {actual.singular} para

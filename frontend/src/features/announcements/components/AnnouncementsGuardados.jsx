@@ -35,11 +35,15 @@ const TIPOS = [
   },
 ];
 
-export default function AnnouncementsGuardados({ busqueda = '' }) {
+export default function AnnouncementsGuardados({
+  busqueda = '',
+  carreraId = null,
+}) {
   return (
     <GuardadosFeed
       tipos={TIPOS}
       busqueda={busqueda}
+      carreraId={carreraId}
     />
   );
 }

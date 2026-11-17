@@ -35,11 +35,12 @@ const TIPOS = [
   },
 ];
 
-export default function ForumGuardados({ busqueda = '' }) {
+export default function ForumGuardados({ busqueda = '', carreraId = null }) {
   return (
     <GuardadosFeed
       tipos={TIPOS}
       busqueda={busqueda}
+      carreraId={carreraId}
     />
   );
 }

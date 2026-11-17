@@ -72,7 +72,10 @@ export default function AnunciosOficiales() {
             busqueda={busqueda}
           />
         ) : (
-          <AnnouncementsGuardados busqueda={busqueda} />
+            <AnnouncementsGuardados
+              busqueda={busqueda}
+              carreraId={carreraId}
+            />
         )}
       </div>
 

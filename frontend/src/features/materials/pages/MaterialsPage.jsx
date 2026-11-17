@@ -122,7 +122,10 @@ export default function RepositorioMateriales() {
             }
           />
         ) : (
-          <MaterialGuardados busqueda={busqueda} />
+            <MaterialGuardados
+              busqueda={busqueda}
+              carreraId={carreraId}
+            />
         )}
       </div>
 

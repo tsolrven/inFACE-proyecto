@@ -37,11 +37,12 @@ const TIPOS = [
   },
 ];
 
-export default function MaterialGuardados({ busqueda = '' }) {
+export default function MaterialGuardados({ busqueda = '', carreraId = null }) {
   return (
     <GuardadosFeed
       tipos={TIPOS}
       busqueda={busqueda}
+      carreraId={carreraId}
     />
   );
 }
