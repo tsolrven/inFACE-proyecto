@@ -1,4 +1,7 @@
+import { useState } from 'react';
 import { Navigate, useParams, useSearchParams } from 'react-router-dom';
+import { useBusqueda } from '@/shared/hooks/useBusqueda';
+import { BUSQUEDA_MAX } from '@/shared/lib/busqueda';
 import { useQuery } from '@tanstack/react-query';
 import PageBanner from '@/shared/components/layout/PageBanner';
 import Pestanas from '@/shared/components/ui/Pestanas';
@@ -44,6 +47,18 @@ export default function HashtagPage() {
   });
 
   const hashtag = normalizarHashtag(nombre);
+
+  // El texto pertenece al hashtag en que se escribió: al pasar a otro hashtag
+  // (misma ruta, mismo componente) vuelve a vacío; al cambiar de pestaña o de
+  // carrera se conserva. Antes de los return tempranos (reglas de los hooks).
+  const [busquedaGuardada, setBusquedaGuardada] = useState({
+    hashtag,
+    texto: '',
+  });
+  const textoBusqueda =
+    busquedaGuardada.hashtag === hashtag ? busquedaGuardada.texto : '';
+  const setTextoBusqueda = (texto) => setBusquedaGuardada({ hashtag, texto });
+  const busqueda = useBusqueda(textoBusqueda);
   // una pestaña desconocida (?pestana=xyz) cae en Materiales
   const pedida = params.get('pestana');
   const pestana = PESTANAS.some((p) => p.id === pedida) ? pedida : 'materiales';
@@ -128,6 +143,10 @@ export default function HashtagPage() {
             ? `Publicaciones con #${hashtag} en ${carrera.nombre}`
             : `Publicaciones con #${hashtag}`
         }
+        searchPlaceholder={`Buscar en #${hashtag}...`}
+        searchValue={textoBusqueda}
+        onSearchChange={setTextoBusqueda}
+        searchMaxLength={BUSQUEDA_MAX}
         breadcrumb={breadcrumb}
       />
 
@@ -187,12 +206,14 @@ export default function HashtagPage() {
         <MaterialFeed
           carreraId={carrera.id}
           hashtag={hashtag}
+          busqueda={busqueda}
         />
       )}
       {carrera && pestana === 'foro' && (
         <ForumFeed
           carreraId={carrera.id}
           hashtag={hashtag}
+          busqueda={busqueda}
           permitirCrear={false}
         />
       )}
@@ -200,6 +221,7 @@ export default function HashtagPage() {
         <AnnouncementsFeed
           carreraId={carrera.id}
           hashtag={hashtag}
+          busqueda={busqueda}
           permitirCrear={false}
         />
       )}

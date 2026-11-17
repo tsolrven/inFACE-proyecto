@@ -12,6 +12,8 @@ import { listarCarreras } from '@/shared/api/catalog.api';
 import { useAuthStore } from '@/shared/auth/authStore';
 import { puedeEscribir } from '@/shared/auth/roles';
 import { mensajeDeError } from '@/shared/lib/errores';
+import { useBusqueda } from '@/shared/hooks/useBusqueda';
+import { BUSQUEDA_MAX } from '@/shared/lib/busqueda';
 
 const PESTANAS = [
   { id: 'foro', label: 'Foro', icono: 'ti-message-circle-2' },
@@ -34,6 +36,12 @@ export default function ComunidadCarrera({ codigo }) {
   const usuario = useAuthStore((s) => s.usuario);
   const [params, setParams] = useSearchParams();
   const [uploadAbierto, setUploadAbierto] = useState(false);
+
+  // se conserva al cambiar de pestaña (Foro / Materiales / Anuncios); al ir a
+  // otra comunidad se reinicia solo, porque cada comunidad es otra página.
+  // Debe ir antes de los return tempranos (reglas de los hooks).
+  const [textoBusqueda, setTextoBusqueda] = useState('');
+  const busqueda = useBusqueda(textoBusqueda);
 
   const {
     data: carreras,
@@ -99,6 +107,10 @@ export default function ComunidadCarrera({ codigo }) {
           icon='ti-building'
           title={carrera.nombre}
           subtitle='Comunidad · Foro, materiales y anuncios de la carrera'
+          searchPlaceholder={`Buscar en ${carrera.nombre}...`}
+          searchValue={textoBusqueda}
+          onSearchChange={setTextoBusqueda}
+          searchMaxLength={BUSQUEDA_MAX}
           breadcrumb={[
             { label: 'Inicio', to: '/' },
             { label: 'Comunidades' },
@@ -115,18 +127,25 @@ export default function ComunidadCarrera({ codigo }) {
         {pestana === 'foro' && (
           <ForumFeed
             carreraId={carrera.id}
+            busqueda={busqueda}
             permitirCrear={esPropia}
           />
         )}
         {pestana === 'materiales' && (
           <MaterialFeed
             carreraId={carrera.id}
+            busqueda={busqueda}
             onAbrirSubida={
               puedePublicar ? () => setUploadAbierto(true) : undefined
             }
           />
         )}
-        {pestana === 'anuncios' && <AnnouncementsFeed carreraId={carrera.id} />}
+        {pestana === 'anuncios' && (
+          <AnnouncementsFeed
+            carreraId={carrera.id}
+            busqueda={busqueda}
+          />
+        )}
       </div>
 
       <RightPanel>
