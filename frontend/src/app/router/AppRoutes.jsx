@@ -22,14 +22,15 @@ import {
   GuestRoute,
   TermsRoute,
   AdminRoute,
-  NoSuperadminRoute,
+  RutaAcademicaRoute,
 } from '@/app/router/guards';
 
-// páginas académicas principales: el superadmin entra por las comunidades
-const RUTAS_ACADEMICAS = new Set([
-  '/foro-por-ramos',
-  '/repositorio-materiales',
-  '/anuncios-oficiales',
+// páginas académicas principales → pestaña de la comunidad equivalente.
+// Superadmin y docente entran por las comunidades (RutaAcademicaRoute).
+const RUTAS_ACADEMICAS = new Map([
+  ['/foro-por-ramos', 'foro'],
+  ['/repositorio-materiales', 'materiales'],
+  ['/anuncios-oficiales', 'anuncios'],
 ]);
 
 const TerminosPublico = lazy(() => import('@/pages/legal/UserAgreementPage'));
@@ -134,9 +135,9 @@ export default function AppRoutes() {
                   path={path}
                   element={
                     RUTAS_ACADEMICAS.has(path) ? (
-                      <NoSuperadminRoute>
+                      <RutaAcademicaRoute modulo={RUTAS_ACADEMICAS.get(path)}>
                         <Page />
-                      </NoSuperadminRoute>
+                      </RutaAcademicaRoute>
                     ) : (
                       <Page />
                     )

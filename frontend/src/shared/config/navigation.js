@@ -1,13 +1,4 @@
-export const topNavItems = [
-  { path: '/', label: 'Inicio', icon: 'ti-home' },
-  {
-    path: '/populares',
-    label: 'Populares',
-    icon: 'ti-trending-up',
-    beta: true,
-  },
-  { path: '/explorar', label: 'Explorar', icon: 'ti-compass', beta: true },
-];
+export const topNavItems = [{ path: '/', label: 'Inicio', icon: 'ti-home' }];
 
 export const navSections = [
   {

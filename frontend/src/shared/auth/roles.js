@@ -1,5 +1,6 @@
 export const ROLES = {
   ESTUDIANTE: 'estudiante',
+  DOCENTE: 'docente', // sin carrera: entra a lo académico por las comunidades
   SUPERADMIN: 'superadmin',
 };
 

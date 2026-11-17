@@ -4,6 +4,9 @@ import { cargoVigente } from './cargos.js';
 // CEE y tutor ya no son roles: viven en AsignacionRol (ver cargos.js).
 const ROLES = Object.freeze({
   ESTUDIANTE: 'estudiante',
+  // sin carrera; publica en foro y materiales de cualquier carrera; no opta a
+  // cargos ni publica anuncios (rol base por dominio: rolCorreo.helper.js)
+  DOCENTE: 'docente',
   SUPERADMIN: 'superadmin',
 });
 

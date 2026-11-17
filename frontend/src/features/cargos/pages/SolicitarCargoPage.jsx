@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/shared/auth/authStore';
+import { ROLES } from '@/shared/auth/roles';
 import { obtenerPerfilActual } from '@/shared/auth/auth.service';
 import MisCargos from '@/features/cargos/components/MisCargos';
 import SolicitudForm from '@/features/cargos/components/SolicitudForm';
@@ -41,6 +42,27 @@ export default function SolicitarCargoPage() {
     };
   }, [actualizarUsuario]);
 
+  // los cargos de CEE y tutor son de estudiantes (el backend también lo
+  // rechaza: solicitudes.routes.js)
+  if (usuario?.rol === ROLES.DOCENTE) {
+    return (
+      <div className='mx-auto flex max-w-2xl flex-col gap-4 px-4 py-6 sm:px-6'>
+        <Tarjeta
+          titulo='Solicitar cargo'
+          descripcion='Los cargos de CEE y tutor son para estudiantes: como docente no puedes solicitarlos.'
+        >
+          <button
+            type='button'
+            onClick={() => navigate('/')}
+            className='text-[13px] font-medium text-pink-500 hover:underline'
+          >
+            Volver al inicio
+          </button>
+        </Tarjeta>
+      </div>
+    );
+  }
+  
   const carreras = usuario?.carreras ?? [];
 
   return (

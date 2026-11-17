@@ -13,8 +13,8 @@ import { ROLES } from '../../shared/auth/permissions.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 const router = express.Router();
 
-// Solicitan estudiantes y superadmins (el rol 'docente' no está en ROLES y
-// autorizar lo deniega). La carrera y las demás reglas las valida el servicio.
+// Solicitan estudiantes y superadmins; el docente NO (los cargos de CEE y
+// tutor son de estudiantes). La carrera y las demás reglas las valida el servicio.
 router.post(
   '/',
   autenticar,

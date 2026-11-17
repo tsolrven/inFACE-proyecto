@@ -63,11 +63,9 @@ export default function Sidebar() {
   const toggleSidebar = useUiStore((s) => s.toggleSidebar);
   const abiertoMovil = useUiStore((s) => s.sidebarMovilAbierto);
   const cerrarSidebarMovil = useUiStore((s) => s.cerrarSidebarMovil);
-  // El superadmin ve «Administración» y no «Reportes» dentro de Recursos
-  // (esa entrada es «Mis reportes», que él no usa). Tampoco ve «Académico»:
-  // no pertenece a ninguna carrera, así que consulta foro, materiales y
-  // anuncios desde las comunidades.
+
   const esSuperadmin = useAuthStore((s) => s.usuario?.rol === ROLES.SUPERADMIN);
+  const esDocente = useAuthStore((s) => s.usuario?.rol === ROLES.DOCENTE);
   const carreraPropia = useAuthStore((s) => s.usuario?.carreras?.[0]?.codigo);
 
   // «Comunidades» solo lista las carreras ajenas: la propia ya tiene sus
@@ -80,21 +78,27 @@ export default function Sidebar() {
       ? { ...s, items: s.items.filter((i) => i.path !== rutaPropia) }
       : s;
 
-  // El superadmin ve «Administración» y no «Reportes» dentro de Recursos
-  // (esa entrada es «Mis reportes», que él no usa). Tampoco ve «Académico»:
-  // no pertenece a ninguna carrera, así que consulta foro, materiales y
-  // anuncios desde las comunidades, y ve las cinco.
+  // Superadmin y docente no pertenecen a una carrera: no ven «Académico» (foro,
+  // materiales y anuncios se consultan desde las comunidades, y ven las cinco),
+  // y las comunidades van antes que lo cultural.
+  const seccion = (titulo) => navSections.find((s) => s.title === titulo);
+  const seccionesSinCarrera = ['Comunidades', 'Cultural', 'Recursos'].map(
+    seccion,
+  );
+
+  // El superadmin además ve «Administración» primero, y no «Reportes» en
+  // Recursos (esa entrada es «Mis reportes», que él no usa).
   const secciones = esSuperadmin
     ? [
       navAdmin,
-      ...navSections
-        .filter((s) => s.title !== 'Académico')
-        .map((s) => ({
-          ...s,
-          items: s.items.filter((i) => i.path !== '/reportes'),
-        })),
+      ...seccionesSinCarrera.map((s) => ({
+        ...s,
+        items: s.items.filter((i) => i.path !== '/reportes'),
+      })),
     ]
-    : navSections.map(sinPropia);
+    : esDocente
+      ? seccionesSinCarrera
+      : navSections.map(sinPropia);
 
   const onNavigate = () => cerrarSidebarMovil();
 
@@ -126,22 +130,6 @@ export default function Sidebar() {
           label='Inicio'
           icon='ti-home'
           end
-          colapsado={colapsado}
-          onNavigate={onNavigate}
-        />
-        <NavItem
-          path='/populares'
-          label='Populares'
-          icon='ti-trending-up'
-          beta
-          colapsado={colapsado}
-          onNavigate={onNavigate}
-        />
-        <NavItem
-          path='/explorar'
-          label='Explorar'
-          icon='ti-compass'
-          beta
           colapsado={colapsado}
           onNavigate={onNavigate}
         />

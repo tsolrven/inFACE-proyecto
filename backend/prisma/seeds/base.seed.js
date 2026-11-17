@@ -121,6 +121,26 @@ const usuarios = [
     carrera: 'ICO',
     campus: 'Concepción',
   },
+  // docentes ── (rol base por dominio @ubiobio.cl; SIN carrera: publican en
+  // foro y materiales de cualquier carrera desde las comunidades)
+  {
+    correo: 'docente1@ubiobio.cl',
+    contrasena: 'Test1234',
+    rol: 'docente',
+    nombre_usuario: 'docente1',
+    nombre_completo: 'Docente Uno',
+    cargo: 'academico',
+    campus: 'Concepción',
+  },
+  {
+    correo: 'docente2@ubiobio.cl',
+    contrasena: 'Test1234',
+    rol: 'docente',
+    nombre_usuario: 'docente2',
+    nombre_completo: 'Docente Dos',
+    cargo: 'funcionario',
+    campus: 'Concepción',
+  },
   // superadmin ──
   {
     correo: 'admin2@ubiobio.cl',
@@ -156,7 +176,13 @@ export async function seedBase(prisma, bcrypt, carrerasCreadas) {
         contrasena: hash,
         rol: u.rol === 'cee' || u.rol === 'tutor' ? 'estudiante' : u.rol,
         perfil: {
-          create: { nombre_usuario: u.nombre_usuario, campus: u.campus },
+          create: {
+            nombre_usuario: u.nombre_usuario,
+            campus: u.campus,
+            // como en el registro: solo los académicos traen nombre y cargo
+            nombre_completo: u.nombre_completo ?? null,
+            cargo: u.cargo ?? null,
+          },
         },
       },
       include: { perfil: true },

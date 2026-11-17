@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/shared/auth/authStore';
+import { ROLES } from '@/shared/auth/roles';
 import { useUiStore } from '@/shared/stores/uiStore';
 import NotificationBell from '@/shared/notifications/NotificationBell';
 import Mascota from '@/shared/mascota/Mascota';
@@ -118,15 +119,20 @@ export default function Navbar() {
                 }}
               />
               <div className='mx-0 my-0.5 h-px bg-white/[0.07]' />
-              <DropdownItem
-                icon='ti-id-badge-2'
-                label='Solicitar cargo'
-                onClick={() => {
-                  setDropdownOpen(false);
-                  navigate('/solicitar-cargo');
-                }}
-              />
-              <div className='mx-0 my-0.5 h-px bg-white/[0.07]' />
+              {/* los cargos de CEE y tutor son de estudiantes */}
+              {usuario?.rol !== ROLES.DOCENTE && (
+                <>
+                  <DropdownItem
+                    icon='ti-id-badge-2'
+                    label='Solicitar cargo'
+                    onClick={() => {
+                      setDropdownOpen(false);
+                      navigate('/solicitar-cargo');
+                    }}
+                  />
+                  <div className='mx-0 my-0.5 h-px bg-white/[0.07]' />
+                </>
+              )}
               <DropdownItem
                 icon='ti-settings'
                 label='Ajustes'

@@ -2,6 +2,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/shared/auth/authStore';
 import { ROLES } from '@/shared/auth/roles';
 import Landing from '@/pages/LandingPage';
+import { AccesoDesdeComunidades } from '@/features/communities';
 
 export function ProtectedRoute({ children }) {
   const usuario = useAuthStore((s) => s.usuario);
@@ -123,18 +124,15 @@ export function AdminRoute({ children }) {
   return children;
 }
 
-// El superadmin no usa las páginas académicas principales: no pertenece a
-// ninguna carrera y consulta foro, materiales y anuncios desde las
-// comunidades. Es solo de interfaz: la seguridad real está en el backend.
-export function NoSuperadminRoute({ children }) {
-  const esSuperadmin = useAuthStore((s) => s.usuario?.rol === ROLES.SUPERADMIN);
-  if (esSuperadmin) {
-    return (
-      <Navigate
-        to='/admin/reportes'
-        replace
-      />
-    );
+// Páginas académicas principales (foro, materiales y anuncios de la carrera
+// propia). Superadmin y docente las consultan desde las comunidades: ven un
+// aviso con enlaces a cada comunidad, ya en la pestaña del módulo. Solo
+// interfaz: la seguridad real está en el backend.
+// modulo: 'foro' | 'materiales' | 'anuncios'
+export function RutaAcademicaRoute({ modulo, children }) {
+  const rol = useAuthStore((s) => s.usuario?.rol);
+  if (rol === ROLES.SUPERADMIN || rol === ROLES.DOCENTE) {
+    return <AccesoDesdeComunidades modulo={modulo} />;
   }
   return children;
 }
