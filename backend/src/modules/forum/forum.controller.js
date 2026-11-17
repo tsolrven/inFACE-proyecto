@@ -11,13 +11,22 @@ import ApiResponse from '../../utils/apiResponse.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function listar(req, res, next) {
   try {
-    const { carrera_id, ramo_id, hashtag, busqueda, orden, pagina, limite } =
-      req.query;
+    const {
+      carrera_id,
+      ramo_id,
+      hashtag,
+      busqueda,
+      estado,
+      orden,
+      pagina,
+      limite,
+    } = req.query;
     const { hilos, total } = await listarHilos({
       carrera_id: carrera_id ?? req.usuario.carrera_id,
       ramo_id,
       hashtag,
       busqueda,
+      estado,
       orden,
       pagina,
       limite,

@@ -77,6 +77,7 @@ async function listarHilos({
   ramo_id,
   hashtag,
   busqueda,
+  estado,
   orden = 'recientes',
   pagina = 1,
   limite = 20,
@@ -90,6 +91,9 @@ async function listarHilos({
   const where = { ramo: { ramo_carrera: { some: { carrera_id } } } };
   if (ramo_id) where.ramo_id = ramo_id;
   if (hashtag) where.hashtags = filtroPorHashtag(hashtag);
+  // resuelto = tiene respuesta aceptada (formatearHilo usa el mismo criterio)
+  if (estado === 'resueltos') where.respuesta_aceptada_id = { not: null };
+  if (estado === 'sin_resolver') where.respuesta_aceptada_id = null;
 
   // barra de búsqueda: "#prefijo" busca por hashtag; si no, por texto.
   // En AND: no pisa el filtro ?hashtag= si viene también.

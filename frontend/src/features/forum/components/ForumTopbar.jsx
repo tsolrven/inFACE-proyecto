@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import FiltroRamo from '@/shared/components/FiltroRamo';
+import FiltroEstadoHilo from '@/features/forum/components/FiltroEstadoHilo';
 import Button from '@/shared/components/ui/Button';
 import HiloFormModal from '@/features/forum/components/HiloFormModal';
 import { useForumFiltrosStore } from '@/features/forum/store/forumFiltrosStore';
@@ -37,6 +38,7 @@ export default function ForumTopbar({ carreraId, permitirCrear = true }) {
         ramoId={ramoId}
         onCambiar={(id) => setFiltro('ramo_id', id)}
       />
+      <FiltroEstadoHilo />
 
       <div className='ml-auto flex gap-1'>
         {ORDENES.map((o) => (

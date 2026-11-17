@@ -58,6 +58,10 @@ const listarHilosQuerySchema = paginacionQuerySchema.extend({
   ramo_id: z.string().uuid('El id del ramo no es válido').optional(),
   hashtag: hashtagFiltroSchema.optional(),
   busqueda: busquedaQuerySchema,
+  // resuelto = tiene respuesta aceptada (mismo criterio que el chip "Resuelto")
+  estado: z
+    .enum(['resueltos', 'sin_resolver'], { error: 'Estado inválido' })
+    .optional(),
   orden: z
     .enum(['recientes', 'populares'], { error: 'Orden inválido' })
     .optional(),

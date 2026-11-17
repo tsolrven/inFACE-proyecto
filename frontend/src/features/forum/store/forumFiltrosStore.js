@@ -2,6 +2,7 @@ import { create } from 'zustand';
 
 const FILTROS_INICIALES = {
   ramo_id: null,
+  estado: null, // null | 'resueltos' | 'sin_resolver'
   orden: 'recientes',
 };
 

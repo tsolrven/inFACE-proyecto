@@ -26,6 +26,7 @@ import { mostrarToast } from '@/shared/stores/toastStore';
 // La clave empieza con 'hilo': así votos y guardados (shared/post/cache.js)
 // actualizan estas listas sin código extra.
 export const hiloKeys = {
+  lists: () => ['hilo', 'list'],
   list: (filtros) => ['hilo', 'list', filtros],
   detail: (id) => ['hilo', 'detail', id],
 };
@@ -186,6 +187,9 @@ export function useAceptarRespuesta(hiloId) {
         respuesta_aceptada_id,
         resuelto,
       });
+      // el hilo cambia de estado: debe salir de "Sin resolver" y entrar en
+      // "Resueltos". Parchear no basta, así que las listas se vuelven a pedir
+      qc.invalidateQueries({ queryKey: hiloKeys.lists() });
     },
     onError: (err) =>
       mostrarToast(err.message || 'No se pudo marcar la respuesta'),
@@ -203,6 +207,8 @@ export function useDesmarcarRespuesta(hiloId) {
       });
       // el comentario vuelve a la lista normal: se recarga la lista activa
       qc.invalidateQueries({ queryKey: commentKeys.contenido('hilo', hiloId) });
+      // el hilo vuelve a "Sin resolver" (ver useAceptarRespuesta)
+      qc.invalidateQueries({ queryKey: hiloKeys.lists() });
     },
     onError: (err) =>
       mostrarToast(err.message || 'No se pudo desmarcar la respuesta'),

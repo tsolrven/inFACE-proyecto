@@ -43,24 +43,32 @@ export default function ForumFeed({
     fetchNextPage,
   });
 
-  const hayOtrosFiltros = !!filtros.ramo_id;
+  const hayOtrosFiltros = !!(filtros.ramo_id || filtros.estado);
+  const etiquetaEstado = {
+    resueltos: 'resueltos',
+    sin_resolver: 'sin resolver',
+  }[filtros.estado];
+  // vacío cuando el único motivo son los filtros (ramo y/o estado)
+  const tituloFiltros = etiquetaEstado
+    ? `No hay hilos ${etiquetaEstado}${filtros.ramo_id ? ' en este ramo' : ''}`
+    : 'No hay hilos con estos filtros';
   const textoVacio = busqueda
     ? {
       titulo: `Sin resultados para «${busqueda}»`,
       detalle: hayOtrosFiltros
-        ? 'Prueba con otras palabras o quitando el filtro de ramo.'
+        ? 'Prueba con otras palabras o quitando algún filtro.'
         : 'Prueba con otras palabras.',
     }
     : hashtag
     ? {
         titulo: `No hay hilos con #${hashtag}`,
         detalle: hayOtrosFiltros
-          ? 'Prueba quitando el filtro de ramo.'
+          ? 'Prueba quitando algún filtro.'
           : 'Nadie ha usado este hashtag en el foro de tu carrera.',
       }
     : hayOtrosFiltros
       ? {
-          titulo: 'No hay hilos con estos filtros',
+          titulo: tituloFiltros,
           detalle: 'Prueba quitando algún filtro.',
         }
       : {

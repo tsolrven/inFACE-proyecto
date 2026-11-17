@@ -15,6 +15,7 @@ import GaleriaImagenes from '@/shared/post/images/GaleriaImagenes';
 import MarkdownView from '@/shared/markdown/MarkdownView';
 import HiloMenu from '@/features/forum/components/HiloMenu';
 import {
+  hiloKeys,
   useHilo,
   useRespuestaAceptada,
   useAceptarRespuesta,
@@ -56,13 +57,16 @@ export default function HiloDetailModal() {
   }
 
   // Si se elimina la respuesta aceptada, el backend ya limpió la aceptación:
-  // se refleja en el caché sin esperar a recargar.
+  // se refleja en el caché sin esperar a recargar. Las listas se vuelven a
+  // pedir porque el hilo pasa de "Resueltos" a "Sin resolver"
+  // (mismo criterio que useAceptarRespuesta / useDesmarcarRespuesta).
   function alEliminarComentario(comentarioId) {
     if (comentarioId === hilo?.respuesta_aceptada_id) {
       parchearContenido(qc, 'hilo', id, {
         respuesta_aceptada_id: null,
         resuelto: false,
       });
+      qc.invalidateQueries({ queryKey: hiloKeys.lists() });
     }
   }
 
