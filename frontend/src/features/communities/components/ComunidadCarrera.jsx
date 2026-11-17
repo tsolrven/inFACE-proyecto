@@ -11,6 +11,9 @@ import { AnnouncementsFeed } from '@/features/announcements';
 import MaterialGuardados from '@/features/materials/components/MaterialGuardados';
 import ForumGuardados from '@/features/forum/components/ForumGuardados';
 import AnnouncementsGuardados from '@/features/announcements/components/AnnouncementsGuardados';
+import TopColaboradoresCard from '@/shared/statistics/TopColaboradoresCard';
+import TagsPopularesCard from '@/shared/statistics/TagsPopularesCard';
+import armadilloRepositorio from '@/assets/armadillo-repositorio-materiales.png';
 import { listarCarreras } from '@/shared/api/catalog.api';
 import { useAuthStore } from '@/shared/auth/authStore';
 import { puedeEscribir } from '@/shared/auth/roles';
@@ -34,6 +37,14 @@ const ACENTO_MODULO = {
   foro: 'border-emerald-400',
   materiales: 'border-blue-400',
   anuncios: 'border-amber-400',
+};
+
+// panel derecho: las estadísticas siguen a la pestaña activa
+// (anuncios no tiene top colaboradores: publican solo CEE y tutores)
+const ESTADISTICAS_PESTANA = {
+  foro: { tipo: 'hilo', etiqueta: 'Foro', conTop: true },
+  materiales: { tipo: 'apunte', etiqueta: 'Materiales', conTop: true },
+  anuncios: { tipo: 'anuncio', etiqueta: 'Anuncios', conTop: false },
 };
 
 function Estado({ children }) {
@@ -215,7 +226,27 @@ export default function ComunidadCarrera({ codigo }) {
               publicar solo está disponible en tu propia carrera.
             </p>
           )}
+          <img
+            src={armadilloRepositorio}
+            alt={`Armadillo mascota de la comunidad de ${carrera.nombre}`}
+            className='mt-2.5 w-full rounded-[10px]'
+          />
         </RpCard>
+
+        {ESTADISTICAS_PESTANA[pestana].conTop && (
+          <TopColaboradoresCard
+            tipo={ESTADISTICAS_PESTANA[pestana].tipo}
+            carreraId={carrera.id}
+            etiquetaModulo={ESTADISTICAS_PESTANA[pestana].etiqueta}
+          />
+        )}
+
+        <TagsPopularesCard
+          tipo={ESTADISTICAS_PESTANA[pestana].tipo}
+          carreraId={carrera.id}
+          carreraCodigo={carrera.codigo.toLowerCase()}
+          etiquetaModulo={ESTADISTICAS_PESTANA[pestana].etiqueta}
+        />
       </RightPanel>
 
       {puedePublicar && (

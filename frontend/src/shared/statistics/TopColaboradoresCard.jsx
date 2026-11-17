@@ -20,7 +20,13 @@ function formatearPuntos(puntos) {
 }
 
 // tipo: 'apunte' | 'hilo' (anuncios no tiene ranking)
-export default function TopColaboradoresCard({ tipo, carreraId }) {
+// etiquetaModulo (opcional): se agrega al título cuando el mismo panel muestra
+// estadísticas de distintos módulos (comunidades)
+export default function TopColaboradoresCard({
+  tipo,
+  carreraId,
+  etiquetaModulo,
+}) {
   const {
     data: colaboradores = [],
     isPending,
@@ -29,7 +35,11 @@ export default function TopColaboradoresCard({ tipo, carreraId }) {
 
   return (
     <RpCard
-      title='Top colaboradores'
+      title={
+        etiquetaModulo
+          ? `Top colaboradores · ${etiquetaModulo}`
+          : 'Top colaboradores'
+      }
       icon='ti-star'
     >
       {isPending && carreraId ? (

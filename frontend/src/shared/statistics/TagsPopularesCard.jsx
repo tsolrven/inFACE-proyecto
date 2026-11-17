@@ -13,13 +13,21 @@ const PESTANA_HASHTAG = {
 // tipo: 'apunte' | 'hilo' | 'anuncio'
 // carreraCodigo (opcional): código de la comunidad, para que el link al
 // hashtag abra esa carrera y no la del usuario (rutaHashtag)
-export default function TagsPopularesCard({ tipo, carreraId, carreraCodigo }) {
+// etiquetaModulo (opcional): ver TopColaboradoresCard
+export default function TagsPopularesCard({
+  tipo,
+  carreraId,
+  carreraCodigo,
+  etiquetaModulo,
+}) {
   const { data, isPending, isError } = useHashtagsPopulares(tipo, carreraId);
   const tags = data?.hashtags ?? [];
 
   return (
     <RpCard
-      title='Tags populares'
+      title={
+        etiquetaModulo ? `Tags populares · ${etiquetaModulo}` : 'Tags populares'
+      }
       icon='ti-hash'
     >
       {isPending && carreraId ? (
