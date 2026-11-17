@@ -4,7 +4,7 @@ import { BadRequestError } from '../../errors/appError.js';
 import {
   verificarContenidoExiste,
   hidratarGuardados,
-  buscarEnGuardados,
+  filtrarGuardados,
   tiposContenidoValidos,
 } from '../content/contentRegistry.js';
 import {
@@ -30,7 +30,11 @@ async function quitarGuardado({ usuario_id, tipo_contenido, contenido_id }) {
   return { guardado: false };
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-// Ids guardados de un tipo, del más reciente al más antiguo.
+function paginar(lista, pagina, limite) {
+  return lista.slice((pagina - 1) * limite, pagina * limite);
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+// Ids guardados de un tipo, del más reciente al más antiguo (sin filtros).
 async function listarIdsGuardados({
   usuario_id,
   tipo_contenido,
@@ -49,13 +53,14 @@ async function listarIdsGuardados({
   return { ids: registros.map((r) => r.contenido_id), total };
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-// Con búsqueda: se traen TODOS los ids guardados (una persona guarda decenas o
-// cientos, no miles), el módulo dueño dice cuáles coinciden y se pagina aquí,
-// conservando el orden de guardado.
-async function listarIdsGuardadosConBusqueda({
+// Con búsqueda y/o carrera: se traen TODOS los ids guardados (una persona
+// guarda decenas o cientos, no miles), el módulo dueño dice cuáles cumplen y
+// se pagina aquí, conservando el orden de guardado.
+async function listarIdsGuardadosFiltrados({
   usuario_id,
   tipo_contenido,
   consulta,
+  carrera_id,
   pagina,
   limite,
 }) {
@@ -67,34 +72,62 @@ async function listarIdsGuardadosConBusqueda({
   const todos = registros.map((r) => r.contenido_id);
   if (todos.length === 0) return { ids: [], total: 0 };
 
-  const coinciden = new Set(
-    await buscarEnGuardados(tipo_contenido, consulta, todos),
+  const cumplen = new Set(
+    await filtrarGuardados(tipo_contenido, todos, { consulta, carrera_id }),
   );
-  const filtrados = todos.filter((id) => coinciden.has(id));
+  const filtrados = todos.filter((id) => cumplen.has(id));
 
-  return {
-    ids: filtrados.slice((pagina - 1) * limite, pagina * limite),
-    total: filtrados.length,
-  };
+  return { ids: paginar(filtrados, pagina, limite), total: filtrados.length };
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 // Comentarios guardados que pertenecen a un tipo de contenido (ej: solo los de hilos).
 // Guardado es polimórfico (sin FK a comentarios), así que el filtro es un JOIN a mano.
 // Es el único punto donde este servicio conoce la tabla de comentarios.
 // Con `texto`, busca en el contenido y excluye los comentarios eliminados.
+// Con `carrera_id`, la carrera la decide el módulo de la publicación (padre),
+// por eso ese caso se pagina aquí y no en SQL.
 async function listarIdsGuardadosDeComentarios({
   usuario_id,
   padre,
   texto,
+  carrera_id,
   pagina,
   limite,
 }) {
-  const offset = (pagina - 1) * limite;
   const filtroBusqueda = texto
     ? Prisma.sql`AND c.eliminado = false
         AND ${condicionTexto(['c.contenido'], texto)}`
     : Prisma.empty;
 
+  if (carrera_id) {
+    const filas = await prisma.$queryRaw`
+      SELECT g.contenido_id, c.contenido_id AS publicacion_id
+      FROM guardados g
+      JOIN comentarios c ON c.id = g.contenido_id
+      WHERE g.usuario_id = ${usuario_id}
+        AND g.tipo_contenido = 'comentario'
+        AND c.tipo_contenido = ${padre}
+        ${filtroBusqueda}
+      ORDER BY g.creado_en DESC`;
+    if (filas.length === 0) return { ids: [], total: 0 };
+
+    // publicaciones (de un mismo tipo) que pertenecen a la carrera
+    const publicaciones = [...new Set(filas.map((f) => f.publicacion_id))];
+    const deLaCarrera = new Set(
+      await filtrarGuardados(padre, publicaciones, {
+        consulta: null,
+        carrera_id,
+      }),
+    );
+    const filtradas = filas.filter((f) => deLaCarrera.has(f.publicacion_id));
+
+    return {
+      ids: paginar(filtradas, pagina, limite).map((f) => f.contenido_id),
+      total: filtradas.length,
+    };
+  }
+
+  const offset = (pagina - 1) * limite;
   const [filas, conteo] = await Promise.all([
     prisma.$queryRaw`
       SELECT g.contenido_id
@@ -134,6 +167,7 @@ async function listarGuardados({
   tipo_contenido = 'apunte',
   padre,
   busqueda,
+  carrera_id,
   pagina = 1,
   limite = 20,
 }) {
@@ -147,25 +181,28 @@ async function listarGuardados({
       usuario_id,
       padre,
       texto: textoBusquedaComentario(busqueda),
+      carrera_id,
       pagina,
       limite,
     });
   } else {
     const consulta = interpretarBusqueda(busqueda);
-    resultado = consulta
-      ? await listarIdsGuardadosConBusqueda({
-        usuario_id,
-        tipo_contenido,
-        consulta,
-        pagina,
-        limite,
-      })
-      : await listarIdsGuardados({
-        usuario_id,
-        tipo_contenido,
-        pagina,
-        limite,
-      });
+    resultado =
+      consulta || carrera_id
+        ? await listarIdsGuardadosFiltrados({
+          usuario_id,
+          tipo_contenido,
+          consulta,
+          carrera_id,
+          pagina,
+          limite,
+        })
+        : await listarIdsGuardados({
+          usuario_id,
+          tipo_contenido,
+          pagina,
+          limite,
+        });
   }
 
   const { ids, total } = resultado;

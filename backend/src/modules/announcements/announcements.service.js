@@ -13,7 +13,7 @@ import {
 import { eliminarContenido } from '../../shared/content/contentCleanup.js';
 import {
   registrarHidratadorGuardados,
-  registrarBuscadorGuardados,
+  registrarFiltroGuardados,
   registrarPermisoAdjuntos,
   bloquearContenido,
   registrarEliminadorModeracion,
@@ -418,9 +418,10 @@ function formatearAnuncio(
 // ────────────────────────────────────────────────────────────────────────────────────────
 registrarHidratadorGuardados('anuncio', hidratarAnunciosGuardados);
 
-// Búsqueda en la pestaña Guardados: mismas reglas que el listado
-registrarBuscadorGuardados('anuncio', async (consulta, ids) => {
+// Guardados: búsqueda (mismas reglas que el listado) y carrera del anuncio
+registrarFiltroGuardados('anuncio', async (ids, { consulta, carrera_id }) => {
   const where = { id: { in: ids } };
+  if (carrera_id) where.carrera_id = carrera_id;
   if (!(await aplicarBusqueda(where, consulta, idsPorBusquedaTexto))) return [];
   const filas = await prisma.anuncio.findMany({ where, select: { id: true } });
   return filas.map((f) => f.id);

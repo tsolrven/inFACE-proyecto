@@ -15,7 +15,7 @@ import { eliminarContenido } from '../../shared/content/contentCleanup.js';
 import {
   bloquearContenido,
   registrarHidratadorGuardados,
-  registrarBuscadorGuardados,
+  registrarFiltroGuardados,
   registrarEliminadorModeracion,
   registrarAlQuitarArchivo,
 } from '../../shared/content/contentRegistry.js';
@@ -468,9 +468,11 @@ function formatearApunte(
 // ────────────────────────────────────────────────────────────────────────────────────────
 registrarHidratadorGuardados('apunte', hidratarApuntesGuardados);
 // ────────────────────────────────────────────────────────────────────────────────────────
-// Búsqueda en la pestaña Guardados: mismas reglas que el listado
-registrarBuscadorGuardados('apunte', async (consulta, ids) => {
+// Guardados: búsqueda (mismas reglas que el listado) y carrera (la del ramo;
+// un ramo compartido pertenece a todas sus carreras, igual que en el listado)
+registrarFiltroGuardados('apunte', async (ids, { consulta, carrera_id }) => {
   const where = { id: { in: ids } };
+  if (carrera_id) where.ramo = { ramo_carrera: { some: { carrera_id } } };
   if (!(await aplicarBusqueda(where, consulta, idsPorBusquedaTexto))) return [];
   const filas = await prisma.apunte.findMany({ where, select: { id: true } });
   return filas.map((f) => f.id);

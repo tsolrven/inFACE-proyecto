@@ -266,22 +266,23 @@ async function hidratarGuardados(tipo_contenido, ids, usuario_id) {
   return entrada.hidratarGuardados(ids, usuario_id);
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-// Cada módulo registra cómo busca entre SUS contenidos guardados (la barra de
-// búsqueda de la pestaña Guardados). El buscador recibe
-// (consulta, ids) — consulta de interpretarBusqueda e ids guardados del
-// usuario — y devuelve los ids que coinciden (en cualquier orden).
-function registrarBuscadorGuardados(tipo_contenido, buscador) {
-  obtenerEntradaRegistro(tipo_contenido).buscarGuardados = buscador;
+// Cada módulo registra cómo filtra una lista de ids de SUS contenidos
+// (pestaña Guardados y comentarios guardados de una comunidad). El filtro
+// recibe (ids, { consulta, carrera_id }) — consulta de interpretarBusqueda o
+// null; carrera_id o undefined — y devuelve los ids que cumplen ambos, en
+// cualquier orden. Un contenido que ya no existe nunca cumple.
+function registrarFiltroGuardados(tipo_contenido, filtro) {
+  obtenerEntradaRegistro(tipo_contenido).filtrarGuardados = filtro;
 }
 
-async function buscarEnGuardados(tipo_contenido, consulta, ids) {
+async function filtrarGuardados(tipo_contenido, ids, opciones) {
   const entrada = obtenerEntradaRegistro(tipo_contenido);
-  if (!entrada.buscarGuardados) {
+  if (!entrada.filtrarGuardados) {
     throw new BadRequestError(
-      `"${entrada.label}" no admite búsqueda en guardados`,
+      `"${entrada.label}" no admite búsqueda ni filtro por carrera en guardados`,
     );
   }
-  return entrada.buscarGuardados(consulta, ids);
+  return entrada.filtrarGuardados(ids, opciones);
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 function registrarAlEliminarComentario(tipo_contenido, hook) {
@@ -414,8 +415,8 @@ export {
   obtenerVistasContenido,
   registrarHidratadorGuardados,
   hidratarGuardados,
-  registrarBuscadorGuardados,
-  buscarEnGuardados,
+  registrarFiltroGuardados,
+  filtrarGuardados,
   registrarAlEliminarComentario,
   registrarEliminadorModeracion,
   eliminarPorModeracion,

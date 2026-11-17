@@ -32,6 +32,11 @@ const listarGuardadosQuerySchema = paginacionQuerySchema
       .refine((padre) => admiteComentarios(padre), ERROR_MESSAGES.padre.invalid)
       .optional(),
     busqueda: busquedaQuerySchema,
+    // comunidad: solo lo guardado de esa carrera
+    carrera_id: z
+      .string()
+      .uuid('El id de la carrera no es válido')
+      .optional(),
   })
   .refine((query) => !query.padre || query.tipo === 'comentario', {
     message: ERROR_MESSAGES.padre.solo_comentarios,

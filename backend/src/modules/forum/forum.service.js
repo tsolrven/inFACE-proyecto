@@ -13,7 +13,7 @@ import {
 import { eliminarContenido } from '../../shared/content/contentCleanup.js';
 import {
   registrarHidratadorGuardados,
-  registrarBuscadorGuardados,
+  registrarFiltroGuardados,
   registrarAlEliminarComentario,
   registrarEliminadorModeracion,
   bloquearContenido,
@@ -394,9 +394,11 @@ function formatearHilo(
 // ────────────────────────────────────────────────────────────────────────────────────────
 registrarHidratadorGuardados('hilo', hidratarHilosGuardados);
 
-// Búsqueda en la pestaña Guardados: mismas reglas que el listado
-registrarBuscadorGuardados('hilo', async (consulta, ids) => {
+// Guardados: búsqueda (mismas reglas que el listado) y carrera (la del ramo;
+// un ramo compartido pertenece a todas sus carreras, igual que en el listado)
+registrarFiltroGuardados('hilo', async (ids, { consulta, carrera_id }) => {
   const where = { id: { in: ids } };
+  if (carrera_id) where.ramo = { ramo_carrera: { some: { carrera_id } } };
   if (!(await aplicarBusqueda(where, consulta, idsPorBusquedaTexto))) return [];
   const filas = await prisma.hilo.findMany({ where, select: { id: true } });
   return filas.map((f) => f.id);
