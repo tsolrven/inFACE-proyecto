@@ -25,11 +25,7 @@ import {
   puedePublicarAnuncioEn,
 } from '../../shared/auth/permissions.js';
 import { AUTOR_PUBLICO_SELECT } from '../../shared/content/selects.js';
-import {
-  hoyEnChile,
-  filtroCargoVigente,
-  TIPOS_CARGO,
-} from '../../shared/auth/cargos.js';
+import { cargoVigente, TIPOS_CARGO } from '../../shared/auth/cargos.js';
 import { recortar } from '../../shared/content/extracto.js';
 import {
   INCLUDE_HASHTAGS,
@@ -47,7 +43,8 @@ import { notificarReportesCerrados } from '../../shared/moderation/reports.notif
 // En las listas el contenido viaja recortado; el detalle lo trae completo.
 const EXTRACTO_MAX = 300;
 
-// La insignia del autor (CEE, Tutor) se calcula en formatearAnuncios.
+// La insignia del autor (CEE, Tutor) es Anuncio.cargo_autor: el cargo con que
+// se publicó, guardado al crear (no el vigente hoy).
 const INCLUDE_ANUNCIO = {
   autor: { select: AUTOR_PUBLICO_SELECT },
   carrera: { select: { id: true, nombre: true, codigo: true } },
@@ -65,33 +62,10 @@ async function formatearAnuncios(
   const { mapVotos, setGuardados, mapComentarios, mapArchivos } =
     await obtenerEnriquecimiento('anuncio', ids, usuario_id);
 
-  // cargo vigente de cada autor en la carrera de su anuncio (insignia)
-  const autorIds = [...new Set(anuncios.map((a) => a.autor.id))];
-  const cargosVigentes = autorIds.length
-    ? await prisma.asignacionRol.findMany({
-      where: {
-        usuario_id: { in: autorIds },
-        ...filtroCargoVigente(hoyEnChile()),
-      },
-      select: { usuario_id: true, carrera_id: true, tipo: true },
-    })
-    : [];
-  const cargoDe = (a) => {
-    const propios = cargosVigentes.filter(
-      (c) => c.usuario_id === a.autor.id && c.carrera_id === a.carrera.id,
-    );
-    return (
-      propios.find((c) => c.tipo === TIPOS_CARGO.CEE)?.tipo ??
-      propios[0]?.tipo ??
-      null
-    );
-  };
-
   return anuncios.map((a) =>
     formatearAnuncio(a, {
       extracto,
       comentarios: mapComentarios.get(a.id) ?? 0,
-      cargo: cargoDe(a),
       archivos: mapArchivos.get(a.id) ?? [],
       mi_voto: mapVotos.get(a.id) ?? null,
       esta_guardado: setGuardados.has(a.id),
@@ -120,6 +94,7 @@ async function idsPorBusquedaTexto(texto) {
 async function listarAnuncios({
   carrera_id,
   flair_id,
+  cargo,
   hashtag,
   busqueda,
   orden = 'recientes',
@@ -133,6 +108,7 @@ async function listarAnuncios({
 
   const where = { carrera_id };
   if (flair_id) where.flair_id = flair_id;
+  if (cargo) where.cargo_autor = cargo;
   if (hashtag) where.hashtags = filtroPorHashtag(hashtag);
 
   // barra de búsqueda: "#prefijo" busca por hashtag; si no, por texto.
@@ -250,6 +226,13 @@ async function crearAnuncio({
   if (!carrera) throw new NotFoundError('Carrera');
   if (flair_id) await exigirFlairDeLaCarrera(flair_id, destino);
 
+  // cargo con que se publica (insignia y filtro). Si tiene ambos en la
+  // carrera, CEE. Existe: puedePublicarAnuncioEn lo exigió arriba.
+  const cargo_autor = (
+    cargoVigente(usuario, { tipo: TIPOS_CARGO.CEE, carrera_id: destino }) ??
+    cargoVigente(usuario, { carrera_id: destino })
+  ).tipo;
+
   // todo lo que puede fallar por datos inválidos, antes de abrir la transacción
   const hashtagsCreate = await resolverHashtags(hashtags);
   const datosArchivos = archivos.map(datosArchivo);
@@ -260,6 +243,7 @@ async function crearAnuncio({
         autor_id: usuario.id,
         carrera_id: destino,
         flair_id: flair_id ?? null,
+        cargo_autor,
         titulo,
         contenido: contenido ?? null,
         hashtags: { create: hashtagsCreate },
@@ -379,7 +363,6 @@ function formatearAnuncio(
     extracto = false,
     comentarios = 0,
     archivos = [],
-    cargo = null,
     mi_voto = null,
     esta_guardado = false,
   } = {},
@@ -403,7 +386,7 @@ function formatearAnuncio(
     autor: {
       id: anuncio.autor.id,
       nombre_usuario: anuncio.autor.perfil?.nombre_usuario,
-      cargo,
+      cargo: anuncio.cargo_autor,
     },
     carrera: {
       id: anuncio.carrera.id,

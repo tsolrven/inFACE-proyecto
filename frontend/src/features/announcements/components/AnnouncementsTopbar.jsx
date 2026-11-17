@@ -11,6 +11,7 @@ import {
 } from '@/features/announcements/utils/permisos';
 import AnuncioFormModal from '@/features/announcements/components/AnuncioFormModal';
 import AdministrarFlairsModal from '@/features/announcements/components/AdministrarFlairsModal';
+import FiltroCargoAnuncio from '@/features/announcements/components/FiltroCargoAnuncio';
 
 const ORDENES = [
   { valor: 'recientes', label: 'Recientes', icono: 'ti-clock' },
@@ -52,6 +53,8 @@ export default function AnnouncementsTopbar({
   return (
     <div className='mb-3'>
       <div className='flex flex-wrap items-center gap-2'>
+        <FiltroCargoAnuncio />
+
         <div className='ml-auto flex gap-1'>
           {ORDENES.map((o) => (
             <button

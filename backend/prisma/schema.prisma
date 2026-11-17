@@ -379,6 +379,8 @@ model Anuncio {
   autor_id       String
   carrera_id     String
   flair_id       String?
+  // cargo con que se publicó (cee o tutor). no cambia si el cargo vence
+  cargo_autor    String    @db.VarChar(10)
   titulo         String
   contenido      String?   // markdown
   votos_neto     Int       @default(0)
@@ -395,6 +397,7 @@ model Anuncio {
   @@index([carrera_id, votos_neto])
   @@index([flair_id])
   @@index([autor_id])
+  @@index([carrera_id, cargo_autor])
   @@map("anuncios")
 }
 

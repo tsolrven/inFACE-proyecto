@@ -4,6 +4,7 @@ import { buildQuery } from '@/shared/api/buildQuery';
 export async function listarAnuncios({
   carrera_id,
   flair_id,
+  cargo,
   hashtag,
   busqueda,
   orden,
@@ -14,6 +15,7 @@ export async function listarAnuncios({
   const qs = buildQuery({
     carrera_id,
     flair_id,
+    cargo,
     hashtag,
     busqueda,
     orden,

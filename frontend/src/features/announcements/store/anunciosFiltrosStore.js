@@ -2,6 +2,7 @@ import { create } from 'zustand';
 
 const FILTROS_INICIALES = {
   flair_id: null,
+  cargo: null, // null | 'cee' | 'tutor'
   orden: 'recientes',
 };
 

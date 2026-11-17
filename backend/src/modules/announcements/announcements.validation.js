@@ -58,6 +58,8 @@ const actualizarAnuncioSchema = z.object({
 const listarAnunciosQuerySchema = paginacionQuerySchema.extend({
   carrera_id: z.string().uuid(ERROR_MESSAGES.carrera.invalid).optional(),
   flair_id: z.string().uuid(ERROR_MESSAGES.flair.invalid).optional(),
+  // cargo con que se publicó el anuncio (Anuncio.cargo_autor)
+  cargo: z.enum(['cee', 'tutor'], { error: 'Cargo inválido' }).optional(),
   hashtag: hashtagFiltroSchema.optional(),
   busqueda: busquedaQuerySchema,
   orden: z

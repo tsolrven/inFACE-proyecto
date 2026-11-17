@@ -13,6 +13,7 @@ export default function AnnouncementsFeed({
   permitirCrear = true,
 }) {
   const flairId = useAnunciosFiltrosStore((s) => s.filtros.flair_id);
+  const cargo = useAnunciosFiltrosStore((s) => s.filtros.cargo);
   const orden = useAnunciosFiltrosStore((s) => s.filtros.orden);
   const alinearCarrera = useAnunciosFiltrosStore((s) => s.alinearCarrera);
 
@@ -25,11 +26,12 @@ export default function AnnouncementsFeed({
     () => ({
       carrera_id: carreraId,
       flair_id: flairId,
+      cargo,
       orden,
       hashtag,
       busqueda,
     }),
-    [carreraId, flairId, orden, hashtag, busqueda],
+    [carreraId, flairId, cargo, orden, hashtag, busqueda],
   );
 
   const {
@@ -49,24 +51,29 @@ export default function AnnouncementsFeed({
     fetchNextPage,
   });
 
-  const hayOtrosFiltros = !!filtros.flair_id;
+  const hayOtrosFiltros = !!(filtros.flair_id || filtros.cargo);
+  const autoresFiltro = { cee: 'del CEE', tutor: 'de tutores' }[filtros.cargo];
+  // vacío cuando el único motivo son los filtros (cargo y/o flair)
+  const tituloFiltros = autoresFiltro
+    ? `No hay anuncios ${autoresFiltro}${filtros.flair_id ? ' con este flair' : ''}`
+    : 'No hay anuncios con estos filtros';
   const textoVacio = busqueda
     ? {
       titulo: `Sin resultados para «${busqueda}»`,
       detalle: hayOtrosFiltros
-        ? 'Prueba con otras palabras o quitando el filtro de flair.'
+        ? 'Prueba con otras palabras o quitando algún filtro.'
         : 'Prueba con otras palabras.',
     }
     : hashtag
     ? {
         titulo: `No hay anuncios con #${hashtag}`,
         detalle: hayOtrosFiltros
-          ? 'Prueba quitando el filtro de flair.'
+          ? 'Prueba quitando algún filtro.'
           : 'Nadie ha usado este hashtag en los anuncios de tu carrera.',
       }
     : hayOtrosFiltros
       ? {
-          titulo: 'No hay anuncios con estos filtros',
+          titulo: tituloFiltros,
           detalle: 'Prueba quitando algún filtro.',
         }
       : {
