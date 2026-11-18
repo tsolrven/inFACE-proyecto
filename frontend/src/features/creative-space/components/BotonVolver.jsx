@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { rutas } from '@/features/creative-space/utils/espacios';
 
 export default function BotonVolver({
@@ -7,7 +7,15 @@ export default function BotonVolver({
   className = '',
 }) {
   const navigate = useNavigate();
+  const location = useLocation();
   function volver() {
+    if (location.state?.reportesReturnTo) {
+      const reporte = location.state.reportesReturnTo;
+      navigate(reporte.path, {
+        state: { reportesModal: { tipo: reporte.tipo, id: reporte.id } },
+      });
+      return;
+    }
     if (window.history.state?.idx > 0) navigate(-1);
     else navigate(fallback, { replace: true });
   }

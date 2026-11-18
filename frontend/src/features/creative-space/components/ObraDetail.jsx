@@ -1,6 +1,6 @@
 import BotonVolver from '@/features/creative-space/components/BotonVolver';
 import { useRef } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import CommentsSection from '@/shared/post/comments/CommentsSection';
 import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
 import { useVotar } from '@/shared/post/votes/useVotar';
@@ -35,6 +35,7 @@ const Cargando = () => (
 export default function ObraDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const comentariosRef = useRef(null);
 
   const { data: obra, isPending, isPlaceholderData, error } = useObra(id);
@@ -48,6 +49,13 @@ export default function ObraDetail() {
     obra?.tipo === 'musica' && !!(obra.portada_id || miniatura);
 
   function handleClose() {
+    if (location.state?.reportesReturnTo) {
+      const reporte = location.state.reportesReturnTo;
+      navigate(reporte.path, {
+        state: { reportesModal: { tipo: reporte.tipo, id: reporte.id } },
+      });
+      return;
+    }
     if (window.history.state?.idx > 0) navigate(-1);
     else {
       const espacio = obra ? ESPACIO_DE_TIPO[obra.tipo] : null;

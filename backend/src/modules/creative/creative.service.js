@@ -12,7 +12,10 @@ import {
 } from '../../shared/files/files.service.js';
 import { eliminarContenido } from '../../shared/content/contentCleanup.js';
 import { notificarReportesCerrados } from '../../shared/moderation/reports.notifications.js';
-import { registrarHidratadorGuardados } from '../../shared/content/contentRegistry.js';
+import {
+  registrarHidratadorGuardados,
+  registrarEliminadorModeracion,
+} from '../../shared/content/contentRegistry.js';
 import { obtenerEnriquecimiento } from '../../shared/content/contentEnrichment.js';
 import { esStaff } from '../../shared/auth/permissions.js';
 import { AUTOR_PUBLICO_SELECT } from '../../shared/content/selects.js';
@@ -596,7 +599,8 @@ async function actualizarObra(id, usuario_id, datos) {
   return obtenerObra(id, usuario_id);
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-async function eliminarObra(id, usuario_id, rol) {
+// `respuesta`: mensaje del moderador al cerrar los reportes (pantalla de reportes)
+async function eliminarObra(id, usuario_id, rol, { respuesta = null } = {}) {
   const obra = await prisma.obra.findUnique({ where: { id } });
   if (!obra) throw new NotFoundError('Obra');
   if (obra.autor_id !== usuario_id && !esStaff(rol)) {
@@ -618,6 +622,7 @@ async function eliminarObra(id, usuario_id, rol) {
       const resultado = await eliminarContenido(tx, 'obra', id, {
         por_moderacion: esStaff(rol),
         revisor_id: usuario_id,
+        respuesta,
       });
       await tx.obra.delete({ where: { id } }); // hashtags, capítulos y personajes caen por cascade
       return resultado;
@@ -931,6 +936,11 @@ async function hidratarObrasGuardadas(ids, usuario_id) {
 }
 
 registrarHidratadorGuardados('obra', hidratarObrasGuardadas);
+
+// Eliminar desde la pantalla de reportes (moderación)
+registrarEliminadorModeracion('obra', (id, usuario, respuesta) =>
+  eliminarObra(id, usuario.id, usuario.rol, { respuesta }),
+);
 // ────────────────────────────────────────────────────────────────────────────────────────
 export {
   listarObras,

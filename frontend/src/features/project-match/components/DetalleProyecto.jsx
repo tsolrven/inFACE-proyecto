@@ -18,6 +18,8 @@ import {
 } from '@/features/project-match/store/interaccionesStore';
 import ConDescripcion from '@/shared/components/ConDescripcion';
 import ShareButton from '@/shared/post/share/ShareButton';
+import { useAuthStore } from '@/shared/auth/authStore';
+import { esStaff } from '@/shared/auth/roles';
 
 const ORDEN_TIPOS = [
   'Área de Interés',
@@ -72,6 +74,9 @@ export default function DetalleProyecto({
   esVistaExterna = false,
 }) {
   const [mostrarForm, setMostrarForm] = useState(false);
+  // moderación: el administrador elimina proyectos ajenos (el backend lo permite
+  // a esStaff en eliminarProyecto)
+  const esModerador = useAuthStore((s) => esStaff(s.usuario?.rol));
   const [mensaje, setMensaje] = useState('');
   const [error, setError] = useState(null);
   const [enviando, setEnviando] = useState(false);
@@ -398,6 +403,28 @@ export default function DetalleProyecto({
               </div>
             )}
 
+            {!esCreador && esModerador && onEliminar && (
+              <div className='flex flex-wrap items-center justify-between gap-3'>
+                <button
+                  onClick={onEliminar}
+                  className='inline-flex items-center gap-1.5 rounded-[10px] border border-white/[0.07] px-3.5 py-2 text-[12.5px] font-medium text-neutral-400 transition hover:border-red-500/30 hover:text-red-400'
+                >
+                  <i className='ti ti-trash text-[14px]' /> Eliminar (moderación)
+                </button>
+                {puedeMostrarAccion && !mostrarForm && (
+                  <button
+                    onClick={() => setMostrarForm(true)}
+                    className='ml-auto inline-flex items-center gap-1.5 rounded-[10px] bg-pink-500 px-4 py-2 text-[12.5px] font-semibold text-white transition hover:bg-pink-600'
+                  >
+                    <i className='ti ti-send text-[14px]' />{' '}
+                    {fueRechazado
+                      ? 'Postularme de nuevo'
+                      : 'Postularme a este proyecto'}
+                  </button>
+                )}
+              </div>
+            )}
+
             {esIntegrante && !esCreador && !enviado && (
               <div className='flex flex-wrap items-center justify-between gap-3 rounded-[10px] bg-emerald-400/[0.08] px-3.5 py-2.5 text-[12.5px] text-emerald-400'>
                 <span className='flex items-center gap-2.5'>
@@ -454,17 +481,21 @@ export default function DetalleProyecto({
                 </p>
               )}
 
-            {puedeMostrarAccion && !mostrarForm && (
-              <button
-                onClick={() => setMostrarForm(true)}
-                className='inline-flex items-center gap-1.5 rounded-[10px] bg-pink-500 px-4 py-2 text-[12.5px] font-semibold text-white transition hover:bg-pink-600'
-              >
-                <i className='ti ti-send text-[14px]' />{' '}
-                {fueRechazado
-                  ? 'Postularme de nuevo'
-                  : 'Postularme a este proyecto'}
-              </button>
-            )}
+            {puedeMostrarAccion &&
+              !mostrarForm &&
+              !(esModerador && !esCreador && onEliminar) && (
+                <div className='flex justify-end'>
+                  <button
+                    onClick={() => setMostrarForm(true)}
+                    className='inline-flex items-center gap-1.5 rounded-[10px] bg-pink-500 px-4 py-2 text-[12.5px] font-semibold text-white transition hover:bg-pink-600'
+                  >
+                    <i className='ti ti-send text-[14px]' />{' '}
+                    {fueRechazado
+                      ? 'Postularme de nuevo'
+                      : 'Postularme a este proyecto'}
+                  </button>
+                </div>
+              )}
 
             {puedeMostrarAccion && mostrarForm && (
               <form

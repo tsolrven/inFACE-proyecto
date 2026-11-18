@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import BotonVolver from '@/features/creative-space/components/BotonVolver';
 import CommentsSection from '@/shared/post/comments/CommentsSection';
 import ShareButton from '@/shared/post/share/ShareButton';
@@ -39,6 +39,7 @@ function Dato({ icono, children }) {
 export default function ProductoPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const preguntasRef = useRef(null);
   const usuario = useAuthStore((s) => s.usuario);
 
@@ -47,6 +48,13 @@ export default function ProductoPage() {
   const esVendedor = !!producto && producto.vendedor?.id === usuario?.id;
 
   function volver() {
+    if (location.state?.reportesReturnTo) {
+      const reporte = location.state.reportesReturnTo;
+      navigate(reporte.path, {
+        state: { reportesModal: { tipo: reporte.tipo, id: reporte.id } },
+      });
+      return;
+    }
     if (window.history.state?.idx > 0) navigate(-1);
     else navigate(rutas.inicio, { replace: true });
   }

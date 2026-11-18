@@ -10,6 +10,7 @@ import {
   ETIQUETA_TIPO,
   ICONO_POR_TIPO,
   rutaDeContenido,
+  seAbreComoModal,
   etiquetaEliminacion,
 } from '@/shared/moderation/reportUi';
 
@@ -43,8 +44,22 @@ export default function ReportesContenidoModal({ tipo, id, onClose }) {
   const ruta = destino ? rutaDeContenido(destino.tipo, destino.id) : null;
 
   function verContenido() {
-    // el modal de detalle se abre encima de /reportes y este modal queda debajo
-    navigate(ruta, { state: { backgroundLocation: location } });
+    // apunte, hilo y anuncio: su modal de detalle se abre encima de la
+    // pantalla de reportes y este modal queda debajo. Obra, producto y
+    // proyecto son páginas completas: se navega a ellas (Atrás vuelve aquí).
+    if (seAbreComoModal(destino.tipo)) {
+      navigate(ruta, { state: { backgroundLocation: location } });
+    } else {
+      navigate(ruta, {
+        state: {
+          reportesReturnTo: {
+            path: `${location.pathname}${location.search}${location.hash}`,
+            tipo,
+            id,
+          },
+        },
+      });
+    }
   }
 
   return (

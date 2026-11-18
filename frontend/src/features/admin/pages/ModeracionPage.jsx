@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import Pestanas from '@/shared/components/ui/Pestanas';
 import Button from '@/shared/components/ui/Button';
@@ -33,11 +34,43 @@ function textoTotal(vista, total) {
 }
 
 export default function ModeracionPage() {
-  const [vista, setVista] = useState('pendientes');
-  const [tipo, setTipo] = useState(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const vista = searchParams.get('vista') === 'historial'
+    ? 'historial'
+    : 'pendientes';
+  const tipoParam = searchParams.get('tipo');
+  const tipo = tipoParam && TIPOS.includes(tipoParam) ? tipoParam : null;
 
-  const [abierto, setAbierto] = useState(null);
+  const [abierto, setAbierto] = useState(() => {
+    const reporte = location.state?.reportesModal;
+    return reporte ? { tipo: reporte.tipo, id: reporte.id } : null;
+  });
   const qc = useQueryClient();
+
+  useEffect(() => {
+    if (!location.state?.reportesModal) return;
+    navigate(location.pathname + location.search + location.hash, {
+      replace: true,
+      state: null,
+    });
+  }, [location, navigate]);
+
+  function setVista(nuevaVista) {
+    setSearchParams((params) => {
+      params.set('vista', nuevaVista);
+      return params;
+    });
+  }
+
+  function setTipo(nuevoTipo) {
+    setSearchParams((params) => {
+      if (nuevoTipo) params.set('tipo', nuevoTipo);
+      else params.delete('tipo');
+      return params;
+    });
+  }
 
   // al cerrar el detalle se refresca todo: el moderador pudo haber cerrado
   // reportes o eliminado el contenido desde "Ver contenido"

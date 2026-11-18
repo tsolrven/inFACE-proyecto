@@ -2,6 +2,7 @@ import { prisma } from '../../config/configDb.js';
 import logger from '../../lib/logger.js';
 import { obtenerEnriquecimiento } from '../../shared/content/contentEnrichment.js';
 import { eliminarContenido } from '../../shared/content/contentCleanup.js';
+import { registrarEliminadorModeracion } from '../../shared/content/contentRegistry.js';
 import { esStaff } from '../../shared/auth/permissions.js';
 import { notificarReportesCerrados } from '../../shared/moderation/reports.notifications.js';
 import {
@@ -338,7 +339,13 @@ async function guardarEntregables(id, usuario_id, rol, datos) {
 
 // ╰─────────────────────────────✧────────────────────────────────╮
 
-async function eliminarProyecto(id, usuario_id, rol) {
+// `respuesta`: mensaje del moderador al cerrar los reportes (pantalla de reportes)
+async function eliminarProyecto(
+  id,
+  usuario_id,
+  rol,
+  { respuesta = null } = {},
+) {
   const proyecto = await prisma.proyecto.findUnique({ where: { id } });
 
   if (!proyecto) throw new NotFoundError('Proyecto');
@@ -359,6 +366,7 @@ async function eliminarProyecto(id, usuario_id, rol) {
       const resultado = await eliminarContenido(tx, 'proyecto', id, {
         por_moderacion: esStaff(rol),
         revisor_id: usuario_id,
+        respuesta,
       });
       await tx.proyectoEtiqueta.deleteMany({ where: { proyecto_id: id } });
       await tx.postulacionProyecto.deleteMany({ where: { proyecto_id: id } });
@@ -1177,7 +1185,11 @@ async function obtenerUsuariosSimilares(usuario_id, { limite = 6 } = {}) {
 }
 
 // ╰─────────────────────────────✧────────────────────────────────╮
-
+// Eliminar desde la pantalla de reportes (moderación)
+registrarEliminadorModeracion('proyecto', (id, usuario, respuesta) =>
+  eliminarProyecto(id, usuario.id, usuario.rol, { respuesta }),
+);
+// ────────────────────────────────────────────────────────────────────────────────────────
 export {
   crearProyecto,
   obtenerProyectos,

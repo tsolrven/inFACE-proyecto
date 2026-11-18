@@ -12,6 +12,7 @@ async function reportarContenido(req, res, next) {
 
     const resultado = await crearReporte({
       usuario_id: req.usuario.id,
+      rol: req.usuario.rol,
       contenido_id,
       tipo_contenido,
       motivo,

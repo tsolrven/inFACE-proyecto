@@ -17,6 +17,7 @@ import { notificarReportesCerrados } from '../../shared/moderation/reports.notif
 import {
   registrarHidratadorGuardados,
   registrarAlQuitarArchivo,
+  registrarEliminadorModeracion,
 } from '../../shared/content/contentRegistry.js';
 import { obtenerEnriquecimiento } from '../../shared/content/contentEnrichment.js';
 import { esStaff } from '../../shared/auth/permissions.js';
@@ -214,7 +215,13 @@ async function actualizarProducto(id, usuario_id, datos) {
   return obtenerProducto(id, usuario_id);
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-async function eliminarProducto(id, usuario_id, rol) {
+// `respuesta`: mensaje del moderador al cerrar los reportes (pantalla de reportes)
+async function eliminarProducto(
+  id,
+  usuario_id,
+  rol,
+  { respuesta = null } = {},
+) {
   const producto = await prisma.producto.findUnique({ where: { id } });
   if (!producto) throw new NotFoundError('Producto');
   if (producto.vendedor_id !== usuario_id && !esStaff(rol)) {
@@ -226,6 +233,7 @@ async function eliminarProducto(id, usuario_id, rol) {
       const resultado = await eliminarContenido(tx, 'producto', id, {
         por_moderacion: esStaff(rol),
         revisor_id: usuario_id,
+        respuesta,
       });
       await tx.producto.delete({ where: { id } });
       return resultado;
@@ -252,6 +260,11 @@ async function hidratarProductosGuardados(ids, usuario_id) {
 }
 
 registrarHidratadorGuardados('producto', hidratarProductosGuardados);
+
+// Eliminar desde la pantalla de reportes (moderación)
+registrarEliminadorModeracion('producto', (id, usuario, respuesta) =>
+  eliminarProducto(id, usuario.id, usuario.rol, { respuesta }),
+);
 
 registrarAlQuitarArchivo('producto', async (tx, archivo) => {
   const otras = await tx.archivo.count({

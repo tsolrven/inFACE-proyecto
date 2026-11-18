@@ -2,9 +2,11 @@ import { prisma } from '../../config/configDb.js';
 import {
   BadRequestError,
   ConflictError,
+  ForbiddenError,
   NotFoundError,
 } from '../../errors/appError.js';
 import { ESTADOS_REPORTE } from './reports.constants.js';
+import { esStaff } from '../auth/permissions.js';
 import {
   verificarContenidoExiste,
   obtenerPropietarioContenido,
@@ -21,12 +23,25 @@ function construirDetalle({ objetivo, detalle }) {
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function crearReporte({
   usuario_id,
+  rol,
   tipo_contenido,
   contenido_id,
   motivo,
   detalle,
   objetivo,
 }) {
+  // El staff no reporta: si ve algo indebido lo elimina directamente. Además,
+  // un reporte propio lo dejaría resolviendo su propia denuncia. El frontend ya
+  // oculta "Reportar" al moderador (usePostMenuItems); esto cierra la API.
+  // El chequeo de conflicto de interés del cierre se conserva igual: cubre los
+  // reportes anteriores a esta regla y los reportes sobre contenido del propio
+  // moderador (reports.moderation.service.js).
+  if (esStaff(rol)) {
+    throw new ForbiddenError(
+      'Los moderadores no crean reportes: elimina el contenido directamente si incumple las normas',
+    );
+  }
+
   await verificarContenidoExiste(tipo_contenido, contenido_id);
   const autor_id = await obtenerPropietarioContenido(
     tipo_contenido,
