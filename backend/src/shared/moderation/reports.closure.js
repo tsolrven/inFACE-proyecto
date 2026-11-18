@@ -33,7 +33,7 @@ async function armarSnapshot(tx, tipo_contenido, contenido_id) {
     tipo: tipo_contenido,
     titulo: recortar(fila[entrada.previewField]),
     autor_id: fila[entrada.ownerField],
-    creado_en: fila.creado_en.toISOString(),
+    creado_en: fila[entrada.createdField ?? 'creado_en'].toISOString(),
     archivos,
     ...(fila.ramo_id && { ramo_id: fila.ramo_id }),
     ...(fila.carrera_id && { carrera_id: fila.carrera_id }),

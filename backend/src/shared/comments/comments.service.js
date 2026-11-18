@@ -31,6 +31,7 @@ import {
   NIVELES_PRECARGADOS,
 } from './comments.constants.js';
 import { codificarCursor, decodificarCursor } from './comments.cursor.js';
+import { avisarEliminacionAlAutor } from '../moderation/moderation.notices.js';
 
 const INCLUDE_COMENTARIO = {
   autor: { select: AUTOR_PUBLICO_SELECT },
@@ -422,6 +423,12 @@ async function eliminarComentario(
         entidad_id: comentario_id,
         afectado_id: comentario.autor_id,
         detalle: { extracto: recortar(comentario.contenido ?? '', 280).texto },
+      });
+      // aviso por campana al autor (misma transacción que el borrado)
+      await avisarEliminacionAlAutor(tx, {
+        autor_id: comentario.autor_id,
+        tipo_contenido: 'comentario',
+        texto: comentario.contenido,
       });
     }
 

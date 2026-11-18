@@ -8,6 +8,7 @@ import {
   obtenerPropietarioContenido,
 } from './contentRegistry.js';
 import { recortar } from './extracto.js';
+import { avisarEliminacionAlAutor } from '../moderation/moderation.notices.js';
 
 // Borra los votos y guardados que "cuelgan" de un contenido en tablas
 // polimórficas (sin FK). Los reportes NO se borran: se cierran con
@@ -70,6 +71,12 @@ async function eliminarContenido(
           titulo: recortar(previews.get(id) ?? '', 280).texto,
           comentarios: idsComentarios.length,
         },
+      });
+      // aviso por campana al autor (misma transacción que el borrado)
+      await avisarEliminacionAlAutor(tx, {
+        autor_id,
+        tipo_contenido,
+        texto: previews.get(id),
       });
     }
   }

@@ -383,8 +383,13 @@ async function eliminarProyecto(
   await borrarArchivosFisicos(archivos);
 
   //* sin enlace: el proyecto ya no existe
+  // si lo elimina un moderador, el creador ya recibe el aviso de moderación
+  // (contenido_eliminado_moderacion): aquí se le excluye para no duplicarlo
+  const porModeracion = esStaff(rol) && proyecto.creador_id !== usuario_id;
   await notificarVarios({
-    usuarioIds: integrantesAviso.map((i) => i.usuario_id),
+    usuarioIds: integrantesAviso
+      .map((i) => i.usuario_id)
+      .filter((id) => !(porModeracion && id === proyecto.creador_id)),
     actorId: usuario_id,
     tipo: 'proyecto_eliminado',
     titulo: 'Un proyecto fue eliminado',

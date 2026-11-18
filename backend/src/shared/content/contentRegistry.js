@@ -145,6 +145,7 @@ const CONTENT_REGISTRY = {
     ownerField: 'creador_id',
     votesField: 'votos_neto',
     previewField: 'titulo_proyecto',
+    createdField: 'fecha_creacion',
     allowsComments: true,
     adjuntos: { max: 1, extensiones: ['.pdf'] },
   },

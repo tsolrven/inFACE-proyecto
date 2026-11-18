@@ -11,6 +11,7 @@ const ICONOS = {
   integrante_salio: 'ti-door-exit',
   entregables_actualizados: 'ti-trophy',
   proyecto_eliminado: 'ti-trash',
+  contenido_eliminado_moderacion: 'ti-shield-x',
   sancion: 'ti-alert-triangle',
   sancion_revocada: 'ti-circle-check',
   obra_comentada: 'ti-message-circle-2',
