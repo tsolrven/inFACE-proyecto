@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import {
+  Link,
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from 'react-router-dom';
 import { useAuthStore } from '@/shared/auth/authStore';
 import {
   listarProyectos,
@@ -85,8 +90,10 @@ function InfoMatch() {
 
 export default function MatchProyectos() {
   const usuario = useAuthStore((s) => s.usuario);
+  const location = useLocation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const retornoReportes = location.state?.reportesReturnTo;
   // se inicializa desde la URL para que sobreviva a un remount (ej. volver de ver
   // el perfil de alguien), en vez de resetearse siempre a 'descubrir'.
   const [tab, setTabState] = useState(
@@ -204,6 +211,17 @@ export default function MatchProyectos() {
   }
 
   function handleVolverDetalle() {
+    if (retornoReportes) {
+      navigate(retornoReportes.path, {
+        state: {
+          reportesModal: {
+            tipo: retornoReportes.tipo,
+            id: retornoReportes.id,
+          },
+        },
+      });
+      return;
+    }
     navigate(-1);
   }
 
@@ -306,44 +324,48 @@ export default function MatchProyectos() {
   return (
     <div className='flex h-full flex-1 overflow-hidden'>
       <div className='min-w-0 flex-1 overflow-y-auto'>
-        {/* HEADER (mismo estilo que Repositorio de materiales) */}
-        <div className='px-4 pt-6 sm:px-[26px]'>
-          <div className='mb-4 flex items-center gap-1.5 text-[12px] text-neutral-500'>
-            <span>Inicio</span>
-            <i className='ti ti-chevron-right text-[12px]' />
-            <span>Cultural</span>
-            <i className='ti ti-chevron-right text-[12px]' />
-            <span className='text-neutral-300'>Match de proyectos</span>
-          </div>
-
-          <div className='mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between'>
-            <div className='flex items-center gap-3'>
-              <div className='flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-[12px] bg-pink-500/10'>
-                <i className='ti ti-puzzle text-[22px] text-pink-400' />
+        {!retornoReportes && (
+          <>
+            {/* HEADER (mismo estilo que Repositorio de materiales) */}
+            <div className='px-4 pt-6 sm:px-[26px]'>
+              <div className='mb-4 flex items-center gap-1.5 text-[12px] text-neutral-500'>
+                <span>Inicio</span>
+                <i className='ti ti-chevron-right text-[12px]' />
+                <span>Cultural</span>
+                <i className='ti ti-chevron-right text-[12px]' />
+                <span className='text-neutral-300'>Match de proyectos</span>
               </div>
-              <div>
-                <h1 className='text-[19px] font-bold text-neutral-50'>
-                  Match de proyectos
-                </h1>
-                <p className='hidden text-[12.5px] text-neutral-500 sm:block'>
-                  Encuentra o forma equipos para proyectos académicos y de
-                  emprendimiento
-                </p>
+
+              <div className='mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between'>
+                <div className='flex items-center gap-3'>
+                  <div className='flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-[12px] bg-pink-500/10'>
+                    <i className='ti ti-puzzle text-[22px] text-pink-400' />
+                  </div>
+                  <div>
+                    <h1 className='text-[19px] font-bold text-neutral-50'>
+                      Match de proyectos
+                    </h1>
+                    <p className='hidden text-[12.5px] text-neutral-500 sm:block'>
+                      Encuentra o forma equipos para proyectos académicos y de
+                      emprendimiento
+                    </p>
+                  </div>
+                </div>
+
+                <div className='relative w-full sm:w-auto'>
+                  <i className='ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-[14px] text-neutral-600' />
+                  <input
+                    type='text'
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder='Buscar en Match de proyectos...'
+                    className='w-full rounded-[10px] border border-white/[0.07] bg-[#1E1E24] py-2 pl-9 pr-3 text-[12.5px] text-neutral-100 outline-none transition placeholder:text-neutral-600 focus:border-pink-500/50 sm:w-64'
+                  />
+                </div>
               </div>
             </div>
-
-            <div className='relative w-full sm:w-auto'>
-              <i className='ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-[14px] text-neutral-600' />
-              <input
-                type='text'
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder='Buscar en Match de proyectos...'
-                className='w-full rounded-[10px] border border-white/[0.07] bg-[#1E1E24] py-2 pl-9 pr-3 text-[12.5px] text-neutral-100 outline-none transition placeholder:text-neutral-600 focus:border-pink-500/50 sm:w-64'
-              />
-            </div>
-          </div>
-        </div>
+          </>
+        )}
 
         {/* TABS */}
         {!proyectoDetalle && !resolviendoDetalleInicial && (
@@ -593,9 +615,11 @@ export default function MatchProyectos() {
         />
       </div>
 
-      <RightPanel>
-        <InfoMatch />
-      </RightPanel>
+      {!retornoReportes && (
+        <RightPanel>
+          <InfoMatch />
+        </RightPanel>
+      )}
     </div>
   );
 }

@@ -18,6 +18,7 @@ import {
 } from '@/features/project-match/store/interaccionesStore';
 import ConDescripcion from '@/shared/components/ConDescripcion';
 import ShareButton from '@/shared/post/share/ShareButton';
+import ReportModal from '@/shared/moderation/ReportModal';
 import { useAuthStore } from '@/shared/auth/authStore';
 import { esStaff } from '@/shared/auth/roles';
 
@@ -77,6 +78,10 @@ export default function DetalleProyecto({
   // moderación: el administrador elimina proyectos ajenos (el backend lo permite
   // a esStaff en eliminarProyecto)
   const esModerador = useAuthStore((s) => esStaff(s.usuario?.rol));
+  // Reportar: no al propio proyecto ni el moderador (mismo criterio que
+  // usePostMenuItems en el resto de la plataforma)
+  const puedeReportar = !esCreador && !esModerador;
+  const [reportando, setReportando] = useState(false);
   const [mensaje, setMensaje] = useState('');
   const [error, setError] = useState(null);
   const [enviando, setEnviando] = useState(false);
@@ -134,12 +139,32 @@ export default function DetalleProyecto({
             <h1 className='text-[19px] font-bold leading-snug text-neutral-100'>
               {proyecto.titulo}
             </h1>
-            <ShareButton
-              path={`/match-proyectos?proyecto=${proyecto.id}`}
-              titulo={proyecto.titulo}
-              className='inline-flex items-center gap-1.5 rounded-[10px] border border-white/[0.07] px-3 py-1.5 text-[12px] font-medium text-neutral-400 transition hover:text-neutral-100'
-            />
+            <div className='flex flex-wrap items-center gap-2'>
+              <ShareButton
+                path={`/match-proyectos?proyecto=${proyecto.id}`}
+                titulo={proyecto.titulo}
+                className='inline-flex items-center gap-1.5 rounded-[10px] border border-white/[0.07] px-3 py-1.5 text-[12px] font-medium text-neutral-400 transition hover:text-neutral-100'
+              />
+              {puedeReportar && (
+                <button
+                  type='button'
+                  onClick={() => setReportando(true)}
+                  className='inline-flex items-center gap-1.5 rounded-[10px] border border-white/[0.07] px-3 py-1.5 text-[12px] font-medium text-neutral-400 transition hover:border-red-500/30 hover:text-red-400'
+                >
+                  <i className='ti ti-flag text-[14px]' /> Reportar
+                </button>
+              )}
+            </div>
           </div>
+
+          {reportando && (
+            <ReportModal
+              open
+              onClose={() => setReportando(false)}
+              tipoContenido='proyecto'
+              contenidoId={proyecto.id}
+            />
+          )}
 
           <div className='mb-4 flex flex-wrap items-center gap-2'>
             <EstadoChip estado={proyecto.estado} />
