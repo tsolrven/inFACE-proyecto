@@ -21,7 +21,7 @@ import {
 } from '../../shared/content/contentRegistry.js';
 import { obtenerComentarioConArbol } from '../../shared/comments/comments.service.js';
 import { obtenerEnriquecimiento } from '../../shared/content/contentEnrichment.js';
-import { esStaff } from '../../shared/auth/permissions.js';
+import { esStaff, ROLES } from '../../shared/auth/permissions.js';
 import { AUTOR_PUBLICO_SELECT } from '../../shared/content/selects.js';
 import {
   INCLUDE_HASHTAGS,
@@ -151,14 +151,16 @@ async function armarDetalle(hilo, usuario_id) {
   return { ...formateado, respuesta_aceptada };
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-// Se publica solo en ramos de la propia carrera (leer, comentar y votar es libre).
+// Se publica solo en ramos de la propia carrera (leer, comentar y votar es
+// libre). El docente no tiene carrera: publica en ramos de cualquiera.
 // OJO: misma regla que crearApunte; si se repite una tercera vez, extraerla.
-async function exigirRamoDeSuCarrera(ramo_id, carrera_id) {
+async function exigirRamoDeSuCarrera(ramo_id, carrera_id, rol) {
   const ramo = await prisma.ramo.findUnique({
     where: { id: ramo_id },
     include: { ramo_carrera: { select: { carrera_id: true } } },
   });
   if (!ramo) throw new NotFoundError('Ramo');
+  if (rol === ROLES.DOCENTE) return;
 
   if (!ramo.ramo_carrera.some((rc) => rc.carrera_id === carrera_id)) {
     throw new ForbiddenError('No puedes publicar en un ramo de otra carrera');
@@ -168,13 +170,14 @@ async function exigirRamoDeSuCarrera(ramo_id, carrera_id) {
 async function crearHilo({
   autor_id,
   carrera_id,
+  rol,
   ramo_id,
   titulo,
   contenido,
   hashtags = [],
   archivos = [],
 }) {
-  await exigirRamoDeSuCarrera(ramo_id, carrera_id);
+  await exigirRamoDeSuCarrera(ramo_id, carrera_id, rol);
 
   // todo lo que puede fallar por datos inválidos, antes de abrir la transacción
   const hashtagsCreate = await resolverHashtags(hashtags);

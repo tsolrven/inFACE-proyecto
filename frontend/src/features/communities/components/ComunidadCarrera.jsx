@@ -16,7 +16,7 @@ import TagsPopularesCard from '@/shared/statistics/TagsPopularesCard';
 import armadilloRepositorio from '@/assets/armadillo-repositorio-materiales.png';
 import { listarCarreras } from '@/shared/api/catalog.api';
 import { useAuthStore } from '@/shared/auth/authStore';
-import { puedeEscribir } from '@/shared/auth/roles';
+import { puedeEscribir, ROLES } from '@/shared/auth/roles';
 import { mensajeDeError } from '@/shared/lib/errores';
 import { useBusqueda } from '@/shared/hooks/useBusqueda';
 import { BUSQUEDA_MAX } from '@/shared/lib/busqueda';
@@ -124,10 +124,12 @@ export default function ComunidadCarrera({ codigo }) {
     return <Estado>No encontramos esta carrera.</Estado>;
   }
 
-  // publicar solo se puede en la propia carrera (reglas del backend); leer,
-  // comentar y votar en otras carreras sí
+  // publicar en foro y materiales: en la propia carrera, o en todas si es
+  // docente (reglas del backend). Leer, comentar y votar en otras sí.
+  // Los anuncios tienen su propia regla (cargo CEE o tutor).
   const esPropia = usuario?.carrera_id === carrera.id;
-  const puedePublicar = esPropia && puedeEscribir(usuario);
+  const esDocente = usuario?.rol === ROLES.DOCENTE;
+  const puedePublicar = (esPropia || esDocente) && puedeEscribir(usuario);
 
   return (
     <div className='flex h-full flex-1 overflow-hidden'>
@@ -168,7 +170,7 @@ export default function ComunidadCarrera({ codigo }) {
           <ForumFeed
             carreraId={carrera.id}
             busqueda={busqueda}
-            permitirCrear={esPropia}
+            permitirCrear={puedePublicar}
           />
         )}
         {vista === 'publicaciones' && pestana === 'materiales' && (
@@ -220,11 +222,19 @@ export default function ComunidadCarrera({ codigo }) {
             : conversaciones por ramo, materiales compartidos y comunicados
             oficiales de la carrera.
           </p>
-          {!esPropia && (
+          {esDocente ? (
             <p className='mt-2 text-[12px] leading-relaxed text-neutral-500'>
-              Esta no es tu carrera: puedes leer, comentar y votar, pero
-              publicar solo está disponible en tu propia carrera.
+              Como docente puedes publicar en el foro y el repositorio de todas
+              las carreras. Los anuncios oficiales los publican el CEE y los
+              tutores.
             </p>
+          ) : (
+            !esPropia && (
+              <p className='mt-2 text-[12px] leading-relaxed text-neutral-500'>
+                Esta no es tu carrera: puedes leer, comentar y votar, pero
+                publicar solo está disponible en tu propia carrera.
+              </p>
+            )
           )}
           <img
             src={armadilloRepositorio}

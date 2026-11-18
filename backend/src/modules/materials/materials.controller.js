@@ -52,6 +52,7 @@ async function crear(req, res, next) {
     const apunte = await crearApunte({
       autor_id: req.usuario.id,
       carrera_id: req.usuario.carrera_id,
+      rol: req.usuario.rol,
       ...req.body,
       archivos: req.files ?? [],
     });

@@ -21,7 +21,7 @@ import {
   registrarAlQuitarArchivo,
 } from '../../shared/content/contentRegistry.js';
 import { obtenerEnriquecimiento } from '../../shared/content/contentEnrichment.js';
-import { esStaff } from '../../shared/auth/permissions.js';
+import { esStaff, ROLES } from '../../shared/auth/permissions.js';
 import { AUTOR_PUBLICO_SELECT } from '../../shared/content/selects.js';
 import {
   INCLUDE_HASHTAGS,
@@ -214,6 +214,7 @@ async function obtenerApunte(id, usuario_id) {
 async function crearApunte({
   autor_id,
   carrera_id,
+  rol,
   ramo_id,
   titulo,
   descripcion,
@@ -240,9 +241,11 @@ async function crearApunte({
   });
   if (!ramo) throw new NotFoundError('Ramo');
 
-  const ramoEsDeSuCarrera = ramo.ramo_carrera.some(
-    (rc) => rc.carrera_id === carrera_id,
-  );
+  // el docente no tiene carrera: publica en ramos de cualquiera
+  // (misma regla que exigirRamoDeSuCarrera del foro)
+  const ramoEsDeSuCarrera =
+    rol === ROLES.DOCENTE ||
+    ramo.ramo_carrera.some((rc) => rc.carrera_id === carrera_id);
   if (!ramoEsDeSuCarrera) {
     throw new ForbiddenError('No puedes publicar en un ramo de otra carrera');
   }

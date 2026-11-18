@@ -52,6 +52,7 @@ async function crear(req, res, next) {
     const hilo = await crearHilo({
       autor_id: req.usuario.id,
       carrera_id: req.usuario.carrera_id,
+      rol: req.usuario.rol,
       ...req.body,
       archivos: req.files ?? [],
     });
