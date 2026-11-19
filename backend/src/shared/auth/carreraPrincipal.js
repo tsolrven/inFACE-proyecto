@@ -1,8 +1,7 @@
-// Orden único para elegir la "carrera principal" de un usuario cuando tiene
-// varias. Lo usan autenticar (middleware) y auth.service, para que el backend
-// y el `carreras[0]` que ve el frontend coincidan.
-// Es un criterio provisional (determinista, pero arbitrario) hasta que exista
-// el selector de alcance.
+// Un usuario tiene a lo más UNA carrera (@@unique([usuario_id]) en
+// UsuarioCarrera; el docente, ninguna). Este orden ya no elige entre varias:
+// se conserva porque autenticar y auth.service lo usan al leer
+// usuario_carrera, que sigue siendo una lista de 0 o 1 elementos.
 const ORDEN_CARRERAS_USUARIO = { carrera_id: 'asc' };
 
 export { ORDEN_CARRERAS_USUARIO };

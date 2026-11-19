@@ -191,6 +191,7 @@ model UsuarioCarrera {
   carrera Carrera @relation(fields: [carrera_id], references: [id])
 
   @@id([usuario_id, carrera_id])
+  @@unique([usuario_id])
   @@map("usuarios_carreras")
 }
 

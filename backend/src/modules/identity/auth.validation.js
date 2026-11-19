@@ -32,6 +32,7 @@ const ERROR_MESSAGES = {
   carrera: {
     invalid: 'Selecciona una carrera válida',
     required: 'Debes seleccionar tu carrera',
+    academico: 'Los docentes no se registran con una carrera',
   },
   codigo: {
     required: 'Ingresa el código de verificación que enviamos a tu correo',
@@ -147,6 +148,15 @@ const registerSchema = z.object({
         code: 'custom',
         path: ['cargo'],
         message: ERROR_MESSAGES.cargo.required,
+      });
+    }
+    // el docente no pertenece a una carrera (publica en todas desde las
+    // comunidades); la base de datos solo limita a una, no a cero
+    if (datos.carrera_id) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['carrera_id'],
+        message: ERROR_MESSAGES.carrera.academico,
       });
     }
   } else if (!datos.carrera_id) {
