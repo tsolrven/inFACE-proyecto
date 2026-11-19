@@ -336,7 +336,8 @@ function EditarPerfilModal({ perfil, onClose, onGuardado }) {
     nombre_completo: perfil.nombre_completo || '',
     biografia: perfil.biografia || '',
   });
-  const puedeEditarNombre = perfil.rol === 'docente';
+  // el docente edita su nombre completo, también el superadmin docente
+  const puedeEditarNombre = (perfil.rol_base ?? perfil.rol) === 'docente';
   const [errores, setErrores] = useState([]);
   const [guardando, setGuardando] = useState(false);
 

@@ -16,7 +16,7 @@ import TagsPopularesCard from '@/shared/statistics/TagsPopularesCard';
 import armadilloRepositorio from '@/assets/armadillo-repositorio-materiales.png';
 import { listarCarreras } from '@/shared/api/catalog.api';
 import { useAuthStore } from '@/shared/auth/authStore';
-import { puedeEscribir, ROLES } from '@/shared/auth/roles';
+import { puedeEscribir, esDocenteBase } from '@/shared/auth/roles';
 import { mensajeDeError } from '@/shared/lib/errores';
 import { useBusqueda } from '@/shared/hooks/useBusqueda';
 import { BUSQUEDA_MAX } from '@/shared/lib/busqueda';
@@ -128,7 +128,7 @@ export default function ComunidadCarrera({ codigo }) {
   // docente (reglas del backend). Leer, comentar y votar en otras sí.
   // Los anuncios tienen su propia regla (cargo CEE o tutor).
   const esPropia = usuario?.carrera_id === carrera.id;
-  const esDocente = usuario?.rol === ROLES.DOCENTE;
+  const esDocente = esDocenteBase(usuario); // también el superadmin docente
   const puedePublicar = (esPropia || esDocente) && puedeEscribir(usuario);
 
   return (

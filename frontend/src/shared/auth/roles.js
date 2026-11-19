@@ -4,6 +4,16 @@ export const ROLES = {
   SUPERADMIN: 'superadmin',
 };
 
+// Rol base (estudiante | docente) que entrega el backend en la sesión y en el
+// perfil público. El superadmin hereda los permisos de su rol base.
+export function rolBase(usuario) {
+  return usuario?.rol_base ?? usuario?.rol ?? null;
+}
+
+export function esDocenteBase(usuario) {
+  return rolBase(usuario) === ROLES.DOCENTE;
+}
+
 const ROLES_STAFF = [ROLES.SUPERADMIN];
 
 export function esStaff(rol) {
