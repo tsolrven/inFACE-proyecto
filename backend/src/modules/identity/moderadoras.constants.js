@@ -7,7 +7,10 @@ const CORREOS_MODERADORES = [
 ];
 
 // Solo para desarrollo (cuentas del seed). En producción no cuentan.
-const CORREOS_MODERADORES_PRUEBA = ['admin@ubiobio.cl', 'admin2@ubiobio.cl'];
+const CORREOS_MODERADORES_PRUEBA = [
+  'admin_est@alumnos.ubiobio.cl',
+  'admin_doc@ubiobio.cl', // superadmin docente (sin carrera), para pruebas
+];
 
 function correosModeradores() {
   return process.env.NODE_ENV === 'production'

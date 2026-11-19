@@ -124,7 +124,7 @@ const usuarios = [
   // docentes ── (rol base por dominio @ubiobio.cl; SIN carrera: publican en
   // foro y materiales de cualquier carrera desde las comunidades)
   {
-    correo: 'docente1@ubiobio.cl',
+    correo: 'docente1@ubiobio.cl', //docente 
     contrasena: 'Test1234',
     rol: 'docente',
     nombre_usuario: 'docente1',
@@ -132,29 +132,21 @@ const usuarios = [
     cargo: 'academico',
     campus: 'Concepción',
   },
+  // superadmin ──
   {
-    correo: 'docente2@ubiobio.cl',
+    correo: 'admin_doc@ubiobio.cl', //superadmin-docente
     contrasena: 'Test1234',
-    rol: 'docente',
-    nombre_usuario: 'docente2',
-    nombre_completo: 'Docente Dos',
+    rol: 'superadmin',
+    nombre_usuario: 'admin_docente',
+    nombre_completo: 'admin docente',
     cargo: 'funcionario',
     campus: 'Concepción',
   },
-  // superadmin ──
   {
-    correo: 'admin2@ubiobio.cl',
+    correo: 'admin_est@alumnos.ubiobio.cl', //superadmin-estudiante
     contrasena: 'Test1234',
     rol: 'superadmin',
-    nombre_usuario: 'admin2',
-    carrera: 'DER',
-    campus: 'Concepción',
-  },
-  {
-    correo: 'admin@ubiobio.cl',
-    contrasena: 'Test1234',
-    rol: 'superadmin',
-    nombre_usuario: 'admin',
+    nombre_usuario: 'admin_estudiante',
     carrera: 'IECI',
     campus: 'Concepción',
   },
@@ -228,7 +220,7 @@ export async function seedBase(prisma, bcrypt, carrerasCreadas) {
         hasta: new Date(
           Date.now() + (u.nombre_usuario === 'tutor_der' ? 5 : 365) * DIA_MS,
         ),
-        aprobada_por: usuariosCreados.admin.id,
+        aprobada_por: usuariosCreados.admin_docente.id,
       },
     });
     console.log(`Cargo: ${u.nombre_usuario} (${u.rol} ${u.carrera})`);
