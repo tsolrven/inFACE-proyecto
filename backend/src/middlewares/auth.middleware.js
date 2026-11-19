@@ -10,7 +10,7 @@ import {
 } from '../errors/appError.js';
 import { filtroVigente } from '../shared/moderation/sanctions.service.js';
 import { hoyEnChile, filtroCargoVigente } from '../shared/auth/cargos.js';
-import { esStaff } from '../shared/auth/permissions.js';
+import { esStaff, rolBase } from '../shared/auth/permissions.js';
 import {
   TIPOS_SANCION,
   TIPOS_CON_EFECTO,
@@ -40,6 +40,7 @@ async function autenticar(req, res, next) {
       select: {
         id: true,
         rol: true,
+        correo: true, // rol base del superadmin (rolBase)
         esta_activo: true,
         usuario_carrera: {
           select: { carrera_id: true },
@@ -78,6 +79,9 @@ async function autenticar(req, res, next) {
     req.usuario = {
       id: usuario.id,
       rol: usuario.rol,
+      // estudiante | docente: los permisos de esos roles se deciden con este
+      // campo, así el superadmin los hereda. `rol` sigue para lo de moderación.
+      rol_base: rolBase(usuario),
       carrera_id: usuario.usuario_carrera[0]?.carrera_id ?? null,
       cargos: usuario.cargos_asignados,
       restriccion:

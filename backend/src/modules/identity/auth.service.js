@@ -24,7 +24,8 @@ import { obtenerSancionesVigentes } from '../../shared/moderation/sanctions.serv
 import { generacionDesdeCorreo } from './generacion.helper.js';
 import { esModerador } from './moderadoras.constants.js';
 import { hoyEnChile, filtroCargoVigente } from '../../shared/auth/cargos.js';
-import { determinarRolPorCorreo } from './rolCorreo.helper.js';
+import { determinarRolPorCorreo } from '../../shared/auth/rolCorreo.js';
+import { rolBase } from '../../shared/auth/permissions.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 function formatearUsuario(usuario) {
   const carreras = usuario.usuario_carrera ?? [];
@@ -32,6 +33,7 @@ function formatearUsuario(usuario) {
     id: usuario.id,
     correo: usuario.correo,
     rol: usuario.rol,
+    rol_base: rolBase(usuario), // estudiante | docente (también del superadmin)
     nombre_usuario: usuario.perfil.nombre_usuario,
     carrera_id: carreras[0]?.carrera_id ?? null,
     carreras: carreras.map((uc) => ({

@@ -214,7 +214,7 @@ async function obtenerApunte(id, usuario_id) {
 async function crearApunte({
   autor_id,
   carrera_id,
-  rol,
+  rol_base,
   ramo_id,
   titulo,
   descripcion,
@@ -244,7 +244,7 @@ async function crearApunte({
   // el docente no tiene carrera: publica en ramos de cualquiera
   // (misma regla que exigirRamoDeSuCarrera del foro)
   const ramoEsDeSuCarrera =
-    rol === ROLES.DOCENTE ||
+    rol_base === ROLES.DOCENTE ||
     ramo.ramo_carrera.some((rc) => rc.carrera_id === carrera_id);
   if (!ramoEsDeSuCarrera) {
     throw new ForbiddenError('No puedes publicar en un ramo de otra carrera');

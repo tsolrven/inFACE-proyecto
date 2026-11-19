@@ -1,7 +1,7 @@
 import { prisma } from '../../config/configDb.js';
 import logger from '../../lib/logger.js';
 import { correosModeradores } from './moderadoras.constants.js';
-import { determinarRolPorCorreo } from './rolCorreo.helper.js';
+import { determinarRolPorCorreo } from '../../shared/auth/rolCorreo.js';
 
 // Al arrancar: sube a superadmin a quien esté en la lista y devuelve a su rol
 // base a quien tenga superadmin y ya no esté. `autenticar` lee el rol de la BD

@@ -1,7 +1,8 @@
 import { ValidationError } from '../../errors/appError.js';
 
-// Rol base según el dominio del correo (los moderadores se definen aparte,
-// en moderadoras.constants.js).
+// Rol base según el dominio del correo. El superadmin guarda rol = 'superadmin'
+// y su rol base se deriva de aquí (rolBase en permissions.js). Los moderadores
+// se definen aparte, en modules/identity/moderadoras.constants.js.
 function determinarRolPorCorreo(correo) {
   if (correo.endsWith('@alumnos.ubiobio.cl')) {
     return 'estudiante';

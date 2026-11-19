@@ -42,6 +42,11 @@ function formatearSolicitud(s, archivos = []) {
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function crearSolicitud({ usuario, tipo, carrera_id, mensaje }) {
+  // los cargos de CEE y tutor son de estudiantes: también el superadmin
+  // estudiante (hereda su rol base); el docente y el superadmin docente no
+  if (usuario.rol_base !== ROLES.ESTUDIANTE) {
+    throw new ForbiddenError('Los cargos de CEE y tutor son para estudiantes');
+  }
   const hoy = hoyEnChile();
 
   const solicitud = await prisma.$transaction(async (tx) => {

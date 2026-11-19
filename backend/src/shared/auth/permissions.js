@@ -1,4 +1,5 @@
 import { cargoVigente } from './cargos.js';
+import { determinarRolPorCorreo } from './rolCorreo.js';
 
 // Única fuente de verdad de los roles base de la plataforma. Los cargos de
 // CEE y tutor ya no son roles: viven en AsignacionRol (ver cargos.js).
@@ -26,4 +27,13 @@ function puedePublicarAnuncioEn(usuario, carrera_id) {
   return !!cargoVigente(usuario, { carrera_id });
 }
 
-export { ROLES, ROLES_STAFF, esStaff, puedePublicarAnuncioEn };
+// Rol base: estudiante o docente. El superadmin es un estudiante o docente con
+// labor de moderación: guarda rol = 'superadmin' y hereda los permisos de su
+// rol base, que se deriva del dominio de su correo. Para el resto, el rol
+// guardado ya es el base (no hace falta el correo: sirve también con cuentas
+// anonimizadas, que nunca son superadmin).
+function rolBase({ rol, correo }) {
+  return rol === ROLES.SUPERADMIN ? determinarRolPorCorreo(correo) : rol;
+}
+
+export { ROLES, ROLES_STAFF, esStaff, rolBase, puedePublicarAnuncioEn };

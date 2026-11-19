@@ -9,6 +9,7 @@ import {
 } from '../../errors/appError.js';
 import { validarEtiquetasExisten } from './etiqueta.service.js';
 import { generacionDesdeCorreo } from './generacion.helper.js';
+import { ROLES, rolBase } from '../../shared/auth/permissions.js';
 
 const MAX_INTERESES = 15;
 
@@ -25,6 +26,7 @@ function formatearPerfil(usuario, stats = {}) {
     id: usuario.id,
     correo: usuario.correo,
     rol: usuario.rol,
+    rol_base: rolBase(usuario), // estudiante | docente (también del superadmin)
     creado_en: usuario.creado_en,
     eliminacion_programada_en: usuario.eliminacion_programada_en ?? null,
     consentimiento_investigacion: usuario.consentimiento_investigacion ?? false,
@@ -136,9 +138,10 @@ async function actualizarPerfil(
   if (nombre_completo !== undefined) {
     const usuario = await prisma.usuario.findUnique({
       where: { id: usuario_id },
-      select: { rol: true },
+      select: { rol: true, correo: true },
     });
-    if (usuario?.rol !== 'docente') {
+    // el nombre completo lo edita el docente, también el superadmin docente
+    if (!usuario || rolBase(usuario) !== ROLES.DOCENTE) {
       throw new ForbiddenError(
         'Tu nombre se toma de tu correo institucional y no se puede editar',
       );
