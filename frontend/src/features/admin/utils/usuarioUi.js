@@ -5,10 +5,19 @@ export const BUSQUEDA_MAX = 50;
 
 export const ROL_LABEL = {
   estudiante: 'Estudiante',
+  docente: 'Docente',
   tutor: 'Tutor',
   cee: 'CEE',
   superadmin: 'Superadmin',
 };
+
+// "Superadmin · Docente": el superadmin hereda los permisos de su rol base
+export function etiquetaRol({ rol, rol_base }) {
+  const base = ROL_LABEL[rol] ?? rol;
+  return rol === 'superadmin' && rol_base
+    ? `${base} · ${ROL_LABEL[rol_base] ?? rol_base}`
+    : base;
+}
 
 // 'activa' no lleva insignia: es el estado normal.
 export const ESTADO_CUENTA_LABEL = {

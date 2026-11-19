@@ -1,10 +1,11 @@
 import { Link, useParams } from 'react-router-dom';
 import AutorPanel from '@/features/admin/components/AutorPanel';
 import ReportesUsuarioLista from '@/features/admin/components/ReportesUsuarioLista';
+import CargosUsuario from '@/features/admin/components/CargosUsuario';
 import { useFichaUsuario } from '@/features/admin/hooks/useUsuarios';
 import { mensajeDeError } from '@/shared/lib/errores';
 import {
-  ROL_LABEL,
+  etiquetaRol,
   ESTADO_CUENTA_LABEL,
   ESTADO_CUENTA_BADGE,
 } from '@/features/admin/utils/usuarioUi';
@@ -70,13 +71,23 @@ export default function UsuarioFichaPage() {
                 @{u.nombre_usuario}
               </h1>
               <span className='rounded-full bg-pink-500/10 px-2 py-0.5 text-[10.5px] font-semibold text-pink-400'>
-                {ROL_LABEL[u.rol] ?? u.rol}
+                {etiquetaRol(u)}
               </span>
               <span
                 className={`rounded-full px-2 py-0.5 text-[10.5px] font-semibold ${ESTADO_CUENTA_BADGE[u.estado_cuenta] ?? 'bg-emerald-400/10 text-emerald-400'}`}
               >
                 {ESTADO_CUENTA_LABEL[u.estado_cuenta] ?? 'Activa'}
               </span>
+              {/* una cuenta anonimizada ya no tiene perfil público */}
+              {u.estado_cuenta !== 'anonimizada' && (
+                <Link
+                  to={`/perfil/usuario/${u.nombre_usuario}`}
+                  className='ml-auto inline-flex items-center gap-1.5 rounded-[10px] border border-white/[0.07] px-3 py-1.5 text-[12px] font-medium text-neutral-400 transition hover:text-neutral-100'
+                >
+                  <i className='ti ti-user text-[14px]' />
+                  Ver perfil
+                </Link>
+              )}
             </div>
             {u.nombre_completo && (
               <p className='mt-1 text-[13.5px] text-neutral-400'>
@@ -96,6 +107,14 @@ export default function UsuarioFichaPage() {
               </p>
             )}
           </div>
+
+          {/* el docente no puede tener cargos de CEE ni tutor */}
+          {u.rol_base !== 'docente' && (
+            <CargosUsuario
+              usuarioId={u.id}
+              cargos={u.cargos}
+            />
+          )}
 
           <h2 className='mb-2.5 text-[13px] font-semibold text-neutral-300'>
             Reportes

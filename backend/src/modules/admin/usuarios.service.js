@@ -1,6 +1,7 @@
 import { prisma } from '../../config/configDb.js';
 import { NotFoundError } from '../../errors/appError.js';
 import { hoyEnChile } from '../../shared/auth/cargos.js';
+import { rolBase } from '../../shared/auth/permissions.js';
 import { ORDEN_CARRERAS_USUARIO } from '../../shared/auth/carreraPrincipal.js';
 import { AUTOR_PUBLICO_SELECT } from '../../shared/content/selects.js';
 import { ESTADOS_REPORTE } from '../../shared/moderation/reports.constants.js';
@@ -26,10 +27,12 @@ const filtroEliminadosModeracion = (usuarioId) => ({
 
 const extracto = (texto) => recortar(texto ?? '', EXTRACTO_MAX).texto;
 
-// Sin correo ni contraseña: la ficha de moderación no los necesita.
+// Sin contraseña. El correo se lee SOLO para calcular el rol base del
+// superadmin (rolBase); darFormato no lo devuelve.
 const RESUMEN_SELECT = {
   id: true,
   rol: true,
+  correo: true,
   esta_activo: true,
   eliminacion_programada_en: true,
   anonimizado_en: true,
@@ -51,6 +54,7 @@ function darFormato(u) {
   return {
     id: u.id,
     rol: u.rol,
+    rol_base: rolBase(u), // estudiante | docente (también del superadmin)
     nombre_usuario: u.perfil?.nombre_usuario ?? null,
     nombre_completo: u.perfil?.nombre_completo ?? null,
     carreras: u.usuario_carrera.map((uc) => uc.carrera),

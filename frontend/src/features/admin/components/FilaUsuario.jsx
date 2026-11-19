@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import {
-  ROL_LABEL,
+  etiquetaRol,
   ESTADO_CUENTA_LABEL,
   ESTADO_CUENTA_BADGE,
 } from '@/features/admin/utils/usuarioUi';
@@ -34,7 +34,7 @@ export default function FilaUsuario({ usuario }) {
       <div className='flex flex-shrink-0 flex-wrap justify-end gap-1.5'>
         {rol !== 'estudiante' && (
           <span className='rounded-full bg-pink-500/10 px-2 py-0.5 text-[10.5px] font-semibold text-pink-400'>
-            {ROL_LABEL[rol] ?? rol}
+            {etiquetaRol(usuario)}
           </span>
         )}
         {ESTADO_CUENTA_LABEL[estado_cuenta] && (

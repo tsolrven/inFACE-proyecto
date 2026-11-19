@@ -1,7 +1,8 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   buscarUsuarios,
   obtenerFichaUsuario,
+  revocarCargo,
 } from '@/features/admin/api/usuarios.api';
 import { listarReportesDeUsuario } from '@/features/admin/api/moderacion.api';
 import { BUSQUEDA_MIN } from '@/features/admin/utils/usuarioUi';
@@ -38,5 +39,18 @@ export function useReportesDeUsuario(usuarioId, lista) {
       listarReportesDeUsuario(usuarioId, lista, { signal }),
     enabled: !!usuarioId,
     staleTime: 0,
+  });
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+// onSettled y no onSuccess: si da 409 (ya revocado o vencido) la ficha se
+// refresca con el estado real. También el historial: queda la acción registrada.
+export function useRevocarCargo() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ cargoId, motivo }) => revocarCargo(cargoId, motivo),
+    onSettled: (_data, _error, { usuarioId }) => {
+      qc.invalidateQueries({ queryKey: usuarioKeys.ficha(usuarioId) });
+      qc.invalidateQueries({ queryKey: ['admin', 'historial'] });
+    },
   });
 }
