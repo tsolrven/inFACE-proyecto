@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const BUSQUEDA_MIN = 3;
+const BUSQUEDA_MIN = 2;
 const BUSQUEDA_MAX = 50;
 
 const buscarUsuariosQuerySchema = z.object({

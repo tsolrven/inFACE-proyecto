@@ -8,8 +8,9 @@ import {
 // - Mientras se escribe: espera BUSQUEDA_RETARDO_MS sin cambios (debounce).
 // - Al vaciar (botón ✕, Esc o borrar a mano): se aplica al instante.
 // - Un texto bajo el mínimo cuenta como vacío (no filtra).
-export function useBusqueda(texto) {
-  const efectiva = busquedaEfectiva(texto);
+// opciones: ver busquedaEfectiva (min, hashtags). Sin ellas, las de los módulos.
+export function useBusqueda(texto, opciones) {
+  const efectiva = busquedaEfectiva(texto, opciones);
   const [retardada, setRetardada] = useState(efectiva);
 
   useEffect(() => {

@@ -1,6 +1,6 @@
 // Límites de la búsqueda. La fuente de verdad es el backend
 // (modules/admin/usuarios.validation.js): mantener ambos iguales.
-export const BUSQUEDA_MIN = 3;
+export const BUSQUEDA_MIN = 2;
 export const BUSQUEDA_MAX = 50;
 
 export const ROL_LABEL = {

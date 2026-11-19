@@ -1,11 +1,15 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import {
   buscarUsuarios,
   obtenerFichaUsuario,
   revocarCargo,
 } from '@/features/admin/api/usuarios.api';
 import { listarReportesDeUsuario } from '@/features/admin/api/moderacion.api';
-import { BUSQUEDA_MIN } from '@/features/admin/utils/usuarioUi';
 
 // Raíz 'usuario': invalidar ['usuario'] alcanza búsquedas y fichas.
 export const usuarioKeys = {
@@ -14,12 +18,15 @@ export const usuarioKeys = {
   reportes: (usuarioId, lista) => ['usuario', 'reportes', usuarioId, lista],
 };
 // ────────────────────────────────────────────────────────────────────────────────────────
+// `q` ya viene filtrado por useBusqueda: '' si es más corto que el mínimo
 export function useBuscarUsuarios(q) {
   return useQuery({
     queryKey: usuarioKeys.busqueda(q),
     queryFn: ({ signal }) => buscarUsuarios(q, { signal }),
-    enabled: q.length >= BUSQUEDA_MIN,
+    enabled: q !== '',
     staleTime: 0,
+    // mientras se escribe se mantienen los resultados anteriores (sin parpadeo)
+    placeholderData: keepPreviousData,
   });
 }
 // ────────────────────────────────────────────────────────────────────────────────────────

@@ -7,6 +7,7 @@ import { AUTOR_PUBLICO_SELECT } from '../../shared/content/selects.js';
 import { ESTADOS_REPORTE } from '../../shared/moderation/reports.constants.js';
 import { obtenerVistasContenido } from '../../shared/content/contentRegistry.js';
 import { recortar } from '../../shared/content/extracto.js';
+import { condicionTexto } from '../../shared/search/busqueda.helper.js';
 
 // Tope de resultados de la búsqueda. Se pide uno más para saber si hay otros.
 const LIMITE_BUSQUEDA = 20;
@@ -63,24 +64,32 @@ function darFormato(u) {
   };
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
+// Por nombre de usuario o nombre completo, sin mayúsculas ni tildes y
+// conservando la ñ (mismas reglas que la búsqueda de los módulos). Primero los
+// ids en SQL (Prisma no sabe ignorar tildes) y luego los datos de cada uno,
+// conservando el orden alfabético de la consulta.
 async function buscarUsuarios(q) {
-  const filas = await prisma.usuario.findMany({
-    where: {
-      perfil: {
-        OR: [
-          { nombre_usuario: { contains: q, mode: 'insensitive' } },
-          { nombre_completo: { contains: q, mode: 'insensitive' } },
-        ],
-      },
-    },
-    orderBy: { perfil: { nombre_usuario: 'asc' } },
-    take: LIMITE_BUSQUEDA + 1,
+  const filas = await prisma.$queryRaw`
+    SELECT p.usuario_id AS id
+    FROM "perfiles" p
+    WHERE ${condicionTexto(['p.nombre_usuario', 'p.nombre_completo'], q)}
+    ORDER BY p.nombre_usuario ASC
+    LIMIT ${LIMITE_BUSQUEDA + 1}`;
+  const ids = filas.map((f) => f.id);
+  if (ids.length === 0) {
+    return { items: [], hay_mas: false, limite: LIMITE_BUSQUEDA };
+  }
+
+  const usuarios = await prisma.usuario.findMany({
+    where: { id: { in: ids } },
     select: RESUMEN_SELECT,
   });
+  const porId = new Map(usuarios.map((u) => [u.id, u]));
+  const ordenados = ids.map((id) => porId.get(id)).filter(Boolean);
 
   return {
-    items: filas.slice(0, LIMITE_BUSQUEDA).map(darFormato),
-    hay_mas: filas.length > LIMITE_BUSQUEDA,
+    items: ordenados.slice(0, LIMITE_BUSQUEDA).map(darFormato),
+    hay_mas: ordenados.length > LIMITE_BUSQUEDA,
     limite: LIMITE_BUSQUEDA,
   };
 }
