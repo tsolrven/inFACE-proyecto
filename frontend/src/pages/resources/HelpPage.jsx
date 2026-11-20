@@ -3,17 +3,10 @@ import { Link, useLocation } from 'react-router-dom';
 import PageBanner from '@/shared/components/layout/PageBanner';
 import { useAuthStore } from '@/shared/auth/authStore';
 import { CONTACTO_AYUDA, PESTANAS_AYUDA } from './help/ayudaContenido';
+import { normalizar } from '@/shared/lib/texto';
 
 const BUSQUEDA_MIN = 2;
 const BUSQUEDA_MAX = 100;
-
-// minúsculas y sin tildes, pero conserva la ñ (en NFD es n + U+0303)
-function normalizar(texto) {
-  return texto
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u0302\u0304-\u036f]/g, '');
-}
 
 const PESTANAS = PESTANAS_AYUDA.filter((p) =>
   p.grupos.some((g) => g.preguntas.length > 0),
