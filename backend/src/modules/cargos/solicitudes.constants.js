@@ -18,6 +18,11 @@ const MOTIVO_MAX = 500;
 // nuevo (renovación) si vence en este número de días o menos.
 const DIAS_RENOVACION = 30;
 
+// Días que se conservan los respaldos de una solicitud desde que se resuelve
+// (aprobada, rechazada o cancelada). Luego los borra la tarea programada
+// (jobs/limpiezaRespaldos.job.js). RF-T-22.
+const DIAS_CONSERVACION_RESPALDOS = 30;
+
 export {
   ESTADOS_SOLICITUD,
   MENSAJE_MIN,
@@ -25,4 +30,5 @@ export {
   MOTIVO_MIN,
   MOTIVO_MAX,
   DIAS_RENOVACION,
+  DIAS_CONSERVACION_RESPALDOS,
 };

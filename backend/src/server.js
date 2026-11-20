@@ -5,6 +5,7 @@ import { PORT } from './config/configEnv.js';
 import logger from './lib/logger.js';
 import { iniciarLimpiezaCuentas } from './jobs/limpiezaCuentas.job.js';
 import { iniciarAvisosCargos } from './jobs/avisosCargos.job.js';
+import { iniciarLimpiezaRespaldos } from './jobs/limpiezaRespaldos.job.js';
 import { sincronizarModeradores } from './modules/identity/moderadores.sync.js';
 
 connectDB().then(async () => {
@@ -20,4 +21,5 @@ connectDB().then(async () => {
   });
   iniciarLimpiezaCuentas();
   iniciarAvisosCargos();
+  iniciarLimpiezaRespaldos();
 });
