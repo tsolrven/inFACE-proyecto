@@ -7,6 +7,24 @@ const ALTO_ITEM = 36;
 const TRIGGER_POR_DEFECTO =
   'flex items-center text-[11.5px] text-neutral-600 transition-colors hover:text-neutral-200';
 
+// El clic que cierra el menú sobre su propia publicación no debe abrirla. Se
+// descarta el próximo `click` en fase de captura sobre document, antes de que
+// llegue a React. Si ese click no ocurre (arrastre), el siguiente mousedown
+// quita el descarte para no comerse un clic legítimo.
+function descartarSiguienteClick() {
+  function descartar(e) {
+    e.stopPropagation();
+    e.preventDefault();
+    limpiar();
+  }
+  function limpiar() {
+    document.removeEventListener('click', descartar, true);
+    document.removeEventListener('mousedown', limpiar, true);
+  }
+  document.addEventListener('click', descartar, true);
+  document.addEventListener('mousedown', limpiar, true);
+}
+
 /**
  * items: [{ key, label, icon (nodo), onClick, danger?, hidden? }]
  * El menú no se muestra si todas las acciones están ocultas.
@@ -32,7 +50,13 @@ export default function PostActionsMenu({
       const dentro =
         botonRef.current?.contains(e.target) ||
         menuRef.current?.contains(e.target);
-      if (!dentro) cerrar();
+      if (dentro) return;
+      // clic sobre la publicación que contiene el menú (marcada con
+      // data-publicacion): solo cierra el menú, sin abrirla. En cualquier
+      // otra parte, el clic sigue su curso normal.
+      const publicacion = botonRef.current?.closest('[data-publicacion]');
+      cerrar();
+      if (publicacion?.contains(e.target)) descartarSiguienteClick();
     }
     function handleKeyDown(e) {
       if (e.key === 'Escape') {

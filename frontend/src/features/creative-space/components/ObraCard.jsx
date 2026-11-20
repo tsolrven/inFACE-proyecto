@@ -81,6 +81,7 @@ export default function ObraCard({ obra, enGuardados = false }) {
 
   return (
     <div
+      data-publicacion
       onClick={abrirDetalle}
       className='relative mb-2 flex cursor-pointer overflow-hidden rounded-[14px] border border-white/[0.06] bg-[#1E1E24] transition-colors hover:border-white/[0.12]'
     >
