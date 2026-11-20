@@ -10,6 +10,8 @@ import {
   registrarAccionAdmin,
 } from '../../shared/moderation/adminActions.js';
 import { notificar } from '../../shared/notifications/notifications.service.js';
+import { enviarCorreo } from '../../lib/email/email.service.js';
+import { plantillaCargoRevocado } from '../../lib/email/cargo.plantilla.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 const ETIQUETA_CARGO = { cee: 'CEE', tutor: 'tutor' };
 
@@ -47,7 +49,11 @@ async function revocarCargo(id, adminId, motivo) {
         revocada_por: adminId,
         motivo_revocacion: motivo,
       },
-      include: { carrera: { select: { id: true, nombre: true } } },
+      include: {
+        carrera: { select: { id: true, nombre: true } },
+        // para el correo de aviso (RF-T-23); no se devuelve en la respuesta
+        usuario: { select: { correo: true, esta_activo: true } },
+      },
     });
 
     await registrarAccionAdmin(tx, {
@@ -77,6 +83,16 @@ async function revocarCargo(id, adminId, motivo) {
     mensaje: `Tu cargo de ${ETIQUETA_CARGO[asignacion.tipo]} en ${asignacion.carrera.nombre} fue revocado por la administración.`,
     enlace: '/solicitar-cargo',
   });
+
+  if (asignacion.usuario.esta_activo) {
+    await enviarCorreo({
+      para: asignacion.usuario.correo,
+      ...plantillaCargoRevocado({
+        etiqueta: ETIQUETA_CARGO[asignacion.tipo],
+        carrera: asignacion.carrera.nombre,
+      }),
+    });
+  }
 
   return {
     id: asignacion.id,
