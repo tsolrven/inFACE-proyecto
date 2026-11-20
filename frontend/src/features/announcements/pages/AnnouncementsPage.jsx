@@ -48,7 +48,7 @@ export default function AnunciosOficiales() {
           subtitle={`${carreraNombre} · Comunicados del CEE y los tutores`}
           searchPlaceholder={
             vista === 'publicaciones'
-              ? 'Buscar anuncios...'
+              ? 'Buscar en los anuncios...'
               : 'Buscar en tus guardados...'
           }
           searchValue={textoBusqueda}

@@ -140,7 +140,7 @@ export default function ComunidadCarrera({ codigo }) {
           subtitle='Comunidad · Foro, materiales y anuncios de la carrera'
           searchPlaceholder={
             vista === 'publicaciones'
-              ? `Buscar en ${carrera.nombre}...`
+              ? 'Buscar en la comunidad...'
               : 'Buscar en tus guardados...'
           }
           searchValue={textoBusqueda}

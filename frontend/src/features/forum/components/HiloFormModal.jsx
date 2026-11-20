@@ -221,7 +221,7 @@ export default function HiloFormModal({
                 onChange={(e) => setRamoId(e.target.value)}
                 className={inputClasses}
               >
-                <option value=''>Selecciona un ramo de tu carrera...</option>
+                <option value=''>Selecciona un ramo...</option>
                 {Object.entries(ramosPorSemestre ?? {}).map(([sem, lista]) => (
                   <optgroup
                     key={sem}
