@@ -4,39 +4,71 @@ import {
   etiquetaColor,
   EstadoChip,
   ModalidadChip,
-  tiempoRelativo,
 } from '@/shared/lib/matchHelpers';
+import MaterialActividad from '@/features/materials/components/MaterialActividad';
+import ForumActividad from '@/features/forum/components/ForumActividad';
+import AnnouncementsActividad from '@/features/announcements/components/AnnouncementsActividad';
+import ActividadComunidades from '@/features/communities/components/ActividadComunidades';
 import ConDescripcion from '@/shared/components/ConDescripcion';
 import PerfilCreativo from '@/features/profile/components/PerfilCreativo';
 import PerfilMarketplace from '@/features/profile/components/PerfilMarketplace';
 import { useTotalObras } from '@/features/creative-space/hooks/useObras';
 import { useTotalProductos } from '@/features/marketplace/hooks/useProductos';
 
-const TABS = [
-  { id: 'proyectos', label: 'Proyectos', icon: 'ti-puzzle' },
-  { id: 'apuntes', label: 'Apuntes', icon: 'ti-file-text' },
-  { id: 'respuestas', label: 'Respuestas', icon: 'ti-message-circle-2' },
-  { id: 'creativo', label: 'Creativo', icon: 'ti-palette' },
-  { id: 'marketplace', label: 'Marketplace', icon: 'ti-shopping-bag' },
+const TABS = {
+  materiales: { id: 'materiales', label: 'Materiales', icon: 'ti-books' },
+  foro: { id: 'foro', label: 'Foro', icon: 'ti-message-circle-2' },
+  anuncios: { id: 'anuncios', label: 'Anuncios', icon: 'ti-speakerphone' },
+  proyectos: { id: 'proyectos', label: 'Proyectos', icon: 'ti-puzzle' },
+  creativo: { id: 'creativo', label: 'Creativo', icon: 'ti-palette' },
+  marketplace: { id: 'marketplace', label: 'Marketplace', icon: 'ti-shopping-bag' },
+  comunidades: { id: 'comunidades', label: 'Comunidades', icon: 'ti-building' },
+};
+
+// Mismo criterio que la barra lateral:
+// - con carrera: académicos → culturales → comunidades (solo comentarios)
+// - sin «Académico» (docente y superadmin): comunidades (publicaciones y
+//   comentarios de las 5 carreras) → culturales
+const ORDEN_CON_CARRERA = [
+  'materiales',
+  'foro',
+  'anuncios',
+  'proyectos',
+  'creativo',
+  'marketplace',
+  'comunidades',
 ];
+const ORDEN_SIN_ACADEMICO = ['comunidades', 'proyectos', 'creativo', 'marketplace'];
 
 export default function PerfilTabs({
   proyectosCreados = [],
   proyectosParticipa = [],
-  apuntes = [],
-  respuestas = [],
   cargando = false,
   usuarioId = null,
   esPropio = false,
+  // actividad académica (RF-T-12)
+  rol = null,
+  rolBase = null,
+  carreraId = null,
 }) {
-  const [tab, setTab] = useState('proyectos');
+  const sinAcademico = rol === 'superadmin' || rolBase === 'docente';
+  const tabs = (sinAcademico ? ORDEN_SIN_ACADEMICO : ORDEN_CON_CARRERA).map(
+    (id) => TABS[id],
+  );
+
+  // la pestaña inicial es la primera del orden que corresponde
+  const [tabElegida, setTab] = useState(null);
+  const tab = tabElegida ?? tabs[0].id;
+
   const { data: totalObras = 0 } = useTotalObras(usuarioId);
   const { data: totalProductos = 0 } = useTotalProductos(usuarioId);
 
+  // con carrera: la actividad de los tres módulos es la de su carrera
+  const actividad = { usuarioId, carreraId };
+
+  // las pestañas académicas no llevan contador: cada lista carga al abrirse
   const counts = {
     proyectos: proyectosCreados.length + proyectosParticipa.length,
-    apuntes: apuntes.length,
-    respuestas: respuestas.length,
     creativo: totalObras,
     marketplace: totalProductos,
   };
@@ -44,7 +76,7 @@ export default function PerfilTabs({
   return (
     <div className='mt-5'>
       <div className='flex items-center gap-1 overflow-x-auto border-b border-white/[0.07]'>
-        {TABS.map((t) => (
+        {tabs.map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
@@ -82,11 +114,20 @@ export default function PerfilTabs({
             participa={proyectosParticipa}
           />
         )}
-        {!cargando && tab === 'apuntes' && <ApuntesTab apuntes={apuntes} />}
-        {!cargando && tab === 'respuestas' && (
-          <ProximamenteTab
-            icono='ti-message-circle-2'
-            texto='El foro por ramos todavía está en construcción, así que todavía no puedes ver tus respuestas aquí.'
+        {!cargando && tab === 'materiales' && usuarioId && (
+          <MaterialActividad {...actividad} />
+        )}
+        {!cargando && tab === 'foro' && usuarioId && (
+          <ForumActividad {...actividad} />
+        )}
+        {!cargando && tab === 'anuncios' && usuarioId && (
+          <AnnouncementsActividad {...actividad} />
+        )}
+        {!cargando && tab === 'comunidades' && usuarioId && (
+          <ActividadComunidades
+            usuarioId={usuarioId}
+            carreraPropiaId={carreraId}
+            sinAcademico={sinAcademico}
           />
         )}
         {!cargando && tab === 'creativo' && usuarioId && (
@@ -198,56 +239,6 @@ function ProyectosTab({ creados, participa }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// APUNTES
-// ─────────────────────────────────────────────────────────────────────────────
-
-const ICONO_TIPO_APUNTE = {
-  apunte: 'ti-file-text',
-  codigo: 'ti-code',
-  guia: 'ti-book',
-};
-
-function ApuntesTab({ apuntes }) {
-  if (apuntes.length === 0) {
-    return (
-      <EmptyState
-        icono='ti-file-text'
-        texto='Aún no ha compartido apuntes o códigos en el repositorio.'
-      />
-    );
-  }
-
-  return (
-    <div className='flex flex-col gap-2'>
-      {apuntes.map((a) => (
-        <div
-          key={a.id}
-          className='flex items-center gap-3 rounded-2xl border border-white/[0.06] bg-[#1E1E24] px-4 py-3'
-        >
-          <div className='flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] bg-pink-500/10'>
-            <i
-              className={`ti ${ICONO_TIPO_APUNTE[a.tipo] || 'ti-file-text'} text-[17px] text-pink-400`}
-            />
-          </div>
-          <div className='min-w-0 flex-1'>
-            <div className='truncate text-[13px] font-medium text-neutral-100'>
-              {a.titulo}
-            </div>
-            <div className='mt-0.5 text-[11px] text-neutral-500'>
-              {a.ramo || 'Sin ramo'} · {tiempoRelativo(a.fecha_creacion)}
-            </div>
-          </div>
-          <div className='flex-shrink-0 text-[11.5px] text-neutral-500'>
-            <i className='ti ti-arrow-big-up-lines mr-1 text-[13px]' />
-            {a.votos_neto}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // GENÉRICOS
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -255,20 +246,6 @@ function EmptyState({ icono, texto }) {
   return (
     <div className='flex flex-col items-center py-14 text-center'>
       <i className={`ti ${icono} mb-3 text-4xl text-neutral-700`} />
-      <p className='max-w-xs text-[12.5px] leading-relaxed text-neutral-500'>
-        {texto}
-      </p>
-    </div>
-  );
-}
-
-function ProximamenteTab({ icono, texto }) {
-  return (
-    <div className='flex flex-col items-center rounded-2xl border border-dashed border-white/[0.1] py-14 text-center'>
-      <i className={`ti ${icono} mb-3 text-4xl text-neutral-700`} />
-      <div className='mb-1 text-[13px] font-semibold text-neutral-300'>
-        Próximamente
-      </div>
       <p className='max-w-xs text-[12.5px] leading-relaxed text-neutral-500'>
         {texto}
       </p>

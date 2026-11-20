@@ -261,6 +261,9 @@ export default function PerfilPublico() {
           proyectosParticipa={proyectosParticipa}
           cargando={cargandoTabs}
           usuarioId={perfil.id}
+          rol={perfil.rol}
+          rolBase={perfil.rol_base ?? perfil.rol}
+          carreraId={perfil.carrera?.id ?? null}
         />
       </div>
     </div>

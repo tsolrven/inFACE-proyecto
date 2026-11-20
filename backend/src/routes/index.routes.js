@@ -5,6 +5,7 @@ import archivoRoutes from '../shared/files/files.routes.js';
 import votoRoutes from '../shared/votes/votes.routes.js';
 import comentarioRoutes from '../shared/comments/comments.routes.js';
 import guardadoRoutes from '../shared/bookmarks/bookmarks.routes.js';
+import actividadRoutes from '../shared/activity/activity.routes.js';
 import ramoRoutes from '../modules/catalog/courses.routes.js';
 import estadisticasRoutes from '../shared/statistics/statistics.routes.js';
 import reporteRoutes from '../shared/moderation/reports.routes.js';
@@ -34,6 +35,7 @@ function routerApi(app) {
   router.use('/votos', votoRoutes);
   router.use('/comentarios', comentarioRoutes);
   router.use('/guardados', guardadoRoutes);
+  router.use('/actividad', actividadRoutes);   // actividad académica del perfil
   router.use('/repositorio', ramoRoutes);
   
   // estadísticas del panel derecho (materiales, foro y anuncios)

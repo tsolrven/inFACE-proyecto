@@ -13,8 +13,7 @@ import Modal, { ModalHeader, ModalBody } from '@/shared/components/ui/Modal';
 import EtiquetasPicker from '@/shared/components/EtiquetasPicker';
 import PerfilTabs from '@/features/profile/components/PerfilTabs';
 import ConDescripcion from '@/shared/components/ConDescripcion';
-// TODO(Silvana): importar aquí tu servicio de apuntes, ej:
-// import { listarMisApuntes, listarMisRespuestas } from '../services/apunte';
+import { useTotalPublicaciones } from '@/shared/post/activity/useActividad';
 
 const MESES = [
   'enero',
@@ -109,6 +108,12 @@ export default function Perfil() {
   useEffect(() => {
     if (perfil?.id) cargarTabs(perfil.id);
   }, [perfil?.id]);
+
+  // total de materiales subidos (estadística de la ficha)
+  const { data: totalMateriales = 0 } = useTotalPublicaciones(
+    perfil?.id,
+    'apunte',
+  );
 
   if (cargando) {
     return (
@@ -238,11 +243,14 @@ export default function Perfil() {
             </span>
             <span className='text-[12px] text-neutral-500'>Intereses</span>
           </div>
-          {/* TODO(Silvana): agregar aquí más estadísticas cuando tengas los datos, ej:
-                    <div className='flex items-baseline gap-1.5'>
-                        <span className='text-[16px] font-bold text-neutral-100'>{apuntes.length}</span>
-                        <span className='text-[12px] text-neutral-500'>Apuntes subidos</span>
-                    </div> */}
+          <div className='flex items-baseline gap-1.5'>
+            <span className='text-[16px] font-bold text-neutral-100'>
+              {totalMateriales}
+            </span>
+            <span className='text-[12px] text-neutral-500'>
+              Materiales subidos
+            </span>
+          </div>
         </div>
 
         {/* INTERESES (fila plana, con acción de editar al lado del título) */}
@@ -290,11 +298,11 @@ export default function Perfil() {
         <PerfilTabs
           proyectosCreados={proyectosCreados}
           proyectosParticipa={proyectosParticipa}
-          // TODO(Silvana): agregar tus props, ej:
-          // apuntes={apuntes}
-          // respuestas={respuestas}
           cargando={cargandoTabs}
           usuarioId={perfil.id}
+          rol={perfil.rol}
+          rolBase={perfil.rol_base ?? perfil.rol}
+          carreraId={perfil.carrera?.id ?? null}
           esPropio
         />
       </div>
