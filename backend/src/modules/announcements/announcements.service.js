@@ -15,6 +15,7 @@ import {
   registrarHidratadorGuardados,
   registrarFiltroGuardados,
   registrarEstadisticas,
+  registrarOyenteInteraccion,
   registrarPermisoAdjuntos,
   bloquearContenido,
   registrarEliminadorModeracion,
@@ -39,6 +40,7 @@ import {
   aplicarBusqueda,
 } from '../../shared/search/busqueda.helper.js';
 import { notificarReportesCerrados } from '../../shared/moderation/reports.notifications.js';
+import { avisarComentario } from '../../shared/notifications/notificarComentario.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 // En las listas el contenido viaja recortado; el detalle lo trae completo.
 const EXTRACTO_MAX = 300;
@@ -420,6 +422,43 @@ registrarEstadisticas('anuncio', {
   diasTags: 90,
   topColaboradores: false,
 });
+
+// Avisos por campana de comentarios (ver el oyente de 'hilo' en el foro)
+registrarOyenteInteraccion(
+  'anuncio',
+  async ({ clase, usuario_id, contenido_id, comentario_id, padre_id }) => {
+    if (clase !== 'comentario' || !comentario_id) return;
+    try {
+      const anuncio = await prisma.anuncio.findUnique({
+        where: { id: contenido_id },
+        select: { titulo: true, autor_id: true },
+      });
+      if (!anuncio) return;
+      await avisarComentario({
+        actorId: usuario_id,
+        comentarioId: comentario_id,
+        padreId: padre_id,
+        duenoId: anuncio.autor_id,
+        nombreContenido: anuncio.titulo,
+        ruta: `/anuncios-oficiales/${contenido_id}`,
+        dueno: {
+          tipo: 'anuncio_comentario',
+          titulo: 'Nuevo comentario en tu anuncio',
+          verbo: 'comentó',
+        },
+        respuesta: {
+          tipo: 'respuesta_recibida',
+          titulo: 'Respondieron tu comentario',
+          verbo: 'respondió tu comentario en',
+        },
+      });
+    } catch (error) {
+      logger.warn('No se pudo notificar el comentario de un anuncio', {
+        error: error.message,
+      });
+    }
+  },
+);
 // ────────────────────────────────────────────────────────────────────────────────────────
 export {
   listarAnuncios,

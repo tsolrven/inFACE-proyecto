@@ -15,6 +15,7 @@ import {
   registrarHidratadorGuardados,
   registrarFiltroGuardados,
   registrarEstadisticas,
+  registrarOyenteInteraccion,
   registrarAlEliminarComentario,
   registrarEliminadorModeracion,
   bloquearContenido,
@@ -35,6 +36,7 @@ import {
   aplicarBusqueda,
 } from '../../shared/search/busqueda.helper.js';
 import { notificarReportesCerrados } from '../../shared/moderation/reports.notifications.js';
+import { avisarComentario } from '../../shared/notifications/notificarComentario.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 // En las listas el contenido viaja recortado (hasta 20 hilos x 10000 caracteres
 // pesarían demasiado); el detalle lo trae completo.
@@ -422,6 +424,46 @@ registrarEstadisticas('hilo', {
   diasTags: 30,
   topColaboradores: true,
 });
+
+// Avisos por campana de comentarios: al autor del hilo y, si es una
+// respuesta, al autor del comentario respondido (avisarComentario nunca avisa
+// a quien comenta ni duplica el aviso). Mismo patrón que el marketplace.
+registrarOyenteInteraccion(
+  'hilo',
+  async ({ clase, usuario_id, contenido_id, comentario_id, padre_id }) => {
+    if (clase !== 'comentario' || !comentario_id) return;
+    try {
+      const hilo = await prisma.hilo.findUnique({
+        where: { id: contenido_id },
+        select: { titulo: true, autor_id: true },
+      });
+      if (!hilo) return;
+      await avisarComentario({
+        actorId: usuario_id,
+        comentarioId: comentario_id,
+        padreId: padre_id,
+        duenoId: hilo.autor_id,
+        nombreContenido: hilo.titulo,
+        ruta: `/foro-por-ramos/${contenido_id}`,
+        dueno: {
+          tipo: 'hilo_respuesta',
+          titulo: 'Nueva respuesta en tu hilo',
+          verbo: 'respondió en',
+        },
+        // mismo tipo que el marketplace: mismo ícono y texto en toda la plataforma
+        respuesta: {
+          tipo: 'respuesta_recibida',
+          titulo: 'Respondieron tu comentario',
+          verbo: 'respondió tu comentario en',
+        },
+      });
+    } catch (error) {
+      logger.warn('No se pudo notificar el comentario de un hilo', {
+        error: error.message,
+      });
+    }
+  },
+);
 
 // la pantalla de reportes elimina por moderación a través del registry
 registrarEliminadorModeracion('hilo', (id, usuario, respuesta) =>

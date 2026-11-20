@@ -17,6 +17,7 @@ import {
   registrarHidratadorGuardados,
   registrarFiltroGuardados,
   registrarEstadisticas,
+  registrarOyenteInteraccion,
   registrarEliminadorModeracion,
   registrarAlQuitarArchivo,
 } from '../../shared/content/contentRegistry.js';
@@ -36,6 +37,7 @@ import {
   aplicarBusqueda,
 } from '../../shared/search/busqueda.helper.js';
 import { notificarReportesCerrados } from '../../shared/moderation/reports.notifications.js';
+import { avisarComentario } from '../../shared/notifications/notificarComentario.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 // host github.com o un subdominio (gist.github.com), sin distinguir mayúsculas;
 // anclado para que "github.com.evil.com" o "notgithub.com" no coincidan.
@@ -492,6 +494,43 @@ registrarEstadisticas('apunte', {
   diasTags: 30,
   topColaboradores: true,
 });
+
+// Avisos por campana de comentarios (ver el oyente de 'hilo' en el foro)
+registrarOyenteInteraccion(
+  'apunte',
+  async ({ clase, usuario_id, contenido_id, comentario_id, padre_id }) => {
+    if (clase !== 'comentario' || !comentario_id) return;
+    try {
+      const apunte = await prisma.apunte.findUnique({
+        where: { id: contenido_id },
+        select: { titulo: true, autor_id: true },
+      });
+      if (!apunte) return;
+      await avisarComentario({
+        actorId: usuario_id,
+        comentarioId: comentario_id,
+        padreId: padre_id,
+        duenoId: apunte.autor_id,
+        nombreContenido: apunte.titulo,
+        ruta: `/repositorio-materiales/${contenido_id}`,
+        dueno: {
+          tipo: 'apunte_comentario',
+          titulo: 'Nuevo comentario en tu material',
+          verbo: 'comentó',
+        },
+        respuesta: {
+          tipo: 'respuesta_recibida',
+          titulo: 'Respondieron tu comentario',
+          verbo: 'respondió tu comentario en',
+        },
+      });
+    } catch (error) {
+      logger.warn('No se pudo notificar el comentario de un material', {
+        error: error.message,
+      });
+    }
+  },
+);
 // ────────────────────────────────────────────────────────────────────────────────────────
 // Quitar un archivo no puede dejar el material vacío. Corre dentro de la
 // transacción de eliminarArchivo, con el apunte ya bloqueado.
