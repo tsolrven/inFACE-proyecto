@@ -14,10 +14,13 @@ export const useAuthStore = create((set) => ({
   cargando: true,
   // Mensaje de suspensión (motivo y fecha) para mostrarlo en el login
   suspension: null,
+  // true tras un cierre de sesión voluntario: ProtectedRoute manda a la
+  // landing sin recordar la página, así el siguiente login entra al inicio
+  sesionCerrada: false,
 
   login: async (credenciales) => {
     const data = await apiLogin(credenciales);
-    set({ usuario: data.usuario, suspension: null });
+    set({ usuario: data.usuario, suspension: null, sesionCerrada: false });
     return data;
   },
 
@@ -32,7 +35,7 @@ export const useAuthStore = create((set) => ({
       // sin conexión: igual se cierra la sesión localmente
     } finally {
       queryClient.clear();
-      set({ usuario: null });
+      set({ usuario: null, sesionCerrada: true });
     }
   },
 

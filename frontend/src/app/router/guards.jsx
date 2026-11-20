@@ -6,12 +6,23 @@ import { AccesoDesdeComunidades } from '@/features/communities';
 
 export function ProtectedRoute({ children }) {
   const usuario = useAuthStore((s) => s.usuario);
+  const sesionCerrada = useAuthStore((s) => s.sesionCerrada);
   const location = useLocation();
 
   if (!usuario) {
     // sin sesión, la raíz del sitio muestra la landing pública en vez de mandar directo al login
     if (location.pathname === '/') {
       return <Landing />;
+    }
+    // cierre de sesión voluntario: a la landing, sin guardar `from`; el
+    // siguiente login entra al inicio y no a la página de la cuenta anterior
+    if (sesionCerrada) {
+      return (
+        <Navigate
+          to='/'
+          replace
+        />
+      );
     }
     return (
       <Navigate
