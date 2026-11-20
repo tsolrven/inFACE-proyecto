@@ -166,10 +166,13 @@ function ComentariosDeCarrera({ usuarioId, carreraId }) {
   );
 }
 
+// marcarPropia: etiqueta «Tu carrera» en la subpestaña de la carrera propia
+// (solo en el perfil propio; en el de otros su carrera ya está en el encabezado)
 export default function ActividadComunidades({
   usuarioId,
   carreraPropiaId = null,
   sinAcademico = false,
+  marcarPropia = false,
 }) {
   // misma clave que la página de hashtag: comparten el caché del catálogo
   const {
@@ -215,6 +218,11 @@ export default function ActividadComunidades({
               }`}
           >
             {NOMBRE_CORTO[c.codigo.toLowerCase()] ?? c.nombre}
+            {marcarPropia && c.id === carreraPropiaId && (
+              <span className='ml-1.5 rounded border border-pink-500/30 bg-pink-500/15 px-1.5 py-px text-[9px] font-bold tracking-wide text-pink-500'>
+                Tu carrera
+              </span>
+            )}
           </button>
         ))}
       </div>

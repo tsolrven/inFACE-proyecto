@@ -37,21 +37,32 @@ function NavItem({ path, label, icon, beta, end, colapsado, onNavigate }) {
   );
 }
 
-function SubNavItem({ path, label, icon, colapsado, onNavigate }) {
+// propia: la comunidad de la carrera del usuario (solo aparece en la lista del
+// superadmin estudiante, que ve las cinco): ícono de casa y etiqueta. Con la
+// barra colapsada solo se ve el ícono, por eso también cambia.
+function SubNavItem({ path, label, icon, propia, colapsado, onNavigate }) {
+  const titulo = propia ? `${label} (tu carrera)` : label;
   return (
     <NavLink
       to={path}
-      title={colapsado ? label : undefined}
+      title={colapsado ? titulo : undefined}
       onClick={onNavigate}
       className={({ isActive }) =>
         `flex items-center gap-2 border-l-2 border-transparent py-1.5 text-[12.5px] text-neutral-400 transition-colors hover:bg-white/5 hover:text-neutral-100 ${colapsado ? 'justify-center px-0' : 'pl-[30px] pr-4'
         } ${isActive ? 'border-pink-500 bg-pink-500/10 font-semibold text-pink-500' : ''}`
       }
     >
-      <i className={`ti ${icon} flex-shrink-0 text-sm`} />
+      <i
+        className={`ti ${propia ? 'ti-home' : icon} flex-shrink-0 text-sm`}
+      />
       {!colapsado && (
         <>
           <span className='flex-1'>{label}</span>
+          {propia && (
+            <span className='whitespace-nowrap rounded border border-pink-500/30 bg-pink-500/15 px-1.5 py-px text-[9px] font-bold tracking-wide text-pink-500'>
+              Tu carrera
+            </span>
+          )}
         </>
       )}
     </NavLink>
@@ -146,6 +157,7 @@ export default function Sidebar() {
               <SubNavItem
                 key={item.path}
                 {...item}
+                propia={item.path === rutaPropia}
                 colapsado={colapsado}
                 onNavigate={onNavigate}
               />

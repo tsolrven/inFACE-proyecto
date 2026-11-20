@@ -128,6 +128,7 @@ export default function PerfilTabs({
             usuarioId={usuarioId}
             carreraPropiaId={carreraId}
             sinAcademico={sinAcademico}
+            marcarPropia={esPropio}
           />
         )}
         {!cargando && tab === 'creativo' && usuarioId && (
