@@ -6,6 +6,7 @@ import AppRoutes from '@/app/router/AppRoutes';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { queryClient } from '@/shared/api/queryClient';
+import useBloquearSoltarFuera from '@/shared/hooks/useBloquearSoltarFuera';
 
 function SplashScreen() {
   return (
@@ -22,6 +23,8 @@ export default function App() {
   useEffect(() => {
     init();
   }, [init]);
+
+  useBloquearSoltarFuera();
 
   if (cargando) return <SplashScreen />;
 

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import GaleriaImagenes from '@/shared/post/images/GaleriaImagenes';
 import { mostrarToast } from '@/shared/stores/toastStore';
+import { traeArchivos } from '@/shared/lib/archivos';
 import { useComentariosConfig } from '@/shared/post/comments/comentariosConfig';
 import {
   COMENTARIO_MAX,
@@ -19,9 +20,6 @@ function extension(nombre) {
 function primeraImagen(files) {
   return [...(files ?? [])].find((f) => f.type.startsWith('image/')) ?? null;
 }
-
-// solo los arrastres de archivos (no de texto seleccionado)
-const traeArchivos = (e) => [...(e.dataTransfer?.types ?? [])].includes('Files');
 
 /**
  * Crear: texto y, opcionalmente, una imagen (botón, Ctrl+V o arrastrar).
@@ -151,8 +149,8 @@ export default function CommentComposer({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       className={`flex flex-col gap-2 rounded-[10px] border p-2.5 transition-colors focus-within:border-pink-500/40 ${arrastrando
-          ? 'border-pink-500/60 bg-pink-500/[0.04]'
-          : 'border-white/[0.06] bg-[#111114]'
+        ? 'border-pink-500/60 bg-pink-500/[0.04]'
+        : 'border-white/[0.06] bg-[#111114]'
         }`}
     >
       <textarea

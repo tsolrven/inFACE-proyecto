@@ -25,3 +25,8 @@ export function formatearTamanio(bytes) {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
+
+// true si un evento de arrastre trae archivos (no texto ni enlaces
+// seleccionados). Se usa en dragover y drop.
+export const traeArchivos = (e) =>
+  [...(e.dataTransfer?.types ?? [])].includes('Files');

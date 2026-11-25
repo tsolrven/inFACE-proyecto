@@ -1,6 +1,10 @@
-import { useId } from 'react';
+import { useId, useState } from 'react';
 import Campo from '@/shared/components/form/Campo';
-import { claveArchivo, formatearTamanio } from '@/shared/lib/archivos';
+import {
+  claveArchivo,
+  formatearTamanio,
+  traeArchivos,
+} from '@/shared/lib/archivos';
 
 const FILA =
   'flex items-center gap-2 rounded-md border border-white/[0.07] bg-white/[0.03] px-2.5 py-1.5';
@@ -36,6 +40,30 @@ export default function ArchivosInput({
   } = control;
 
   const inputId = useId();
+  const [arrastrando, setArrastrando] = useState(false);
+  const lleno = cupo - nuevos.length <= 0;
+
+  // Soltar pasa por agregar(), igual que el botón: mismas reglas de formato,
+  // tamaño, máximo y duplicados (useArchivosForm)
+  function handleDragOver(e) {
+    if (!traeArchivos(e)) return;
+    e.preventDefault(); // sin esto, el navegador abriría el archivo
+    e.dataTransfer.dropEffect = lleno ? 'none' : 'copy';
+    if (!lleno && !arrastrando) setArrastrando(true);
+  }
+
+  function handleDragLeave(e) {
+    // dragleave también salta al pasar entre hijos: solo cuenta salir de la zona
+    if (!e.currentTarget.contains(e.relatedTarget)) setArrastrando(false);
+  }
+
+  function handleDrop(e) {
+    if (!traeArchivos(e)) return;
+    e.preventDefault();
+    setArrastrando(false);
+    if (lleno) return;
+    agregar(Array.from(e.dataTransfer.files));
+  }
 
   function handleChange(e) {
     const elegidos = Array.from(e.target.files); // primero capturar, después vaciar
@@ -99,25 +127,55 @@ export default function ArchivosInput({
         </div>
       )}
 
-      <div className='flex items-center'>
+      {/* la zona completa es el <label>: clic en cualquier parte abre el
+          selector, y también recibe lo que se arrastra */}
+      <div>
         <input
           id={inputId}
           type='file'
           multiple
           accept={extensiones?.join(',')}
-          disabled={cupo - nuevos.length <= 0}
+          disabled={lleno}
           onChange={handleChange}
           className='peer sr-only'
         />
         <label
           htmlFor={inputId}
-          className='cursor-pointer rounded-md bg-pink-500/10 px-3 py-1.5 text-[11.5px] font-semibold text-pink-500 transition-colors hover:bg-pink-500/20 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-pink-500 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 peer-disabled:hover:bg-pink-500/10'
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          className={`flex flex-col items-center gap-1.5 rounded-[10px] border border-dashed px-4 py-4 text-center transition-colors peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-pink-500 ${lleno
+              ? 'cursor-not-allowed border-white/[0.07] opacity-60'
+              : arrastrando
+                ? 'cursor-copy border-pink-500/60 bg-pink-500/[0.06]'
+                : 'cursor-pointer border-white/[0.12] hover:border-white/[0.22] hover:bg-white/[0.02]'
+            }`}
         >
-          Elegir {plural}
+          <i
+            className={`ti ${arrastrando ? 'ti-download' : 'ti-cloud-upload'} text-[22px] ${arrastrando ? 'text-pink-400' : 'text-neutral-500'
+              }`}
+          />
+          {lleno ? (
+            <span className='text-[12px] text-neutral-500'>
+              Llegaste al máximo de {max} {plural}
+            </span>
+          ) : arrastrando ? (
+            <span className='text-[12px] font-medium text-pink-300'>
+              Suelta para agregar
+            </span>
+          ) : (
+            <span className='text-[12px] text-neutral-400'>
+              Arrastra aquí o{' '}
+              <span className='font-semibold text-pink-500'>
+                elige {plural}
+              </span>
+            </span>
+          )}
+          {ayuda && (
+            <span className='text-[11px] text-neutral-600'>{ayuda}</span>
+          )}
         </label>
       </div>
-
-      {ayuda && <p className='text-[11px] text-neutral-600'>{ayuda}</p>}
       {avisos.length > 0 && (
         <p className='text-[11px] text-amber-400'>{avisos.join(' · ')}</p>
       )}
