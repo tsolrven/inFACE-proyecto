@@ -28,8 +28,12 @@ export function useCrearComentario(tipoContenido, contenidoId) {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ contenido, padre_id }) =>
-      crearComentario(tipoContenido, contenidoId, { contenido, padre_id }),
+    mutationFn: ({ contenido, padre_id, imagen }) =>
+      crearComentario(tipoContenido, contenidoId, {
+        contenido,
+        padre_id,
+        imagen,
+      }),
 
     onSuccess: (nuevo, { padre_id }) => {
       // se inserta en el árbol de todos los órdenes ya cargados
@@ -52,12 +56,14 @@ export function useEditarComentario() {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, contenido }) => editarComentario(id, contenido),
+    mutationFn: ({ id, contenido, quitar_imagen }) =>
+      editarComentario(id, { contenido, quitar_imagen }),
 
     onSuccess: (actualizado, { id }) => {
       parchearContenido(qc, 'comentario', id, {
         contenido: actualizado.contenido,
         editado_en: actualizado.editado_en,
+        imagen: actualizado.imagen,
       });
     },
 

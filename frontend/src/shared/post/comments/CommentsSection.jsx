@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import {
   commentKeys,
@@ -15,6 +15,8 @@ import CommentSortSelect from '@/shared/post/comments/CommentSortSelect';
 import { mostrarToast } from '@/shared/stores/toastStore';
 import { useAuthStore } from '@/shared/auth/authStore';
 import { puedeEscribir } from '@/shared/auth/roles';
+import { ComentariosConfigProvider } from '@/shared/post/comments/comentariosConfig';
+import { TIPOS_SIN_IMAGEN } from '@/shared/post/comments/constants';
 
 // Al abrir un enlace a un comentario (?comentario=ID) se muestran hasta tantos
 // ancestros por encima, y el resaltado dura este tiempo.
@@ -50,6 +52,12 @@ export default function CommentsSection({
   const seccionRef = useRef(null);
   const avisadoRef = useRef(null);
   const maxIndent = useMaxIndent();
+
+  // los comentarios de párrafos no admiten imagen (anotaciones de una historia)
+  const configComentarios = useMemo(
+    () => ({ admiteImagen: !TIPOS_SIN_IMAGEN.includes(tipoContenido) }),
+    [tipoContenido],
+  );
 
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -197,10 +205,11 @@ export default function CommentsSection({
   }
 
   return (
-    <section
-      ref={seccionRef}
-      aria-label={titulo}
-    >
+    <ComentariosConfigProvider value={configComentarios}>
+      <section
+        ref={seccionRef}
+        aria-label={titulo}
+      >
       <h3 className='mb-4 flex items-center gap-1.5 text-sm font-semibold text-neutral-100'>
         <i className='ti ti-messages text-base text-pink-500' />
         {titulo} ({total})
@@ -211,9 +220,9 @@ export default function CommentsSection({
           <CommentComposer
             placeholder={placeholder}
             pending={acciones.crear.isPending}
-            onSubmit={(texto) =>
-              acciones.crear.mutateAsync({ contenido: texto })
-            }
+              onSubmit={(texto, { imagen }) =>
+                acciones.crear.mutateAsync({ contenido: texto, imagen })
+              }
           />
         </div>
       )}
@@ -342,7 +351,8 @@ export default function CommentsSection({
             )}
           </div>
         </>
-      )}
-    </section>
+        )}
+      </section>
+    </ComentariosConfigProvider>
   );
 }

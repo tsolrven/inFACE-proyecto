@@ -30,22 +30,34 @@ export async function listarRespuestas({
   return { items: res.data, meta: res.meta };
 }
 
+// Sin imagen va como JSON (igual que antes). Con imagen, multipart: campo
+// "datos" con el JSON (primero) y campo "imagen" con el archivo.
 export async function crearComentario(
   tipoContenido,
   contenidoId,
-  { contenido, padre_id } = {},
+  { contenido, padre_id, imagen = null } = {},
 ) {
+  let body = { contenido, padre_id };
+  if (imagen) {
+    const formData = new FormData();
+    formData.append('datos', JSON.stringify(body));
+    formData.append('imagen', imagen);
+    body = formData;
+  }
   const res = await apiFetch(`/comentarios/${tipoContenido}/${contenidoId}`, {
     method: 'POST',
-    body: { contenido, padre_id },
+    body,
   });
   return res.data;
 }
 
-export async function editarComentario(comentarioId, contenido) {
+export async function editarComentario(
+  comentarioId,
+  { contenido, quitar_imagen = false },
+) {
   const res = await apiFetch(`/comentarios/${comentarioId}`, {
     method: 'PATCH',
-    body: { contenido },
+    body: { contenido, quitar_imagen },
   });
   return res.data;
 }

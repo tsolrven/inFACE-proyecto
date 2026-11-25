@@ -7,6 +7,7 @@ import CommentActions from '@/shared/post/comments/CommentActions';
 import CommentComposer from '@/shared/post/comments/CommentComposer';
 import { useAutorDestacado } from '@/shared/post/comments/autorDestacado';
 import { COMENTARIO_MAX_NIVEL } from '@/shared/post/comments/constants';
+import GaleriaImagenes from '@/shared/post/images/GaleriaImagenes';
 
 // Desde esta profundidad (0 = raíz) las respuestas arrancan tras "Ver N respuestas".
 const PROFUNDIDAD_RESPUESTAS_OCULTAS = 2;
@@ -54,18 +55,22 @@ export default function CommentItem({
     if (respuestas.length === 0) cargarMasRespuestas();
   }
 
-  function enviarRespuesta(texto) {
+  function enviarRespuesta(texto, { imagen }) {
     return acciones.crear
-      .mutateAsync({ contenido: texto, padre_id: comentario.id })
+      .mutateAsync({ contenido: texto, padre_id: comentario.id, imagen })
       .then(() => {
         setRespondiendo(false);
         setMostrarRespuestas(true);
       });
   }
 
-  function guardarEdicion(texto) {
+  function guardarEdicion(texto, { quitarImagen }) {
     return acciones.editar
-      .mutateAsync({ id: comentario.id, contenido: texto })
+      .mutateAsync({
+        id: comentario.id,
+        contenido: texto,
+        quitar_imagen: quitarImagen,
+      })
       .then(() => setEditando(false));
   }
 
@@ -173,9 +178,11 @@ export default function CommentItem({
 
             {!eliminado && editando && (
               <div className='mb-1.5'>
-                <CommentComposer
-                  initialValue={comentario.contenido}
-                  submitLabel='Guardar'
+                  <CommentComposer
+                    initialValue={comentario.contenido}
+                    imagenInicial={comentario.imagen ?? null}
+                    edicion
+                    submitLabel='Guardar'
                   rows={2}
                   autoFocus
                   pending={acciones.editar.isPending}
@@ -187,9 +194,16 @@ export default function CommentItem({
 
             {!eliminado && !editando && (
               <>
-                <p className='mb-1.5 whitespace-pre-wrap break-words text-[13px] leading-relaxed text-neutral-100'>
-                  {comentario.contenido}
-                </p>
+                  {comentario.contenido && (
+                    <p className='mb-1.5 whitespace-pre-wrap break-words text-[13px] leading-relaxed text-neutral-100'>
+                      {comentario.contenido}
+                    </p>
+                  )}
+                  {comentario.imagen && (
+                    <div className='mb-1.5 w-[200px]'>
+                      <GaleriaImagenes archivos={[comentario.imagen]} />
+                    </div>
+                  )}
                 <CommentActions
                   comentario={comentario}
                   acciones={acciones}
@@ -285,7 +299,7 @@ export default function CommentItem({
             title='Eliminar comentario'
             message={
               totalRespuestas > 0
-                ? 'Este comentario tiene respuestas, así que quedará como "eliminado" y su texto se borrará.'
+                ? 'Este comentario tiene respuestas, así que quedará como "eliminado" y se borrará su contenido.'
                 : 'Esta acción no se puede deshacer.'
             }
             confirmLabel='Eliminar'

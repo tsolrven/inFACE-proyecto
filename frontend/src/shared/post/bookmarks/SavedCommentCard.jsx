@@ -61,7 +61,14 @@ export default function SavedCommentCard({ comentario, rutaDe }) {
               : 'Comentario eliminado por el usuario'}
           </span>
         ) : (
-          comentario.contenido
+          <>
+            {comentario.contenido}
+            {comentario.imagen && (
+              <span className='mt-1 flex items-center gap-1 text-[12px] text-neutral-500'>
+                <i className='ti ti-photo' /> Imagen adjunta
+              </span>
+            )}
+          </>
         )}
       </p>
     </div>
