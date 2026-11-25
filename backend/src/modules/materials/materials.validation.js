@@ -137,6 +137,9 @@ const actualizarApunteSchema = z.object({
 // ─────────────────────────────────────────────────────────────────────────────
 const listarApuntesQuerySchema = paginacionQuerySchema.extend({
   carrera_id: z.string().uuid('El id de la carrera no es válido').optional(),
+  alcance: z
+    .enum(['carrera', 'facultad'], { error: 'Alcance inválido' })
+    .optional(),
   ramo_id: z.string().uuid('El id del ramo no es válido').optional(),
   tipo: z.enum(TIPOS_APUNTE, { error: 'Tipo de material inválido' }).optional(),
   tipo_archivo: z

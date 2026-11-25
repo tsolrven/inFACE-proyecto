@@ -6,6 +6,7 @@ import usuariosRoutes from '../modules/admin/usuarios.routes.js';
 import historialRoutes from '../modules/admin/historial.routes.js';
 import solicitudesCargoRoutes from '../modules/cargos/solicitudesAdmin.routes.js';
 import cargosAdminRoutes from '../modules/cargos/cargosAdmin.routes.js';
+import resumenRoutes from '../modules/admin/resumen.routes.js';
 
 // Todo /api/admin es solo del superadmin: se protege una vez acá.
 // Los apartados nuevos de Administración se montan debajo.
@@ -18,5 +19,6 @@ router.use('/usuarios', sancionRoutes);
 router.use('/historial', historialRoutes);
 router.use('/solicitudes-cargo', solicitudesCargoRoutes);
 router.use('/cargos', cargosAdminRoutes);
+router.use('/resumen', resumenRoutes);
 
 export default router;

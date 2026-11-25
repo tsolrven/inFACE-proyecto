@@ -89,4 +89,4 @@ async function enviarAvisosVencimiento() {
   return avisados;
 }
 
-export { enviarAvisosVencimiento };
+export { enviarAvisosVencimiento, DIAS_AVISO };

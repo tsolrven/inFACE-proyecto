@@ -55,6 +55,11 @@ const actualizarHiloSchema = z.object({
 // ─────────────────────────────────────────────────────────────────────────────
 const listarHilosQuerySchema = paginacionQuerySchema.extend({
   carrera_id: z.string().uuid('El id de la carrera no es válido').optional(),
+  // 'facultad': todas las carreras (Inicio del docente). Por defecto, una
+  // carrera. Leer otras carreras ya está permitido a todos (comunidades).
+  alcance: z
+    .enum(['carrera', 'facultad'], { error: 'Alcance inválido' })
+    .optional(),
   ramo_id: z.string().uuid('El id del ramo no es válido').optional(),
   hashtag: hashtagFiltroSchema.optional(),
   busqueda: busquedaQuerySchema,

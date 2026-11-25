@@ -44,7 +44,15 @@ const EXTRACTO_MAX = 300;
 
 const INCLUDE_HILO = {
   autor: { select: AUTOR_PUBLICO_SELECT },
-  ramo: { select: { id: true, nombre: true, semestre: true } },
+  // carreras del ramo: el chip de carrera en las listas de toda la facultad
+  ramo: {
+    select: {
+      id: true,
+      nombre: true,
+      semestre: true,
+      ramo_carrera: { select: { carrera: { select: { codigo: true } } } },
+    },
+  },
   hashtags: INCLUDE_HASHTAGS,
 };
 // ────────────────────────────────────────────────────────────────────────────────────────
@@ -86,12 +94,16 @@ async function listarHilos({
   limite = 20,
   usuario_id,
   carrera_id,
+  alcance = 'carrera',
 }) {
-  if (!carrera_id) {
+  const facultad = alcance === 'facultad';
+  if (!carrera_id && !facultad) {
     return { hilos: [], total: 0, pagina, paginas: 0 };
   }
 
-  const where = { ramo: { ramo_carrera: { some: { carrera_id } } } };
+  const where = facultad
+    ? {}
+    : { ramo: { ramo_carrera: { some: { carrera_id } } } };
   if (ramo_id) where.ramo_id = ramo_id;
   if (hashtag) where.hashtags = filtroPorHashtag(hashtag);
   // resuelto = tiene respuesta aceptada (formatearHilo usa el mismo criterio)
@@ -394,6 +406,7 @@ function formatearHilo(
       id: hilo.ramo.id,
       nombre: hilo.ramo.nombre,
       semestre: hilo.ramo.semestre,
+      carreras: hilo.ramo.ramo_carrera?.map((rc) => rc.carrera.codigo) ?? [],
     },
     hashtags: nombresDeHashtags(hilo.hashtags),
     archivos: archivos.map(formatearArchivo),

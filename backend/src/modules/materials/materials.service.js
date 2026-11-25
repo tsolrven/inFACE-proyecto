@@ -100,7 +100,15 @@ async function idsPorBusquedaTexto(texto) {
 // relaciones que siempre se piden junto con un apunte
 const INCLUDE_APUNTE = {
   autor: { select: AUTOR_PUBLICO_SELECT },
-  ramo: { select: { id: true, nombre: true, semestre: true } },
+  // carreras del ramo: el chip de carrera en las listas de toda la facultad
+  ramo: {
+    select: {
+      id: true,
+      nombre: true,
+      semestre: true,
+      ramo_carrera: { select: { carrera: { select: { codigo: true } } } },
+    },
+  },
   hashtags: INCLUDE_HASHTAGS,
 };
 // ────────────────────────────────────────────────────────────────────────────────────────
@@ -142,14 +150,16 @@ async function listarApuntes({
   limite = 20,
   usuario_id,
   carrera_id,
+  alcance = 'carrera',
 }) {
-  if (!carrera_id) {
+  const facultad = alcance === 'facultad';
+  if (!carrera_id && !facultad) {
     return { apuntes: [], total: 0, pagina, paginas: 0 };
   }
 
-  const where = {
-    ramo: { ramo_carrera: { some: { carrera_id } } },
-  };
+  const where = facultad
+    ? {}
+    : { ramo: { ramo_carrera: { some: { carrera_id } } } };
   if (ramo_id) where.ramo_id = ramo_id;
   if (tipo) where.tipo = tipo;
   if (hashtag) {
@@ -460,6 +470,7 @@ function formatearApunte(
       id: apunte.ramo.id,
       nombre: apunte.ramo.nombre,
       semestre: apunte.ramo.semestre,
+      carreras: apunte.ramo.ramo_carrera?.map((rc) => rc.carrera.codigo) ?? [],
     },
     hashtags: nombresDeHashtags(apunte.hashtags),
     archivos: archivos.map(formatearArchivo),
