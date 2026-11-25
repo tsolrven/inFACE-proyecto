@@ -3,7 +3,8 @@ import { useAuthStore } from '@/shared/auth/authStore';
 import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
 import { useVotar } from '@/shared/post/votes/useVotar';
 import VotePill from '@/shared/post/votes/VotePill';
-import ShareButton from '@/shared/post/share/ShareButton';
+import BotonCompartir from '@/shared/post/share/BotonCompartir';
+import { compartirAnuncio } from '@/features/announcements/utils/compartir';
 import PortadaImagen from '@/shared/post/images/PortadaImagen';
 import QuitarGuardadoButton from '@/shared/post/bookmarks/QuitarGuardadoButton';
 import { extractoPlano } from '@/shared/markdown/extractoPlano';
@@ -150,10 +151,7 @@ export default function AnuncioCard({ anuncio, enGuardados = false }) {
             {anuncio.comentarios_count}
           </button>
 
-          <ShareButton
-            path={`/anuncios-oficiales/${anuncio.id}`}
-            titulo={anuncio.titulo}
-          />
+          <BotonCompartir {...compartirAnuncio(anuncio)} />
         </div>
       </div>
     </div>

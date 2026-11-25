@@ -17,7 +17,8 @@ import { useApunte } from '@/features/materials/hooks/useApuntes';
 import { useVotar } from '@/shared/post/votes/useVotar';
 import ApunteMenu from '@/features/materials/components/ApunteMenu';
 import VotePill from '@/shared/post/votes/VotePill';
-import ShareButton from '@/shared/post/share/ShareButton';
+import BotonCompartir from '@/shared/post/share/BotonCompartir';
+import { compartirApunte } from '@/features/materials/utils/compartir';
 import CodeViewer from '@/features/materials/components/CodeViewer';
 import { useRutaHashtag } from '@/shared/hooks/useRutaHashtag';
 import MarkdownView from '@/shared/markdown/MarkdownView';
@@ -162,10 +163,7 @@ export default function MaterialDetailModal() {
                 {apunte.comentarios_count ?? 0}
               </button>
 
-              <ShareButton
-                path={`/repositorio-materiales/${apunte.id}`}
-                titulo={apunte.titulo}
-              />
+              <BotonCompartir {...compartirApunte(apunte)} />
 
               <span className='ml-auto flex items-center gap-1'>
                 <i className='ti ti-download text-[13px]' />{' '}

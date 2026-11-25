@@ -10,7 +10,8 @@ import { puedeEditar } from '@/shared/auth/roles';
 import { useVotar } from '@/shared/post/votes/useVotar';
 import { parchearContenido } from '@/shared/post/cache';
 import VotePill from '@/shared/post/votes/VotePill';
-import ShareButton from '@/shared/post/share/ShareButton';
+import BotonCompartir from '@/shared/post/share/BotonCompartir';
+import { compartirHilo } from '@/features/forum/utils/compartir';
 import GaleriaImagenes from '@/shared/post/images/GaleriaImagenes';
 import MarkdownView from '@/shared/markdown/MarkdownView';
 import HiloMenu from '@/features/forum/components/HiloMenu';
@@ -249,10 +250,7 @@ export default function HiloDetailModal() {
                 {hilo.comentarios_count ?? 0}
               </button>
 
-              <ShareButton
-                path={`/foro-por-ramos/${hilo.id}`}
-                titulo={hilo.titulo}
-              />
+              <BotonCompartir {...compartirHilo(hilo)} />
             </div>
           </div>
 

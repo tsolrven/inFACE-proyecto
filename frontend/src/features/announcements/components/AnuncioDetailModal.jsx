@@ -6,7 +6,8 @@ import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
 import { useAuthStore } from '@/shared/auth/authStore';
 import { useVotar } from '@/shared/post/votes/useVotar';
 import VotePill from '@/shared/post/votes/VotePill';
-import ShareButton from '@/shared/post/share/ShareButton';
+import BotonCompartir from '@/shared/post/share/BotonCompartir';
+import { compartirAnuncio } from '@/features/announcements/utils/compartir';
 import GaleriaImagenes from '@/shared/post/images/GaleriaImagenes';
 import MarkdownView from '@/shared/markdown/MarkdownView';
 import { useRutaHashtag } from '@/shared/hooks/useRutaHashtag';
@@ -172,10 +173,7 @@ export default function AnuncioDetailModal() {
                 {anuncio.comentarios_count ?? 0}
               </button>
 
-              <ShareButton
-                path={`/anuncios-oficiales/${anuncio.id}`}
-                titulo={anuncio.titulo}
-              />
+              <BotonCompartir {...compartirAnuncio(anuncio)} />
             </div>
           </div>
 
