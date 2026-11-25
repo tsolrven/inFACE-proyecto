@@ -1,5 +1,4 @@
 import { lazy, Suspense, useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import Modal, { ModalHeader } from '@/shared/components/ui/Modal';
 import Campo from '@/shared/components/form/Campo';
 import HashtagsInput from '@/shared/components/form/HashtagsInput';
@@ -9,7 +8,8 @@ import { useArchivosForm } from '@/shared/hooks/useArchivosForm';
 import Button from '@/shared/components/ui/Button';
 import CharCounter from '@/shared/components/ui/CharCounter';
 import ConfirmDialog from '@/shared/components/ui/ConfirmDialog';
-import { listarRamosPorCarrera } from '@/shared/api/catalog.api';
+import SelectorRamo from '@/shared/components/SelectorRamo';
+import { useRamosCarrera } from '@/shared/hooks/useRamos';
 import { normalizarHashtags, validarHashtags } from '@/shared/lib/hashtags';
 import { mensajeDeError } from '@/shared/lib/errores';
 import { mostrarToast } from '@/shared/stores/toastStore';
@@ -51,11 +51,8 @@ export default function HiloFormModal({
   }));
 
   // El ramo solo se elige al crear
-  const { data: ramosPorSemestre } = useQuery({
-    queryKey: ['ramos', carreraId],
-    queryFn: () => listarRamosPorCarrera(carreraId),
-    enabled: !!carreraId && !editando,
-    staleTime: Infinity,
+  const { data: ramosPorSemestre } = useRamosCarrera(carreraId, {
+    enabled: !editando,
   });
   const ramos = useMemo(
     () => Object.values(ramosPorSemestre ?? {}).flat(),
@@ -94,9 +91,9 @@ export default function HiloFormModal({
   const hayCambios = editando
     ? tituloCambio || contenidoCambio || hashtagsCambiaron || archivosCambiaron
     : titulo.trim() !== '' ||
-      contenido !== '' ||
-      hashtagsTexto.trim() !== '' ||
-      imagenes.hayCambios;
+    contenido !== '' ||
+    hashtagsTexto.trim() !== '' ||
+    imagenes.hayCambios;
 
   function intentarCerrar() {
     if (enviando) return;
@@ -216,28 +213,11 @@ export default function HiloFormModal({
                 </p>
               </>
             ) : (
-              <select
+              <SelectorRamo
+                carreraId={carreraId}
                 value={ramoValido ? ramoId : ''}
-                onChange={(e) => setRamoId(e.target.value)}
-                className={inputClasses}
-              >
-                <option value=''>Selecciona un ramo...</option>
-                {Object.entries(ramosPorSemestre ?? {}).map(([sem, lista]) => (
-                  <optgroup
-                    key={sem}
-                    label={sem === '0' ? 'Sin semestre' : `Semestre ${sem}`}
-                  >
-                    {lista.map((ramo) => (
-                      <option
-                        key={ramo.id}
-                        value={ramo.id}
-                      >
-                        {ramo.nombre}
-                      </option>
-                    ))}
-                  </optgroup>
-                ))}
-              </select>
+                onChange={setRamoId}
+              />
             )}
           </Campo>
 

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import Modal, { ModalHeader } from '@/shared/components/ui/Modal';
 import Button from '@/shared/components/ui/Button';
 import ConfirmDialog from '@/shared/components/ui/ConfirmDialog';
@@ -7,7 +7,7 @@ import { inputClasses } from '@/shared/components/form/inputClasses';
 import HashtagsInput from '@/shared/components/form/HashtagsInput';
 import ArchivosInput from '@/shared/components/form/ArchivosInput';
 import { useArchivosForm } from '@/shared/hooks/useArchivosForm';
-import { listarRamosPorCarrera } from '@/shared/api/catalog.api';
+import SelectorRamo from '@/shared/components/SelectorRamo';
 import { iconoDeAdjunto } from '@/features/materials/utils/fileMeta';
 import { useEditarApunte } from '@/features/materials/hooks/useApuntes';
 import CodeEditor from '@/features/materials/components/CodeEditor';
@@ -74,7 +74,6 @@ function EditApunteForm({ onClose, apunte, carreraId }) {
   const [titulo, setTitulo] = useState(original.titulo);
   const [descripcion, setDescripcion] = useState(original.descripcion);
   const [ramoId, setRamoId] = useState(original.ramoId);
-  const [ramosOpciones, setRamosOpciones] = useState([]);
   const [hashtagsTexto, setHashtagsTexto] = useState(
     original.hashtags.map((t) => `#${t}`).join(' '),
   );
@@ -99,14 +98,6 @@ function EditApunteForm({ onClose, apunte, carreraId }) {
 
   const editar = useEditarApunte();
   const enviando = editar.isPending;
-
-  useEffect(() => {
-    if (!carreraId) return;
-    listarRamosPorCarrera(carreraId).then((porSemestre) => {
-      const flatten = Object.values(porSemestre).flat();
-      setRamosOpciones(flatten);
-    });
-  }, [carreraId]);
 
   // ── Qué cambió ────────────────────────────────────────────────────────────
   const hashtags = normalizarHashtags(hashtagsTexto);
@@ -308,21 +299,12 @@ function EditApunteForm({ onClose, apunte, carreraId }) {
           )}
 
           <Campo label='Ramo'>
-            <select
+            <SelectorRamo
+              carreraId={carreraId}
               value={ramoId}
-              onChange={(e) => setRamoId(e.target.value)}
-              className={inputClasses}
-            >
-              <option value=''>Selecciona un ramo...</option>
-              {ramosOpciones.map((ramo) => (
-                <option
-                  key={ramo.id}
-                  value={ramo.id}
-                >
-                  {ramo.nombre}
-                </option>
-              ))}
-            </select>
+              onChange={setRamoId}
+              nombreActual={apunte.ramo?.nombre ?? null}
+            />
           </Campo>
 
           <Campo

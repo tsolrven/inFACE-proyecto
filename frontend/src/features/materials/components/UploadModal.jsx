@@ -1,7 +1,7 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import Modal, { ModalHeader } from '@/shared/components/ui/Modal';
 import Button from '@/shared/components/ui/Button';
-import { listarRamosPorCarrera } from '@/shared/api/catalog.api';
+import SelectorRamo from '@/shared/components/SelectorRamo';
 import { crearApunte } from '@/features/materials/api/materials.api';
 import { useQueryClient } from '@tanstack/react-query';
 import CodeEditor from '@/features/materials/components/CodeEditor';
@@ -46,7 +46,6 @@ export default function UploadModal({ open, onClose, carreraId }) {
   const [titulo, setTitulo] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [ramoId, setRamoId] = useState('');
-  const [ramosOpciones, setRamosOpciones] = useState([]);
   const [hashtagsTexto, setHashtagsTexto] = useState('');
   const [links, setLinks] = useState(['']);
   const [codigoSnippet, setCodigoSnippet] = useState('');
@@ -66,14 +65,6 @@ export default function UploadModal({ open, onClose, carreraId }) {
   const errorHashtags = validarHashtags(hashtags);
 
   const qc = useQueryClient();
-
-  useEffect(() => {
-    if (!open || !carreraId) return;
-    listarRamosPorCarrera(carreraId).then((porSemestre) => {
-      const flatten = Object.values(porSemestre).flat();
-      setRamosOpciones(flatten);
-    });
-  }, [open, carreraId]);
 
   function toggleFuente(value) {
     setFuentes((prev) => ({ ...prev, [value]: !prev[value] }));
@@ -246,21 +237,11 @@ export default function UploadModal({ open, onClose, carreraId }) {
           </p>
 
           <Campo label='Ramo'>
-            <select
+            <SelectorRamo
+              carreraId={carreraId}
               value={ramoId}
-              onChange={(e) => setRamoId(e.target.value)}
-              className={inputClasses}
-            >
-              <option value=''>Selecciona un ramo...</option>
-              {ramosOpciones.map((ramo) => (
-                <option
-                  key={ramo.id}
-                  value={ramo.id}
-                >
-                  {ramo.nombre}
-                </option>
-              ))}
-            </select>
+              onChange={setRamoId}
+            />
           </Campo>
 
           <Campo

@@ -1,22 +1,10 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { listarRamosPorCarrera } from '@/shared/api/catalog.api';
 import { colorPorRamo } from '@/shared/lib/courseColors';
-import {
-  contieneTodas,
-  normalizar,
-  palabrasDeBusqueda,
-  segmentosResaltados,
-} from '@/shared/lib/texto';
+import { NUMEROS_ROMANOS, partesSemestre } from '@/shared/lib/ramos';
+import { useBusquedaRamos, useRamosCarrera } from '@/shared/hooks/useRamos';
+import NombreResaltado from '@/shared/components/NombreResaltado';
 
-const NUMEROS_ROMANOS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
 const TEXTO_MAX = 100;
-
-// semestre global (1..n) → año y semestre dentro del año
-function partesSemestre(semestre) {
-  const sem = Number(semestre);
-  return { anio: Math.ceil(sem / 2), semestreEnAnio: sem % 2 === 0 ? 2 : 1 };
-}
 
 function agruparPorAnio(ramosPorSemestre) {
   const anios = {};
@@ -26,26 +14,6 @@ function agruparPorAnio(ramosPorSemestre) {
     anios[anio][semestreEnAnio] = ramos;
   });
   return anios;
-}
-
-function ubicacionDe(semestre) {
-  const { anio, semestreEnAnio } = partesSemestre(semestre);
-  return `${NUMEROS_ROMANOS[anio - 1] ?? anio} año · ${NUMEROS_ROMANOS[semestreEnAnio - 1]} semestre`;
-}
-
-function NombreResaltado({ nombre, palabras }) {
-  return segmentosResaltados(nombre, palabras).map((s, i) =>
-    s.resaltado ? (
-      <mark
-        key={i}
-        className='bg-transparent font-semibold text-neutral-100'
-      >
-        {s.texto}
-      </mark>
-    ) : (
-      <span key={i}>{s.texto}</span>
-    ),
-  );
 }
 
 export default function FiltroRamo({ carreraId, ramoId, onCambiar }) {
@@ -60,12 +28,7 @@ export default function FiltroRamo({ carreraId, ramoId, onCambiar }) {
   const listaRef = useRef(null);
   const idLista = useId();
 
-  const { data: ramosPorSemestre, isPending } = useQuery({
-    queryKey: ['ramos', carreraId],
-    queryFn: () => listarRamosPorCarrera(carreraId),
-    enabled: !!carreraId,
-    staleTime: Infinity,
-  });
+  const { data: ramosPorSemestre, isPending } = useRamosCarrera(carreraId);
   const cargando = isPending && !!carreraId;
 
   const ramosPorAnio = useMemo(
@@ -73,31 +36,14 @@ export default function FiltroRamo({ carreraId, ramoId, onCambiar }) {
     [ramosPorSemestre],
   );
 
-  // índice plano para la búsqueda: cada ramo con su ubicación y su nombre
-  // normalizado (se calcula una vez por carrera, no en cada tecla)
-  const indice = useMemo(
-    () =>
-      Object.entries(ramosPorSemestre ?? {}).flatMap(([semestre, ramos]) =>
-        ramos.map((ramo) => ({
-          ramo,
-          ubicacion: ubicacionDe(semestre),
-          normal: normalizar(ramo.nombre),
-        })),
-      ),
-    [ramosPorSemestre],
+  const { indice, palabras, buscando, resultados } = useBusquedaRamos(
+    ramosPorSemestre,
+    texto,
   );
 
   const ramoSeleccionado = useMemo(
     () => indice.find((r) => r.ramo.id === ramoId)?.ramo ?? null,
     [indice, ramoId],
-  );
-
-  const palabras = useMemo(() => palabrasDeBusqueda(texto), [texto]);
-  const buscando = palabras.length > 0;
-  const resultados = useMemo(
-    () =>
-      buscando ? indice.filter((r) => contieneTodas(r.normal, palabras)) : [],
-    [buscando, indice, palabras],
   );
 
   function cerrar() {
@@ -357,8 +303,8 @@ export default function FiltroRamo({ carreraId, ramoId, onCambiar }) {
                                   type='button'
                                   onClick={() => elegirRamo(ramo)}
                                   className={`flex w-full items-center gap-2 py-1.5 pl-[30px] pr-3.5 text-left text-[12px] transition-colors hover:bg-white/[0.04] ${ramoId === ramo.id
-                                      ? 'font-semibold text-pink-500'
-                                      : 'text-neutral-400'
+                                    ? 'font-semibold text-pink-500'
+                                    : 'text-neutral-400'
                                     }`}
                                 >
                                   <span
