@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useFiltrosStore } from '@/features/materials/store/filtrosStore';
 import { useApuntesFeed } from '@/features/materials/hooks/useApuntes';
 import FeedTopbar from '@/features/materials/components/FeedTopbar';
-import QuickUploadBox from '@/features/materials/components/QuickUploadBox';
 import MaterialCard from '@/features/materials/components/MaterialCard';
 
 // `busqueda` (opcional): texto ya filtrado por busquedaEfectiva
@@ -83,7 +82,6 @@ export default function MaterialFeed({
         carreraId={carreraId}
         onAbrirSubida={onAbrirSubida}
       />
-      {onAbrirSubida && <QuickUploadBox onClick={onAbrirSubida} />}
 
       {error && (
         <div className='mb-3 rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2 text-[12.5px] text-red-400'>
