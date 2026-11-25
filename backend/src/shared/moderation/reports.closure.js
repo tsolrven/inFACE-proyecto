@@ -1,4 +1,7 @@
-import { obtenerEntradaRegistro } from '../content/contentRegistry.js';
+import {
+  obtenerEntradaRegistro,
+  textoPreview,
+} from '../content/contentRegistry.js';
 import {
   ESTADOS_REPORTE,
   ESTADOS_NOTIFICACION,
@@ -31,7 +34,12 @@ async function armarSnapshot(tx, tipo_contenido, contenido_id) {
 
   return {
     tipo: tipo_contenido,
-    titulo: recortar(fila[entrada.previewField]),
+    // un comentario que es solo imagen se guarda como "[Imagen]", no vacío
+    titulo: recortar(
+      entrada.eliminadoField && fila[entrada.eliminadoField]
+        ? fila[entrada.previewField]
+        : textoPreview(entrada, fila[entrada.previewField]),
+    ),
     autor_id: fila[entrada.ownerField],
     creado_en: fila[entrada.createdField ?? 'creado_en'].toISOString(),
     archivos,

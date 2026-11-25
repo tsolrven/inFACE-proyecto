@@ -122,6 +122,9 @@ const CONTENT_REGISTRY = {
     ownerField: 'autor_id',
     votesField: 'votos_neto',
     previewField: 'contenido',
+    // un comentario sin texto es solo imagen: así se muestra en vistas
+    // previas (reportes, correos, avisos), en vez de quedar en blanco
+    previewSinTexto: '[Imagen]',
     allowsComments: false,
     eliminadoField: 'eliminado',
     // 1 imagen por comentario, con límite propio (5 MB)
@@ -225,6 +228,13 @@ async function bloquearContenido(
   if (filas.length === 0) throw new NotFoundError(entrada.label);
 }
 
+// Texto de vista previa de un registro: si el campo viene vacío y el tipo
+// define `previewSinTexto`, se usa ese. No aplica a eliminados (un comentario
+// que su autor eliminó queda con texto vacío, y no es "solo imagen").
+function textoPreview(entrada, texto) {
+  return texto?.trim() ? texto : (entrada.previewSinTexto ?? texto);
+}
+
 // Como obtenerPreviewsContenido, pero indica también si el contenido está
 // eliminado lógicamente (comentarios): Map id → { texto, eliminado }.
 // Un comentario eliminado conserva su fila (y, si lo eliminó el staff, su texto).
@@ -240,13 +250,14 @@ async function obtenerVistasContenido(tipo_contenido, ids, client = prisma) {
     },
   });
   return new Map(
-    registros.map((r) => [
-      r.id,
-      {
-        texto: r[entrada.previewField],
-        eliminado: campo ? Boolean(r[campo]) : false,
-      },
-    ]),
+    registros.map((r) => {
+      const eliminado = campo ? Boolean(r[campo]) : false;
+      const texto = r[entrada.previewField];
+      return [
+        r.id,
+        { texto: eliminado ? texto : textoPreview(entrada, texto), eliminado },
+      ];
+    }),
   );
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
@@ -256,7 +267,9 @@ async function obtenerPreviewsContenido(tipo_contenido, ids, client = prisma) {
     where: { id: { in: ids } },
     select: { id: true, [entrada.previewField]: true },
   });
-  return new Map(registros.map((r) => [r.id, r[entrada.previewField]]));
+  return new Map(
+    registros.map((r) => [r.id, textoPreview(entrada, r[entrada.previewField])]),
+  );
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 function registrarHidratadorGuardados(tipo_contenido, hidratador) {
@@ -469,4 +482,5 @@ export {
   tiposContenidoConArchivos,
   admiteComentarios,
   obtenerConfigAdjuntos,
+  textoPreview,
 };

@@ -14,6 +14,8 @@ import {
   notificarInteraccion,
   registrarEliminadorModeracion,
   registrarPermisoAdjuntos,
+  obtenerEntradaRegistro,
+  textoPreview,
 } from '../content/contentRegistry.js';
 import { eliminarInteracciones } from '../content/contentCleanup.js';
 import { cerrarReportesPorEliminacion } from '../moderation/reports.closure.js';
@@ -509,6 +511,12 @@ async function eliminarComentario(
     });
     reportesANotificar = cierre.reportes_a_notificar;
 
+    // un comentario que es solo imagen se registra y se avisa como "[Imagen]"
+    const vistaPrevia = textoPreview(
+      obtenerEntradaRegistro('comentario'),
+      comentario.contenido ?? '',
+    );
+    
     if (!esAutor) {
       await registrarAccionAdmin(tx, {
         admin_id: usuario_id,
@@ -516,13 +524,13 @@ async function eliminarComentario(
         entidad_tipo: 'comentario',
         entidad_id: comentario_id,
         afectado_id: comentario.autor_id,
-        detalle: { extracto: recortar(comentario.contenido ?? '', 280).texto },
+        detalle: { extracto: recortar(vistaPrevia, 280).texto },
       });
       // aviso por campana al autor (misma transacción que el borrado)
       await avisarEliminacionAlAutor(tx, {
         autor_id: comentario.autor_id,
         tipo_contenido: 'comentario',
-        texto: comentario.contenido,
+        texto: vistaPrevia,
       });
     }
 

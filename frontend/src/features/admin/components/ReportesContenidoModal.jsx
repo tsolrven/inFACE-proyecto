@@ -13,6 +13,7 @@ import {
   seAbreComoModal,
   etiquetaEliminacion,
 } from '@/shared/moderation/reportUi';
+import GaleriaImagenes from '@/shared/post/images/GaleriaImagenes';
 
 export default function ReportesContenidoModal({ tipo, id, onClose }) {
   const navigate = useNavigate();
@@ -104,13 +105,27 @@ export default function ReportesContenidoModal({ tipo, id, onClose }) {
                   </span>
                 )}
               </div>
-              <p className='whitespace-pre-line text-[13px] leading-relaxed text-neutral-100'>
-                {contenido.titulo || (
-                  <span className='italic text-neutral-600'>
-                    Sin vista previa disponible
-                  </span>
-                )}
-              </p>
+              {/* un comentario solo con imagen no muestra "Sin vista previa" */}
+              {(contenido.titulo || !contenido.imagen) && (
+                <p className='whitespace-pre-line text-[13px] leading-relaxed text-neutral-100'>
+                  {contenido.titulo || (
+                    <span className='italic text-neutral-600'>
+                      Sin vista previa disponible
+                    </span>
+                  )}
+                </p>
+              )}
+              {contenido.imagen && (
+                <div className='mt-2 w-[200px]'>
+                  <GaleriaImagenes archivos={[contenido.imagen]} />
+                </div>
+              )}
+              {contenido.tenia_imagen && (
+                <p className='mt-1.5 flex items-center gap-1 text-[11.5px] text-neutral-500'>
+                  <i className='ti ti-photo-off' />
+                  Tenía una imagen, eliminada junto con el comentario
+                </p>
+              )}
               {ruta && (
                 <div className='mt-2.5 flex justify-end'>
                   <Button

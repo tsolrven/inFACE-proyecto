@@ -23,6 +23,7 @@ import {
   RESPUESTAS_PREDETERMINADAS,
 } from './reports.constants.js';
 import { registrarAccionAdmin, TIPOS_ACCION_ADMIN } from './adminActions.js';
+import { formatearArchivo } from '../files/files.service.js';
 
 const EXTRACTO_MAX = 280;
 const CORREO_CON_PROBLEMA = [
@@ -213,6 +214,21 @@ async function obtenerReportesDeContenido(tipo_contenido, contenido_id) {
   const eliminado_por =
     reportes.find((r) => r.eliminado_por)?.eliminado_por ?? null;
 
+  // la imagen del comentario, si aún existe: el moderador ve lo reportado.
+  // Si ya no existe, el snapshot (armado antes de borrarla) dice si tenía.
+  let imagen = null;
+  let tenia_imagen = false;
+  if (tipo_contenido === 'comentario') {
+    if (existe) {
+      const archivo = await prisma.archivo.findFirst({
+        where: { tipo_contenido: 'comentario', contenido_id },
+      });
+      imagen = archivo ? formatearArchivo(archivo) : null;
+    } else {
+      tenia_imagen = (snapshot?.archivos ?? 0) > 0;
+    }
+  }
+
   return {
     tipo_contenido,
     contenido_id,
@@ -227,6 +243,8 @@ async function obtenerReportesDeContenido(tipo_contenido, contenido_id) {
       autor,
       padre,
       eliminado_por,
+      imagen,
+      tenia_imagen,
     },
     reportes: reportes.map(({ contenido_snapshot: _omitido, ...r }) => r),
   };
