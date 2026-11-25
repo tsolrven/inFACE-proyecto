@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import PageBanner from '@/shared/components/layout/PageBanner';
 import { useAuthStore } from '@/shared/auth/authStore';
 import { CONTACTO_AYUDA, PESTANAS_AYUDA } from './help/ayudaContenido';
-import { normalizar } from '@/shared/lib/texto';
+import { normalizar, palabrasDeBusqueda } from '@/shared/lib/texto';
 
 const BUSQUEDA_MIN = 2;
 const BUSQUEDA_MAX = 100;
@@ -19,10 +19,74 @@ const INDICE = PESTANAS.flatMap((pestana) =>
       ...p,
       pestanaId: pestana.id,
       ubicacion: `${pestana.label} · ${grupo.titulo}`,
-      texto: normalizar([p.pregunta, ...p.respuesta].join(' ')),
+      // por separado: una coincidencia en la pregunta pesa más
+      enPregunta: normalizar(p.pregunta),
+      enRespuesta: normalizar(p.respuesta.join(' ')),
     })),
   ),
 );
+
+
+// Palabras que no ayudan a encontrar nada (ya normalizadas, sin tildes):
+// no suman puntos ni traen resultados por sí solas
+const PALABRAS_VACIAS = new Set([
+  'a', 'al', 'con', 'como', 'cual', 'cuando', 'de', 'del', 'donde', 'el',
+  'en', 'es', 'la', 'las', 'lo', 'los', 'me', 'mi', 'mis', 'no', 'o',
+  'para', 'por', 'que', 'quien', 'se', 'si', 'su', 'sus', 'te', 'tu',
+  'tus', 'un', 'una', 'y', 'yo',
+]);
+
+const PESO_PREGUNTA = 3;
+const PESO_RESPUESTA = 1;
+
+// Plural → singular de lo BUSCADO (el texto de la ayuda no se toca). El
+// singular está contenido en ambas formas ("sancion" ⊂ "sanciones"); el
+// plural no. Solo se recortan letras finales: el resultado siempre está
+// dentro de la palabra original, así que nunca se pierde una coincidencia
+// que antes existía.
+const CONSONANTES_ANTES_DE_ES = new Set(['l', 'n', 'r', 'd', 'j', 'y']);
+
+function singular(palabra) {
+  if (palabra.length < 4 || !palabra.endsWith('s')) return palabra;
+  // consonante + "es": sanciones, materiales, imagenes, redes, leyes
+  if (
+    palabra.endsWith('es') &&
+    CONSONANTES_ANTES_DE_ES.has(palabra.at(-3))
+  ) {
+    return palabra.slice(0, -2);
+  }
+  // el resto, solo la "s": hilos, archivos, clases, pdfs
+  return palabra.slice(0, -1);
+}
+
+// Cada palabra suma una vez: más si está en la pregunta que en la respuesta
+function puntaje(item, palabras) {
+  return palabras.reduce(
+    (total, w) =>
+      total +
+      (item.enPregunta.includes(w)
+        ? PESO_PREGUNTA
+        : item.enRespuesta.includes(w)
+          ? PESO_RESPUESTA
+          : 0),
+    0,
+  );
+}
+
+// Basta con una palabra; ordena por puntaje y, en empate, por el orden de la
+// ayuda (sort es estable)
+function buscarEnAyuda(termino) {
+  // primero se descartan las vacías ("sus", "tus" terminan en "s" y no deben
+  // pasar a "su", "tu"); después, a singular
+  const palabras = palabrasDeBusqueda(termino)
+    .filter((w) => !PALABRAS_VACIAS.has(w))
+    .map(singular);
+  if (palabras.length === 0) return [];
+  return INDICE.map((item) => ({ item, puntos: puntaje(item, palabras) }))
+    .filter((r) => r.puntos > 0)
+    .sort((a, b) => b.puntos - a.puntos)
+    .map((r) => r.item);
+}
 
 // abre en la pestaña del rol base (el superadmin hereda la suya)
 function pestanaPorRol(usuario) {
@@ -117,11 +181,10 @@ export default function Ayuda() {
 
   const termino = textoBusqueda.trim();
   const buscando = termino.length >= BUSQUEDA_MIN;
-  const resultados = useMemo(() => {
-    if (!buscando) return [];
-    const palabras = normalizar(termino).split(/\s+/);
-    return INDICE.filter((p) => palabras.every((w) => p.texto.includes(w)));
-  }, [buscando, termino]);
+  const resultados = useMemo(
+    () => (buscando ? buscarEnAyuda(termino) : []),
+    [buscando, termino],
+  );
 
   const alternar = (id) =>
     setAbiertas((prev) => {
@@ -177,7 +240,7 @@ export default function Ayuda() {
             <div className='flex flex-col gap-2'>
               <p className='mb-1 text-[12px] text-neutral-500'>
                 {resultados.length === 0
-                  ? `Sin resultados para «${termino}».`
+                  ? `Sin resultados para «${termino}». Prueba con otras palabras.`
                   : `${resultados.length} resultado${resultados.length === 1 ? '' : 's'}`}
               </p>
               {resultados.map((item) => (
