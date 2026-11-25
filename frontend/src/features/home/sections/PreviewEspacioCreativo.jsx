@@ -15,7 +15,7 @@ async function cargarObras() {
   return obras.slice(0, 4);
 }
 
-export default function PreviewEspacioCreativo() {
+export default function PreviewEspacioCreativo({ embebida = false }) {
   const {
     items: obras,
     cargando,
@@ -24,14 +24,16 @@ export default function PreviewEspacioCreativo() {
 
   return (
     <section>
-      <SeccionHeader
-        icon='ti-palette'
-        iconColor='text-violet-400'
-        iconBg='bg-violet-400/10 border-violet-400/25'
-        title='Espacio creativo'
-        subtitle='Música, escritura y artes de la comunidad'
-        to={rutasCreativo.inicio}
-      />
+      {!embebida && (
+        <SeccionHeader
+          icon='ti-palette'
+          iconColor='text-violet-400'
+          iconBg='bg-violet-400/10 border-violet-400/25'
+          title='Espacio creativo'
+          subtitle='Música, escritura y artes de la comunidad'
+          to={rutasCreativo.inicio}
+        />
+      )}
 
       {cargando ? (
         <div className='grid grid-cols-2 gap-3 md:grid-cols-4'>

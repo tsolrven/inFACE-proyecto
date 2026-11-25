@@ -24,7 +24,7 @@ async function cargarProyectos() {
   return datos.slice(0, 3);
 }
 
-export default function PreviewMatchProyectos() {
+export default function PreviewMatchProyectos({ embebida = false }) {
   const {
     items: proyectos,
     cargando,
@@ -33,14 +33,16 @@ export default function PreviewMatchProyectos() {
 
   return (
     <section>
-      <SeccionHeader
-        icon='ti-puzzle'
-        iconColor='text-pink-400'
-        iconBg='bg-pink-500/10 border-pink-500/25'
-        title='Match de proyectos'
-        subtitle='Equipos y proyectos afines a tus intereses'
-        to='/match-proyectos'
-      />
+      {!embebida && (
+        <SeccionHeader
+          icon='ti-puzzle'
+          iconColor='text-pink-400'
+          iconBg='bg-pink-500/10 border-pink-500/25'
+          title='Match de proyectos'
+          subtitle='Equipos y proyectos afines a tus intereses'
+          to='/match-proyectos'
+        />
+      )}
 
       {cargando ? (
         <div className='grid grid-cols-1 gap-3 sm:grid-cols-3'>

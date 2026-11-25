@@ -12,7 +12,10 @@ import {
 import { useVistaPrevia } from '@/features/home/hooks/useVistaPrevia';
 
 // alcance: 'carrera' (la del usuario) o 'facultad' (docente: las 5 carreras)
-export default function PreviewMateriales({ alcance = 'carrera' }) {
+export default function PreviewMateriales({
+  alcance = 'carrera',
+  embebida = false,
+}) {
   const facultad = alcance === 'facultad';
   const {
     items: apuntes,
@@ -29,20 +32,24 @@ export default function PreviewMateriales({ alcance = 'carrera' }) {
 
   return (
     <section>
-      <SeccionHeader
-        icon='ti-books'
-        iconColor='text-blue-400'
-        iconBg='bg-blue-400/10 border-blue-400/25'
-        title={
-          facultad ? 'Materiales recientes en la facultad' : 'Materiales recientes'
-        }
-        subtitle={
-          facultad
-            ? 'Lo último que se compartió en las cinco carreras'
-            : 'Lo último que compartió tu carrera'
-        }
-        to={facultad ? undefined : '/repositorio-materiales'}
-      />
+      {!embebida && (
+        <SeccionHeader
+          icon='ti-books'
+          iconColor='text-blue-400'
+          iconBg='bg-blue-400/10 border-blue-400/25'
+          title={
+            facultad
+              ? 'Materiales recientes en la facultad'
+              : 'Materiales recientes'
+          }
+          subtitle={
+            facultad
+              ? 'Lo último que se compartió en las cinco carreras'
+              : 'Lo último que compartió tu carrera'
+          }
+          to={facultad ? undefined : '/repositorio-materiales'}
+        />
+      )}
 
       {cargando ? (
         <div className='flex flex-col gap-2.5'>

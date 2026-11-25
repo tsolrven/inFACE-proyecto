@@ -1,6 +1,10 @@
 import { useAuthStore } from '@/shared/auth/authStore';
 import { ROLES, esDocenteBase } from '@/shared/auth/roles';
+import { rutas as rutasMarketplace } from '@/features/marketplace/utils/catalogo';
+import { rutas as rutasCreativo } from '@/features/creative-space/utils/espacios';
 import Hero from '@/features/home/components/Hero';
+import PanelPestanas from '@/features/home/components/PanelPestanas';
+import { useDudasInicio } from '@/features/home/hooks/useDudasInicio';
 import {
   ACCESOS_DOCENTE,
   ACCESOS_ESTUDIANTE,
@@ -22,8 +26,32 @@ function saludoSegunHora() {
   return 'Buenas noches';
 }
 
-// Solo arma la página según el rol. El superadmin ve la variante de su rol
-// base (estudiante o docente) con el panel de administración arriba.
+const PESTANAS_COMUNIDAD = [
+  {
+    id: 'match',
+    label: 'Match de proyectos',
+    icon: 'ti-puzzle',
+    to: '/match-proyectos',
+    contenido: <PreviewMatchProyectos embebida />,
+  },
+  {
+    id: 'marketplace',
+    label: 'Marketplace',
+    icon: 'ti-shopping-bag',
+    to: rutasMarketplace.inicio,
+    contenido: <PreviewMarketplace embebida />,
+  },
+  {
+    id: 'creativo',
+    label: 'Espacio creativo',
+    icon: 'ti-palette',
+    to: rutasCreativo.inicio,
+    contenido: <PreviewEspacioCreativo embebida />,
+  },
+];
+
+// Arma la página según el rol. El superadmin ve la variante de su rol base
+// (estudiante o docente) con el panel de administración arriba.
 export default function Inicio() {
   const usuario = useAuthStore((s) => s.usuario);
   const nombre =
@@ -32,9 +60,52 @@ export default function Inicio() {
     '';
   const docente = esDocenteBase(usuario);
   const superadmin = usuario?.rol === ROLES.SUPERADMIN;
+  const alcance = docente ? 'facultad' : 'carrera';
+
+  // solo para el número de la pestaña: PreviewDudas usa la misma caché
+  const { total: totalDudas } = useDudasInicio(alcance);
+
+  const pestanaDudas = {
+    id: 'dudas',
+    label: 'Dudas sin resolver',
+    icon: 'ti-message-question',
+    contador: totalDudas,
+    to: docente ? undefined : '/foro-por-ramos',
+    contenido: (
+      <PreviewDudas
+        alcance={alcance}
+        embebida
+      />
+    ),
+  };
+  const pestanaMateriales = {
+    id: 'materiales',
+    label: 'Materiales',
+    icon: 'ti-books',
+    to: docente ? undefined : '/repositorio-materiales',
+    contenido: (
+      <PreviewMateriales
+        alcance={alcance}
+        embebida
+      />
+    ),
+  };
+  const pestanasAcademicas = docente
+    ? [pestanaDudas, pestanaMateriales]
+    : [
+      {
+        id: 'anuncios',
+        label: 'Anuncios',
+        icon: 'ti-speakerphone',
+        to: '/anuncios-oficiales',
+        contenido: <PreviewAnuncios embebida />,
+      },
+      pestanaDudas,
+      pestanaMateriales,
+    ];
 
   return (
-    <div className='mx-auto flex max-w-[1100px] flex-col gap-9 px-4 py-6 sm:px-6 md:px-8 md:py-8'>
+    <div className='mx-auto flex max-w-[1100px] flex-col gap-6 px-4 py-6 sm:px-6 md:px-8 md:py-8'>
       <Hero
         saludo={saludoSegunHora()}
         nombre={nombre}
@@ -44,22 +115,19 @@ export default function Inicio() {
 
       {superadmin && <PanelAdmin />}
 
-      {docente ? (
-        <>
-          <PreviewDudas alcance='facultad' />
-          <PreviewMateriales alcance='facultad' />
-        </>
-      ) : (
-        <>
-          <PreviewAnuncios />
-          <PreviewDudas alcance='carrera' />
-          <PreviewMateriales alcance='carrera' />
-        </>
-      )}
+      <PanelPestanas
+        titulo={docente ? 'Facultad' : 'Tu carrera'}
+        icono={docente ? 'ti-building-community' : 'ti-school'}
+        claveMemoria={docente ? 'facultad' : 'carrera'}
+        pestanas={pestanasAcademicas}
+      />
 
-      <PreviewMatchProyectos />
-      <PreviewMarketplace />
-      <PreviewEspacioCreativo />
+      <PanelPestanas
+        titulo='Comunidad'
+        icono='ti-users'
+        claveMemoria='comunidad'
+        pestanas={PESTANAS_COMUNIDAD}
+      />
     </div>
   );
 }

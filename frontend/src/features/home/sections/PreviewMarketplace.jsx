@@ -18,7 +18,7 @@ async function cargarProductos() {
   return productos.slice(0, 4);
 }
 
-export default function PreviewMarketplace() {
+export default function PreviewMarketplace({ embebida = false }) {
   const {
     items: productos,
     cargando,
@@ -27,14 +27,16 @@ export default function PreviewMarketplace() {
 
   return (
     <section>
-      <SeccionHeader
-        icon='ti-shopping-bag'
-        iconColor='text-amber-400'
-        iconBg='bg-amber-400/10 border-amber-400/25'
-        title='Marketplace'
-        subtitle='Lo último que publicaron otros estudiantes'
-        to={rutasMarketplace.inicio}
-      />
+      {!embebida && (
+        <SeccionHeader
+          icon='ti-shopping-bag'
+          iconColor='text-amber-400'
+          iconBg='bg-amber-400/10 border-amber-400/25'
+          title='Marketplace'
+          subtitle='Lo último que publicaron otros estudiantes'
+          to={rutasMarketplace.inicio}
+        />
+      )}
 
       {cargando ? (
         <div className='grid grid-cols-2 gap-3 md:grid-cols-4'>

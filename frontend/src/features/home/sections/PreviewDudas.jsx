@@ -1,5 +1,4 @@
 import { Link, useLocation } from 'react-router-dom';
-import { listarHilos } from '@/features/forum/api/forum.api';
 import { colorPorRamo } from '@/shared/lib/courseColors';
 import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
 import {
@@ -9,41 +8,36 @@ import {
   SeccionVacia,
   SkeletonCard,
 } from '@/features/home/components/SeccionInicio';
-import { useVistaPrevia } from '@/features/home/hooks/useVistaPrevia';
+import { useDudasInicio } from '@/features/home/hooks/useDudasInicio';
 
 // alcance: 'carrera' (la del usuario) o 'facultad' (docente: las 5 carreras)
-export default function PreviewDudas({ alcance = 'carrera' }) {
+export default function PreviewDudas({
+  alcance = 'carrera',
+  embebida = false,
+}) {
   const facultad = alcance === 'facultad';
-  const {
-    items: hilos,
-    cargando,
-    error,
-  } = useVistaPrevia(['dudas', alcance], async () => {
-    const { hilos } = await listarHilos({
-      estado: 'sin_resolver',
-      orden: 'recientes',
-      limite: 4,
-      alcance,
-    });
-    return hilos;
-  });
+  const { items: hilos, cargando, error } = useDudasInicio(alcance);
 
   return (
     <section>
-      <SeccionHeader
-        icon='ti-message-question'
-        iconColor='text-emerald-400'
-        iconBg='bg-emerald-400/10 border-emerald-400/25'
-        title={
-          facultad ? 'Dudas sin resolver en la facultad' : 'Dudas sin resolver'
-        }
-        subtitle={
-          facultad
-            ? 'Preguntas de estudiantes que esperan respuesta'
-            : 'Ayuda a tus compañeros de carrera'
-        }
-        to={facultad ? undefined : '/foro-por-ramos'}
-      />
+      {!embebida && (
+        <SeccionHeader
+          icon='ti-message-question'
+          iconColor='text-emerald-400'
+          iconBg='bg-emerald-400/10 border-emerald-400/25'
+          title={
+            facultad
+              ? 'Dudas sin resolver en la facultad'
+              : 'Dudas sin resolver'
+          }
+          subtitle={
+            facultad
+              ? 'Preguntas de estudiantes que esperan respuesta'
+              : 'Ayuda a tus compañeros de carrera'
+          }
+          to={facultad ? undefined : '/foro-por-ramos'}
+        />
+      )}
 
       {cargando ? (
         <div className='grid grid-cols-1 gap-2.5 sm:grid-cols-2'>

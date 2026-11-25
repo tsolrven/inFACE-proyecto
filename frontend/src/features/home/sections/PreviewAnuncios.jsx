@@ -17,7 +17,7 @@ async function cargarAnuncios() {
   return anuncios;
 }
 
-export default function PreviewAnuncios() {
+export default function PreviewAnuncios({ embebida = false }) {
   const {
     items: anuncios,
     cargando,
@@ -26,14 +26,16 @@ export default function PreviewAnuncios() {
 
   return (
     <section>
-      <SeccionHeader
-        icon='ti-speakerphone'
-        iconColor='text-rose-400'
-        iconBg='bg-rose-400/10 border-rose-400/25'
-        title='Anuncios de tu carrera'
-        subtitle='Lo último del CEE y los tutores'
-        to='/anuncios-oficiales'
-      />
+      {!embebida && (
+        <SeccionHeader
+          icon='ti-speakerphone'
+          iconColor='text-rose-400'
+          iconBg='bg-rose-400/10 border-rose-400/25'
+          title='Anuncios de tu carrera'
+          subtitle='Lo último del CEE y los tutores'
+          to='/anuncios-oficiales'
+        />
+      )}
 
       {cargando ? (
         <div className='flex flex-col gap-2.5'>
