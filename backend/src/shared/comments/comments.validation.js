@@ -25,17 +25,14 @@ const contenidoComentableParamSchema = z.object({
   id: z.string().uuid('El id no es válido'),
 });
 // ─────────────────────────────────────────────────────────────────────────────
+// El texto es opcional si viene una imagen. Esa regla (texto o imagen) la
+// aplica crearComentario: Zod no ve el archivo, que llega por multer.
 const crearComentarioSchema = z.object({
   contenido: z
-    .string({
-      error: (issue) =>
-        issue.input === undefined
-          ? ERROR_MESSAGES.contenido.required
-          : undefined,
-    })
+    .string()
     .trim()
-    .min(1, ERROR_MESSAGES.contenido.min)
-    .max(MAX_LONGITUD_COMENTARIO, ERROR_MESSAGES.contenido.max),
+    .max(MAX_LONGITUD_COMENTARIO, ERROR_MESSAGES.contenido.max)
+    .default(''),
   padre_id: z
     .string()
     .uuid(ERROR_MESSAGES.padre_id.invalid)
@@ -43,6 +40,9 @@ const crearComentarioSchema = z.object({
     .nullable(),
 });
 // ─────────────────────────────────────────────────────────────────────────────
+// `contenido` sigue siendo obligatorio (el cliente siempre manda el texto
+// completo), pero puede quedar vacío si el comentario conserva su imagen.
+// Esa regla la aplica editarComentario, que sabe si hay imagen.
 const editarComentarioSchema = z.object({
   contenido: z
     .string({
@@ -52,8 +52,8 @@ const editarComentarioSchema = z.object({
           : undefined,
     })
     .trim()
-    .min(1, ERROR_MESSAGES.contenido.min)
     .max(MAX_LONGITUD_COMENTARIO, ERROR_MESSAGES.contenido.max),
+  quitar_imagen: z.boolean().optional().default(false),
 });
 // ─────────────────────────────────────────────────────────────────────────────
 // Query de los listados de comentarios (raíces y "más respuestas").

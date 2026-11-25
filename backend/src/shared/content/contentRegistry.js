@@ -124,6 +124,12 @@ const CONTENT_REGISTRY = {
     previewField: 'contenido',
     allowsComments: false,
     eliminadoField: 'eliminado',
+    // 1 imagen por comentario, con límite propio (5 MB)
+    adjuntos: {
+      max: 1,
+      maxBytes: 5 * 1024 * 1024,
+      extensiones: ['.jpg', '.jpeg', '.png', '.webp', '.gif'],
+    },
   },
   solicitud_rol: {
     modelName: 'solicitudRol',

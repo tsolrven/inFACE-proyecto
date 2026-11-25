@@ -45,8 +45,10 @@ async function avisarComentario({
     : 'Alguien';
   const separador = ruta.includes('?') ? '&' : '?';
   const enlace = `${ruta}${separador}comentario=${comentarioId}`;
+  // un comentario puede ser solo una imagen: sin texto, se dice eso
+  const texto = recortar(comentario?.contenido);
   const mensaje = (verbo) =>
-    `${quien} ${verbo} «${recortar(nombreContenido)}»: «${recortar(comentario?.contenido)}»`;
+    `${quien} ${verbo} «${recortar(nombreContenido)}»: ${texto ? `«${texto}»` : 'una imagen'}`;
 
   const padreAutorId = padre?.autor_id ?? null;
 

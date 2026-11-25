@@ -46,11 +46,33 @@ function fileFilter(req, file, cb) {
   }
 }
 
-const upload = multer({
-  storage,
-  fileFilter,
-  limits: { fileSize: 20 * 1024 * 1024 },
-  defParamCharset: 'utf8',
-});
+const LIMITE_GENERAL = 20 * 1024 * 1024;
 
-export { upload };
+function crearUpload(fileSize) {
+  return multer({
+    storage,
+    fileFilter,
+    limits: { fileSize },
+    defParamCharset: 'utf8',
+  });
+}
+
+const upload = crearUpload(LIMITE_GENERAL);
+
+function subirUnoPara(tipo, campo) {
+  const { maxBytes = LIMITE_GENERAL } = obtenerConfigAdjuntos(tipo);
+  const recibir = crearUpload(maxBytes).single(campo);
+  return (req, res, next) =>
+    recibir(req, res, (err) => {
+      if (err?.code === 'LIMIT_FILE_SIZE') {
+        return next(
+          new BadRequestError(
+            `El archivo supera el tamaño máximo permitido (${maxBytes / (1024 * 1024)} MB)`,
+          ),
+        );
+      }
+      next(err);
+    });
+}
+
+export { upload, subirUnoPara };

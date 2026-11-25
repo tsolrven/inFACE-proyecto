@@ -13,6 +13,7 @@ import {
   ejecutarAlEliminarComentario,
   notificarInteraccion,
   registrarEliminadorModeracion,
+  registrarPermisoAdjuntos,
 } from '../content/contentRegistry.js';
 import { eliminarInteracciones } from '../content/contentCleanup.js';
 import { cerrarReportesPorEliminacion } from '../moderation/reports.closure.js';
@@ -29,9 +30,15 @@ import {
   MAX_NIVEL_COMENTARIO,
   RESPUESTAS_PRECARGADAS,
   NIVELES_PRECARGADOS,
+  TIPOS_SIN_IMAGEN,
 } from './comments.constants.js';
 import { codificarCursor, decodificarCursor } from './comments.cursor.js';
 import { avisarEliminacionAlAutor } from '../moderation/moderation.notices.js';
+import {
+  borrarArchivosFisicos,
+  datosArchivo,
+  formatearArchivo,
+} from '../files/files.service.js';
 
 const INCLUDE_COMENTARIO = {
   autor: { select: AUTOR_PUBLICO_SELECT },
@@ -52,6 +59,29 @@ const ORDER_SQL = {
   antiguos: Prisma.sql`creado_en ASC, id ASC`,
 };
 
+// Imagen de cada comentario (máximo 1): Map comentario_id → archivo.
+// Una consulta para todos los ids, no una por comentario.
+async function mapaImagenes(ids, client = prisma) {
+  if (ids.length === 0) return new Map();
+  const archivos = await client.archivo.findMany({
+    where: { tipo_contenido: 'comentario', contenido_id: { in: ids } },
+  });
+  return new Map(archivos.map((a) => [a.contenido_id, a]));
+}
+
+// Borra las filas de imagen de esos comentarios y devuelve los archivos, para
+// borrarlos del disco DESPUÉS del commit (como al eliminar una publicación).
+async function quitarImagenes(tx, ids) {
+  const archivos = await tx.archivo.findMany({
+    where: { tipo_contenido: 'comentario', contenido_id: { in: ids } },
+  });
+  if (archivos.length > 0) {
+    await tx.archivo.deleteMany({
+      where: { id: { in: archivos.map((a) => a.id) } },
+    });
+  }
+  return archivos;
+}
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function listarComentarios({
   tipo_contenido,
@@ -137,15 +167,20 @@ async function paginarComentarios({
   const pagina = hayMas ? filas.slice(0, limite) : filas;
 
   const todas = await agregarRespuestasPrecargadas(pagina, orden);
-  const { mapVotos, setGuardados } = await obtenerMisInteracciones(
-    'comentario',
-    todas.map((c) => c.id),
-    usuario_id,
-  );
+  const ids = todas.map((c) => c.id);
+  const [{ mapVotos, setGuardados }, mapImagenesIds] = await Promise.all([
+    obtenerMisInteracciones('comentario', ids, usuario_id),
+    mapaImagenes(ids),
+  ]);
 
   const ultimo = pagina.at(-1);
   return {
-    items: construirArbolComentarios(todas, mapVotos, setGuardados),
+    items: construirArbolComentarios(
+      todas,
+      mapVotos,
+      setGuardados,
+      mapImagenesIds,
+    ),
     meta: {
       limite,
       hasNext: hayMas,
@@ -230,6 +265,7 @@ function construirArbolComentarios(
   comentarios,
   mapVotos = new Map(),
   setGuardados = new Set(),
+  mapImagenesIds = new Map(),
 ) {
   const nodosPorId = new Map();
   const raices = [];
@@ -239,6 +275,7 @@ function construirArbolComentarios(
       ...formatearComentario(c, {
         mi_voto: mapVotos.get(c.id) ?? null,
         esta_guardado: setGuardados.has(c.id),
+        imagen: mapImagenesIds.get(c.id) ?? null,
       }),
       respuestas: [],
     });
@@ -263,10 +300,22 @@ async function crearComentario({
   contenido_id,
   contenido,
   padre_id,
+  imagen = null,
 }) {
-  await verificarContenidoExiste(tipo_contenido, contenido_id);
+  // texto o imagen: un comentario no puede quedar vacío
+  if (!contenido && !imagen) {
+    throw new BadRequestError('El comentario no puede estar vacío');
+  }
+  if (imagen && TIPOS_SIN_IMAGEN.includes(tipo_contenido)) {
+    throw new BadRequestError('Estos comentarios no admiten imágenes');
+  }
 
-  const comentario = await prisma.$transaction(async (tx) => {
+  await verificarContenidoExiste(tipo_contenido, contenido_id);
+  // antes de la transacción: si el tipo de archivo no se reconoce, falla
+  // sin haber creado nada (y limpiarArchivosSiFalla borra el archivo)
+  const datosImagen = imagen ? datosArchivo(imagen) : null;
+
+  const { comentario, archivo } = await prisma.$transaction(async (tx) => {
     let nivel = 0;
     if (padre_id) {
       // bloquea al padre: si el autor lo está borrando, esperamos a que termine
@@ -298,7 +347,7 @@ async function crearComentario({
       }
     }
 
-    return tx.comentario.create({
+    const comentario = await tx.comentario.create({
       data: {
         autor_id,
         tipo_contenido,
@@ -309,6 +358,17 @@ async function crearComentario({
       },
       include: INCLUDE_COMENTARIO,
     });
+    // comentario e imagen en la misma transacción: o quedan los dos o ninguno
+    const archivo = datosImagen
+      ? await tx.archivo.create({
+        data: {
+          tipo_contenido: 'comentario',
+          contenido_id: comentario.id,
+          ...datosImagen,
+        },
+      })
+      : null;
+    return { comentario, archivo };
   });
 
   await notificarInteraccion(tipo_contenido, {
@@ -319,10 +379,14 @@ async function crearComentario({
     padre_id: padre_id || null,
   });
 
-  return formatearComentario(comentario);
+  return formatearComentario(comentario, { imagen: archivo });
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-async function editarComentario(comentario_id, usuario_id, contenido) {
+async function editarComentario(
+  comentario_id,
+  usuario_id,
+  { contenido, quitar_imagen = false },
+) {
   const comentario = await prisma.comentario.findUnique({
     where: { id: comentario_id },
   });
@@ -337,13 +401,41 @@ async function editarComentario(comentario_id, usuario_id, contenido) {
     throw new BadRequestError('No puedes editar un comentario eliminado');
   }
 
-  const actualizado = await prisma.comentario.update({
-    where: { id: comentario_id },
-    data: { contenido, editado_en: new Date() },
-    include: INCLUDE_COMENTARIO,
-  });
+  const { actualizado, imagen, quitada } = await prisma.$transaction(
+    async (tx) => {
+      // bloquea el comentario: una eliminación simultánea no ve una imagen
+      // a medio quitar (ni esta edición una imagen ya borrada)
+      await bloquearContenido('comentario', comentario_id, tx);
 
-  return formatearComentario(actualizado);
+      const [imagen] = await tx.archivo.findMany({
+        where: { tipo_contenido: 'comentario', contenido_id: comentario_id },
+      });
+      const quitar = Boolean(quitar_imagen && imagen);
+
+      // texto o imagen: la edición no puede dejarlo vacío
+      if (!contenido && (!imagen || quitar)) {
+        throw new BadRequestError('El comentario no puede quedar vacío');
+      }
+
+      if (quitar) await tx.archivo.delete({ where: { id: imagen.id } });
+
+      const actualizado = await tx.comentario.update({
+        where: { id: comentario_id },
+        data: { contenido, editado_en: new Date() },
+        include: INCLUDE_COMENTARIO,
+      });
+      return {
+        actualizado,
+        imagen: quitar ? null : (imagen ?? null),
+        quitada: quitar ? imagen : null,
+      };
+    },
+  );
+
+  // después del commit: si el disco falla, la BD ya quedó coherente
+  if (quitada) await borrarArchivosFisicos([quitada]);
+
+  return formatearComentario(actualizado, { imagen });
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function eliminarComentario(
@@ -368,7 +460,7 @@ async function eliminarComentario(
   // todo en una transacción: el conteo de respuestas y el borrado ven lo mismo
   let reportesANotificar = [];
 
-  const resultado = await prisma.$transaction(async (tx) => {
+  const { archivos, ...resultado } = await prisma.$transaction(async (tx) => {
     // bloquea el comentario: si alguien le está respondiendo, esperamos a que
     // termine y el conteo ya incluye esa respuesta (si no, el borrado real
     // la dejaría huérfana)
@@ -393,6 +485,7 @@ async function eliminarComentario(
         por_moderacion: false,
       });
       await eliminarInteracciones(tx, 'comentario', [comentario_id]);
+      const archivos = await quitarImagenes(tx, [comentario_id]);
       await tx.comentario.delete({ where: { id: comentario_id } });
       await ejecutarAlEliminarComentario(tx, comentario);
       const podados = await podarAncestrosEliminados(tx, comentario.padre_id);
@@ -400,6 +493,7 @@ async function eliminarComentario(
         eliminado_permanente: true,
         comentario: null,
         ids_eliminados: [comentario_id, ...podados],
+        archivos,
       };
     }
 
@@ -435,6 +529,9 @@ async function eliminarComentario(
     await tx.guardado.deleteMany({
       where: { tipo_contenido: 'comentario', contenido_id: comentario_id },
     });
+    // el fantasma no conserva la imagen, ni si lo elimina el autor ni si
+    // lo elimina moderación (decisión: no guardar contenido dañino)
+    const archivos = await quitarImagenes(tx, [comentario_id]);
     const actualizado = await tx.comentario.update({
       where: { id: comentario_id },
       data: {
@@ -451,11 +548,14 @@ async function eliminarComentario(
       eliminado_permanente: false,
       comentario: formatearComentario(actualizado),
       ids_eliminados: [],
+      archivos,
     };
   });
 
   // después del commit; el resultado que recibe el cliente no cambia
+  // (`archivos` se separa arriba: es interno, no va en la respuesta)
   notificarReportesCerrados(reportesANotificar);
+  await borrarArchivosFisicos(archivos);
   return resultado;
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
@@ -538,12 +638,17 @@ async function obtenerContextoComentario({
   const desdeObjetivo = await agregarRespuestasPrecargadas([objetivo], orden);
   const todas = [...ancestros, ...desdeObjetivo];
 
-  const { mapVotos, setGuardados } = await obtenerMisInteracciones(
-    'comentario',
-    todas.map((c) => c.id),
-    usuario_id,
+  const idsTodas = todas.map((c) => c.id);
+  const [{ mapVotos, setGuardados }, mapImagenesIds] = await Promise.all([
+    obtenerMisInteracciones('comentario', idsTodas, usuario_id),
+    mapaImagenes(idsTodas),
+  ]);
+  const [raiz] = construirArbolComentarios(
+    todas,
+    mapVotos,
+    setGuardados,
+    mapImagenesIds,
   );
-  const [raiz] = construirArbolComentarios(todas, mapVotos, setGuardados);
 
   return {
     raiz,
@@ -563,11 +668,10 @@ async function hidratarComentariosGuardados(ids, usuario_id) {
 
   const mapComentarios = Object.fromEntries(comentarios.map((c) => [c.id, c]));
 
-  const { mapVotos } = await obtenerMisInteracciones(
-    'comentario',
-    ids,
-    usuario_id,
-  );
+  const [{ mapVotos }, mapImagenesIds] = await Promise.all([
+    obtenerMisInteracciones('comentario', ids, usuario_id),
+    mapaImagenes(ids),
+  ]);
 
   // agrupa los ids por el tipo de contenido al que pertenece cada comentario
   const idsPorTipo = new Map();
@@ -594,6 +698,7 @@ async function hidratarComentariosGuardados(ids, usuario_id) {
         ...formatearComentario(c, {
           mi_voto: mapVotos.get(id) ?? null,
           esta_guardado: true,
+          imagen: mapImagenesIds.get(id) ?? null,
         }),
         contenido_padre: previews.has(clave)
           ? {
@@ -608,13 +713,14 @@ async function hidratarComentariosGuardados(ids, usuario_id) {
 // ────────────────────────────────────────────────────────────────────────────────────────
 function formatearComentario(
   comentario,
-  { mi_voto = null, esta_guardado = false } = {},
+  { mi_voto = null, esta_guardado = false, imagen = null } = {},
 ) {
   if (comentario.eliminado) {
     return {
       id: comentario.id,
       tipo_contenido: 'comentario',
       contenido: null,
+      imagen: null,
       votos_neto: comentario.votos_neto,
       mi_voto: null,
       esta_guardado,
@@ -636,6 +742,7 @@ function formatearComentario(
     id: comentario.id,
     tipo_contenido: 'comentario',
     contenido: comentario.contenido,
+    imagen: imagen ? formatearArchivo(imagen) : null,
     votos_neto: comentario.votos_neto,
     mi_voto,
     esta_guardado,
@@ -658,6 +765,12 @@ registrarHidratadorGuardados('comentario', hidratarComentariosGuardados);
 registrarEliminadorModeracion('comentario', (id, usuario, respuesta) =>
   eliminarComentario(id, usuario.id, usuario.rol, { respuesta }),
 );
+
+// La imagen de un comentario solo entra al crearlo (POST de comentarios, con
+// su límite de 5 MB) y solo sale al editarlo o eliminarlo. La ruta genérica
+// de archivos queda cerrada: subir por ahí saltaría el límite, y quitar
+// podría dejar un comentario sin texto ni imagen.
+registrarPermisoAdjuntos('comentario', () => false);
 // ────────────────────────────────────────────────────────────────────────────────────────
 export {
   listarComentarios,

@@ -52,6 +52,7 @@ async function crearEnContenido(req, res, next) {
       contenido_id: id,
       contenido,
       padre_id,
+      imagen: req.file ?? null,
     });
     return ApiResponse.created(res, comentario);
   } catch (err) {
@@ -61,11 +62,11 @@ async function crearEnContenido(req, res, next) {
 // ────────────────────────────────────────────────────────────────────────────────────────
 async function editar(req, res, next) {
   try {
-    const { contenido } = req.body;
+    const { contenido, quitar_imagen } = req.body;
     const comentario = await editarComentario(
       req.params.comentario_id,
       req.usuario.id,
-      contenido,
+      { contenido, quitar_imagen },
     );
     return ApiResponse.success(res, comentario);
   } catch (err) {

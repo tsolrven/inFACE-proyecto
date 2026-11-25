@@ -53,6 +53,17 @@ async function eliminarContenido(
   ]);
   const idsComentarios = comentarios.map((c) => c.id);
 
+  // imágenes de esos comentarios: tabla polimórfica sin FK, no caen solas
+  const imagenesComentarios =
+    idsComentarios.length > 0
+      ? await tx.archivo.findMany({
+        where: {
+          tipo_contenido: 'comentario',
+          contenido_id: { in: idsComentarios },
+        },
+      })
+      : [];
+
   // Un moderador que elimina SU PROPIO contenido es el autor, no moderación.
   // Solo la moderación sobre contenido ajeno queda en el registro de acciones.
   let comoModeracion = false;
@@ -105,8 +116,18 @@ async function eliminarContenido(
     where: { tipo_contenido, contenido_id: id },
   });
   await tx.archivo.deleteMany({ where: { tipo_contenido, contenido_id: id } });
+  if (imagenesComentarios.length > 0) {
+    await tx.archivo.deleteMany({
+      where: { id: { in: imagenesComentarios.map((a) => a.id) } },
+    });
+  }
 
-  return { archivos, reportes_a_notificar };
+  // cada módulo ya borra `archivos` del disco después del commit: con las
+  // imágenes de los comentarios incluidas, ningún módulo necesita cambios
+  return {
+    archivos: [...archivos, ...imagenesComentarios],
+    reportes_a_notificar,
+  };
 }
 
 export { eliminarInteracciones, eliminarContenido };

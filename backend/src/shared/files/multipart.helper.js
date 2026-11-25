@@ -6,7 +6,9 @@ import { BadRequestError } from '../../errors/appError.js';
 function limpiarArchivosSiFalla(req, res, next) {
   res.on('finish', () => {
     if (res.statusCode < 400) return;
-    for (const f of req.files ?? []) fs.unlink(f.path, () => {});
+    // .array() deja req.files; .single() deja req.file
+    const archivos = req.files ?? (req.file ? [req.file] : []);
+    for (const f of archivos) fs.unlink(f.path, () => { });
   });
   next();
 }

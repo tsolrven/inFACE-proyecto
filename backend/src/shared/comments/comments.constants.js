@@ -8,3 +8,6 @@ export const RESPUESTAS_PRECARGADAS = 3;
 export const NIVELES_PRECARGADOS = 2;
 
 export const ORDENES_COMENTARIO = ['mejores', 'nuevos', 'antiguos'];
+// Tipos cuyos comentarios no admiten imagen (anotaciones sobre el texto de una
+// historia). Debe coincidir con el frontend (shared/post/comments/constants.js).
+export const TIPOS_SIN_IMAGEN = ['parrafo'];
