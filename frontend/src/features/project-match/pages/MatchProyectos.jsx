@@ -97,7 +97,10 @@ export default function MatchProyectos() {
   // se inicializa desde la URL para que sobreviva a un remount (ej. volver de ver
   // el perfil de alguien), en vez de resetearse siempre a 'descubrir'.
   const [tab, setTabState] = useState(
-    () => searchParams.get('tab') || 'descubrir',
+    () =>
+      searchParams.get('crear') === '1'
+        ? 'mis'
+        : searchParams.get('tab') || 'descubrir',
   );
   const [search, setSearch] = useState('');
   // mientras esto es true no se muestra nada (ni tabs ni detalle), para evitar el "flash"
@@ -112,7 +115,9 @@ export default function MatchProyectos() {
   const [misPostulaciones, setMisPostulaciones] = useState([]);
   const [misPostulacionesLoaded, setMisPostulacionesLoaded] = useState(false);
 
-  const [modalCrear, setModalCrear] = useState(null);
+  const [modalCrear, setModalCrear] = useState(() =>
+    searchParams.get('crear') === '1' ? 'crear' : null,
+  );
   const [proyectoDetalle, setProyectoDetalle] = useState(null);
   const [modalPostular, setModalPostular] = useState(null);
   const [modalPostulaciones, setModalPostulaciones] = useState(null);
@@ -122,6 +127,13 @@ export default function MatchProyectos() {
   const [confirmSalir, setConfirmSalir] = useState(null);
   const [avisoError, setAvisoError] = useState(null);
   const [modalEntregables, setModalEntregables] = useState(null);
+
+  useEffect(() => {
+    if (searchParams.get('crear') !== '1') return;
+    const params = new URLSearchParams(searchParams);
+    params.delete('crear');
+    setSearchParams(params, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   const favoritosIds = useMemo(
     () => new Set(favoritos.map((p) => p.id)),

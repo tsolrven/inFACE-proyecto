@@ -66,3 +66,14 @@ export function SkeletonCard() {
     </div>
   );
 }
+
+// Chip con el código de la(s) carrera(s) de un ramo, para listas de toda la
+// facultad (en la de una carrera sobra)
+export function ChipCarreras({ carreras }) {
+  if (!carreras?.length) return null;
+  return (
+    <span className='rounded-full border border-white/[0.08] px-1.5 py-px text-[9.5px] font-bold uppercase tracking-wide text-neutral-400'>
+      {carreras.join(' · ')}
+    </span>
+  );
+}

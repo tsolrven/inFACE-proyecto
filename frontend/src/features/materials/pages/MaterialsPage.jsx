@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import RightPanel from '@/shared/components/layout/RightPanel';
 import RpCard from '@/shared/components/layout/RpCard';
 import RpRules from '@/shared/components/layout/RpRules';
@@ -30,15 +31,25 @@ const VISTAS = [
 
 export default function RepositorioMateriales() {
   const usuario = useAuthStore((s) => s.usuario);
+  const [searchParams, setSearchParams] = useSearchParams();
   const carreraId = usuario?.carrera_id ?? null;
   const carreraNombre = usuario?.carreras?.[0]?.nombre ?? 'tu carrera';
-  const [uploadAbierto, setUploadAbierto] = useState(false);
+  const [uploadAbierto, setUploadAbierto] = useState(
+    () => searchParams.get('subir') === '1' && puedeEscribir(usuario),
+  );
   const [vista, setVista] = useState('publicaciones');
 
   // un solo texto para ambas pestañas: se conserva al cambiar entre
   // Publicaciones y Guardados (ver useBusqueda: debounce y borrado inmediato)
   const [textoBusqueda, setTextoBusqueda] = useState('');
   const busqueda = useBusqueda(textoBusqueda);
+
+  useEffect(() => {
+    if (searchParams.get('subir') !== '1') return;
+    const params = new URLSearchParams(searchParams);
+    params.delete('subir');
+    setSearchParams(params, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   const banner = {
     title: 'Repositorio de materiales',

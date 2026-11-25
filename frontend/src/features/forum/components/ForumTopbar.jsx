@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import FiltroRamo from '@/shared/components/FiltroRamo';
 import FiltroEstadoHilo from '@/features/forum/components/FiltroEstadoHilo';
 import Button from '@/shared/components/ui/Button';
@@ -21,7 +21,20 @@ export default function ForumTopbar({ carreraId, permitirCrear = true }) {
 
   const navigate = useNavigate();
   const location = useLocation();
-  const [creando, setCreando] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [creando, setCreando] = useState(
+    () =>
+      searchParams.get('crear') === 'hilo' &&
+      permitirCrear &&
+      puedeEscribir(usuario),
+  );
+
+  useEffect(() => {
+    if (searchParams.get('crear') !== 'hilo') return;
+    const params = new URLSearchParams(searchParams);
+    params.delete('crear');
+    setSearchParams(params, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   // Publicado: se abre su detalle como modal sobre el feed (igual que HiloCard)
   function alCrear(hilo) {

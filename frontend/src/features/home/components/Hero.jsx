@@ -27,13 +27,13 @@ export default function Hero({ saludo, nombre, accesos, acciones }) {
             {saludo}
             {nombre ? `, ${nombre}` : ''}
           </h1>
-          <p className='mt-1.5 max-w-[520px] text-[13px] leading-relaxed text-neutral-400'>
+          <p className='mt-1.5 max-w-none text-[13px] leading-relaxed text-neutral-400 sm:whitespace-nowrap'>
             Esto es lo que está pasando en InFACE ahora mismo. Entra a un
             módulo o publica algo nuevo.
           </p>
         </div>
 
-        <div className='grid grid-cols-2 gap-2.5 lg:grid-cols-4'>
+        <div className='grid grid-cols-2 gap-2.5 lg:grid-cols-3'>
           {accesos.map((a) => (
             <Link
               key={a.to}

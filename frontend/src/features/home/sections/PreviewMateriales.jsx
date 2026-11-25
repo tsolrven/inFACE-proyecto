@@ -1,8 +1,9 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { listarApuntes } from '@/features/materials';
 import { colorPorRamo } from '@/shared/lib/courseColors';
 import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
 import {
+  ChipCarreras,
   SeccionError,
   SeccionHeader,
   SeccionVacia,
@@ -10,17 +11,21 @@ import {
 } from '@/features/home/components/SeccionInicio';
 import { useVistaPrevia } from '@/features/home/hooks/useVistaPrevia';
 
-async function cargarApuntes() {
-  const { apuntes } = await listarApuntes({ limite: 3, orden: 'recientes' });
-  return apuntes;
-}
-
-export default function PreviewMateriales() {
+// alcance: 'carrera' (la del usuario) o 'facultad' (docente: las 5 carreras)
+export default function PreviewMateriales({ alcance = 'carrera' }) {
+  const facultad = alcance === 'facultad';
   const {
     items: apuntes,
     cargando,
     error,
-  } = useVistaPrevia(['apuntes'], cargarApuntes);
+  } = useVistaPrevia(['apuntes', alcance], async () => {
+    const { apuntes } = await listarApuntes({
+      limite: 3,
+      orden: 'recientes',
+      alcance,
+    });
+    return apuntes;
+  });
 
   return (
     <section>
@@ -28,9 +33,15 @@ export default function PreviewMateriales() {
         icon='ti-books'
         iconColor='text-blue-400'
         iconBg='bg-blue-400/10 border-blue-400/25'
-        title='Repositorio de materiales'
-        subtitle='Lo último que compartió la comunidad'
-        to='/repositorio-materiales'
+        title={
+          facultad ? 'Materiales recientes en la facultad' : 'Materiales recientes'
+        }
+        subtitle={
+          facultad
+            ? 'Lo último que se compartió en las cinco carreras'
+            : 'Lo último que compartió tu carrera'
+        }
+        to={facultad ? undefined : '/repositorio-materiales'}
       />
 
       {cargando ? (
@@ -52,6 +63,7 @@ export default function PreviewMateriales() {
             <MiniApunteCard
               key={a.id}
               apunte={a}
+              conCarrera={facultad}
             />
           ))}
         </div>
@@ -60,16 +72,19 @@ export default function PreviewMateriales() {
   );
 }
 
-function MiniApunteCard({ apunte: a }) {
+function MiniApunteCard({ apunte: a, conCarrera }) {
+  const location = useLocation();
   const ramoColor = colorPorRamo(a.ramo?.id);
 
   return (
     <Link
       to={`/repositorio-materiales/${a.id}`}
+      state={{ backgroundLocation: location }}
       className='flex items-center gap-3 rounded-2xl border border-white/[0.06] bg-[#1E1E24] px-4 py-3 transition hover:border-white/[0.14]'
     >
       <div className='min-w-0 flex-1'>
         <div className='mb-1 flex flex-wrap items-center gap-1.5'>
+          {conCarrera && <ChipCarreras carreras={a.ramo?.carreras} />}
           <span
             className='rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wide'
             style={{ background: `${ramoColor}22`, color: ramoColor }}
