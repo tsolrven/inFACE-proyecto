@@ -152,11 +152,10 @@ model Carrera {
 // ╰─────────────────────────────✧────────────────────────────────╮
 
 model Ramo {
-  id          String  @id @default(uuid())
-  nombre      String
-  codigo      String  @unique
-  semestre    Int?
-  descripcion String?
+  id       String @id @default(uuid())
+  nombre   String
+  codigo   String @unique
+  semestre Int?
 
   ramo_carrera RamoCarrera[]
   apuntes      Apunte[]

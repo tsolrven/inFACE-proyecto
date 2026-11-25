@@ -44,7 +44,7 @@ const EXTRACTO_MAX = 300;
 
 const INCLUDE_HILO = {
   autor: { select: AUTOR_PUBLICO_SELECT },
-  ramo: { select: { id: true, nombre: true, codigo: true, semestre: true } },
+  ramo: { select: { id: true, nombre: true, semestre: true } },
   hashtags: INCLUDE_HASHTAGS,
 };
 // ────────────────────────────────────────────────────────────────────────────────────────
@@ -393,7 +393,6 @@ function formatearHilo(
     ramo: {
       id: hilo.ramo.id,
       nombre: hilo.ramo.nombre,
-      codigo: hilo.ramo.codigo,
       semestre: hilo.ramo.semestre,
     },
     hashtags: nombresDeHashtags(hilo.hashtags),

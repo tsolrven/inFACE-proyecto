@@ -6,7 +6,7 @@ async function listarRamosPorCarrera(carrera_id) {
       ramo_carrera: { some: { carrera_id } },
     },
     orderBy: { semestre: 'asc' },
-    select: { id: true, nombre: true, codigo: true, semestre: true },
+    select: { id: true, nombre: true, semestre: true },
   });
 
   const agrupados = {};

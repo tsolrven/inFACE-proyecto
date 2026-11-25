@@ -100,7 +100,7 @@ async function idsPorBusquedaTexto(texto) {
 // relaciones que siempre se piden junto con un apunte
 const INCLUDE_APUNTE = {
   autor: { select: AUTOR_PUBLICO_SELECT },
-  ramo: { select: { id: true, nombre: true, codigo: true, semestre: true } },
+  ramo: { select: { id: true, nombre: true, semestre: true } },
   hashtags: INCLUDE_HASHTAGS,
 };
 // ────────────────────────────────────────────────────────────────────────────────────────
@@ -459,7 +459,6 @@ function formatearApunte(
     ramo: {
       id: apunte.ramo.id,
       nombre: apunte.ramo.nombre,
-      codigo: apunte.ramo.codigo,
       semestre: apunte.ramo.semestre,
     },
     hashtags: nombresDeHashtags(apunte.hashtags),
