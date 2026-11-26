@@ -387,6 +387,7 @@ model Anuncio {
   creado_en      DateTime  @default(now())
   actualizado_en DateTime  @updatedAt
   editado_en     DateTime?
+  fijado_en      DateTime?
 
   autor    Usuario          @relation(fields: [autor_id], references: [id])
   carrera  Carrera          @relation(fields: [carrera_id], references: [id])
@@ -398,6 +399,7 @@ model Anuncio {
   @@index([flair_id])
   @@index([autor_id])
   @@index([carrera_id, cargo_autor])
+  @@index([carrera_id, fijado_en])
   @@map("anuncios")
 }
 

@@ -65,6 +65,15 @@ const listarAnunciosQuerySchema = paginacionQuerySchema.extend({
   orden: z
     .enum(['recientes', 'populares'], { error: 'Orden inválido' })
     .optional(),
+  sin_fijado: z.enum(['true'], { error: 'Valor inválido' }).optional(),
+});
+// ─────────────────────────────────────────────────────────────────────────────
+const fijarAnuncioSchema = z.object({
+  fijado: z.boolean({ error: 'Indica si el anuncio queda fijado (true/false)' }),
+});
+
+const fijadoQuerySchema = z.object({
+  carrera_id: z.string().uuid(ERROR_MESSAGES.carrera.invalid).optional(),
 });
 // ─────────────────────────────────────────────────────────────────────────────
 export {
@@ -74,4 +83,6 @@ export {
   crearAnuncioSchema,
   actualizarAnuncioSchema,
   listarAnunciosQuerySchema,
+  fijarAnuncioSchema,
+  fijadoQuerySchema,
 };

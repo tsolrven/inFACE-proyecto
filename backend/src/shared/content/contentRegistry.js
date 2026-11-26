@@ -63,6 +63,9 @@ const CONTENT_REGISTRY = {
     label: 'Anuncio',
     ownerField: 'autor_id',
     votesField: 'votos_neto',
+    // los anuncios no se votan en contra: el voto es "Enterado" (confirmación
+    // de lectura). Lo aplica votes.service
+    soloVotosPositivos: true,
     previewField: 'titulo',
     allowsComments: true,
     adjuntos: {

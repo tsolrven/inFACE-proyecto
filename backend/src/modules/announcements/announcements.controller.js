@@ -4,6 +4,8 @@ import {
   crearAnuncio,
   actualizarAnuncio,
   eliminarAnuncio,
+  obtenerAnuncioFijado,
+  fijarAnuncio,
 } from './announcements.service.js';
 import ApiResponse from '../../utils/apiResponse.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
@@ -16,6 +18,7 @@ async function listar(req, res, next) {
       hashtag,
       busqueda,
       orden,
+      sin_fijado,
       pagina,
       limite,
     } = req.query;
@@ -26,6 +29,7 @@ async function listar(req, res, next) {
       hashtag,
       busqueda,
       orden,
+      sin_fijado: sin_fijado === 'true',
       pagina,
       limite,
       usuario_id: req.usuario.id,
@@ -71,6 +75,31 @@ async function actualizar(req, res, next) {
   }
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
+async function fijado(req, res, next) {
+  try {
+    const anuncio = await obtenerAnuncioFijado(
+      req.query.carrera_id ?? req.usuario.carrera_id,
+      req.usuario.id,
+    );
+    return ApiResponse.success(res, anuncio);
+  } catch (err) {
+    next(err);
+  }
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+async function fijar(req, res, next) {
+  try {
+    const anuncio = await fijarAnuncio(
+      req.params.id,
+      req.usuario,
+      req.body.fijado,
+    );
+    return ApiResponse.success(res, anuncio);
+  } catch (err) {
+    next(err);
+  }
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
 async function eliminar(req, res, next) {
   try {
     await eliminarAnuncio(req.params.id, req.usuario);
@@ -80,4 +109,4 @@ async function eliminar(req, res, next) {
   }
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-export { listar, detalle, crear, actualizar, eliminar };
+export { listar, detalle, crear, actualizar, fijado, fijar, eliminar };

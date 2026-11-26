@@ -100,6 +100,7 @@ async function listarAnuncios({
   hashtag,
   busqueda,
   orden = 'recientes',
+  sin_fijado = false,
   pagina = 1,
   limite = 20,
   usuario_id,
@@ -112,7 +113,7 @@ async function listarAnuncios({
   if (flair_id) where.flair_id = flair_id;
   if (cargo) where.cargo_autor = cargo;
   if (hashtag) where.hashtags = filtroPorHashtag(hashtag);
-
+  if (sin_fijado) where.fijado_en = null;
   // barra de búsqueda: "#prefijo" busca por hashtag; si no, por texto.
   // En AND: no pisa el filtro ?hashtag= si viene también.
   const hayResultados = await aplicarBusqueda(
@@ -184,6 +185,66 @@ function puedeEditarAnuncio(usuario, anuncio) {
 // Eliminar: el superadmin (moderación) o quien puede editar.
 function puedeEliminarAnuncio(usuario, anuncio) {
   return esStaff(usuario.rol) || puedeEditarAnuncio(usuario, anuncio);
+}
+
+// Fijar o desfijar: cualquier cargo vigente de ESA carrera (no solo el autor:
+// el destacado es de la carrera) o el superadmin.
+function puedeFijarAnuncio(usuario, anuncio) {
+  return (
+    esStaff(usuario.rol) || puedePublicarAnuncioEn(usuario, anuncio.carrera_id)
+  );
+}
+
+// El anuncio destacado de una carrera (o null)
+async function obtenerAnuncioFijado(carrera_id, usuario_id) {
+  if (!carrera_id) return null;
+  const anuncio = await prisma.anuncio.findFirst({
+    where: { carrera_id, fijado_en: { not: null } },
+    include: INCLUDE_ANUNCIO,
+  });
+  if (!anuncio) return null;
+  const [formateado] = await formatearAnuncios([anuncio], usuario_id, {
+    extracto: true,
+  });
+  return formateado;
+}
+
+// Máximo 1 fijado por carrera: fijar uno desfija el anterior, en la misma
+// transacción (nunca quedan dos, ni siquiera por un instante).
+async function fijarAnuncio(id, usuario, fijado) {
+  const anuncio = await prisma.anuncio.findUnique({
+    where: { id },
+    select: { carrera_id: true },
+  });
+  if (!anuncio) throw new NotFoundError('Anuncio');
+
+  if (!puedeFijarAnuncio(usuario, anuncio)) {
+    throw new ForbiddenError(
+      'No tienes permiso para fijar anuncios en esta carrera',
+    );
+  }
+
+  const actualizado = await prisma.$transaction(async (tx) => {
+    await bloquearContenido('anuncio', id, tx);
+    if (fijado) {
+      await tx.anuncio.updateMany({
+        where: {
+          carrera_id: anuncio.carrera_id,
+          fijado_en: { not: null },
+          id: { not: id },
+        },
+        data: { fijado_en: null },
+      });
+    }
+    return tx.anuncio.update({
+      where: { id },
+      data: { fijado_en: fijado ? new Date() : null },
+      include: INCLUDE_ANUNCIO,
+    });
+  });
+
+  const [formateado] = await formatearAnuncios([actualizado], usuario.id);
+  return formateado;
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 // Archivos del anuncio (los consulta files.service): subir y eliminar archivos
@@ -385,6 +446,7 @@ function formatearAnuncio(
     esta_guardado,
     creado_en: anuncio.creado_en,
     editado_en: anuncio.editado_en,
+    fijado_en: anuncio.fijado_en,
     autor: {
       id: anuncio.autor.id,
       nombre_usuario: anuncio.autor.perfil?.nombre_usuario,
@@ -466,4 +528,6 @@ export {
   crearAnuncio,
   actualizarAnuncio,
   eliminarAnuncio,
+  obtenerAnuncioFijado,
+  fijarAnuncio,
 };

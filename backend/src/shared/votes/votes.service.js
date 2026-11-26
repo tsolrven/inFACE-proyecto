@@ -4,11 +4,19 @@ import {
   bloquearContenido,
   actualizarVotosNetoContenido,
   notificarInteraccion,
+  obtenerEntradaRegistro
 } from '../content/contentRegistry.js';
+import { BadRequestError } from '../../errors/appError.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
 // Devuelve el estado final tras votar: { mensaje, votos_neto, mi_voto }.
 // El cliente muestra esto tal cual; no tiene que calcular nada.
 async function votar({ usuario_id, contenido_id, tipo_contenido, tipo }) {
+  if (
+    tipo === 'down' &&
+    obtenerEntradaRegistro(tipo_contenido)?.soloVotosPositivos
+  ) {
+    throw new BadRequestError('Este contenido no admite votos negativos');
+  }
   await verificarContenidoExiste(tipo_contenido, contenido_id);
 
   const resultado = await prisma.$transaction(async (tx) => {

@@ -5,6 +5,8 @@ import {
   crear,
   actualizar,
   eliminar,
+  fijado,
+  fijar,
 } from './announcements.controller.js';
 import { autenticar, exigirCargo } from '../../middlewares/auth.middleware.js';
 import { exigirSinRestriccion } from '../../middlewares/restriction.middleware.js';
@@ -13,6 +15,8 @@ import {
   crearAnuncioSchema,
   actualizarAnuncioSchema,
   listarAnunciosQuerySchema,
+  fijarAnuncioSchema,
+  fijadoQuerySchema,
 } from './announcements.validation.js';
 import { idParamSchema } from '../../shared/validation/common.schemas.js';
 import { publicacionLimiter } from '../../middlewares/rateLimiter.js';
@@ -39,6 +43,13 @@ router.get(
   validate(listarAnunciosQuerySchema, 'query'),
   listar,
 );
+// antes de '/:id': si no, "fijado" se leería como un id
+router.get(
+  '/fijado',
+  autenticar,
+  validate(fijadoQuerySchema, 'query'),
+  fijado,
+);
 router.get('/:id', autenticar, validate(idParamSchema, 'params'), detalle);
 // `autorizar` va ANTES de subir archivos: un estudiante recibe 403 sin que se
 // escriba nada en disco. La regla por carrera la aplica el servicio.
@@ -63,6 +74,13 @@ router.patch(
   validate(idParamSchema, 'params'),
   validate(actualizarAnuncioSchema),
   actualizar,
+);
+router.patch(
+  '/:id/fijar',
+  autenticar,
+  validate(idParamSchema, 'params'),
+  validate(fijarAnuncioSchema),
+  fijar,
 );
 router.delete('/:id', autenticar, validate(idParamSchema, 'params'), eliminar);
 // ────────────────────────────────────────────────────────────────────────────────────────
