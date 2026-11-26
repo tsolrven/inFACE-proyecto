@@ -1,53 +1,46 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useAuthStore } from '@/shared/auth/authStore';
-import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
-import { useVotar } from '@/shared/post/votes/useVotar';
-import VotePill from '@/shared/post/votes/VotePill';
-import BotonCompartir from '@/shared/post/share/BotonCompartir';
-import { compartirAnuncio } from '@/features/announcements/utils/compartir';
 import PortadaImagen from '@/shared/post/images/PortadaImagen';
 import QuitarGuardadoButton from '@/shared/post/bookmarks/QuitarGuardadoButton';
+import BookmarkIcon from '@/shared/post/bookmarks/BookmarkIcon';
+import { useGuardar } from '@/shared/post/bookmarks/useGuardar';
+import BotonCompartir from '@/shared/post/share/BotonCompartir';
 import { extractoPlano } from '@/shared/markdown/extractoPlano';
 import { useRutaHashtag } from '@/shared/hooks/useRutaHashtag';
 import FlairChip from '@/features/announcements/components/FlairChip';
 import AnuncioMenu from '@/features/announcements/components/AnuncioMenu';
-import { INSIGNIA_ROL } from '@/features/announcements/utils/insigniaRol';
+import EncabezadoOficial from '@/features/announcements/components/EncabezadoOficial';
+import BotonEnterado from '@/features/announcements/components/BotonEnterado';
+import BotonAdjuntos from '@/features/announcements/components/BotonAdjuntos';
+import { compartirAnuncio } from '@/features/announcements/utils/compartir';
 
-export default function AnuncioCard({ anuncio, enGuardados = false }) {
+const PILDORA =
+  'flex items-center gap-1.5 rounded-full bg-white/[0.06] px-3 py-1.5 transition-colors hover:bg-white/[0.1] hover:text-neutral-200';
+
+export default function AnuncioCard({
+  anuncio,
+  enGuardados = false,
+}) {
   const navigate = useNavigate();
   const location = useLocation();
   const rutaHashtag = useRutaHashtag();
-  const votarMut = useVotar('anuncio');
-  const carreraUsuario = useAuthStore((s) => s.usuario?.carrera_id ?? null);
+  const guardarMut = useGuardar('anuncio');
 
   const extracto = extractoPlano(
     anuncio.contenido ?? '',
     anuncio.contenido_truncado,
   );
-  const pdfs = (anuncio.archivos ?? []).filter(
-    (a) => a.tipo_mime === 'application/pdf',
-  ).length;
-  const insignia = INSIGNIA_ROL[anuncio.autor?.cargo];
-  // En Guardados pueden mezclarse carreras: se indica la de cada anuncio
-  const deOtraCarrera = anuncio.carrera?.id !== carreraUsuario;
 
-  // El detalle (M3-6) se abre como modal sobre la lista, igual que en foro y materiales.
   function abrirDetalle() {
     navigate(`/anuncios-oficiales/${anuncio.id}`, {
       state: { backgroundLocation: location },
     });
   }
 
-  function handleVotar(e, tipo) {
-    e.stopPropagation();
-    votarMut.mutate({ id: anuncio.id, tipo });
-  }
-
   return (
-    <div
+    <article
       data-publicacion
       onClick={abrirDetalle}
-      className='relative mb-2 flex cursor-pointer overflow-hidden rounded-[14px] border border-white/[0.06] bg-[#1E1E24] transition-colors hover:border-white/[0.12]'
+      className='relative mb-3 cursor-pointer overflow-hidden rounded-[16px] border border-white/[0.06] bg-[#1E1E24] transition-colors hover:border-amber-400/25'
     >
       {enGuardados ? (
         <QuitarGuardadoButton
@@ -63,62 +56,43 @@ export default function AnuncioCard({ anuncio, enGuardados = false }) {
         />
       )}
 
-      <div className='min-w-0 flex-1 p-3'>
-        <div className='mb-1.5 flex flex-wrap items-center gap-1.5 pr-8'>
-          {anuncio.flair && <FlairChip flair={anuncio.flair} />}
-          {deOtraCarrera && anuncio.carrera && (
-            <span className='rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] font-bold text-neutral-400'>
-              {anuncio.carrera.codigo}
-            </span>
-          )}
-          <span className='text-[11.5px] text-neutral-600'>
-            por{' '}
-            <Link
-              to={`/perfil/usuario/${anuncio.autor?.nombre_usuario}`}
-              onClick={(e) => e.stopPropagation()}
-              className='font-bold text-neutral-400 transition hover:text-neutral-100 hover:underline'
-            >
-              u/{anuncio.autor?.nombre_usuario}
-            </Link>
-          </span>
-          {insignia && (
-            <span className='rounded-full bg-amber-400/10 px-1.5 py-0.5 text-[9.5px] font-bold text-amber-400'>
-              {insignia}
-            </span>
-          )}
-          <span className='text-[11px] text-neutral-600'>
-            · {formatearTiempoRelativo(anuncio.creado_en)}
-          </span>
-          {anuncio.editado_en && (
-            <span className='text-[11px] text-neutral-700'>
-              · editado {formatearTiempoRelativo(anuncio.editado_en)}
-            </span>
-          )}
+      <div className='p-4'>
+
+        <div className='mb-3 pr-8'>
+          <EncabezadoOficial anuncio={anuncio} />
         </div>
 
-        <div className='mb-1 text-sm font-semibold leading-snug text-neutral-100 hover:text-blue-400'>
+        {anuncio.flair && (
+          <div className='mb-1.5'>
+            <FlairChip flair={anuncio.flair} />
+          </div>
+        )}
+
+        <h3
+          className='mb-1.5 break-words text-[15.5px] font-bold leading-snug text-neutral-50'
+        >
           {anuncio.titulo}
-        </div>
+        </h3>
 
         {extracto && (
-          <p className='mb-1.5 line-clamp-3 break-words text-xs leading-relaxed text-neutral-400'>
+          <p
+            className='mb-3 line-clamp-3 break-words text-[12.5px] leading-relaxed text-neutral-400'
+          >
             {extracto}
           </p>
         )}
 
         <PortadaImagen archivos={anuncio.archivos} />
 
-        {pdfs > 0 && (
-          <div className='mb-1.5'>
-            <span className='inline-flex items-center gap-1 rounded-full bg-white/[0.06] px-2 py-0.5 text-[11px] text-neutral-400'>
-              <i className='ti ti-file-type-pdf text-[13px]' />
-              {pdfs} {pdfs === 1 ? 'PDF adjunto' : 'PDF adjuntos'}
-            </span>
-          </div>
-        )}
+        <div className='mb-3 empty:hidden'>
+          <BotonAdjuntos
+            archivos={anuncio.archivos}
+            onVerTodos={abrirDetalle}
+          />
+        </div>
 
         {anuncio.hashtags?.length > 0 && (
-          <div className='mb-1.5 flex flex-wrap gap-1.5'>
+          <div className='mb-3 flex flex-wrap gap-1.5'>
             {anuncio.hashtags.map((tag) => (
               <Link
                 key={tag}
@@ -132,12 +106,8 @@ export default function AnuncioCard({ anuncio, enGuardados = false }) {
           </div>
         )}
 
-        <div className='flex flex-wrap items-center gap-2 border-t border-white/[0.05] pt-2 text-[11.5px] text-neutral-500'>
-          <VotePill
-            miVoto={anuncio.mi_voto}
-            votosNeto={anuncio.votos_neto}
-            onVotar={handleVotar}
-          />
+        <div className='flex flex-wrap items-center gap-2 border-t border-white/[0.05] pt-3 text-[11.5px] text-neutral-500'>
+          <BotonEnterado anuncio={anuncio} />
 
           <button
             type='button'
@@ -145,15 +115,36 @@ export default function AnuncioCard({ anuncio, enGuardados = false }) {
               e.stopPropagation();
               abrirDetalle();
             }}
-            className='flex items-center gap-1.5 rounded-full bg-white/[0.06] px-3 py-1.5 transition-colors hover:bg-white/[0.1] hover:text-neutral-200'
+            className={PILDORA}
           >
             <i className='ti ti-message-circle-2 text-[13px]' />{' '}
             {anuncio.comentarios_count}
           </button>
 
+          {!enGuardados && (
+            <button
+              type='button'
+              aria-pressed={anuncio.esta_guardado}
+              onClick={(e) => {
+                e.stopPropagation();
+                guardarMut.mutate({
+                  id: anuncio.id,
+                  guardar: !anuncio.esta_guardado,
+                });
+              }}
+              className={PILDORA}
+            >
+              <BookmarkIcon
+                filled={anuncio.esta_guardado}
+                style={{ fontSize: 13 }}
+              />
+              {anuncio.esta_guardado ? 'Guardado' : 'Guardar'}
+            </button>
+          )}
+
           <BotonCompartir {...compartirAnuncio(anuncio)} />
         </div>
       </div>
-    </div>
+    </article>
   );
 }

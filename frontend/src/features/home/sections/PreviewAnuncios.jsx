@@ -29,8 +29,8 @@ export default function PreviewAnuncios({ embebida = false }) {
       {!embebida && (
         <SeccionHeader
           icon='ti-speakerphone'
-          iconColor='text-rose-400'
-          iconBg='bg-rose-400/10 border-rose-400/25'
+          iconColor='text-amber-400'
+          iconBg='bg-amber-400/10 border-amber-400/25'
           title='Anuncios de tu carrera'
           subtitle='Lo último del CEE y los tutores'
           to='/anuncios-oficiales'
@@ -71,12 +71,12 @@ function MiniAnuncioCard({ anuncio: a }) {
     <Link
       to={`/anuncios-oficiales/${a.id}`}
       state={{ backgroundLocation: location }}
-      className='block rounded-2xl border border-white/[0.06] bg-[#1E1E24] px-4 py-3 transition hover:border-rose-400/30'
+      className='block rounded-2xl border border-white/[0.06] bg-[#1E1E24] px-4 py-3 transition hover:border-amber-400/30'
     >
       <div className='mb-1 flex flex-wrap items-center gap-1.5 text-[11px] text-neutral-600'>
         {a.flair && <FlairChip flair={a.flair} />}
         {insignia && (
-          <span className='rounded border border-rose-400/30 bg-rose-400/10 px-1.5 py-px text-[9.5px] font-bold text-rose-300'>
+          <span className='rounded border border-amber-400/30 bg-amber-400/10 px-1.5 py-px text-[9.5px] font-bold text-amber-300'>
             {insignia}
           </span>
         )}

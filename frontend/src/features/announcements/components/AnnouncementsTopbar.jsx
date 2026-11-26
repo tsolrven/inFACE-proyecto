@@ -15,7 +15,7 @@ import FiltroCargoAnuncio from '@/features/announcements/components/FiltroCargoA
 
 const ORDENES = [
   { valor: 'recientes', label: 'Recientes', icono: 'ti-clock' },
-  { valor: 'populares', label: 'Más votados', icono: 'ti-flame' },
+  { valor: 'populares', label: 'Más confirmados', icono: 'ti-thumb-up' },
 ];
 
 export default function AnnouncementsTopbar({

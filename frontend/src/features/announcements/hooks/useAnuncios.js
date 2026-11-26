@@ -11,6 +11,8 @@ import {
   crearAnuncio,
   actualizarAnuncio,
   eliminarAnuncio,
+  obtenerAnunciosFijados,
+  fijarAnuncio,
 } from '@/features/announcements/api/announcements.api';
 import { sincronizarArchivos } from '@/shared/api/archivos.api';
 import {
@@ -24,6 +26,7 @@ import {
 export const anuncioKeys = {
   list: (filtros) => ['anuncio', 'list', filtros],
   detail: (id) => ['anuncio', 'detail', id],
+  fijados: (carreraId) => ['anuncio', 'fijados', carreraId],
 };
 // ────────────────────────────────────────────────────────────────────────────────────────
 export function useAnunciosFeed(filtros) {
@@ -125,11 +128,36 @@ export function useEliminarAnuncio() {
     mutationFn: (id) => eliminarAnuncio(id),
     onSuccess: (_data, id) => {
       quitarContenido(qc, 'anuncio', id);
+      // quitarContenido solo limpia listas paginadas: los destacados se recargan
+      qc.invalidateQueries({ queryKey: ['anuncio', 'fijados'] });
       qc.invalidateQueries({
         queryKey: anuncioKeys.detail(id),
         refetchType: 'none',
       });
       qc.invalidateQueries({ queryKey: ['guardados', 'anuncio'] });
+    },
+  });
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+// La clave empieza con 'anuncio': "Enterado" y guardar también la actualizan
+export function useAnunciosFijados(carreraId, { enabled = true } = {}) {
+  return useQuery({
+    queryKey: anuncioKeys.fijados(carreraId),
+    queryFn: ({ signal }) => obtenerAnunciosFijados(carreraId, { signal }),
+    enabled: enabled && !!carreraId,
+  });
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
+// Fijar cambia qué anuncio es el destacado y qué entra en la lista:
+// se refrescan el destacado, las listas y el detalle
+export function useFijarAnuncio() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, fijado }) => fijarAnuncio(id, fijado),
+    onSuccess: (anuncio) => {
+      qc.setQueryData(anuncioKeys.detail(anuncio.id), anuncio);
+      qc.invalidateQueries({ queryKey: ['anuncio', 'fijados'] });
+      qc.invalidateQueries({ queryKey: ['anuncio', 'list'] });
     },
   });
 }

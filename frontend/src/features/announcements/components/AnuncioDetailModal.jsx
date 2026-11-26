@@ -2,20 +2,18 @@ import { useRef } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import Modal, { ModalHeader } from '@/shared/components/ui/Modal';
 import CommentsSection from '@/shared/post/comments/CommentsSection';
-import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
 import { useAuthStore } from '@/shared/auth/authStore';
-import { useVotar } from '@/shared/post/votes/useVotar';
-import VotePill from '@/shared/post/votes/VotePill';
-import BotonCompartir from '@/shared/post/share/BotonCompartir';
 import { compartirAnuncio } from '@/features/announcements/utils/compartir';
 import GaleriaImagenes from '@/shared/post/images/GaleriaImagenes';
 import MarkdownView from '@/shared/markdown/MarkdownView';
 import { useRutaHashtag } from '@/shared/hooks/useRutaHashtag';
 import { useAnuncio } from '@/features/announcements/hooks/useAnuncios';
-import { INSIGNIA_ROL } from '@/features/announcements/utils/insigniaRol';
 import FlairChip from '@/features/announcements/components/FlairChip';
 import AdjuntosPdf from '@/features/announcements/components/AdjuntosPdf';
 import AnuncioMenu from '@/features/announcements/components/AnuncioMenu';
+import BotonCompartir from '@/shared/post/share/BotonCompartir';
+import EncabezadoOficial from '@/features/announcements/components/EncabezadoOficial';
+import BotonEnterado from '@/features/announcements/components/BotonEnterado';
 
 export default function AnuncioDetailModal() {
   const { id } = useParams();
@@ -26,19 +24,12 @@ export default function AnuncioDetailModal() {
   const comentariosRef = useRef(null);
 
   const { data: anuncio, isPending, isPlaceholderData, error } = useAnuncio(id);
-  const votarMut = useVotar('anuncio');
 
   function handleClose() {
     if (location.state?.backgroundLocation) navigate(-1);
     else navigate('/anuncios-oficiales', { replace: true });
   }
 
-  function handleVotar(e, tipo) {
-    e?.stopPropagation?.();
-    votarMut.mutate({ id, tipo });
-  }
-
-  const insignia = INSIGNIA_ROL[anuncio?.autor?.cargo];
   const deOtraCarrera = !!anuncio && anuncio.carrera?.id !== carreraUsuario;
 
   return (
@@ -88,38 +79,20 @@ export default function AnuncioDetailModal() {
           </ModalHeader>
 
           <div className='px-6 pb-4 pt-5'>
-            <h2 className='mb-3 break-words text-[18px] font-bold leading-snug text-neutral-100'>
-              {anuncio.titulo}
-            </h2>
-
-            <div className='mb-4 flex flex-wrap items-center gap-2 text-[12.5px] text-neutral-600'>
-              <Link
-                to={`/perfil/usuario/${anuncio.autor?.nombre_usuario}`}
-                className='flex items-center gap-2 transition hover:opacity-80'
-              >
-                <div className='flex h-[22px] w-[22px] flex-shrink-0 items-center justify-center rounded-full bg-pink-500/10 text-[9px] font-bold text-pink-500'>
-                  {anuncio.autor?.nombre_usuario?.slice(0, 2).toUpperCase()}
-                </div>
-                <span>
-                  por{' '}
-                  <b className='text-neutral-400 hover:text-neutral-100 hover:underline'>
-                    u/{anuncio.autor?.nombre_usuario}
-                  </b>
-                </span>
-              </Link>
-              {insignia && (
-                <span className='rounded-full bg-amber-400/10 px-1.5 py-0.5 text-[9.5px] font-bold text-amber-400'>
-                  {insignia}
-                </span>
-              )}
-              <span>·</span>
-              <span>{formatearTiempoRelativo(anuncio.creado_en)}</span>
-              {anuncio.editado_en && (
-                <span className='text-neutral-700'>
-                  · editado {formatearTiempoRelativo(anuncio.editado_en)}
+            <div className='mb-4 flex flex-wrap items-center gap-2'>
+              <EncabezadoOficial
+                anuncio={anuncio}
+                grande
+              />
+              {anuncio.fijado_en && (
+                <span className='inline-flex items-center gap-1 rounded-full bg-amber-400/15 px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-wide text-amber-300'>
+                  <i className='ti ti-pin text-[12px]' /> Destacado
                 </span>
               )}
             </div>
+            <h2 className='mb-3 break-words text-[18px] font-bold leading-snug text-neutral-100'>
+              {anuncio.titulo}
+            </h2>
 
             {isPlaceholderData && anuncio.contenido_truncado ? (
               <div className='mb-4 flex items-center gap-2 text-[12px] text-neutral-600'>
@@ -156,11 +129,7 @@ export default function AnuncioDetailModal() {
             )}
 
             <div className='flex flex-wrap items-center gap-2 border-t border-white/[0.06] pt-3 text-[11.5px] text-neutral-500'>
-              <VotePill
-                miVoto={anuncio.mi_voto}
-                votosNeto={anuncio.votos_neto}
-                onVotar={handleVotar}
-              />
+              <BotonEnterado anuncio={anuncio} />
 
               <button
                 type='button'

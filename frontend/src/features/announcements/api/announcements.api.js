@@ -8,6 +8,7 @@ export async function listarAnuncios({
   hashtag,
   busqueda,
   orden,
+  sin_fijado,
   pagina = 1,
   limite = 20,
   signal,
@@ -19,6 +20,7 @@ export async function listarAnuncios({
     hashtag,
     busqueda,
     orden,
+    sin_fijado,
     pagina,
     limite,
   });
@@ -49,4 +51,21 @@ export async function actualizarAnuncio(id, payload) {
 
 export async function eliminarAnuncio(id) {
   return apiFetch(`/anuncios/${id}`, { method: 'DELETE' });
+}
+
+// Los destacados de la carrera (máximo 5). Sin carrera_id, la del usuario.
+export async function obtenerAnunciosFijados(carrera_id, { signal } = {}) {
+  const qs = buildQuery({ carrera_id });
+  const res = await apiFetch(`/anuncios/fijados${qs ? `?${qs}` : ''}`, {
+    signal,
+  });
+  return res.data;
+}
+
+export async function fijarAnuncio(id, fijado) {
+  const res = await apiFetch(`/anuncios/${id}/fijar`, {
+    method: 'PATCH',
+    body: { fijado },
+  });
+  return res.data;
 }

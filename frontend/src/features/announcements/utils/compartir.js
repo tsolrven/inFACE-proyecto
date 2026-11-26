@@ -5,7 +5,7 @@ export function compartirAnuncio(anuncio) {
     titulo: anuncio.titulo,
     vistaPrevia: {
       icono: 'ti-speakerphone',
-      color: '#FB7185',
+      color: '#FBBF24',
       etiqueta: 'Anuncios oficiales',
       subtitulo: `${anuncio.carrera?.nombre ?? ''} · u/${anuncio.autor?.nombre_usuario ?? ''}`,
     },

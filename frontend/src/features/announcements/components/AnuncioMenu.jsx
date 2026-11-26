@@ -10,7 +10,10 @@ import { useEliminarAnuncio } from '@/features/announcements/hooks/useAnuncios';
 import {
   puedeEditarAnuncio,
   puedeEliminarAnuncio,
+  puedeFijarAnuncio,
 } from '@/features/announcements/utils/permisos';
+import { useFijarAnuncio } from '@/features/announcements/hooks/useAnuncios';
+import { mostrarToast } from '@/shared/stores/toastStore';
 
 /**
  * Menú ⋯ de un anuncio: guardar, editar, eliminar y reportar.
@@ -27,6 +30,8 @@ export default function AnuncioMenu({
   const usuario = useAuthStore((s) => s.usuario);
   const guardarMut = useGuardar('anuncio');
   const eliminarMut = useEliminarAnuncio();
+  const fijarMut = useFijarAnuncio();
+  const fijado = !!anuncio.fijado_en;
 
   const [confirmandoEliminar, setConfirmandoEliminar] = useState(false);
   const [errorEliminar, setErrorEliminar] = useState(null);
@@ -35,7 +40,7 @@ export default function AnuncioMenu({
   const puedeEliminar = puedeEliminarAnuncio(usuario, anuncio);
   const puedeEditar = puedeEditarAnuncio(usuario, anuncio);
 
-  const items = usePostMenuItems({
+  const itemsBase = usePostMenuItems({
     autorId: anuncio.autor?.id,
     guardado: anuncio.esta_guardado,
     onGuardar: () =>
@@ -48,6 +53,35 @@ export default function AnuncioMenu({
     iconSize: 14,
   });
 
+
+  // fijar/desfijar va primero: es la acción propia del tablón
+  const items = [
+    {
+      key: 'fijar',
+      label: fijado ? 'Quitar de destacado' : 'Fijar como destacado',
+      icon: (
+        <i
+          className={`ti ${fijado ? 'ti-pinned-off' : 'ti-pin'}`}
+          style={{ fontSize: 14 }}
+        />
+      ),
+      onClick: () =>
+        fijarMut.mutate(
+          { id: anuncio.id, fijado: !fijado },
+          {
+            onSuccess: () =>
+              mostrarToast(
+                fijado ? 'Anuncio quitado de destacado' : 'Anuncio destacado',
+              ),
+            onError: (err) =>
+              mostrarToast(err.message || 'No se pudo cambiar el destacado'),
+          },
+        ),
+      hidden: !puedeFijarAnuncio(usuario, anuncio),
+    },
+    ...itemsBase,
+  ];
+  
   async function handleEliminar() {
     setErrorEliminar(null);
     try {

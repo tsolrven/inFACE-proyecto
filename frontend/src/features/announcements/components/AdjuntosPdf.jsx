@@ -1,4 +1,7 @@
-import { descargarArchivo } from '@/shared/api/archivos.api';
+import {
+  abrirArchivoEnPestana,
+  descargarArchivo,
+} from '@/shared/api/archivos.api';
 import { formatearTamanio } from '@/shared/lib/archivos';
 import { mostrarToast } from '@/shared/stores/toastStore';
 
@@ -17,6 +20,14 @@ export default function AdjuntosPdf({ archivos }) {
     }
   }
 
+  async function handleVer(archivo) {
+    try {
+      await abrirArchivoEnPestana(archivo);
+    } catch (err) {
+      mostrarToast(err.message || 'No se pudo abrir el archivo');
+    }
+  }
+
   return (
     <div className='flex flex-col gap-2'>
       {pdfs.map((archivo) => (
@@ -28,9 +39,13 @@ export default function AdjuntosPdf({ archivos }) {
           <span className='flex-1 truncate text-[12.5px] font-medium text-neutral-300'>
             {archivo.nombre_archivo}
           </span>
-          <span className='flex-shrink-0 text-[10.5px] text-neutral-600'>
-            {formatearTamanio(archivo.tamanio)}
-          </span>
+          <button
+            type='button'
+            onClick={() => handleVer(archivo)}
+            className='flex flex-shrink-0 items-center gap-1 text-[12px] font-semibold text-amber-400 hover:opacity-75'
+          >
+            <i className='ti ti-external-link' /> Ver
+          </button>
           <button
             type='button'
             onClick={() => handleDescargar(archivo)}
@@ -38,6 +53,9 @@ export default function AdjuntosPdf({ archivos }) {
           >
             <i className='ti ti-download' /> Descargar
           </button>
+          <span className='flex-shrink-0 text-[10.5px] leading-[18px] text-neutral-600'>
+            {formatearTamanio(archivo.tamanio)}
+          </span>
         </div>
       ))}
     </div>

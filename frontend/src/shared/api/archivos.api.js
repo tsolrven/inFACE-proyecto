@@ -106,3 +106,21 @@ export async function descargarArchivo(archivo) {
   a.remove();
   window.URL.revokeObjectURL(url);
 }
+
+// Abre un archivo (PDF o imagen) en otra pestaña con el visor del navegador.
+// Debe llamarse directo desde el clic: la pestaña se abre ANTES del await,
+// porque si se abriera después, el navegador la bloquearía como emergente.
+export async function abrirArchivoEnPestana(archivo) {
+  const pestana = window.open('', '_blank');
+  try {
+    const blob = await obtenerImagen(archivo.id);
+    const url = URL.createObjectURL(blob);
+    if (pestana) pestana.location.href = url;
+    else window.open(url, '_blank');
+    // el visor ya cargó el archivo: se libera la memoria del blob
+    setTimeout(() => URL.revokeObjectURL(url), 60 * 1000);
+  } catch (err) {
+    pestana?.close();
+    throw err;
+  }
+}

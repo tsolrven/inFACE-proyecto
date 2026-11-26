@@ -1,6 +1,10 @@
 import { useEffect, useMemo } from 'react';
 import { useAnunciosFiltrosStore } from '@/features/announcements/store/anunciosFiltrosStore';
-import { useAnunciosFeed } from '@/features/announcements/hooks/useAnuncios';
+import {
+  useAnunciosFijados,
+  useAnunciosFeed,
+} from '@/features/announcements/hooks/useAnuncios';
+import DestacadosAnuncios from '@/features/announcements/components/DestacadosAnuncios';
 import { useCentinela } from '@/shared/hooks/useCentinela';
 import AnnouncementsTopbar from '@/features/announcements/components/AnnouncementsTopbar';
 import AnuncioCard from '@/features/announcements/components/AnuncioCard';
@@ -22,6 +26,13 @@ export default function AnnouncementsFeed({
     alinearCarrera(carreraId);
   }, [carreraId, alinearCarrera]);
 
+  // el destacado va arriba solo en la vista "limpia": con filtros o búsqueda,
+  // el fijado aparece en la lista como uno más (si coincide)
+  const vistaLimpia = !flairId && !cargo && !hashtag && !busqueda;
+  const { data: fijados = [] } = useAnunciosFijados(carreraId, {
+    enabled: vistaLimpia,
+  });
+
   const filtros = useMemo(
     () => ({
       carrera_id: carreraId,
@@ -30,8 +41,9 @@ export default function AnnouncementsFeed({
       orden,
       hashtag,
       busqueda,
+      sin_fijado: vistaLimpia ? 'true' : undefined,
     }),
-    [carreraId, flairId, cargo, orden, hashtag, busqueda],
+    [carreraId, flairId, cargo, orden, hashtag, busqueda, vistaLimpia],
   );
 
   const {
@@ -83,7 +95,7 @@ export default function AnnouncementsFeed({
 
   return (
     <div className='flex-1 overflow-y-auto p-4'>
-      <div className='mx-auto w-full max-w-[720px]'>
+      <div className='mx-auto w-full max-w-[720px] 2xl:max-w-[1180px]'>
         <AnnouncementsTopbar
           carreraId={carreraId}
           permitirCrear={permitirCrear}
@@ -101,7 +113,7 @@ export default function AnnouncementsFeed({
           </div>
         )}
 
-        {!isPending && !error && anuncios.length === 0 && (
+        {!isPending && !error && anuncios.length === 0 && fijados.length === 0 && (
           <div className='flex flex-col items-center justify-center py-16 text-center select-none'>
             <i className='ti ti-speakerphone mb-3 block text-5xl text-neutral-700' />
             <p className='text-sm font-semibold text-neutral-300'>
@@ -113,12 +125,23 @@ export default function AnnouncementsFeed({
           </div>
         )}
 
-        {anuncios.map((anuncio) => (
-          <AnuncioCard
-            key={anuncio.id}
-            anuncio={anuncio}
+        {vistaLimpia && (
+          <DestacadosAnuncios
+            key={carreraId}
+            anuncios={fijados}
+            carreraId={carreraId}
           />
-        ))}
+        )}
+
+        {/* 2 columnas solo en pantallas muy anchas */}
+        <div className='grid grid-cols-1 items-start gap-x-3 2xl:grid-cols-2'>
+          {anuncios.map((anuncio) => (
+            <AnuncioCard
+              key={anuncio.id}
+              anuncio={anuncio}
+            />
+          ))}
+        </div>
 
         <div
           ref={centinelaRef}

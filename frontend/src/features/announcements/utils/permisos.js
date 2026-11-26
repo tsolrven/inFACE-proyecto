@@ -38,3 +38,11 @@ export function puedeGestionarFlairs(usuario, carreraId) {
 export function puedeEliminarFlair(usuario, carreraId) {
   return esStaff(usuario?.rol) || puedeGestionarFlairs(usuario, carreraId);
 }
+
+// Debe coincidir con puedeFijarAnuncio (backend): cualquier cargo vigente de
+// la carrera del anuncio (no solo el autor) o el superadmin
+export function puedeFijarAnuncio(usuario, anuncio) {
+  return (
+    esStaff(usuario?.rol) || puedeCrearAnuncio(usuario, anuncio?.carrera?.id)
+  );
+}

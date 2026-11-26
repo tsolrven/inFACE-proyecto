@@ -17,3 +17,17 @@
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.14);
 }
+
+.scrollbar-destacados {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+}
+
+.scrollbar-destacados::-webkit-scrollbar {
+  height: 3px;
+  background: transparent;
+}
+
+.scrollbar-destacados::-webkit-scrollbar-track {
+  background: transparent;
+}
