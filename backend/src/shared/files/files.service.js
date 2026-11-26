@@ -185,11 +185,15 @@ async function obtenerImagenParaVer(id, usuario) {
   await exigirLectura(id, usuario);
   const archivo = await prisma.archivo.findUnique({ where: { id } });
   if (!archivo) throw new NotFoundError('Archivo');
+  // PDF también: se abre en otra pestaña con el visor del navegador
   if (
     !archivo.tipo_mime?.startsWith('image/') &&
-    !archivo.tipo_mime?.startsWith('audio/')
+    !archivo.tipo_mime?.startsWith('audio/') &&
+    archivo.tipo_mime !== 'application/pdf'
   ) {
-    throw new BadRequestError('Solo se pueden visualizar imágenes o audios');
+    throw new BadRequestError(
+      'Solo se pueden visualizar imágenes, audios o PDF',
+    );
   }
 
   const rutaFisica = resolverRutaFisica(archivo.ruta_url);
