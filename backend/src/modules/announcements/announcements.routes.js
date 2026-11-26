@@ -5,7 +5,7 @@ import {
   crear,
   actualizar,
   eliminar,
-  fijado,
+  fijados,
   fijar,
 } from './announcements.controller.js';
 import { autenticar, exigirCargo } from '../../middlewares/auth.middleware.js';
@@ -45,10 +45,10 @@ router.get(
 );
 // antes de '/:id': si no, "fijado" se leería como un id
 router.get(
-  '/fijado',
+  '/fijados',
   autenticar,
   validate(fijadoQuerySchema, 'query'),
-  fijado,
+  fijados,
 );
 router.get('/:id', autenticar, validate(idParamSchema, 'params'), detalle);
 // `autorizar` va ANTES de subir archivos: un estudiante recibe 403 sin que se

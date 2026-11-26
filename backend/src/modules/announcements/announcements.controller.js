@@ -4,7 +4,7 @@ import {
   crearAnuncio,
   actualizarAnuncio,
   eliminarAnuncio,
-  obtenerAnuncioFijado,
+  obtenerAnunciosFijados,
   fijarAnuncio,
 } from './announcements.service.js';
 import ApiResponse from '../../utils/apiResponse.js';
@@ -75,13 +75,13 @@ async function actualizar(req, res, next) {
   }
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-async function fijado(req, res, next) {
+async function fijados(req, res, next) {
   try {
-    const anuncio = await obtenerAnuncioFijado(
+    const anuncios = await obtenerAnunciosFijados(
       req.query.carrera_id ?? req.usuario.carrera_id,
       req.usuario.id,
     );
-    return ApiResponse.success(res, anuncio);
+    return ApiResponse.success(res, anuncios);
   } catch (err) {
     next(err);
   }
@@ -109,4 +109,4 @@ async function eliminar(req, res, next) {
   }
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
-export { listar, detalle, crear, actualizar, fijado, fijar, eliminar };
+export { listar, detalle, crear, actualizar, fijados, fijar, eliminar };

@@ -42,6 +42,9 @@ import {
 import { notificarReportesCerrados } from '../../shared/moderation/reports.notifications.js';
 import { avisarComentario } from '../../shared/notifications/notificarComentario.js';
 // ────────────────────────────────────────────────────────────────────────────────────────
+// destacados por carrera (fila tipo "Community highlights")
+const MAX_DESTACADOS = 5;
+
 // En las listas el contenido viaja recortado; el detalle lo trae completo.
 const EXTRACTO_MAX = 300;
 
@@ -195,22 +198,18 @@ function puedeFijarAnuncio(usuario, anuncio) {
   );
 }
 
-// El anuncio destacado de una carrera (o null)
-async function obtenerAnuncioFijado(carrera_id, usuario_id) {
-  if (!carrera_id) return null;
-  const anuncio = await prisma.anuncio.findFirst({
+// Los destacados de una carrera: el último fijado primero
+async function obtenerAnunciosFijados(carrera_id, usuario_id) {
+  if (!carrera_id) return [];
+  const anuncios = await prisma.anuncio.findMany({
     where: { carrera_id, fijado_en: { not: null } },
+    orderBy: [{ fijado_en: 'desc' }, { id: 'desc' }],
+    take: MAX_DESTACADOS,
     include: INCLUDE_ANUNCIO,
   });
-  if (!anuncio) return null;
-  const [formateado] = await formatearAnuncios([anuncio], usuario_id, {
-    extracto: true,
-  });
-  return formateado;
+  return formatearAnuncios(anuncios, usuario_id, { extracto: true });
 }
 
-// Máximo 1 fijado por carrera: fijar uno desfija el anterior, en la misma
-// transacción (nunca quedan dos, ni siquiera por un instante).
 async function fijarAnuncio(id, usuario, fijado) {
   const anuncio = await prisma.anuncio.findUnique({
     where: { id },
@@ -225,20 +224,31 @@ async function fijarAnuncio(id, usuario, fijado) {
   }
 
   const actualizado = await prisma.$transaction(async (tx) => {
+    // bloqueo por CARRERA: dos cargos fijando a la vez no superan el cupo
+    // (se libera solo al terminar la transacción)
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${anuncio.carrera_id}))`;
     await bloquearContenido('anuncio', id, tx);
-    if (fijado) {
-      await tx.anuncio.updateMany({
-        where: {
-          carrera_id: anuncio.carrera_id,
-          fijado_en: { not: null },
-          id: { not: id },
-        },
-        data: { fijado_en: null },
+
+    const actual = await tx.anuncio.findUnique({
+      where: { id },
+      select: { fijado_en: true },
+    });
+
+    if (fijado && !actual.fijado_en) {
+      const cantidad = await tx.anuncio.count({
+        where: { carrera_id: anuncio.carrera_id, fijado_en: { not: null } },
       });
+      if (cantidad >= MAX_DESTACADOS) {
+        throw new BadRequestError(
+          `Ya hay ${MAX_DESTACADOS} destacados: quita uno primero`,
+        );
+      }
     }
+
     return tx.anuncio.update({
       where: { id },
-      data: { fijado_en: fijado ? new Date() : null },
+      // volver a fijar uno ya fijado no lo mueve al primer lugar
+      data: { fijado_en: fijado ? (actual.fijado_en ?? new Date()) : null },
       include: INCLUDE_ANUNCIO,
     });
   });
@@ -528,6 +538,6 @@ export {
   crearAnuncio,
   actualizarAnuncio,
   eliminarAnuncio,
-  obtenerAnuncioFijado,
+  obtenerAnunciosFijados,
   fijarAnuncio,
 };
