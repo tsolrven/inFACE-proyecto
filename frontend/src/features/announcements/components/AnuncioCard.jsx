@@ -85,10 +85,7 @@ export default function AnuncioCard({
         <PortadaImagen archivos={anuncio.archivos} />
 
         <div className='mb-3 empty:hidden'>
-          <BotonAdjuntos
-            archivos={anuncio.archivos}
-            onVerTodos={abrirDetalle}
-          />
+          <BotonAdjuntos archivos={anuncio.archivos} />
         </div>
 
         {anuncio.hashtags?.length > 0 && (

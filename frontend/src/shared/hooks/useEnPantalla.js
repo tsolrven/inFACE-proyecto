@@ -1,22 +1,17 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
-/**
- * Devuelve [ref, visible]. `visible` pasa a true cuando el elemento está por
- * entrar al viewport (con `margen` de anticipación) y se queda en true.
- * Sirve para no descargar contenido pesado de elementos que nadie ha visto.
- */
-export default function useEnPantalla(margen = '300px') {
-  const ref = useRef(null);
-  const [visible, setVisible] = useState(false);
+// true desde que el elemento entra (o está por entrar) en pantalla. Se usa
+// para no generar miniaturas ni dibujar páginas que nadie está mirando.
+export function useEnPantalla(ref, { margen = '200px' } = {}) {
+  const [visto, setVisto] = useState(false);
 
   useEffect(() => {
     const el = ref.current;
-    if (!el || visible) return;
-
+    if (!el || visto) return;
     const observador = new IntersectionObserver(
       ([entrada]) => {
         if (entrada.isIntersecting) {
-          setVisible(true);
+          setVisto(true);
           observador.disconnect();
         }
       },
@@ -24,7 +19,7 @@ export default function useEnPantalla(margen = '300px') {
     );
     observador.observe(el);
     return () => observador.disconnect();
-  }, [visible, margen]);
+  }, [ref, visto, margen]);
 
-  return [ref, visible];
+  return visto;
 }

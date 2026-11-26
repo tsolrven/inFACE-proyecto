@@ -1,6 +1,7 @@
 import InsigniaBorrador from '@/features/creative-space/components/InsigniaBorrador';
+import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import useEnPantalla from '@/shared/hooks/useEnPantalla';
+import { useEnPantalla } from '@/shared/hooks/useEnPantalla';
 import { useImagenAutenticada } from '@/shared/post/images/useImagenAutenticada';
 import { rutas } from '@/features/creative-space/utils/espacios';
 
@@ -10,7 +11,8 @@ export default function AlbumCard({ obra }) {
     a.tipo_mime?.startsWith('image/'),
   );
   const portada = imagenes[0];
-  const [ref, visible] = useEnPantalla();
+  const ref = useRef(null);
+  const visible = useEnPantalla(ref, { margen: '300px' });
   const { data: url } = useImagenAutenticada(portada?.id, {
     enabled: visible && !!portada,
   });

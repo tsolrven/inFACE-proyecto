@@ -1,4 +1,5 @@
-import useEnPantalla from '@/shared/hooks/useEnPantalla';
+import { useRef } from 'react';
+import { useEnPantalla } from '@/shared/hooks/useEnPantalla';
 import { useImagenAutenticada } from '@/shared/post/images/useImagenAutenticada';
 
 /**
@@ -12,7 +13,8 @@ export default function PortadaImagen({ archivos }) {
   );
   const portada = imagenes[0];
 
-  const [ref, visible] = useEnPantalla();
+  const ref = useRef(null);
+  const visible = useEnPantalla(ref, { margen: '300px' });
   const {
     data: url,
     isError,

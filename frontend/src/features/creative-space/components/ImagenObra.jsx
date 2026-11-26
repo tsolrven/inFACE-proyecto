@@ -1,5 +1,6 @@
+import { useRef } from 'react';
 import { useImagenAutenticada } from '@/shared/post/images/useImagenAutenticada';
-import useEnPantalla from '@/shared/hooks/useEnPantalla';
+import { useEnPantalla } from '@/shared/hooks/useEnPantalla';
 
 export default function ImagenObra({
   archivoId,
@@ -11,7 +12,8 @@ export default function ImagenObra({
   fallbackSrc = null, 
   children,
 }) {
-  const [ref, visible] = useEnPantalla();
+  const ref = useRef(null);
+  const visible = useEnPantalla(ref, { margen: '300px' });
   const { data: url } = useImagenAutenticada(archivoId, {
     enabled: visible && !!archivoId,
   });
