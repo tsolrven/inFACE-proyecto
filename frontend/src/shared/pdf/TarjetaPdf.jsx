@@ -1,5 +1,8 @@
 import { useRef } from 'react';
-import { descargarArchivo } from '@/shared/api/archivos.api';
+import {
+  abrirArchivoEnPestana,
+  descargarArchivo,
+} from '@/shared/api/archivos.api';
 import { formatearTamanio } from '@/shared/lib/archivos';
 import { mostrarToast } from '@/shared/stores/toastStore';
 import { useEnPantalla } from '@/shared/hooks/useEnPantalla';
@@ -7,11 +10,20 @@ import { useMiniaturaPdf } from '@/shared/pdf/pdfDatos';
 
 // Tarjeta tipo Gmail. Normal: miniatura + franja con ícono y nombre.
 // Con el cursor (o el foco): nombre completo, peso y "Descargar".
-// Toda la tarjeta es un botón que abre el visor; "Descargar" va aparte.
-export default function TarjetaPdf({ archivo, onAbrir }) {
+// Toda la tarjeta es un botón que abre el PDF en una pestaña nueva (visor
+// nativo del navegador); "Descargar" va aparte.
+export default function TarjetaPdf({ archivo }) {
   const ref = useRef(null);
   const enPantalla = useEnPantalla(ref);
   const { data: miniatura } = useMiniaturaPdf(archivo, { enabled: enPantalla });
+
+  async function ver() {
+    try {
+      await abrirArchivoEnPestana(archivo);
+    } catch (err) {
+      mostrarToast(err.message || 'No se pudo abrir el archivo');
+    }
+  }
 
   async function descargar(e) {
     e.stopPropagation();
@@ -30,8 +42,8 @@ export default function TarjetaPdf({ archivo, onAbrir }) {
       {/* el botón cubre la tarjeta; lo visual va encima sin capturar clics */}
       <button
         type='button'
-        onClick={onAbrir}
-        aria-label={`Ver ${archivo.nombre_archivo}`}
+        onClick={ver}
+        aria-label={`Abrir ${archivo.nombre_archivo} en una pestaña nueva`}
         className='absolute inset-0 z-0 rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400'
       />
 

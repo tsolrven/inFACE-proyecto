@@ -8,8 +8,7 @@ import { cargarPdfjs } from '@/shared/pdf/pdfjs';
 export const MAX_BYTES_MINIATURA = 10 * 1024 * 1024;
 const ANCHO_MINIATURA = 360; // px reales (la tarjeta mide ~180 px: nítida en pantallas 2x)
 
-// El PDF completo (Blob) en caché: miniatura y visor lo comparten, así abrir
-// el visor después de ver la miniatura no lo vuelve a descargar.
+// El PDF completo (Blob) en caché, para generar la miniatura.
 // GET /archivos/:id/ver (con sesión, no cuenta como descarga).
 function obtenerBlobPdf(id) {
   return queryClient.fetchQuery({
@@ -21,14 +20,14 @@ function obtenerBlobPdf(id) {
 
 // pdf.js se queda con el buffer (lo transfiere a su worker), así que cada
 // documento recibe una copia nueva sacada del Blob, que no cambia.
-export async function abrirDocumentoPdf(id) {
+async function abrirDocumentoPdf(id) {
   const [pdfjs, blob] = await Promise.all([cargarPdfjs(), obtenerBlobPdf(id)]);
   const datos = new Uint8Array(await blob.arrayBuffer());
   return pdfjs.getDocument({ data: datos, isEvalSupported: false });
 }
 
 // Dibuja una página en un canvas del ancho pedido (en píxeles reales)
-export async function dibujarPagina(pagina, canvas, anchoPx) {
+async function dibujarPagina(pagina, canvas, anchoPx) {
   const base = pagina.getViewport({ scale: 1 });
   const viewport = pagina.getViewport({ scale: anchoPx / base.width });
   canvas.width = Math.floor(viewport.width);
