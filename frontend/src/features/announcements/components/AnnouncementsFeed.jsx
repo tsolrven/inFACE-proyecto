@@ -8,6 +8,8 @@ import DestacadosAnuncios from '@/features/announcements/components/DestacadosAn
 import { useCentinela } from '@/shared/hooks/useCentinela';
 import AnnouncementsTopbar from '@/features/announcements/components/AnnouncementsTopbar';
 import AnuncioCard from '@/features/announcements/components/AnuncioCard';
+import useMediaQuery from '@/shared/hooks/useMediaQuery';
+import ColumnasMasonry from '@/shared/components/ColumnasMasonry';
 
 // `busqueda` (opcional): texto ya filtrado por useBusqueda
 export default function AnnouncementsFeed({
@@ -57,6 +59,8 @@ export default function AnnouncementsFeed({
 
   const anuncios = data?.pages.flatMap((p) => p.items) ?? [];
   const total = data?.pages.at(-1)?.meta?.total;
+  // 2 columnas solo en pantallas muy anchas (2xl de Tailwind = 96rem)
+  const dosColumnas = useMediaQuery('(min-width: 96rem)');
   const centinelaRef = useCentinela({
     hasNextPage,
     isFetchingNextPage,
@@ -133,15 +137,22 @@ export default function AnnouncementsFeed({
           />
         )}
 
-        {/* 2 columnas solo en pantallas muy anchas */}
-        <div className='grid grid-cols-1 items-start gap-x-3 2xl:grid-cols-2'>
-          {anuncios.map((anuncio) => (
-            <AnuncioCard
-              key={anuncio.id}
-              anuncio={anuncio}
-            />
-          ))}
-        </div>
+        {dosColumnas ? (
+          <ColumnasMasonry
+            key={JSON.stringify(filtros)}
+            items={anuncios}
+            renderItem={(anuncio) => <AnuncioCard anuncio={anuncio} />}
+          />
+        ) : (
+          <div className='grid grid-cols-1 items-start'>
+            {anuncios.map((anuncio) => (
+              <AnuncioCard
+                key={anuncio.id}
+                anuncio={anuncio}
+              />
+            ))}
+          </div>
+        )}
 
         <div
           ref={centinelaRef}
