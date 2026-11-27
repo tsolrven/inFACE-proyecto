@@ -5,6 +5,7 @@ import PageBanner from '@/shared/components/layout/PageBanner';
 import RightPanel from '@/shared/components/layout/RightPanel';
 import RpCard from '@/shared/components/layout/RpCard';
 import Pestanas from '@/shared/components/ui/Pestanas';
+import BotonVerGuardados from '@/shared/post/bookmarks/BotonVerGuardados';
 import { MaterialFeed, UploadModal } from '@/features/materials';
 import { ForumFeed } from '@/features/forum';
 import { AnnouncementsFeed } from '@/features/announcements';
@@ -30,11 +31,12 @@ const PESTANAS = [
 ];
 const PESTANA_INICIAL = 'foro';
 
-// segunda fila: Publicaciones / Guardados, con el color de cada módulo
-const VISTAS = [
-  { id: 'publicaciones', label: 'Publicaciones', icono: 'ti-layout-grid' },
-  { id: 'guardados', label: 'Guardados', icono: 'ti-bookmark' },
-];
+// botón de Guardados del banner: activo, con el color del módulo
+const COLOR_MODULO = {
+  foro: 'emerald',
+  materiales: 'blue',
+  anuncios: 'amber',
+};
 const ACENTO_MODULO = {
   foro: 'border-emerald-400',
   materiales: 'border-blue-400',
@@ -153,18 +155,19 @@ export default function ComunidadCarrera({ codigo }) {
             { label: 'Comunidades' },
             { label: carrera.nombre },
           ]}
+          extra={
+            <BotonVerGuardados
+              activo={vista === 'guardados'}
+              onCambiar={(ver) => setVista(ver ? 'guardados' : 'publicaciones')}
+              color={COLOR_MODULO[pestana]}
+            />
+          }
         />
 
         <Pestanas
           pestanas={PESTANAS}
           activa={pestana}
           onCambiar={cambiarPestana}
-        />
-
-        <Pestanas
-          pestanas={VISTAS}
-          activa={vista}
-          onCambiar={setVista}
           acento={ACENTO_MODULO[pestana]}
         />
 

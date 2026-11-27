@@ -14,7 +14,7 @@ export default function Pestanas({
       <div
         className={`flex gap-1 ${
           rightContent
-            ? 'scrollbar-oculta min-w-0 flex-1 overflow-x-auto'
+          ? 'scrollbar-oculta min-w-0 flex-1 overflow-x-auto'
             : ''
         }`}
       >
