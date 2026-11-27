@@ -4,7 +4,7 @@ import { useImagenAutenticada } from '@/shared/post/images/useImagenAutenticada'
 import FlairChip from '@/features/announcements/components/FlairChip';
 import { INSIGNIA_ROL } from '@/features/announcements/utils/insigniaRol';
 
-const ICONO_CARGO = { cee: 'ti-building-community', tutor: 'ti-school' };
+const ICONO_CARGO = { cee: 'ti-users-group', tutor: 'ti-school' };
 
 // Tarjeta cuadrada del carrusel de destacados. Con imagen, la primera cubre
 // toda la tarjeta (con degradado para leer el texto); sin imagen, fondo normal.

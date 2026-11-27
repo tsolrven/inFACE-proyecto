@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
 
 const CARGO_UI = {
-  cee: { icono: 'ti-building-community', etiqueta: 'CEE', filtro: 'del CEE' },
+  cee: { icono: 'ti-users-group', etiqueta: 'CEE', filtro: 'del CEE' },
   tutor: { icono: 'ti-school', etiqueta: 'Tutor', filtro: 'de tutores' },
 };
 
@@ -21,7 +21,7 @@ export default function EncabezadoOficial({
   const cargo = CARGO_UI[anuncio.autor?.cargo];
   const textoSello = (
     <>
-      Comunicado oficial · {cargo?.etiqueta ?? 'Anuncio'}{' '}
+      {cargo?.etiqueta ?? 'Anuncio'}{' '}
       {anuncio.carrera?.codigo}
     </>
   );

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/shared/auth/authStore';
 import Button from '@/shared/components/ui/Button';
@@ -19,7 +19,7 @@ const ORDENES = [
 
 // mismo ícono que el sello del anuncio (EncabezadoOficial)
 const FILTRO_CARGO = {
-  cee: { label: 'CEE', icono: 'ti-building-community' },
+  cee: { label: 'CEE', icono: 'ti-users-group' },
   tutor: { label: 'Tutores', icono: 'ti-school' },
 };
 
@@ -42,8 +42,20 @@ export default function AnnouncementsTopbar({
   const location = useLocation();
   const [creando, setCreando] = useState(false);
   const [administrando, setAdministrando] = useState(false);
+  const [ordenAbierto, setOrdenAbierto] = useState(false);
+  const ordenRef = useRef(null);
 
   const { data: flairs = [], isSuccess } = useFlairs(carreraId);
+
+  useEffect(() => {
+    function onClickOutside(e) {
+      if (ordenRef.current && !ordenRef.current.contains(e.target)) {
+        setOrdenAbierto(false);
+      }
+    }
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, []);
 
   // Si el flair elegido no existe en esta carrera (lo eliminaron o el filtro
   // venía de otra carrera), se quita el filtro
@@ -55,6 +67,7 @@ export default function AnnouncementsTopbar({
 
   const cargoActivo = FILTRO_CARGO[cargo];
   const flairActivo = flairs.find((f) => f.id === flairId);
+  const ordenActual = ORDENES.find((o) => o.valor === orden) ?? ORDENES[0];
 
   // Publicado: se abre su detalle como modal sobre el feed (igual que AnuncioCard)
   function alCrear(anuncio) {
@@ -95,27 +108,53 @@ export default function AnnouncementsTopbar({
           )}
         </div>
 
-        <div className='ml-auto flex gap-1'>
-          {ORDENES.map((o) => (
+        <div className='ml-auto'>
+          <div
+            className='relative'
+            ref={ordenRef}
+          >
             <button
-              key={o.valor}
               type='button'
-              onClick={() => setFiltro('orden', o.valor)}
-              className={`flex items-center gap-1 rounded-[10px] px-2.5 py-1.5 text-xs font-medium transition-colors ${orden === o.valor
-                  ? 'border border-white/[0.07] bg-[#1E1E24] text-neutral-100'
-                  : 'text-neutral-500 hover:bg-white/[0.04] hover:text-neutral-200'
-                }`}
+              onClick={() => setOrdenAbierto((abierto) => !abierto)}
+              aria-expanded={ordenAbierto}
+              aria-haspopup='true'
+              className='flex h-[34px] items-center gap-1.5 whitespace-nowrap rounded-full border border-white/35 px-3 text-[12.5px] font-medium text-neutral-100 transition-colors hover:border-white/60 hover:bg-white/[0.08] hover:text-white'
             >
-              <i className={`ti ${o.icono} text-sm`} /> {o.label}
+              <i className={`ti ${ordenActual.icono} text-sm`} />
+              {ordenActual.label}
+              <i
+                className={`ti ti-chevron-down text-xs transition-transform ${ordenAbierto ? 'rotate-180' : ''}`}
+              />
             </button>
-          ))}
+
+            {ordenAbierto && (
+              <div className='absolute left-0 top-[calc(100%+6px)] z-[450] w-[190px] overflow-hidden rounded-2xl border border-white/10 bg-[#1E1E24] shadow-[0_14px_40px_rgba(0,0,0,0.5)]'>
+                {ORDENES.map((o) => (
+                  <button
+                    key={o.valor}
+                    type='button'
+                    onClick={() => {
+                      setFiltro('orden', o.valor);
+                      setOrdenAbierto(false);
+                    }}
+                    aria-pressed={orden === o.valor}
+                    className={`flex w-full items-center gap-2 px-3.5 py-2 text-left text-[12.5px] transition-colors hover:bg-white/[0.04] ${orden === o.valor ? 'text-amber-400' : 'text-neutral-300'}`}
+                  >
+                    <i className={`ti ${o.icono} text-[15px]`} />
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {permitirCrear && puedeCrearAnuncio(usuario, carreraId) && (
           <Button
-            variant='primary'
+            variant='secondary'
             icon='ti-plus'
             onClick={() => setCreando(true)}
+            className='rounded-full! border-white/35! gap-2! text-[13px]! font-semibold! text-neutral-100! enabled:hover:border-amber-400/40! enabled:hover:bg-amber-400/15 enabled:hover:text-amber-300! [&_i]:text-[18px]'
           >
             Nuevo anuncio
           </Button>
@@ -126,6 +165,7 @@ export default function AnnouncementsTopbar({
             variant='secondary'
             icon='ti-tags'
             onClick={() => setAdministrando(true)}
+            className='rounded-full! border-white/35! text-neutral-100! enabled:hover:border-amber-400/40! enabled:hover:bg-amber-400/15 enabled:hover:text-amber-300!'
           >
             Flairs
           </Button>

@@ -25,7 +25,7 @@ function guardarEstado(carreraId, estado) {
 }
 
 // Fila de destacados tipo "Community highlights": tarjetas en carrusel
-// horizontal (flechas en escritorio, deslizar en celular), plegable. Si
+// horizontal con flechas superpuestas y desplazamiento táctil, plegable. Si
 // aparece un destacado que el usuario no había visto, se despliega sola.
 export default function DestacadosAnuncios({ anuncios, carreraId }) {
   const [estado, setEstado] = useState(() => leerEstado(carreraId));
@@ -90,40 +90,45 @@ export default function DestacadosAnuncios({ anuncios, carreraId }) {
           />
         </button>
 
-        {abierto && (bordes.izq || bordes.der) && (
-          <div className='ml-auto hidden gap-1 sm:flex'>
-            {[
-              [-1, 'ti-chevron-left', 'Anteriores', bordes.izq],
-              [1, 'ti-chevron-right', 'Siguientes', bordes.der],
-            ].map(([sentido, icono, etiqueta, activo]) => (
-              <button
-                key={sentido}
-                type='button'
-                onClick={() => desplazar(sentido)}
-                disabled={!activo}
-                aria-label={etiqueta}
-                className='flex h-7 w-7 items-center justify-center rounded-full border border-white/[0.08] text-neutral-300 transition-colors hover:border-amber-400/40 hover:text-amber-300 disabled:opacity-30'
-              >
-                <i className={`ti ${icono} text-[14px]`} />
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       {abierto && (
-        <div
-          id={idFila}
-          ref={filaRef}
-          onScroll={medir}
-          className='scrollbar-destacados flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-2'
-        >
-          {anuncios.map((anuncio) => (
-            <TarjetaDestacado
-              key={anuncio.id}
-              anuncio={anuncio}
-            />
-          ))}
+        <div className='relative'>
+          <div
+            id={idFila}
+            ref={filaRef}
+            onScroll={medir}
+            className='scrollbar-destacados flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-2'
+          >
+            {anuncios.map((anuncio) => (
+              <TarjetaDestacado
+                key={anuncio.id}
+                anuncio={anuncio}
+              />
+            ))}
+          </div>
+
+          {bordes.izq && (
+            <button
+              type='button'
+              onClick={() => desplazar(-1)}
+              aria-label='Anuncios anteriores'
+              className='absolute left-2 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-black/45 text-white shadow-lg backdrop-blur-sm transition-colors hover:border-white/60 hover:bg-black/65'
+            >
+              <i className='ti ti-chevron-left text-[18px]' />
+            </button>
+          )}
+
+          {bordes.der && (
+            <button
+              type='button'
+              onClick={() => desplazar(1)}
+              aria-label='Anuncios siguientes'
+              className='absolute right-2 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-black/45 text-white shadow-lg backdrop-blur-sm transition-colors hover:border-white/60 hover:bg-black/65'
+            >
+              <i className='ti ti-chevron-right text-[18px]' />
+            </button>
+          )}
         </div>
       )}
     </section>

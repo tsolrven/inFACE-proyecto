@@ -7,7 +7,7 @@ import { clasesFlair } from '@/features/announcements/utils/flairColors';
 // (backend). Íconos: los del sello del anuncio (EncabezadoOficial).
 const AUTORES = [
   { valor: null, label: 'Todos' },
-  { valor: 'cee', label: 'CEE', icono: 'ti-building-community' },
+  { valor: 'cee', label: 'CEE', icono: 'ti-users-group' },
   { valor: 'tutor', label: 'Tutores', icono: 'ti-school' },
 ];
 
