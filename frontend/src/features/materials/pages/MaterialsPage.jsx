@@ -7,6 +7,7 @@ import PageBanner from '@/shared/components/layout/PageBanner';
 import Pestanas from '@/shared/components/ui/Pestanas';
 import MaterialFeed from '@/features/materials/components/MaterialFeed';
 import MaterialGuardados from '@/features/materials/components/MaterialGuardados';
+import FiltrosMaterialesCard from '@/features/materials/components/FiltrosMaterialesCard';
 import UploadModal from '@/features/materials/components/UploadModal';
 import { useAuthStore } from '@/shared/auth/authStore';
 import TopColaboradoresCard from '@/shared/statistics/TopColaboradoresCard';
@@ -97,10 +98,10 @@ export default function RepositorioMateriales() {
             }
           />
         ) : (
-            <MaterialGuardados
-              busqueda={busqueda}
-              carreraId={carreraId}
-            />
+          <MaterialGuardados
+            busqueda={busqueda}
+            carreraId={carreraId}
+          />
         )}
       </div>
 
@@ -118,6 +119,10 @@ export default function RepositorioMateriales() {
             . Solo estudiantes con correo institucional.
           </p>
         </RpCard>
+
+        {vista === 'publicaciones' && (
+          <FiltrosMaterialesCard carreraId={carreraId} />
+        )}
 
         <TopColaboradoresCard
           tipo='apunte'

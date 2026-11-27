@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import FiltroTipoArchivo from '@/features/materials/components/FiltroTipoArchivo';
-import FiltroRamo from '@/shared/components/FiltroRamo';
+import { TIPOS_ARCHIVO_FILTRO } from '@/features/materials/utils/fileMeta';
+import PildoraRamoActiva from '@/shared/components/PildoraRamoActiva';
+import { PILDORA_QUITAR } from '@/shared/components/layout/pildorasFiltro';
 import Button from '@/shared/components/ui/Button';
 import { useFiltrosStore } from '@/features/materials/store/filtrosStore';
 
@@ -12,6 +13,7 @@ const ORDENES = [
 export default function FeedTopbar({ carreraId, onAbrirSubida }) {
   const orden = useFiltrosStore((s) => s.filtros.orden);
   const ramoId = useFiltrosStore((s) => s.filtros.ramo_id);
+  const tipoArchivo = useFiltrosStore((s) => s.filtros.tipo_archivo);
   const setFiltro = useFiltrosStore((s) => s.setFiltro);
   const [ordenAbierto, setOrdenAbierto] = useState(false);
   const ordenRef = useRef(null);
@@ -27,15 +29,34 @@ export default function FeedTopbar({ carreraId, onAbrirSubida }) {
   }, []);
 
   const ordenActual = ORDENES.find((o) => o.valor === orden) ?? ORDENES[0];
+  const tipoActivo = tipoArchivo
+    ? TIPOS_ARCHIVO_FILTRO.find((t) => t.value === tipoArchivo)
+    : null;
 
   return (
     <div className='mb-3 flex flex-wrap items-center gap-2'>
-      <FiltroTipoArchivo />
-      <FiltroRamo
-        carreraId={carreraId}
-        ramoId={ramoId}
-        onCambiar={(id) => setFiltro('ramo_id', id)}
-      />
+      {/* filtros activos (solo si hay; se eligen desde las tarjetas o el panel) */}
+      <div className='flex min-w-0 flex-wrap items-center gap-1.5'>
+        <PildoraRamoActiva
+          carreraId={carreraId}
+          ramoId={ramoId}
+          onQuitar={() => setFiltro('ramo_id', null)}
+        />
+        {tipoActivo && (
+          <button
+            type='button'
+            onClick={() => setFiltro('tipo_archivo', null)}
+            aria-label={`Quitar filtro: ${tipoActivo.label}`}
+            title='Quitar filtro'
+            className={PILDORA_QUITAR}
+            style={{ background: tipoActivo.bg, color: tipoActivo.color }}
+          >
+            <i className={`ti ${tipoActivo.icon} text-[13px]`} />
+            {tipoActivo.label}
+            <i className='ti ti-x text-[12px]' />
+          </button>
+        )}
+      </div>
 
       <div className='ml-auto'>
         <div

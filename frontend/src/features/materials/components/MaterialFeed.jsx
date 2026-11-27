@@ -111,6 +111,7 @@ export default function MaterialFeed({
         <MaterialCard
           key={apunte.id}
           apunte={apunte}
+          filtrable
         />
       ))}
 

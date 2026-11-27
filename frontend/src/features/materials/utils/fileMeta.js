@@ -37,12 +37,12 @@ const DEFS = {
     bg: 'rgba(74,222,128,.1)',
     label: 'Excel',
   },
-  // badge del snippet de código
+  // badge del snippet de código (mismo nombre que su filtro)
   codigo: {
     icon: 'ti-code',
     color: '#34D399',
     bg: 'rgba(52,211,153,.1)',
-    label: 'Código',
+    label: 'Fragmento de código',
   },
   // adjuntos de texto plano y datos (.txt .md .csv .tsv .json .jsonl .xml .yaml)
   texto: {
@@ -89,7 +89,7 @@ export const TIPOS_ARCHIVO_FILTRO = [
   { value: 'zip', ...DEFS.zip },
   { value: 'texto', ...DEFS.texto },
   // por contenido del apunte
-  { value: 'snippet', ...DEFS.codigo, label: 'Fragmento de código' },
+  { value: 'snippet', ...DEFS.codigo },
   { value: 'github', ...DEFS.github },
 ];
 
@@ -102,7 +102,7 @@ function categoriaDeMime(mime = '') {
     return 'ppt';
   if (mime.includes('ms-excel') || mime.includes('spreadsheetml'))
     return 'excel';
-  if (mime.includes('zip') || mime.includes('rar')) return 'zip';
+  if (mime.includes('zip')) return 'zip';
   // igualdad exacta en xml/yaml: los MIME de Office contienen "xml"
   // (openxmlformats), aunque ya se resolvieron arriba
   if (
@@ -217,8 +217,8 @@ const ORDEN_BADGES = [
   'doc',
   'ppt',
   'excel',
-  'zip',
   'imagen',
+  'zip',
   'texto',
   'codigo',
   'github',
@@ -251,4 +251,10 @@ export function badgesDeApunte({
   if (codigo_snippet?.trim()) presentes.add('codigo');
   if (links.some(esLinkGithub)) presentes.add('github');
   return ORDEN_BADGES.filter((b) => presentes.has(b)); // orden estable
+}
+
+// Valor del filtro tipo_archivo (backend) para un chip de badgesDeApunte: el
+// fragmento de código se muestra como 'codigo' pero se filtra como 'snippet'
+export function tipoFiltroDeBadge(badge) {
+  return badge === 'codigo' ? 'snippet' : badge;
 }

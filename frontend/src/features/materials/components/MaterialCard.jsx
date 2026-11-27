@@ -6,6 +6,7 @@ import {
   metaDeLink,
   estiloDeLink,
   badgesDeApunte,
+  tipoFiltroDeBadge,
 } from '@/features/materials/utils/fileMeta';
 import { formatearTamanio } from '@/shared/lib/archivos';
 import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
@@ -19,8 +20,19 @@ import CodeViewer from '@/features/materials/components/CodeViewer';
 import { useRutaHashtag } from '@/shared/hooks/useRutaHashtag';
 import QuitarGuardadoButton from '@/shared/post/bookmarks/QuitarGuardadoButton';
 import { extractoPlano } from '@/shared/markdown/extractoPlano';
+import ChipFiltrable from '@/shared/components/ChipFiltrable';
+import { useFiltrosStore } from '@/features/materials/store/filtrosStore';
 
-export default function MaterialCard({ apunte, enGuardados = false }) {
+// `filtrable` (solo en el feed): el chip del ramo y los de tipo filtran el
+// feed; un segundo clic sobre el filtro activo lo quita
+export default function MaterialCard({
+  apunte,
+  enGuardados = false,
+  filtrable = false,
+}) {
+  const ramoFiltro = useFiltrosStore((s) => s.filtros.ramo_id);
+  const tipoFiltro = useFiltrosStore((s) => s.filtros.tipo_archivo);
+  const setFiltro = useFiltrosStore((s) => s.setFiltro);
   const navigate = useNavigate();
   const location = useLocation();
   const rutaHashtag = useRutaHashtag();
@@ -38,6 +50,10 @@ export default function MaterialCard({ apunte, enGuardados = false }) {
   function handleVotar(e, tipo) {
     e.stopPropagation();
     votarMut.mutate({ id: apunte.id, tipo });
+  }
+
+  function alternarFiltro(clave, valor, actual) {
+    setFiltro(clave, actual === valor ? null : valor);
   }
 
   return (
@@ -62,12 +78,19 @@ export default function MaterialCard({ apunte, enGuardados = false }) {
       {/* cuerpo */}
       <div className='min-w-0 flex-1 p-3'>
         <div className='mb-1.5 flex flex-wrap items-center gap-1.5'>
-          <span
+          <ChipFiltrable
+            onFiltrar={
+              filtrable && apunte.ramo
+                ? () => alternarFiltro('ramo_id', apunte.ramo.id, ramoFiltro)
+                : undefined
+            }
+            activo={!!apunte.ramo && ramoFiltro === apunte.ramo.id}
+            titulo={`Ver solo materiales de ${apunte.ramo?.nombre}`}
             className='rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wide'
             style={{ background: `${ramoColor}22`, color: ramoColor }}
           >
             {apunte.ramo?.nombre}
-          </span>
+          </ChipFiltrable>
           <span className='text-[11.5px] text-neutral-600'>
             por{' '}
             <Link
@@ -92,7 +115,15 @@ export default function MaterialCard({ apunte, enGuardados = false }) {
           {apunte.titulo}
         </div>
 
-        <BadgesPrincipales etiquetas={badgesDeApunte(apunte)} />
+        <BadgesPrincipales
+          etiquetas={badgesDeApunte(apunte)}
+          tipoFiltro={tipoFiltro}
+          onFiltrar={
+            filtrable
+              ? (tipo) => alternarFiltro('tipo_archivo', tipo, tipoFiltro)
+              : undefined
+          }
+        />
 
         {extracto && (
           <p className='mb-1.5 line-clamp-2 text-xs leading-relaxed text-neutral-400'>
@@ -153,7 +184,8 @@ export default function MaterialCard({ apunte, enGuardados = false }) {
   );
 }
 
-function BadgesPrincipales({ etiquetas }) {
+// `onFiltrar` (solo en el feed): cada chip filtra por su tipo
+function BadgesPrincipales({ etiquetas, tipoFiltro, onFiltrar }) {
   if (!etiquetas?.length) return null;
 
   return (
@@ -161,15 +193,19 @@ function BadgesPrincipales({ etiquetas }) {
       {etiquetas.map((valor) => {
         const meta = metaDeBadge(valor);
         if (!meta) return null;
+        const tipo = tipoFiltroDeBadge(valor);
         return (
-          <span
+          <ChipFiltrable
             key={valor}
+            onFiltrar={onFiltrar ? () => onFiltrar(tipo) : undefined}
+            activo={tipoFiltro === tipo}
+            titulo={`Ver solo: ${meta.label}`}
             className='flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-semibold'
             style={{ background: meta.bg, color: meta.color }}
           >
             <i className={`ti ${meta.icon} text-[11px]`} />
             {meta.label}
-          </span>
+          </ChipFiltrable>
         );
       })}
     </div>
