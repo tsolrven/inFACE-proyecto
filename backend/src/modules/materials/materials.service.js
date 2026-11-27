@@ -78,6 +78,17 @@ async function idsPorTipoArchivo(tipo_archivo) {
     return filas.map((f) => f.id);
   }
 
+  // enlaces que no son de GitHub (los de GitHub tienen su propio filtro)
+  if (tipo_archivo === 'link') {
+    const filas = await prisma.$queryRaw`
+      SELECT id FROM "apuntes"
+      WHERE EXISTS (
+        SELECT 1 FROM unnest(links) AS l(url)
+        WHERE l.url !~* ${REGEX_LINK_GITHUB}
+      )`;
+    return filas.map((f) => f.id);
+  }
+  
   return null;
 }
 // ────────────────────────────────────────────────────────────────────────────────────────

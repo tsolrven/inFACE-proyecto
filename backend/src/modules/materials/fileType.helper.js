@@ -31,7 +31,9 @@ const MIME_MAP = {
   ],
 };
 
-const FILTROS_CONTENIDO = ['snippet', 'github'];
+// por contenido del apunte: fragmento de código, enlaces de GitHub y los
+// demás enlaces (los que no son de GitHub)
+const FILTROS_CONTENIDO = ['snippet', 'github', 'link'];
 
 const FILTROS_TIPO_ARCHIVO = [...Object.keys(MIME_MAP), ...FILTROS_CONTENIDO];
 
