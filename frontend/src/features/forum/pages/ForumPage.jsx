@@ -92,7 +92,6 @@ export default function ForumPage() {
             <span className='font-semibold text-neutral-200'>
               {carreraNombre}
             </span>
-            . Solo estudiantes con correo institucional.
           </p>
         </RpCard>
 

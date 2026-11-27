@@ -134,6 +134,12 @@ export default function ComunidadCarrera({ codigo }) {
   const esPropia = usuario?.carrera_id === carrera.id;
   const esDocente = esDocenteBase(usuario); // también el superadmin docente
   const puedePublicar = (esPropia || esDocente) && puedeEscribir(usuario);
+  // aviso complementario de "Acerca de la comunidad" (null: no hay aviso)
+  const avisoComunidad = esDocente
+    ? 'Como docente puedes publicar en el foro y el repositorio de todas las carreras. Los anuncios oficiales los publican el CEE y los tutores.'
+    : !esPropia
+      ? 'Esta no es tu carrera: puedes leer, comentar y votar, pero publicar solo está disponible en tu propia carrera.'
+      : null;
 
   return (
     <div className='flex h-full flex-1 overflow-hidden'>
@@ -227,19 +233,18 @@ export default function ComunidadCarrera({ codigo }) {
             : conversaciones por ramo, materiales compartidos y comunicados
             oficiales de la carrera.
           </p>
-          {esDocente ? (
-            <p className='mt-2 text-[12px] leading-relaxed text-neutral-500'>
-              Como docente puedes publicar en el foro y el repositorio de todas
-              las carreras. Los anuncios oficiales los publican el CEE y los
-              tutores.
-            </p>
-          ) : (
-            !esPropia && (
-              <p className='mt-2 text-[12px] leading-relaxed text-neutral-500'>
-                Esta no es tu carrera: puedes leer, comentar y votar, pero
-                publicar solo está disponible en tu propia carrera.
+
+          {/* aviso complementario: separado por una línea y más apagado */}
+          {avisoComunidad && (
+            <div className='mt-3 flex gap-2 border-t border-white/[0.06] pt-3'>
+              <i
+                className='ti ti-info-circle mt-[3px] flex-shrink-0 text-[17px] text-neutral-600'
+                aria-hidden='true'
+              />
+              <p className='text-[11px] leading-relaxed text-neutral-500'>
+                {avisoComunidad}
               </p>
-            )
+            </div>
           )}
         </RpCard>
 
