@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import FiltroRamo from '@/shared/components/FiltroRamo';
-import FiltroEstadoHilo from '@/features/forum/components/FiltroEstadoHilo';
+import PildoraRamoActiva from '@/shared/components/PildoraRamoActiva';
+import { PILDORA_QUITAR } from '@/shared/components/layout/pildorasFiltro';
 import Button from '@/shared/components/ui/Button';
 import HiloFormModal from '@/features/forum/components/HiloFormModal';
 import { useForumFiltrosStore } from '@/features/forum/store/forumFiltrosStore';
@@ -13,8 +13,23 @@ const ORDENES = [
   { valor: 'populares', label: 'Más votados', icono: 'ti-flame' },
 ];
 
+// píldora del estado filtrado (mismos íconos y colores que el panel)
+const FILTRO_ESTADO = {
+  resueltos: {
+    label: 'Resueltos',
+    icono: 'ti-circle-check',
+    clases: 'border border-emerald-400/30 bg-emerald-400/10 text-emerald-400',
+  },
+  sin_resolver: {
+    label: 'Sin resolver',
+    icono: 'ti-help-circle',
+    clases: 'border border-amber-400/30 bg-amber-400/10 text-amber-400',
+  },
+};
+
 export default function ForumTopbar({ carreraId, permitirCrear = true }) {
   const ramoId = useForumFiltrosStore((s) => s.filtros.ramo_id);
+  const estado = useForumFiltrosStore((s) => s.filtros.estado);
   const orden = useForumFiltrosStore((s) => s.filtros.orden);
   const setFiltro = useForumFiltrosStore((s) => s.setFiltro);
   const usuario = useAuthStore((s) => s.usuario);
@@ -57,15 +72,31 @@ export default function ForumTopbar({ carreraId, permitirCrear = true }) {
   }
 
   const ordenActual = ORDENES.find((o) => o.valor === orden) ?? ORDENES[0];
+  const estadoActivo = FILTRO_ESTADO[estado];
 
   return (
     <div className='mb-3 flex flex-wrap items-center gap-2'>
-      <FiltroRamo
-        carreraId={carreraId}
-        ramoId={ramoId}
-        onCambiar={(id) => setFiltro('ramo_id', id)}
-      />
-      <FiltroEstadoHilo />
+      {/* filtros activos (solo si hay; se eligen desde las tarjetas o el panel) */}
+      <div className='flex min-w-0 flex-wrap items-center gap-1.5'>
+        <PildoraRamoActiva
+          carreraId={carreraId}
+          ramoId={ramoId}
+          onQuitar={() => setFiltro('ramo_id', null)}
+        />
+        {estadoActivo && (
+          <button
+            type='button'
+            onClick={() => setFiltro('estado', null)}
+            aria-label={`Quitar filtro: ${estadoActivo.label}`}
+            title='Quitar filtro'
+            className={`${PILDORA_QUITAR} ${estadoActivo.clases}`}
+          >
+            <i className={`ti ${estadoActivo.icono} text-[13px]`} />
+            {estadoActivo.label}
+            <i className='ti ti-x text-[12px]' />
+          </button>
+        )}
+      </div>
 
       <div className='ml-auto'>
         <div

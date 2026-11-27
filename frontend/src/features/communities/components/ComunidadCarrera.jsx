@@ -12,6 +12,7 @@ import MaterialGuardados from '@/features/materials/components/MaterialGuardados
 import ForumGuardados from '@/features/forum/components/ForumGuardados';
 import AnnouncementsGuardados from '@/features/announcements/components/AnnouncementsGuardados';
 import FiltrosAnunciosCard from '@/features/announcements/components/FiltrosAnunciosCard';
+import FiltrosForoCard from '@/features/forum/components/FiltrosForoCard';
 import TopColaboradoresCard from '@/shared/statistics/TopColaboradoresCard';
 import TagsPopularesCard from '@/shared/statistics/TagsPopularesCard';
 import { listarCarreras } from '@/shared/api/catalog.api';
@@ -237,6 +238,10 @@ export default function ComunidadCarrera({ codigo }) {
             )
           )}
         </RpCard>
+
+        {vista === 'publicaciones' && pestana === 'foro' && (
+          <FiltrosForoCard carreraId={carrera.id} />
+        )}
 
         {vista === 'publicaciones' && pestana === 'anuncios' && (
           <FiltrosAnunciosCard carreraId={carrera.id} />

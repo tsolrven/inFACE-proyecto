@@ -16,7 +16,16 @@ function agruparPorAnio(ramosPorSemestre) {
   return anios;
 }
 
-export default function FiltroRamo({ carreraId, ramoId, onCambiar }) {
+// Selector de ramo de la sección "Filtros" del panel derecho (foro,
+// materiales). Ocupa todo el ancho y la lista se despliega dentro de la
+// sección (un menú flotante quedaría recortado por el scroll del panel).
+// `colorActivo`: texto del ramo elegido (el color del módulo).
+export default function FiltroRamo({
+  carreraId,
+  ramoId,
+  onCambiar,
+  colorActivo = 'text-pink-500',
+}) {
   const [open, setOpen] = useState(false);
   const [anioAbierto, setAnioAbierto] = useState(null);
   const [semAbierto, setSemAbierto] = useState(null);
@@ -125,14 +134,15 @@ export default function FiltroRamo({ carreraId, ramoId, onCambiar }) {
 
   return (
     <div
-      className='relative'
+      className='w-full'
       ref={ref}
     >
       <button
         ref={botonRef}
         type='button'
         onClick={() => (open ? cerrar() : setOpen(true))}
-        className='flex h-[34px] items-center gap-1.5 whitespace-nowrap rounded-[10px] border border-white/[0.07] bg-white/[0.04] px-3 text-[12.5px] font-medium text-neutral-400 transition-colors hover:border-white/[0.18] hover:text-neutral-100'
+        aria-expanded={open}
+        className='flex h-[34px] w-full items-center gap-1.5 rounded-[10px] border border-white/[0.07] bg-white/[0.04] px-3 text-[12.5px] font-medium text-neutral-400 transition-colors hover:border-white/[0.18] hover:text-neutral-100'
       >
         {ramoSeleccionado ? (
           <span
@@ -142,15 +152,17 @@ export default function FiltroRamo({ carreraId, ramoId, onCambiar }) {
         ) : (
           <i className='ti ti-adjustments-horizontal text-sm' />
         )}
-        {ramoSeleccionado?.nombre ?? 'Filtrar ramo'}
+        <span className='min-w-0 flex-1 truncate text-left'>
+          {ramoSeleccionado?.nombre ?? 'Todos los ramos'}
+        </span>
         <i
-          className={`ti ti-chevron-down text-xs transition-transform ${open ? 'rotate-180' : ''}`}
+          className={`ti ti-chevron-down flex-shrink-0 text-xs transition-transform ${open ? 'rotate-180' : ''}`}
         />
       </button>
 
       {open && (
-        <div className='absolute left-0 top-[calc(100%+6px)] z-[450] max-h-[420px] w-[260px] overflow-y-auto rounded-2xl border border-white/10 bg-[#1E1E24] shadow-[0_14px_40px_rgba(0,0,0,0.5)]'>
-          <div className='sticky top-0 z-[1] border-b border-white/[0.07] bg-[#1E1E24] p-2'>
+        <div className='mt-1.5 max-h-[320px] overflow-y-auto rounded-xl border border-white/10 bg-[#17171B]'>
+          <div className='sticky top-0 z-[1] border-b border-white/[0.07] bg-[#17171B] p-2'>
             <div className='flex items-center gap-1.5 rounded-lg border border-white/[0.07] bg-white/[0.04] px-2.5 transition-colors focus-within:border-blue-400/35'>
               <i className='ti ti-search text-[13px] text-neutral-600' />
               <input
@@ -226,7 +238,7 @@ export default function FiltroRamo({ carreraId, ramoId, onCambiar }) {
                     onClick={() => elegirRamo(ramo)}
                     className={`flex w-full items-start gap-2 px-3.5 py-1.5 text-left text-[12px] transition-colors ${i === activo ? 'bg-white/[0.06]' : ''
                       } ${ramoId === ramo.id
-                        ? 'font-semibold text-pink-500'
+                      ? `font-semibold ${colorActivo}`
                         : 'text-neutral-400'
                       }`}
                   >
@@ -303,7 +315,7 @@ export default function FiltroRamo({ carreraId, ramoId, onCambiar }) {
                                   type='button'
                                   onClick={() => elegirRamo(ramo)}
                                   className={`flex w-full items-center gap-2 py-1.5 pl-[30px] pr-3.5 text-left text-[12px] transition-colors hover:bg-white/[0.04] ${ramoId === ramo.id
-                                    ? 'font-semibold text-pink-500'
+                                    ? `font-semibold ${colorActivo}`
                                     : 'text-neutral-400'
                                     }`}
                                 >

@@ -10,8 +10,15 @@ import HiloMenu from '@/features/forum/components/HiloMenu';
 import { extractoPlano } from '@/shared/markdown/extractoPlano';
 import { useRutaHashtag } from '@/shared/hooks/useRutaHashtag';
 import QuitarGuardadoButton from '@/shared/post/bookmarks/QuitarGuardadoButton';
+import ChipFiltrable from '@/shared/components/ChipFiltrable';
+import { useForumFiltrosStore } from '@/features/forum/store/forumFiltrosStore';
 
-export default function HiloCard({ hilo, enGuardados = false }) {
+// `filtrable` (solo en el feed): el chip del ramo y el de "Resuelto" filtran
+// el feed; un segundo clic sobre el filtro activo lo quita
+export default function HiloCard({ hilo, enGuardados = false, filtrable = false }) {
+  const ramoFiltro = useForumFiltrosStore((s) => s.filtros.ramo_id);
+  const estadoFiltro = useForumFiltrosStore((s) => s.filtros.estado);
+  const setFiltro = useForumFiltrosStore((s) => s.setFiltro);
   const navigate = useNavigate();
   const location = useLocation();
   const rutaHashtag = useRutaHashtag();
@@ -30,6 +37,10 @@ export default function HiloCard({ hilo, enGuardados = false }) {
   function handleVotar(e, tipo) {
     e.stopPropagation();
     votarMut.mutate({ id: hilo.id, tipo });
+  }
+
+  function alternarFiltro(clave, valor, actual) {
+    setFiltro(clave, actual === valor ? null : valor);
   }
 
   return (
@@ -54,16 +65,32 @@ export default function HiloCard({ hilo, enGuardados = false }) {
 
       <div className='min-w-0 flex-1 p-3'>
         <div className='mb-1.5 flex flex-wrap items-center gap-1.5 pr-8'>
-          <span
+          <ChipFiltrable
+            onFiltrar={
+              filtrable && hilo.ramo
+                ? () => alternarFiltro('ramo_id', hilo.ramo.id, ramoFiltro)
+                : undefined
+            }
+            activo={!!hilo.ramo && ramoFiltro === hilo.ramo.id}
+            titulo={`Ver solo hilos de ${hilo.ramo?.nombre}`}
             className='rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wide'
             style={{ background: `${ramoColor}22`, color: ramoColor }}
           >
             {hilo.ramo?.nombre}
-          </span>
+          </ChipFiltrable>
           {hilo.resuelto && (
-            <span className='flex items-center gap-1 rounded-full bg-emerald-400/10 px-2 py-0.5 text-[10px] font-bold text-emerald-400'>
+            <ChipFiltrable
+              onFiltrar={
+                filtrable
+                  ? () => alternarFiltro('estado', 'resueltos', estadoFiltro)
+                  : undefined
+              }
+              activo={estadoFiltro === 'resueltos'}
+              titulo='Ver solo hilos resueltos'
+              className='flex items-center gap-1 rounded-full bg-emerald-400/10 px-2 py-0.5 text-[10px] font-bold text-emerald-400'
+            >
               <i className='ti ti-circle-check text-[11px]' /> Resuelto
-            </span>
+            </ChipFiltrable>
           )}
           <span className='text-[11.5px] text-neutral-600'>
             por{' '}

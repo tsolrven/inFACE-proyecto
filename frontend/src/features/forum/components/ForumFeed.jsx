@@ -112,6 +112,7 @@ export default function ForumFeed({
           <HiloCard
             key={hilo.id}
             hilo={hilo}
+            filtrable
           />
         ))}
 

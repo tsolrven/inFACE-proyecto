@@ -9,6 +9,7 @@ import { useBusqueda } from '@/shared/hooks/useBusqueda';
 import { BUSQUEDA_MAX } from '@/shared/lib/busqueda';
 import Pestanas from '@/shared/components/ui/Pestanas';
 import ForumGuardados from '@/features/forum/components/ForumGuardados';
+import FiltrosForoCard from '@/features/forum/components/FiltrosForoCard';
 import TopColaboradoresCard from '@/shared/statistics/TopColaboradoresCard';
 import TagsPopularesCard from '@/shared/statistics/TagsPopularesCard';
 
@@ -74,10 +75,10 @@ export default function ForumPage() {
             busqueda={busqueda}
           />
         ) : (
-            <ForumGuardados
-              busqueda={busqueda}
-              carreraId={carreraId}
-            />
+          <ForumGuardados
+            busqueda={busqueda}
+            carreraId={carreraId}
+          />
         )}
       </div>
 
@@ -94,6 +95,10 @@ export default function ForumPage() {
             . Solo estudiantes con correo institucional.
           </p>
         </RpCard>
+
+        {vista === 'publicaciones' && (
+          <FiltrosForoCard carreraId={carreraId} />
+        )}
 
         <TopColaboradoresCard
           tipo='hilo'
