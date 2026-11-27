@@ -141,7 +141,12 @@ export default function AnnouncementsFeed({
           <ColumnasMasonry
             key={JSON.stringify(filtros)}
             items={anuncios}
-            renderItem={(anuncio) => <AnuncioCard anuncio={anuncio} />}
+            renderItem={(anuncio) => (
+              <AnuncioCard
+                anuncio={anuncio}
+                filtrable
+              />
+            )}
           />
         ) : (
           <div className='grid grid-cols-1 items-start'>
@@ -149,6 +154,7 @@ export default function AnnouncementsFeed({
               <AnuncioCard
                 key={anuncio.id}
                 anuncio={anuncio}
+                filtrable
               />
             ))}
           </div>

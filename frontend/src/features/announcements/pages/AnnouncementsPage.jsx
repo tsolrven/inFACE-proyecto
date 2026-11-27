@@ -9,8 +9,8 @@ import PageBanner from '@/shared/components/layout/PageBanner';
 import Pestanas from '@/shared/components/ui/Pestanas';
 import AnnouncementsFeed from '@/features/announcements/components/AnnouncementsFeed';
 import AnnouncementsGuardados from '@/features/announcements/components/AnnouncementsGuardados';
+import FiltrosAnunciosCard from '@/features/announcements/components/FiltrosAnunciosCard';
 import TagsPopularesCard from '@/shared/statistics/TagsPopularesCard';
-import armadilloRepositorio from '@/assets/armadillo-repositorio-materiales.png';
 
 const rules = [
   'Los anuncios oficiales los publican el CEE y los tutores de cada carrera.',
@@ -90,12 +90,12 @@ export default function AnunciosOficiales() {
             Comunicados oficiales de cada carrera: fechas, avisos y documentos
             publicados por el CEE y los tutores.
           </p>
-          <img
-            src={armadilloRepositorio}
-            alt='Armadillo mascota de los anuncios oficiales'
-            className='w-full rounded-[10px]'
-          />
+
         </RpCard>
+
+        {vista === 'publicaciones' && (
+          <FiltrosAnunciosCard carreraId={carreraId} />
+        )}
 
         <TagsPopularesCard
           tipo='anuncio'

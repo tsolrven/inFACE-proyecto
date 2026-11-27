@@ -11,9 +11,9 @@ import { AnnouncementsFeed } from '@/features/announcements';
 import MaterialGuardados from '@/features/materials/components/MaterialGuardados';
 import ForumGuardados from '@/features/forum/components/ForumGuardados';
 import AnnouncementsGuardados from '@/features/announcements/components/AnnouncementsGuardados';
+import FiltrosAnunciosCard from '@/features/announcements/components/FiltrosAnunciosCard';
 import TopColaboradoresCard from '@/shared/statistics/TopColaboradoresCard';
 import TagsPopularesCard from '@/shared/statistics/TagsPopularesCard';
-import armadilloRepositorio from '@/assets/armadillo-repositorio-materiales.png';
 import { listarCarreras } from '@/shared/api/catalog.api';
 import { useAuthStore } from '@/shared/auth/authStore';
 import { puedeEscribir, esDocenteBase } from '@/shared/auth/roles';
@@ -236,12 +236,11 @@ export default function ComunidadCarrera({ codigo }) {
               </p>
             )
           )}
-          <img
-            src={armadilloRepositorio}
-            alt={`Armadillo mascota de la comunidad de ${carrera.nombre}`}
-            className='mt-2.5 w-full rounded-[10px]'
-          />
         </RpCard>
+
+        {vista === 'publicaciones' && pestana === 'anuncios' && (
+          <FiltrosAnunciosCard carreraId={carrera.id} />
+        )}
 
         {ESTADISTICAS_PESTANA[pestana].conTop && (
           <TopColaboradoresCard

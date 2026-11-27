@@ -12,14 +12,21 @@ import EncabezadoOficial from '@/features/announcements/components/EncabezadoOfi
 import BotonEnterado from '@/features/announcements/components/BotonEnterado';
 import BotonAdjuntos from '@/features/announcements/components/BotonAdjuntos';
 import { compartirAnuncio } from '@/features/announcements/utils/compartir';
+import { useAnunciosFiltrosStore } from '@/features/announcements/store/anunciosFiltrosStore';
 
 const PILDORA =
   'flex items-center gap-1.5 rounded-full bg-white/[0.06] px-3 py-1.5 transition-colors hover:bg-white/[0.1] hover:text-neutral-200';
 
+// `filtrable` (solo en el feed): el flair y el sello del cargo filtran el
+// feed; un segundo clic sobre el filtro activo lo quita
 export default function AnuncioCard({
   anuncio,
   enGuardados = false,
+  filtrable = false,
 }) {
+  const flairFiltro = useAnunciosFiltrosStore((s) => s.filtros.flair_id);
+  const cargoFiltro = useAnunciosFiltrosStore((s) => s.filtros.cargo);
+  const setFiltro = useAnunciosFiltrosStore((s) => s.setFiltro);
   const navigate = useNavigate();
   const location = useLocation();
   const rutaHashtag = useRutaHashtag();
@@ -34,6 +41,10 @@ export default function AnuncioCard({
     navigate(`/anuncios-oficiales/${anuncio.id}`, {
       state: { backgroundLocation: location },
     });
+  }
+
+  function alternarFiltro(clave, valor, actual) {
+    setFiltro(clave, actual === valor ? null : valor);
   }
 
   return (
@@ -59,12 +70,29 @@ export default function AnuncioCard({
       <div className='p-4'>
 
         <div className='mb-3 pr-8'>
-          <EncabezadoOficial anuncio={anuncio} />
+          <EncabezadoOficial
+            anuncio={anuncio}
+            onFiltrarCargo={
+              filtrable
+                ? (c) => alternarFiltro('cargo', c, cargoFiltro)
+                : undefined
+            }
+            cargoActivo={cargoFiltro === anuncio.autor?.cargo}
+          />
         </div>
 
         {anuncio.flair && (
           <div className='mb-1.5'>
-            <FlairChip flair={anuncio.flair} />
+            <FlairChip
+              flair={anuncio.flair}
+              onClick={
+                filtrable
+                  ? () =>
+                    alternarFiltro('flair_id', anuncio.flair.id, flairFiltro)
+                  : undefined
+              }
+              activo={flairFiltro === anuncio.flair.id}
+            />
           </div>
         )}
 

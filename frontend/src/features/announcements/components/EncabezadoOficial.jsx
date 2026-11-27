@@ -2,14 +2,29 @@ import { Link } from 'react-router-dom';
 import { formatearTiempoRelativo } from '@/shared/lib/formatRelativeTime';
 
 const CARGO_UI = {
-  cee: { icono: 'ti-building-community', etiqueta: 'CEE' },
-  tutor: { icono: 'ti-school', etiqueta: 'Tutor' },
+  cee: { icono: 'ti-building-community', etiqueta: 'CEE', filtro: 'del CEE' },
+  tutor: { icono: 'ti-school', etiqueta: 'Tutor', filtro: 'de tutores' },
 };
 
+const SELLO = 'text-[11px] font-bold uppercase tracking-wide text-amber-400';
+
 // "COMUNICADO OFICIAL · CEE ICINF" con el ícono del cargo: el emisor es lo
-// importante; u/autor queda como dato secundario
-export default function EncabezadoOficial({ anuncio, grande = false }) {
+// importante; u/autor queda como dato secundario.
+// `onFiltrarCargo` (solo en el feed): el sello pasa a ser un botón que filtra
+// por ese cargo; `cargoActivo` indica que ese filtro ya está puesto.
+export default function EncabezadoOficial({
+  anuncio,
+  grande = false,
+  onFiltrarCargo,
+  cargoActivo = false,
+}) {
   const cargo = CARGO_UI[anuncio.autor?.cargo];
+  const textoSello = (
+    <>
+      Comunicado oficial · {cargo?.etiqueta ?? 'Anuncio'}{' '}
+      {anuncio.carrera?.codigo}
+    </>
+  );
 
   return (
     <div className='flex min-w-0 items-center gap-3'>
@@ -20,10 +35,24 @@ export default function EncabezadoOficial({ anuncio, grande = false }) {
         <i className={`ti ${cargo?.icono ?? 'ti-speakerphone'}`} />
       </div>
       <div className='min-w-0'>
-        <div className='truncate text-[11px] font-bold uppercase tracking-wide text-amber-400'>
-          Comunicado oficial · {cargo?.etiqueta ?? 'Anuncio'}{' '}
-          {anuncio.carrera?.codigo}
-        </div>
+        {onFiltrarCargo && cargo ? (
+          <button
+            type='button'
+            onClick={(e) => {
+              e.stopPropagation();
+              onFiltrarCargo(anuncio.autor.cargo);
+            }}
+            aria-pressed={cargoActivo}
+            title={
+              cargoActivo ? 'Quitar filtro' : `Ver solo anuncios ${cargo.filtro}`
+            }
+            className={`block max-w-full truncate text-left ${SELLO} underline-offset-2 hover:underline ${cargoActivo ? 'underline' : ''}`}
+          >
+            {textoSello}
+          </button>
+        ) : (
+          <div className={`truncate ${SELLO}`}>{textoSello}</div>
+        )}
         <div className='flex flex-wrap items-center gap-x-1 text-[11.5px] text-neutral-500'>
           <Link
             to={`/perfil/usuario/${anuncio.autor?.nombre_usuario}`}
