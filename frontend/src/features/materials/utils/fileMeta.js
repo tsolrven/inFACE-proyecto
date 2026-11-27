@@ -42,7 +42,7 @@ const DEFS = {
     icon: 'ti-code',
     color: '#34D399',
     bg: 'rgba(52,211,153,.1)',
-    label: 'Fragmento de código',
+    label: 'Código',
   },
   // adjuntos de texto plano y datos (.txt .md .csv .tsv .json .jsonl .xml .yaml)
   texto: {
@@ -61,7 +61,7 @@ const DEFS = {
     icon: 'ti-link',
     color: '#FFFFFF',
     bg: 'rgba(255,255,255,.1)',
-    label: 'Link',
+    label: 'Enlace',
   },
   default: {
     icon: 'ti-file',
@@ -91,6 +91,7 @@ export const TIPOS_ARCHIVO_FILTRO = [
   // por contenido del apunte
   { value: 'snippet', ...DEFS.codigo },
   { value: 'github', ...DEFS.github },
+  { value: 'link', ...DEFS.link },
 ];
 
 function categoriaDeMime(mime = '') {
@@ -222,6 +223,7 @@ const ORDEN_BADGES = [
   'texto',
   'codigo',
   'github',
+  'link',
 ];
 
 // mismo criterio que REGEX_LINK_GITHUB en
@@ -237,20 +239,44 @@ function esLinkGithub(url) {
   }
 }
 
-// badges que se muestran sobre el post: siempre derivados del contenido real
-export function badgesDeApunte({
+// Resumen del contenido de un apunte, siempre derivado del contenido real:
+//   tipos:     [{ valor, cantidad }] en el orden de ORDEN_BADGES (los chips)
+//   total:     cantidad de recursos (archivos + enlaces + fragmento de código)
+//   principal: meta del tipo con más recursos (el ícono grande de la
+//              tarjeta); en empate, el que va primero en ORDEN_BADGES
+export function resumenDeApunte({
   archivos = [],
   links = [],
   codigo_snippet,
 } = {}) {
-  const presentes = new Set();
-  for (const a of archivos) {
-    const categoria = categoriaDeMime(a.tipo_mime);
-    if (categoria !== 'default') presentes.add(categoria);
-  }
-  if (codigo_snippet?.trim()) presentes.add('codigo');
-  if (links.some(esLinkGithub)) presentes.add('github');
-  return ORDEN_BADGES.filter((b) => presentes.has(b)); // orden estable
+  const cantidades = {};
+  const sumar = (k) => {
+    cantidades[k] = (cantidades[k] ?? 0) + 1;
+  };
+  for (const a of archivos) sumar(categoriaDeMime(a.tipo_mime));
+  for (const l of links) sumar(esLinkGithub(l) ? 'github' : 'link');
+  if (codigo_snippet?.trim()) sumar('codigo');
+
+  const tipos = ORDEN_BADGES.filter((k) => cantidades[k]).map((k) => ({
+    valor: k,
+    cantidad: cantidades[k],
+  }));
+  const total = Object.values(cantidades).reduce((s, n) => s + n, 0);
+  const principal = tipos.reduce(
+    (mejor, t) => (!mejor || t.cantidad > mejor.cantidad ? t : mejor),
+    null,
+  );
+
+  return {
+    tipos,
+    total,
+    principal: principal ? DEFS[principal.valor] : DEFS.default,
+  };
+}
+
+// badges que se muestran sobre el post (los mismos tipos del resumen)
+export function badgesDeApunte(apunte) {
+  return resumenDeApunte(apunte).tipos.map((t) => t.valor);
 }
 
 // Valor del filtro tipo_archivo (backend) para un chip de badgesDeApunte: el

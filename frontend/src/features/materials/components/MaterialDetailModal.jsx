@@ -16,7 +16,7 @@ import { descargarArchivo } from '@/shared/api/archivos.api';
 import { useApunte } from '@/features/materials/hooks/useApuntes';
 import { useVotar } from '@/shared/post/votes/useVotar';
 import ApunteMenu from '@/features/materials/components/ApunteMenu';
-import VotePill from '@/shared/post/votes/VotePill';
+import BotonEstrella from '@/shared/post/votes/BotonEstrella';
 import BotonCompartir from '@/shared/post/share/BotonCompartir';
 import { compartirApunte } from '@/features/materials/utils/compartir';
 import CodeViewer from '@/features/materials/components/CodeViewer';
@@ -38,9 +38,9 @@ export default function MaterialDetailModal() {
     else navigate('/repositorio-materiales', { replace: true });
   }
 
-  function handleVotar(e, tipo) {
-    e?.stopPropagation?.();
-    votarMut.mutate({ id, tipo });
+  function handleVotar(e) {
+    e.stopPropagation();
+    votarMut.mutate({ id: apunte.id, tipo: 'up' });
   }
 
   return (
@@ -146,9 +146,9 @@ export default function MaterialDetailModal() {
             )}
 
             <div className='flex flex-wrap items-center gap-2 border-t border-white/[0.06] pt-3 text-[11.5px] text-neutral-500'>
-              <VotePill
+              <BotonEstrella
                 miVoto={apunte.mi_voto}
-                votosNeto={apunte.votos_neto}
+                total={apunte.votos_neto}
                 onVotar={handleVotar}
               />
 

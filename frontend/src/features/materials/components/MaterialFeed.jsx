@@ -107,13 +107,18 @@ export default function MaterialFeed({
         </div>
       )}
 
-      {apuntes.map((apunte) => (
-        <MaterialCard
-          key={apunte.id}
-          apunte={apunte}
-          filtrable
-        />
-      ))}
+      {/* catálogo: 2 columnas desde xl (1280 px); las tarjetas de una fila
+          se estiran al mismo alto. La separación vertical es el mb-3 de la
+          tarjeta, que la grilla respeta al estirar. */}
+      <div className='grid grid-cols-1 gap-x-3 xl:grid-cols-2'>
+        {apuntes.map((apunte) => (
+          <MaterialCard
+            key={apunte.id}
+            apunte={apunte}
+            filtrable
+          />
+        ))}
+      </div>
 
       <div
         ref={centinelaRef}

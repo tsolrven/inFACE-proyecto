@@ -7,17 +7,22 @@ import usePostMenuItems from '@/shared/post/actions/usePostMenuItems';
 import EditApunteModal from '@/features/materials/components/EditApunteModal';
 import ConfirmDialog from '@/shared/components/ui/ConfirmDialog';
 import ReportModal from '@/shared/moderation/ReportModal';
+import { useCompartir } from '@/shared/post/share/useCompartir';
+import { compartirApunte } from '@/features/materials/utils/compartir';
 
 /**
  * Menú ⋯ de un material con todo lo que dispara: guardar, editar, eliminar y
  * reportar (los diálogos solo existen mientras están abiertos).
  * onEliminado: se llama tras eliminar (el detalle lo usa para cerrarse).
+ * conCompartir: agrega "Compartir" al inicio (la tarjeta; el detalle ya tiene
+ * su propio botón).
  */
 export default function ApunteMenu({
   apunte,
   className,
   triggerClassName,
   onEliminado,
+  conCompartir = false,
 }) {
   const usuario = useAuthStore((s) => s.usuario);
   const guardarMut = useGuardar('apunte');
@@ -28,7 +33,11 @@ export default function ApunteMenu({
   const [errorEliminar, setErrorEliminar] = useState(null);
   const [reportando, setReportando] = useState(false);
 
-  const items = usePostMenuItems({
+  const { compartir, modal: modalCompartir } = useCompartir(
+    compartirApunte(apunte),
+  );
+
+  const itemsBase = usePostMenuItems({
     autorId: apunte.autor?.id,
     guardado: apunte.esta_guardado,
     onGuardar: () =>
@@ -38,6 +47,23 @@ export default function ApunteMenu({
     onReportar: () => setReportando(true),
     iconSize: 14,
   });
+
+  const items = conCompartir
+    ? [
+      {
+        key: 'compartir',
+        label: 'Compartir',
+        icon: (
+          <i
+            className='ti ti-share-3'
+            style={{ fontSize: 14 }}
+          />
+        ),
+        onClick: compartir,
+      },
+      ...itemsBase,
+    ]
+    : itemsBase;
 
   async function handleEliminar() {
     setErrorEliminar(null);
@@ -60,7 +86,7 @@ export default function ApunteMenu({
         label='Más acciones del material'
         triggerClassName={triggerClassName}
       />
-
+      {conCompartir && modalCompartir}
       {editando && (
         <EditApunteModal
           open

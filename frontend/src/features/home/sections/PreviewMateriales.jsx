@@ -109,7 +109,7 @@ function MiniApunteCard({ apunte: a, conCarrera }) {
 
       <div className='flex flex-shrink-0 items-center gap-3 text-[11.5px] text-neutral-500'>
         <span className='flex items-center gap-1'>
-          <i className='ti ti-arrow-big-up text-[13px]' /> {a.votos_neto ?? 0}
+          <i className='ti ti-star text-[13px]' /> {a.votos_neto ?? 0}
         </span>
         <span className='flex items-center gap-1'>
           <i className='ti ti-message-circle-2 text-[13px]' />{' '}
