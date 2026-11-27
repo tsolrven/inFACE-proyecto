@@ -26,11 +26,12 @@ const FILTRO_CARGO = {
 const PILDORA_ACTIVA =
   'flex items-center gap-1 rounded-full py-1 pl-2.5 pr-1.5 text-[11px] font-semibold transition-opacity hover:opacity-80';
 
-// Una sola fila: filtros activos (solo si hay; se eligen desde las tarjetas o
-// el panel derecho), el orden y las acciones.
+// `inicio` (opcional): va a la izquierda de la barra, en el lugar de las
+// píldoras de filtros (el botón de Destacados, solo en la vista limpia)
 export default function AnnouncementsTopbar({
   carreraId,
   permitirCrear = true,
+  inicio = null,
 }) {
   const flairId = useAnunciosFiltrosStore((s) => s.filtros.flair_id);
   const cargo = useAnunciosFiltrosStore((s) => s.filtros.cargo);
@@ -81,6 +82,7 @@ export default function AnnouncementsTopbar({
     <div className='mb-3'>
       <div className='flex flex-wrap items-center gap-2'>
         <div className='flex min-w-0 flex-wrap items-center gap-1.5'>
+          {inicio}
           {cargoActivo && (
             <button
               type='button'

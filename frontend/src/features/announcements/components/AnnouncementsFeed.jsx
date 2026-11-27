@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useId, useMemo } from 'react';
 import { useAnunciosFiltrosStore } from '@/features/announcements/store/anunciosFiltrosStore';
 import {
   useAnunciosFijados,
@@ -10,6 +10,8 @@ import AnnouncementsTopbar from '@/features/announcements/components/Announcemen
 import AnuncioCard from '@/features/announcements/components/AnuncioCard';
 import useMediaQuery from '@/shared/hooks/useMediaQuery';
 import ColumnasMasonry from '@/shared/components/ColumnasMasonry';
+import { useDestacadosPlegado } from '@/features/announcements/hooks/useDestacadosPlegado';
+import BotonDestacados from '@/features/announcements/components/BotonDestacados';
 
 // `busqueda` (opcional): texto ya filtrado por useBusqueda
 export default function AnnouncementsFeed({
@@ -34,6 +36,10 @@ export default function AnnouncementsFeed({
   const { data: fijados = [] } = useAnunciosFijados(carreraId, {
     enabled: vistaLimpia,
   });
+  // "Destacados (n)" va en la barra; la fila, debajo (solo en la vista limpia)
+  const idDestacados = useId();
+  const destacados = useDestacadosPlegado(carreraId, fijados);
+  const mostrarDestacados = vistaLimpia && fijados.length > 0;
 
   const filtros = useMemo(
     () => ({
@@ -103,6 +109,16 @@ export default function AnnouncementsFeed({
         <AnnouncementsTopbar
           carreraId={carreraId}
           permitirCrear={permitirCrear}
+          inicio={
+            mostrarDestacados && (
+              <BotonDestacados
+                total={fijados.length}
+                abierto={destacados.abierto}
+                onAlternar={destacados.alternar}
+                idFila={idDestacados}
+              />
+            )
+          }
         />
 
         {error && (
@@ -129,11 +145,10 @@ export default function AnnouncementsFeed({
           </div>
         )}
 
-        {vistaLimpia && (
+        {mostrarDestacados && destacados.abierto && (
           <DestacadosAnuncios
-            key={carreraId}
             anuncios={fijados}
-            carreraId={carreraId}
+            idFila={idDestacados}
           />
         )}
 
