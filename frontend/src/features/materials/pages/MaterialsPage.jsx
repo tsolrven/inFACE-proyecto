@@ -11,7 +11,6 @@ import UploadModal from '@/features/materials/components/UploadModal';
 import { useAuthStore } from '@/shared/auth/authStore';
 import TopColaboradoresCard from '@/shared/statistics/TopColaboradoresCard';
 import TagsPopularesCard from '@/shared/statistics/TagsPopularesCard';
-import armadilloRepositorio from '@/assets/armadillo-repositorio-materiales.png';
 import { puedeEscribir } from '@/shared/auth/roles';
 import { useBusqueda } from '@/shared/hooks/useBusqueda';
 import { BUSQUEDA_MAX } from '@/shared/lib/busqueda';
@@ -118,11 +117,6 @@ export default function RepositorioMateriales() {
             </span>
             . Solo estudiantes con correo institucional.
           </p>
-          <img
-            src={armadilloRepositorio}
-            alt='Armadillo mascota del repositorio de materiales'
-            className='w-full rounded-[10px]'
-          />
         </RpCard>
 
         <TopColaboradoresCard

@@ -109,7 +109,7 @@ export default function MaterialCard({ apunte, enGuardados = false }) {
                 key={tag}
                 onClick={(e) => {
                   e.stopPropagation();
-                  navigate(rutaHashtag(tag));
+                  navigate(rutaHashtag(tag, 'materiales'));
                 }}
                 className='text-[11px] text-blue-400 hover:underline'
               >

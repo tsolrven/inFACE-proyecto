@@ -6,7 +6,7 @@ export default function TagMaterialesRedirect() {
   const { hashtag = '' } = useParams();
   return (
     <Navigate
-      to={rutaHashtag(hashtag)}
+      to={rutaHashtag(hashtag, 'materiales')}
       replace
     />
   );

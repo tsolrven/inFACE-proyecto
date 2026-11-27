@@ -13,6 +13,9 @@ export default function PageBanner({
   searchValue,
   onSearchChange,
   searchMaxLength,
+  // opcional: control junto al buscador (p. ej. el selector de carrera de la
+  // página de un hashtag). Sin él, el banner queda exactamente como antes.
+  extra,
 }) {
 
   const inputRef = useRef(null);
@@ -60,7 +63,9 @@ export default function PageBanner({
         </div>
       )}
 
-      <div className='flex items-center gap-3'>
+      {/* con `extra`, en celular el selector y el buscador bajan a una
+          segunda línea (si no, el título queda aplastado) */}
+      <div className={`flex items-center gap-3 ${extra ? 'flex-wrap' : ''}`}>
         <div
           className={`flex h-[38px] w-[38px] flex-shrink-0 items-center justify-center rounded-[10px] border ${iconBg}`}
         >
@@ -74,7 +79,16 @@ export default function PageBanner({
           <p className='mt-1  text-[12px] text-neutral-600'>{subtitle}</p>
         </div>
 
-        <div className='ml-auto flex h-[34px] min-w-[220px] items-center gap-1.5 rounded-[10px] border border-white/[0.07] bg-white/[0.06] px-[11px] transition-colors focus-within:border-blue-400/35 hover:border-white/[0.14]'>
+        <div
+          className={`ml-auto flex items-center gap-2 ${extra ? 'w-full sm:w-auto' : ''}`}
+        >
+          {extra}
+          <div
+            className={`flex h-[34px] items-center gap-1.5 rounded-[10px] border border-white/[0.07] bg-white/[0.06] px-[11px] transition-colors focus-within:border-blue-400/35 hover:border-white/[0.14] ${extra
+                ? 'min-w-0 flex-1 sm:min-w-[220px] sm:flex-none'
+                : 'min-w-[220px]'
+              }`}
+          >
           <i className='ti ti-search text-[13px] text-neutral-600 flex-shrink-0' />
           <input
             ref={inputRef}
@@ -104,7 +118,8 @@ export default function PageBanner({
             >
               <i className='ti ti-x text-[12px]' />
             </button>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>

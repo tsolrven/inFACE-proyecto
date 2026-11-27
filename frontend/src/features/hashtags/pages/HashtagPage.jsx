@@ -11,14 +11,30 @@ import { AnnouncementsFeed } from '@/features/announcements';
 import { listarCarreras } from '@/shared/api/catalog.api';
 import { useAuthStore } from '@/shared/auth/authStore';
 import { ROLES } from '@/shared/auth/roles';
-import { inputClasses } from '@/shared/components/form/inputClasses';
 import { normalizarHashtag, rutaHashtag } from '@/shared/lib/hashtags';
+import SelectorCarrera from '@/features/hashtags/components/SelectorCarrera';
 
+// mismo orden que en las comunidades
 const PESTANAS = [
-  { id: 'materiales', label: 'Materiales', icono: 'ti-books' },
   { id: 'foro', label: 'Foro', icono: 'ti-message-circle-2' },
+  { id: 'materiales', label: 'Materiales', icono: 'ti-books' },
   { id: 'anuncios', label: 'Anuncios', icono: 'ti-speakerphone' },
 ];
+
+// color de cada módulo (el mismo de ACENTO_MODULO en ComunidadCarrera);
+// clases escritas completas para que Tailwind las detecte
+const ACENTO_PESTANA = {
+  foro: 'border-emerald-400',
+  materiales: 'border-blue-400',
+  anuncios: 'border-amber-400',
+};
+
+// texto de la carrera elegida en el selector: el color de la pestaña
+const TEXTO_PESTANA = {
+  foro: 'text-emerald-400',
+  materiales: 'text-blue-400',
+  anuncios: 'text-amber-400',
+};
 
 // Módulo al que pertenece cada pestaña (para el breadcrumb)
 const MODULOS = {
@@ -59,9 +75,9 @@ export default function HashtagPage() {
     busquedaGuardada.hashtag === hashtag ? busquedaGuardada.texto : '';
   const setTextoBusqueda = (texto) => setBusquedaGuardada({ hashtag, texto });
   const busqueda = useBusqueda(textoBusqueda);
-  // una pestaña desconocida (?pestana=xyz) cae en Materiales
+  // sin pestaña, o una desconocida (?pestana=xyz), cae en Foro
   const pedida = params.get('pestana');
-  const pestana = PESTANAS.some((p) => p.id === pedida) ? pedida : 'materiales';
+  const pestana = PESTANAS.some((p) => p.id === pedida) ? pedida : 'foro';
   const modulo = MODULOS[pestana];
 
   // Carrera mostrada: la de ?carrera=<código> si es válida; si no, la del
@@ -95,7 +111,7 @@ export default function HashtagPage() {
 
   function cambiarPestana(id) {
     const siguiente = new URLSearchParams(params);
-    if (id === 'materiales') siguiente.delete('pestana');
+    if (id === 'foro') siguiente.delete('pestana');
     else siguiente.set('pestana', id);
     setParams(siguiente, { replace: true });
   }
@@ -148,46 +164,21 @@ export default function HashtagPage() {
         onSearchChange={setTextoBusqueda}
         searchMaxLength={BUSQUEDA_MAX}
         breadcrumb={breadcrumb}
+        extra={
+          <SelectorCarrera
+            carreras={carreras}
+            carrera={carrera}
+            onCambiar={cambiarCarrera}
+            colorActivo={TEXTO_PESTANA[pestana]}
+          />
+        }
       />
 
       <Pestanas
         pestanas={PESTANAS}
         activa={pestana}
         onCambiar={cambiarPestana}
-        rightContent={
-          <div className='flex w-40 items-center gap-2 sm:w-64'>
-            <label
-              htmlFor='hashtag-carrera'
-              className='hidden whitespace-nowrap text-[12px] text-neutral-500 sm:inline'
-            >
-              Carrera
-            </label>
-            <select
-              id='hashtag-carrera'
-              value={carrera?.codigo ?? ''}
-              onChange={(e) => cambiarCarrera(e.target.value)}
-              title={carrera?.codigo?.toUpperCase() ?? 'Elige una carrera'}
-              className={`${inputClasses} h-9 min-w-0 truncate py-1 text-[12px]`}
-            >
-              {!carrera && (
-                <option
-                  value=''
-                  disabled
-                >
-                  Elige una carrera...
-                </option>
-              )}
-              {carreras.map((c) => (
-                <option
-                  key={c.id}
-                  value={c.codigo}
-                >
-                  {c.codigo.toUpperCase()}
-                </option>
-              ))}
-            </select>
-          </div>
-        }
+        acento={ACENTO_PESTANA[pestana]}
       />
 
       {cargandoCarreras && (

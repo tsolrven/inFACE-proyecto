@@ -136,7 +136,7 @@ export default function MaterialDetailModal() {
                 {apunte.hashtags.map((tag) => (
                   <span
                     key={tag}
-                    onClick={() => navigate(rutaHashtag(tag))}
+                    onClick={() => navigate(rutaHashtag(tag, 'materiales'))}
                     className='cursor-pointer text-[11.5px] text-blue-400 hover:underline'
                   >
                     #{tag}

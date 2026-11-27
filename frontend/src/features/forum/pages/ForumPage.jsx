@@ -11,7 +11,6 @@ import Pestanas from '@/shared/components/ui/Pestanas';
 import ForumGuardados from '@/features/forum/components/ForumGuardados';
 import TopColaboradoresCard from '@/shared/statistics/TopColaboradoresCard';
 import TagsPopularesCard from '@/shared/statistics/TagsPopularesCard';
-import armadilloRepositorio from '@/assets/armadillo-repositorio-materiales.png';
 
 const rules = [
   'Publica solo en ramos de tu carrera; puedes leer, comentar y votar en las demás.',
@@ -94,11 +93,6 @@ export default function ForumPage() {
             </span>
             . Solo estudiantes con correo institucional.
           </p>
-          <img
-            src={armadilloRepositorio}
-            alt='Armadillo mascota del foro por ramos'
-            className='w-full rounded-[10px]'
-          />
         </RpCard>
 
         <TopColaboradoresCard
