@@ -11,6 +11,9 @@ const CONTENT_REGISTRY = {
     label: 'Apunte',
     ownerField: 'autor_id',
     votesField: 'votos_neto',
+    // los materiales solo se marcan como útiles (estrella): sin votos en
+    // contra. Lo aplica votes.service
+    soloVotosPositivos: true,
     previewField: 'titulo',
     allowsComments: true,
     // lista explícita: apunte no hereda extensiones que otros módulos agreguen
