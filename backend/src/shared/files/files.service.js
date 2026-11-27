@@ -181,25 +181,44 @@ async function borrarArchivosFisicos(archivos) {
   );
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
+// Adjuntos de texto (.txt .md .csv .tsv .json .jsonl .xml .yaml): se pueden
+// ver, pero siempre como texto plano UTF-8 (nunca como documento que el
+// navegador interprete, p. ej. un XML abierto directo en la URL)
+const MIME_TEXTO = [
+  'application/json',
+  'application/x-ndjson',
+  'application/xml',
+  'application/yaml',
+];
+
+function esMimeTexto(mime = '') {
+  return mime.startsWith('text/') || MIME_TEXTO.includes(mime);
+}
+// ────────────────────────────────────────────────────────────────────────────────────────
 async function obtenerImagenParaVer(id, usuario) {
   await exigirLectura(id, usuario);
   const archivo = await prisma.archivo.findUnique({ where: { id } });
   if (!archivo) throw new NotFoundError('Archivo');
-  // PDF también: se abre en otra pestaña con el visor del navegador
+  // PDF y texto también: se abren en otra pestaña (visor del navegador)
+  const esTexto = esMimeTexto(archivo.tipo_mime);
   if (
     !archivo.tipo_mime?.startsWith('image/') &&
     !archivo.tipo_mime?.startsWith('audio/') &&
-    archivo.tipo_mime !== 'application/pdf'
+    archivo.tipo_mime !== 'application/pdf' &&
+    !esTexto
   ) {
     throw new BadRequestError(
-      'Solo se pueden visualizar imágenes, audios o PDF',
+      'Solo se pueden visualizar imágenes, audios, PDF o archivos de texto',
     );
   }
 
   const rutaFisica = resolverRutaFisica(archivo.ruta_url);
   if (!fs.existsSync(rutaFisica)) throw new NotFoundError('Archivo');
 
-  return { rutaFisica, tipo_mime: archivo.tipo_mime };
+  return {
+    rutaFisica,
+    tipo_mime: esTexto ? 'text/plain; charset=utf-8' : archivo.tipo_mime,
+  };
 }
 // ────────────────────────────────────────────────────────────────────────────────────────
 export {
