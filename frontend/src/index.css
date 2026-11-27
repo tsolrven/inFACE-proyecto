@@ -23,6 +23,12 @@
   -ms-overflow-style: none;
 }
 
-.scrollbar-destacados::-webkit-scrollbar {
+.scrollbar-oculta {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-destacados::-webkit-scrollbar,
+.scrollbar-oculta::-webkit-scrollbar {
   display: none;
 }

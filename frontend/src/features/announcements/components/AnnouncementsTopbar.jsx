@@ -128,7 +128,7 @@ export default function AnnouncementsTopbar({
             </button>
 
             {ordenAbierto && (
-              <div className='absolute left-0 top-[calc(100%+6px)] z-[450] w-[190px] overflow-hidden rounded-2xl border border-white/10 bg-[#1E1E24] shadow-[0_14px_40px_rgba(0,0,0,0.5)]'>
+              <div className='absolute right-0 top-[calc(100%+6px)] z-[450] w-[190px] overflow-hidden rounded-2xl border border-white/10 bg-[#1E1E24] shadow-[0_14px_40px_rgba(0,0,0,0.5)]'>
                 {ORDENES.map((o) => (
                   <button
                     key={o.valor}

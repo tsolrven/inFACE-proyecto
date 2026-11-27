@@ -150,44 +150,44 @@ export default function HashtagPage() {
         breadcrumb={breadcrumb}
       />
 
-      <div className='flex items-center gap-2.5 border-b border-white/[0.07] px-4 py-2'>
-        <label
-          htmlFor='hashtag-carrera'
-          className='text-[12px] text-neutral-500'
-        >
-          Carrera
-        </label>
-        <div className='w-full max-w-[300px]'>
-          <select
-            id='hashtag-carrera'
-            value={carrera?.codigo ?? ''}
-            onChange={(e) => cambiarCarrera(e.target.value)}
-            className={inputClasses}
-          >
-            {!carrera && (
-              <option
-                value=''
-                disabled
-              >
-                Elige una carrera...
-              </option>
-            )}
-            {carreras.map((c) => (
-              <option
-                key={c.id}
-                value={c.codigo}
-              >
-                {c.nombre}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
       <Pestanas
         pestanas={PESTANAS}
         activa={pestana}
         onCambiar={cambiarPestana}
+        rightContent={
+          <div className='flex w-40 items-center gap-2 sm:w-64'>
+            <label
+              htmlFor='hashtag-carrera'
+              className='hidden whitespace-nowrap text-[12px] text-neutral-500 sm:inline'
+            >
+              Carrera
+            </label>
+            <select
+              id='hashtag-carrera'
+              value={carrera?.codigo ?? ''}
+              onChange={(e) => cambiarCarrera(e.target.value)}
+              title={carrera?.codigo?.toUpperCase() ?? 'Elige una carrera'}
+              className={`${inputClasses} h-9 min-w-0 truncate py-1 text-[12px]`}
+            >
+              {!carrera && (
+                <option
+                  value=''
+                  disabled
+                >
+                  Elige una carrera...
+                </option>
+              )}
+              {carreras.map((c) => (
+                <option
+                  key={c.id}
+                  value={c.codigo}
+                >
+                  {c.codigo.toUpperCase()}
+                </option>
+              ))}
+            </select>
+          </div>
+        }
       />
 
       {cargandoCarreras && (
